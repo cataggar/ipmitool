@@ -1746,7 +1746,7 @@ Select the next boot order on the Kontron CP6012.
 
 These commands will allow you to configure IPMI LAN channels
 with network information so they can be used with the
-..BR ipmitool
+.BR ipmitool
 \fIlan\fP and \fIlanplus\fP interfaces.  \fINOTE\fR: To
 determine on which channel the LAN interface is located, issue
 the `channel info \fInumber\fR' command until you come across
