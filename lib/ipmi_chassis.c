@@ -1267,6 +1267,11 @@ ipmi_chassis_set_bootdev(struct ipmi_intf * intf, char * arg, uint8_t *iflags)
 	{
 		flags[1] |= 0x14;
 	}
+	else if (!strcmp(arg, "remotecd") ||
+	         !strcmp(arg, "force_remotecd"))
+	{
+		flags[1] |= 0x20;
+	}
 	else if (!strcmp(arg, "floppy") ||
 		!strcmp(arg, "force_floppy"))
 	{
@@ -1691,6 +1696,7 @@ ipmi_chassis_set_bootflag_help()
 	lprintf(LOG_NOTICE, "  force_diag  : Force boot from Diagnostic Partition");
 	lprintf(LOG_NOTICE, "  force_cdrom : Force boot from CD/DVD");
 	lprintf(LOG_NOTICE, "  force_bios  : Force boot into BIOS Setup");
+	lprintf(LOG_NOTICE, "  force_remotecd : Force boot from remote CD/DVD");
 	get_bootparam_options("options=help", &set_flag, &clr_flag);
 }
 
@@ -2043,6 +2049,7 @@ ipmi_chassis_main(struct ipmi_intf * intf, int argc, char ** argv)
 			lprintf(LOG_NOTICE, "  cdrom : Force boot from CD/DVD");
 			lprintf(LOG_NOTICE, "  bios  : Force boot into BIOS Setup");
 			lprintf(LOG_NOTICE, "  floppy: Force boot from Floppy/primary removable media");
+			lprintf(LOG_NOTICE, "  remotecd : Force boot from remote CD/DVD");
 		} else {
 			static const char *kw = "options=";
 			char *optstr = NULL;
