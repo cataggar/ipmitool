@@ -89,23 +89,24 @@ struct fru_header {
 	uint8_t checksum;
 } ATTRIBUTE_PACKING;
 #define FRU_AREAS_COUNT sizeof(((struct fru_header *)NULL)->offset)
+#define FRU_BYTES(b) ((b) * FRU_BLOCK_SZ)
 #if HAVE_PRAGMA_PACK
 #pragma pack(pop)
 #endif
 
-struct fru_area_hdr_s {
+typedef struct fru_area_hdr_s {
 	uint8_t area_ver;
-	uint8_t type;
 	uint16_t area_len;
-};
+} fru_area_hdr;
 
-struct fru_area_chassis {
+typedef struct fru_area_chassis_s {
 	struct fru_area_hdr_s hdr;
+	uint8_t type;
 	char * part;
 	char * serial;
-};
+} fru_area_chassis;
 
-struct fru_area_board {
+typedef struct fru_area_board_s {
 	struct fru_area_hdr_s hdr;
 	uint32_t mfg_date_time;
 	char * mfg;
@@ -113,9 +114,9 @@ struct fru_area_board {
 	char * serial;
 	char * part;
 	char * fru;
-};
+} fru_area_board;
 
-struct fru_area_product {
+typedef struct fru_area_product_s {
 	struct fru_area_hdr_s hdr;
 	char * mfg;
 	char * name;
@@ -124,7 +125,7 @@ struct fru_area_product {
 	char * serial;
 	char * asset;
 	char * fru;
-};
+} fru_area_product;
 
 #if HAVE_PRAGMA_PACK
 #pragma pack(push, 1)

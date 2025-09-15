@@ -42,6 +42,7 @@
 #include <ipmitool/ipmi_time.h>
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5068,8 +5069,9 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	uint8_t *fru_area = NULL;
 	uint32_t fru_field_offset, fru_field_offset_tmp;
 	uint32_t fru_section_len, header_offset;
-	uint32_t chassis_offset, board_offset, product_offset;
-	uint32_t chassis_len, board_len, product_len, product_len_new;
+	uint32_t info_offset;
+	uint32_t area_len;
+	fru_area_hdr * infohdr = NULL;
 	int      num_byte_change = 0, padding_len = 0;
 	uint32_t counter;
 	unsigned char cksum;
@@ -5101,44 +5103,29 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	2) Copy all FRU to new FRU */
 	memcpy(fru_data_new, fru_data_old, fru.size);
 
-	/* Build location of all modifiable components */
-	chassis_offset = (header.offset.chassis * 8);
-	board_offset   = (header.offset.board   * 8);
-	product_offset = (header.offset.product * 8);
-
-	/* Retrieve length of all modifiable components */
-	chassis_len    =  *(fru_data_old + chassis_offset + 1) * 8;
-	board_len      =  *(fru_data_old + board_offset   + 1) * 8;
-	product_len    =  *(fru_data_old + product_offset + 1) * 8;
-	product_len_new = product_len;
-
-	/* Chassis type field */
-	if (f_type == 'c' )
-	{
-		header_offset    = chassis_offset;
-		fru_field_offset = chassis_offset + 3;
-		fru_section_len  = chassis_len;
-	}
-	/* Board type field */
-	else if (f_type == 'b' )
-	{
-		header_offset    = board_offset;
-		fru_field_offset = board_offset + 6;
-		fru_section_len  = board_len;
-	}
-	/* Product type field */
-	else if (f_type == 'p' )
-	{
-		header_offset    = product_offset;
-		fru_field_offset = product_offset + 3;
-		fru_section_len  = product_len;
-	}
-	else
-	{
+	switch (f_type) {
+	case 'c':
+		info_offset = FRU_BYTES(header.offset.chassis);
+		fru_field_offset = info_offset + offsetof(fru_area_chassis, part);
+		break;
+	case 'b':
+		info_offset = FRU_BYTES(header.offset.board);
+		fru_field_offset = info_offset + offsetof(fru_area_board, mfg);
+		break;
+	case 'p':
+		info_offset = FRU_BYTES(header.offset.product);
+		fru_field_offset = info_offset + offsetof(fru_area_product, mfg);
+		break;
+	default:
 		printf("Wrong field type.");
 		rc = -1;
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
+
+	infohdr = (void *)&fru_data_old[info_offset];
+	area_len = FRU_BYTES(infohdr->area_len);
+	header_offset = info_offset;
+	fru_section_len = area_len;
 
 	/*************************
 	3) Seek to field index */
@@ -5191,7 +5178,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	5) Check if section must be resize.  This occur when padding length is not between 0 and 7 */
 	if( (padding_len < 0) || (padding_len >= FRU_BLOCK_SZ))
 	{
-		uint32_t remaining_offset = ((header.offset.product * FRU_BLOCK_SZ) + product_len);
 		int change_block_cnt;
 
 		if(padding_len >= FRU_BLOCK_SZ)
@@ -5225,9 +5211,9 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		 * work to calculate the length.
 		 */
 		bool internal_move = false;
-		uint8_t nearest_area = fru.size;
-		uint8_t last_area = 0x00;
-		uint32_t end_of_fru;
+		uint8_t next_area_blk = fru.size;
+		uint8_t last_area_blk = 0x00;
+		uint32_t end_of_fru = 0;
 		if (header.offset.internal != 0 && header.offset.internal > header_offset)
 		{
 			internal_move = true;
@@ -5235,13 +5221,15 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		/* Check Chassis, Board, Product, and Multirecord Area offsets to see if they need
 		 * to be moved.
 		 */
-		for (int i = 0; i < FRU_AREAS_COUNT; i++)
+		for (size_t i = 0; i < FRU_AREAS_COUNT; i++)
 		{
-			lprintf(LOG_DEBUG + 2, "Area %i original offset: %i", i, header.offsets[i]);
+			uint8_t area_blk = header.offsets[i];
+			fru_area_hdr * ahdr = (void *)&fru_data_old[FRU_BYTES(area_blk)];
+			lprintf(LOG_DEBUG + 2, "Area %zi original offset: %i", i, area_blk);
 			/* Offset of zero means area does not exist.
 			 * Internal Use Area must be handled separately
 			 */
-			if (header.offsets[i] <= 0 || header.offsets[i] == header.offset.internal)
+			if (area_blk == 0 || area_blk == header.offset.internal)
 			{
 				lprintf(LOG_DEBUG + 2, "\n");
 				continue;
@@ -5249,42 +5237,40 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 			/* Internal Use Area length will be calculated by finding the closest area
 			 * following it.
 			 */
-			if (internal_move && header.offsets[i] > header.offset.internal && header.offsets[i] < nearest_area)
+			if (internal_move && area_blk > header.offset.internal && area_blk < next_area_blk)
 			{
-				nearest_area = header.offsets[i];
+				next_area_blk = area_blk;
 			}
-			if (last_area < header.offsets[i])
-			{
-				last_area = header.offsets[i];
-				int record_block_length = *(fru_data_old + (header.offsets[i] * FRU_BLOCK_SZ) + 1);
-				end_of_fru = (last_area + record_block_length) * FRU_BLOCK_SZ;
-				if (header.offsets[i] == header.offset.multi)
+			if (last_area_blk < area_blk) {
+				last_area_blk = area_blk;
+				end_of_fru = FRU_BYTES(area_blk + ahdr->area_len);
+				if (area_blk == header.offset.multi)
 				{
 					int mr_length = 0;
-					int record_start = header.offset.multi * FRU_BLOCK_SZ;
-					struct fru_multirec_header *mr_header = (struct fru_multirec_header *) (fru_data_old + record_start);
+					int record_start = FRU_BYTES(header.offset.multi);
+					struct fru_multirec_header * mr_header = (void *)&fru_data_old[record_start];
 					while ((mr_header->format & FRU_RECORD_FORMAT_EOL_MASK) != 0)
 					{
 						int record_length = mr_header->len + sizeof(struct fru_multirec_header);
 						record_start += record_length;
 						mr_length += record_length;
-						mr_header = (struct fru_multirec_header *) (fru_data_old + record_start);
+						mr_header = (void *)&fru_data_old[record_start];
 					}
-					end_of_fru = header.offset.multi * FRU_BLOCK_SZ + mr_length;
+					end_of_fru = FRU_BYTES(header.offset.multi) + mr_length;
 				}
 			}
-			if ((header.offsets[i] * FRU_BLOCK_SZ) > header_offset)
+			if (FRU_BYTES(area_blk) > header_offset)
 			{
-				lprintf(LOG_DEBUG + 2, "Area %i moving by %i blocks.", i, change_block_cnt);
+				lprintf(LOG_DEBUG + 2, "Area %zi moving by %i blocks.", i, change_block_cnt);
 				uint32_t length = *(fru_data_old + (header.offsets[i] * FRU_BLOCK_SZ) + 1) * FRU_BLOCK_SZ;
 				/* MultiRecord Area length is third byte rather than second. */
 				if(header.offsets[i] == header.offset.multi)
 				{
 					length = *(fru_data_old + (header.offsets[i] * FRU_BLOCK_SZ) + 2) * FRU_BLOCK_SZ;
 				}
-				uint8_t *old_area_offset = fru_data_old + (header.offsets[i]) * FRU_BLOCK_SZ;
-				uint8_t *new_area_offset = fru_data_new + ((header.offsets[i] + change_block_cnt) * FRU_BLOCK_SZ);
-				memcpy(new_area_offset, old_area_offset, length);
+				uint8_t *old_area_data = fru_data_old + (header.offsets[i]) * FRU_BLOCK_SZ;
+				uint8_t *new_area_data = fru_data_new + ((header.offsets[i] + change_block_cnt) * FRU_BLOCK_SZ);
+				memcpy(new_area_data, old_area_data, length);
 				header.offsets[i] += change_block_cnt;
 			}
 			lprintf(LOG_DEBUG + 2, "\n");
@@ -5294,27 +5280,15 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 			/* If the internal area is the final area in the FRU, then the only bearing
 			 * we have for the length of the FRU is the size of the FRU.
 			 */
-			uint32_t length = nearest_area - header.offset.internal;
-			uint8_t *old_area_offset = fru_data_old + (header.offset.internal) * FRU_BLOCK_SZ;
-			uint8_t *new_area_offset = fru_data_new + ((header.offset.internal + change_block_cnt) * FRU_BLOCK_SZ);
-			memcpy(new_area_offset, old_area_offset, length);
+			uint32_t length = next_area_blk - header.offset.internal;
+			uint8_t *old_area_data = fru_data_old + (header.offset.internal) * FRU_BLOCK_SZ;
+			uint8_t *new_area_data = fru_data_new + ((header.offset.internal + change_block_cnt) * FRU_BLOCK_SZ);
+			memcpy(new_area_data, old_area_data, length);
 			header.offset.internal += change_block_cnt;
 		}
 
 		/* Adjust length of the section */
-		if (f_type == 'c')
-		{
-			*(fru_data_new + chassis_offset + 1) += change_block_cnt;
-		}
-		else if( f_type == 'b')
-		{
-			*(fru_data_new + board_offset + 1)   += change_block_cnt;
-		}
-		else if( f_type == 'p')
-		{
-			*(fru_data_new + product_offset + 1) += change_block_cnt;
-			product_len_new = *(fru_data_new + product_offset + 1) * FRU_BLOCK_SZ;
-		}
+		infohdr->area_len += change_block_cnt;
 
 		/* Rebuild Header checksum */
 		{
