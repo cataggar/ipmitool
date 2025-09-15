@@ -135,9 +135,6 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 											uint8_t f_type, uint8_t f_index, char *f_string,
 											int new_size);
 
-static void
-fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
-			uint8_t id, uint32_t offset);
 int
 read_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 			uint32_t offset, uint32_t length, uint8_t *frubuf);
@@ -694,14 +691,14 @@ write_fru_area(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 	return doffset >= finish;
 }
 
-/* read_fru_area  -  fill in frubuf[offset:length] from the FRU[offset:length]
+/* read_fru_area  -  read \a length bytes into \a frubuf from FRU[offset]
 *
 * @intf:   ipmi interface
-* @fru: fru info
+* @fru:    fru info
 * @id:     fru id
-* @offset: offset into buffer
+* @offset: offset into source fru
 * @length: how much to read
-* @frubuf: buffer read into
+* @frubuf: buffer to read into
 *
 * returns -1 on error
 * returns 0 if successful
@@ -945,67 +942,6 @@ read_fru_area_section(struct ipmi_intf * intf, struct fru_info *fru, uint8_t id,
 
 	return 0;
 }
-
-
-static void
-fru_area_print_multirec_bloc(struct ipmi_intf * intf, struct fru_info * fru,
-			uint8_t id, uint32_t offset)
-{
-	uint8_t * fru_data = NULL;
-	uint32_t i;
-	struct fru_multirec_header * h;
-	uint32_t last_off, len;
-
-	i = last_off = offset;
-
-	fru_data = malloc(fru->size + 1);
-	if (!fru_data) {
-		lprintf(LOG_ERR, " Out of memory!");
-		return;
-	}
-
-	memset(fru_data, 0, fru->size + 1);
-
-	do {
-		h = (struct fru_multirec_header *) (fru_data + i);
-
-		// read area in (at most) FRU_MULTIREC_CHUNK_SIZE bytes at a time
-		if ((last_off < (i + sizeof(*h))) || (last_off < (i + h->len)))
-		{
-			len = fru->size - last_off;
-			if (len > FRU_MULTIREC_CHUNK_SIZE)
-				len = FRU_MULTIREC_CHUNK_SIZE;
-
-			if (read_fru_area(intf, fru, id, last_off, len, fru_data) < 0)
-				break;
-
-			last_off += len;
-		}
-
-		//printf("Bloc Numb : %i\n", counter);
-		printf("Bloc Start: %i\n", i);
-		printf("Bloc Size : %i\n", h->len);
-		printf("\n");
-
-		i += h->len + sizeof (struct fru_multirec_header);
-	} while (!(h->format & 0x80));
-
-	i = offset;
-	do {
-		h = (struct fru_multirec_header *) (fru_data + i);
-
-		printf("Bloc Start: %i\n", i);
-		printf("Bloc Size : %i\n", h->len);
-		printf("\n");
-
-		i += h->len + sizeof (struct fru_multirec_header);
-	} while (!(h->format & 0x80));
-
-	lprintf(LOG_DEBUG ,"Multi-Record area ends at: %i (%xh)",i,i);
-
-	free_n(&fru_data);
-}
-
 
 /* fru_area_print_chassis  -  Print FRU Chassis Area
 *
