@@ -5189,22 +5189,36 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 						int record_length = mr_header->len + sizeof(struct fru_multirec_header);
 						record_start += record_length;
 						mr_length += record_length;
+						if (mr_header->format & FRU_RECORD_FORMAT_EOL_MASK)
+							break;
 						mr_header = (void *)&fru_data_old[record_start];
+						if ((uint8_t *)mr_header - fru_data_old > fru.size) {
+							lprintf(LOG_WARN, "WARNING: Multirecord Area has no end of records marker");
+							break;
+						}
 					}
 					end_of_fru = FRU_BYTES(header.offset.multi) + mr_length;
 				}
 			}
+			// If the currently processed area is located in the file after
+			// the area we've just edited, move the current area to its new position
 			if (FRU_BYTES(area_blk) > header_offset)
 			{
 				lprintf(LOG_DEBUG + 2, "Area %zi moving by %i blocks.", i, change_block_cnt);
-				uint32_t length = *(fru_data_old + (header.offsets[i] * FRU_BLOCK_SZ) + 1) * FRU_BLOCK_SZ;
+				uint32_t length;
+				uint32_t cur_offset = FRU_BYTES(header.offsets[i]);
 				/* MultiRecord Area length is third byte rather than second. */
 				if(header.offsets[i] == header.offset.multi)
 				{
-					length = *(fru_data_old + (header.offsets[i] * FRU_BLOCK_SZ) + 2) * FRU_BLOCK_SZ;
+					struct fru_multirec_header * cur_hdr = (struct fru_multirec_header *)(fru_data_old + cur_offset);
+					length = cur_hdr->len; // MR length is in bytes, not in blocks
 				}
-				uint8_t *old_area_data = fru_data_old + (header.offsets[i]) * FRU_BLOCK_SZ;
-				uint8_t *new_area_data = fru_data_new + ((header.offsets[i] + change_block_cnt) * FRU_BLOCK_SZ);
+				else {
+					fru_info_hdr * cur_hdr = (fru_info_hdr *)(fru_data_old + cur_offset);
+					length = FRU_BYTES(cur_hdr->area_len); // Info area length in is blocks
+				}
+				uint8_t *old_area_data = fru_data_old + cur_offset;
+				uint8_t *new_area_data = fru_data_new + cur_offset + FRU_BYTES(change_block_cnt);
 				memcpy(new_area_data, old_area_data, length);
 				header.offsets[i] += change_block_cnt;
 			}
@@ -5226,16 +5240,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		infohdr->area_len += change_block_cnt;
 
 		/* Rebuild Header checksum */
-		{
-			unsigned char * pfru_header = (unsigned char *) &header;
-			header.checksum = 0;
-			for(counter = 0; counter < (sizeof(struct fru_header) -1); counter ++)
-			{
-				header.checksum += pfru_header[counter];
-			}
-			header.checksum = (0 - header.checksum);
-			memcpy(fru_data_new, pfru_header, sizeof(struct fru_header));
-		}
+		header.checksum = fru_calc_checksum(&header, sizeof(struct fru_header));
+		memcpy(fru_data_new, &header, sizeof(struct fru_header));
 
 		/* If FRU has shrunk in size, zero-out any leftover data */
 		if (change_block_cnt < 0)
