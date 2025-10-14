@@ -90,46 +90,24 @@ struct fru_header {
 } ATTRIBUTE_PACKING;
 #define FRU_AREAS_COUNT sizeof(((struct fru_header *)NULL)->offset)
 #define FRU_BYTES(b) ((b) * FRU_BLOCK_SZ)
-#if HAVE_PRAGMA_PACK
-#pragma pack(pop)
-#endif
+
+// Common info area header
+#define FRU_INFO_COMMON_FIELDS \
+	uint8_t area_ver; \
+	uint8_t area_len; \
+	uint8_t langtype
 
 typedef struct fru_area_hdr_s {
-	uint8_t area_ver;
-	uint16_t area_len;
-} fru_area_hdr;
-
-typedef struct fru_area_chassis_s {
-	struct fru_area_hdr_s hdr;
-	uint8_t type;
-	char * part;
-	char * serial;
-} fru_area_chassis;
+	FRU_INFO_COMMON_FIELDS;
+	uint8_t data[];
+} fru_info_hdr;
 
 typedef struct fru_area_board_s {
-	struct fru_area_hdr_s hdr;
-	uint32_t mfg_date_time;
-	char * mfg;
-	char * prod;
-	char * serial;
-	char * part;
-	char * fru;
-} fru_area_board;
+	FRU_INFO_COMMON_FIELDS;
+	uint8_t mfg_date_time[3];
+	uint8_t data[];
+} fru_board_hdr;
 
-typedef struct fru_area_product_s {
-	struct fru_area_hdr_s hdr;
-	char * mfg;
-	char * name;
-	char * part;
-	char * version;
-	char * serial;
-	char * asset;
-	char * fru;
-} fru_area_product;
-
-#if HAVE_PRAGMA_PACK
-#pragma pack(push, 1)
-#endif
 /* See Table 16-1 of "IPMI FRU Information Storage Specification" */
 struct fru_multirec_header {
 #define FRU_RECORD_TYPE_POWER_SUPPLY_INFORMATION 0x00

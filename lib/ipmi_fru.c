@@ -5005,9 +5005,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 	uint8_t *fru_area = NULL;
 	uint32_t fru_field_offset, fru_field_offset_tmp;
 	uint32_t fru_section_len, header_offset;
-	uint32_t info_offset;
 	uint32_t area_len;
-	fru_area_hdr * infohdr = NULL;
+	fru_info_hdr * infohdr = NULL;
 	int      num_byte_change = 0, padding_len = 0;
 	uint32_t counter;
 	unsigned char cksum;
@@ -5041,16 +5040,17 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 
 	switch (f_type) {
 	case 'c':
-		info_offset = FRU_BYTES(header.offset.chassis);
-		fru_field_offset = info_offset + offsetof(fru_area_chassis, part);
+		header_offset = FRU_BYTES(header.offset.chassis);
+		fru_field_offset = header_offset + offsetof(fru_info_hdr, data);
 		break;
 	case 'b':
-		info_offset = FRU_BYTES(header.offset.board);
-		fru_field_offset = info_offset + offsetof(fru_area_board, mfg);
+		header_offset = FRU_BYTES(header.offset.board);
+		fru_field_offset = offsetof(fru_board_hdr, data);
+		fru_field_offset += header_offset;
 		break;
 	case 'p':
-		info_offset = FRU_BYTES(header.offset.product);
-		fru_field_offset = info_offset + offsetof(fru_area_product, mfg);
+		header_offset = FRU_BYTES(header.offset.product);
+		fru_field_offset = header_offset + offsetof(fru_info_hdr, data);
 		break;
 	default:
 		printf("Wrong field type.");
@@ -5058,9 +5058,8 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		goto ipmi_fru_set_field_string_rebuild_out;
 	}
 
-	infohdr = (void *)&fru_data_old[info_offset];
+	infohdr = (void *)&fru_data_old[header_offset];
 	area_len = FRU_BYTES(infohdr->area_len);
-	header_offset = info_offset;
 	fru_section_len = area_len;
 
 	/*************************
@@ -5160,7 +5159,7 @@ ipmi_fru_set_field_string_rebuild(struct ipmi_intf * intf, uint8_t fruId,
 		for (size_t i = 0; i < FRU_AREAS_COUNT; i++)
 		{
 			uint8_t area_blk = header.offsets[i];
-			fru_area_hdr * ahdr = (void *)&fru_data_old[FRU_BYTES(area_blk)];
+			fru_info_hdr * ahdr = (void *)&fru_data_old[FRU_BYTES(area_blk)];
 			lprintf(LOG_DEBUG + 2, "Area %zi original offset: %i", i, area_blk);
 			/* Offset of zero means area does not exist.
 			 * Internal Use Area must be handled separately
