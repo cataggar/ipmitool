@@ -90,6 +90,8 @@ struct fru_header {
 } ATTRIBUTE_PACKING;
 #define FRU_AREAS_COUNT sizeof(((struct fru_header *)NULL)->offset)
 #define FRU_BYTES(b) ((b) * FRU_BLOCK_SZ)
+#define FRU_BLOCKS(b) (((b) + FRU_BLOCK_SZ - 1) / FRU_BLOCK_SZ)
+#define FRU_BYTES_ALIGNED(bytes) (FRU_BYTES(FRU_BLOCKS(bytes)))
 
 // Common info area header
 #define FRU_INFO_COMMON_FIELDS \

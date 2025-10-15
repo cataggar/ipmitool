@@ -4942,11 +4942,8 @@ f_type, uint8_t f_index, char *f_string)
 			strlen((const char *)f_string) - strlen((const char *)fru_area);
 		if (change > 0)
 		{
-			/* Fru area is padded to be 8 bytes aligned */
-			int new_raw_size = fru.size + change;
-			int new_padded_max = new_raw_size + FRU_BLOCK_SZ - 1;
-			int new_block_count = new_padded_max / FRU_BLOCK_SZ;
-			new_fru_size = new_block_count * FRU_BLOCK_SZ;
+			/* FRU area size must be block-aligned */
+			new_fru_size = FRU_BYTES_ALIGNED(fru.size + change);
 		}
 		if (ipmi_fru_set_field_string_rebuild(intf, fruId, fru, header,
                                                 f_type, f_index, f_string,
