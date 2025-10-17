@@ -1,0 +1,42 @@
+when:
+  branch: [master]
+  event: [push, pull_request]
+
+matrix:
+  OS:
+    - ubuntu-questing
+    - ubuntu-plucky
+    - ubuntu-noble
+    - fedora-42
+    - fedora-41
+    - fedora-39
+
+variables:
+  - &buildenv 'alexanderamelkin/ipmitool-buildenv:${OS}'
+
+clone:
+  - name: git
+    image: woodpeckerci/plugin-git
+    settings:
+      tags: true
+
+steps:
+  build-all:
+    image: *buildenv
+    # Pull the image on the first step only
+    pull: true
+    commands: >
+      # Run the build.
+
+      ./bootstrap
+
+      ./configure --enable-intf-dummy \
+                  --enable-intf-dbus \
+                  --enable-intf-usb \
+                  --enable-intf-free
+
+      make
+
+      make check
+
+      make distcheck
