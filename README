@@ -1,7 +1,8 @@
 
                               ipmitool
                             Duncan Laurie
-                ipmitool-devel@lists.sourceforge.net
+
+               https://codeberg.org/IPMITool/ipmitool
 
 Overview
 ========
@@ -37,6 +38,30 @@ the returned response.  It is intended to be used by system administrators
 who like the simplicity and scriptability of command-line utilities, as
 well as those debugging or developing their own BMC implementations.
 
+OS Support
+==========
+Although originally `ipmitool` supported a lot of operating systems,
+such as Solaris, macOS, Windows and FreeBSD, as of 2025 it doesn't
+seem feasible to support all of them. Hence, even though the old
+code that supports those systems still exists, no checks are performed
+for the new changes in regard to their compatibility with any operating
+systems beside Linux.
+
+The checks are run automatically using the continous integration facilities
+of Codeberg.org that only provide support for Linux runners. That's why
+every PR is checked for buildability with the following distributions:
+
+ - Ubuntu Noble
+ - Ubuntu Plucky
+ - Ubunty Questing
+ - Fedora 39
+ - Fedora 41
+ - Fedora 42
+
+If you want to provide a hosted runner for another operating system,
+you are welcome to submit a PR with relevant configuration changes
+(see `.woodpecker.yml`)
+
 
 Requirements
 ============
@@ -49,7 +74,6 @@ Once you are certain you have the required hardware, you then need to
 decide how you want to access the BMC.  The most common case involve
 access through the System Interface or over the LAN.  (or serial, but
 currently ipmitool does not support the serial interface)
-
 
 System Interface
 ----------------
