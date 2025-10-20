@@ -2,13 +2,13 @@ dnl
 dnl autoconf for ipmitool
 dnl
 m4_define([git_suffix], m4_esyscmd_s(./csv-revision))
-AC_INIT([ipmitool], [1.8.19git_suffix])
+AC_INIT([ipmitool],[1.8.19git_suffix])
 AC_CONFIG_SRCDIR([src/ipmitool.c])
 AC_CONFIG_COMMANDS_PRE([export prefix=$prefix])
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
 AM_CONFIG_HEADER(config.h)
-AC_PREREQ(2.50)
+AC_PREREQ([2.71])
 AC_SUBST(ac_configure_args)
 
 dnl check for requirements
@@ -19,7 +19,15 @@ AC_PROG_MAKE_SET
 AC_CHECK_PROG([RPMBUILD], [rpmbuild], [rpmbuild], [rpm])
 AC_CHECK_PROG([SED], [sed], [sed])
 
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS([stdlib.h string.h sys/ioctl.h sys/stat.h unistd.h paths.h])
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/socket.h])
 AC_CHECK_HEADERS([sys/byteorder.h byteswap.h])
@@ -36,7 +44,7 @@ AC_CHECK_FUNCS([getpassphrase])
 
 CFLAGS="$CFLAGS -Wall -Wextra -std=gnu11 -pedantic -Wformat -Wformat-nonliteral"
 
-AM_PROG_LIBTOOL
+LT_INIT
 LIBTOOL="$LIBTOOL --silent"
 
 AC_SEARCH_LIBS([gethostbyname], [nsl])
@@ -56,8 +64,7 @@ fi
 
 dnl allow enabling/disabling the fetching of the IANA PEN registry
 AC_ARG_ENABLE([registry-download],
-	[AC_HELP_STRING([--enable-registry-download],
-			[download/install the IANA PEN registry [default=yes]])],
+	[AS_HELP_STRING([--enable-registry-download],[download/install the IANA PEN registry [default=yes]])],
 	[xenable_registry_download=$enableval],
 	[xenable_registry_download=yes])
 
@@ -153,8 +160,7 @@ AC_SUBST(BASEDIR, $prefix)
 
 dnl allow solaris builds to include all options
 AC_ARG_ENABLE([solaris-opt],
-	[AC_HELP_STRING([--enable-solaris-opt],
-			[enable all options for Solaris [default=no]])],
+	[AS_HELP_STRING([--enable-solaris-opt],[enable all options for Solaris [default=no]])],
 	[xenable_solaris_opt=$enableval],
 	[xenable_solaris_opt=no])
 if test "x$xenable_all_options" = "xyes" || test "x$xenable_solaris_opt" = "xyes"; then
@@ -162,9 +168,9 @@ if test "x$xenable_all_options" = "xyes" || test "x$xenable_solaris_opt" = "xyes
 fi
 
 dnl Determine anonymous union/structure support in GCC
-AC_TRY_COMPILE([
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
-	], [
+	]], [[
 	struct test {
 		union {
 			int a;
@@ -173,7 +179,7 @@ AC_TRY_COMPILE([
 	} test;
 
 	printf("a is %d", test.a);
-        ], ac_need_fms_extension=no, ac_need_fms_extension=yes)
+        ]])],[ac_need_fms_extension=no],[ac_need_fms_extension=yes])
 if test "x$ac_need_fms_extension" = "xyes"; then
        CFLAGS="$CFLAGS -fms-extensions"
        AC_SUBST(CFLAGS)
@@ -181,8 +187,7 @@ fi
 
 dnl check for OpenSSL functionality
 AC_ARG_ENABLE([internal-md5],
-	[AC_HELP_STRING([--enable-internal-md5],
-			[enable internal MD5 library [default=no]])],
+	[AS_HELP_STRING([--enable-internal-md5],[enable internal MD5 library [default=no]])],
 	[xenable_internal_md5=$enableval],
 	[xenable_internal_md5=no])
 
@@ -232,8 +237,7 @@ AC_CHECK_LIB([systemd], [sd_bus_default],
 
 dnl enable IPMIv1.5 LAN interface
 AC_ARG_ENABLE([intf-lan],
-	[AC_HELP_STRING([--enable-intf-lan],
-			[enable IPMIv1.5 LAN interface [default=yes]])],
+	[AS_HELP_STRING([--enable-intf-lan],[enable IPMIv1.5 LAN interface [default=yes]])],
 	[xenable_intf_lan=$enableval],
 	[xenable_intf_lan=yes])
 if test "x$xenable_intf_lan" = "xstatic" || test "x$xenable_intf_lan" = "xplugin"; then
@@ -248,8 +252,7 @@ fi
 
 dnl enable IPMI USB interface
 AC_ARG_ENABLE([intf-usb],
-	[AC_HELP_STRING([--enable-intf-usb],
-			[enable IPMI USB interface [default=auto]])],
+	[AS_HELP_STRING([--enable-intf-usb],[enable IPMI USB interface [default=auto]])],
 		[xenable_intf_usb=$enableval],
 		[xenable_intf_usb=$xenable_intf_usb])
 if test "x$xenable_intf_usb" = "xstatic" || test "x$xenable_intf_usb" = "xplugin"; then
@@ -264,8 +267,7 @@ fi
 
 dnl enable IPMIv2.0 RMCP+ LAN interface
 AC_ARG_ENABLE([intf-lanplus],
-	[AC_HELP_STRING([--enable-intf-lanplus],
-			[enable IPMIv2.0 RMCP+ LAN interface [default=auto]])],
+	[AS_HELP_STRING([--enable-intf-lanplus],[enable IPMIv2.0 RMCP+ LAN interface [default=auto]])],
 	[xenable_intf_lanplus=$enableval],
 	[xenable_intf_lanplus=$have_crypto])
 if test "x$xenable_intf_lanplus" = "xstatic" || test "x$xenable_intf_lanplus" = "xplugin"; then
@@ -288,8 +290,7 @@ ORIG_CPPFLAGS=$CPPFLAGS
 
 dnl enable serial interface
 AC_ARG_ENABLE([intf-serial],
-	[AC_HELP_STRING([--enable-intf-serial],
-			[enable direct Serial Basic/Terminal mode interface [default=yes]])],
+	[AS_HELP_STRING([--enable-intf-serial],[enable direct Serial Basic/Terminal mode interface [default=yes]])],
 	[xenable_intf_serial=$enableval], [xenable_intf_serial=yes])
 if test "x$enable_intf_serial" = "xstatic" || test "x$enable_intf_serial" = "xplugin"; then
    xenable_intf_serial=yes
@@ -305,8 +306,7 @@ fi
 
 dnl look for OpenIPMI header files
 AC_ARG_WITH([kerneldir],
-	[AC_HELP_STRING([--with-kerneldir=DIR],
-			[set kernel include path to DIR])],
+	[AS_HELP_STRING([--with-kerneldir=DIR],[set kernel include path to DIR])],
 	[if test "x$with_kerneldir" = "xyes"; then
 	    with_kerneldir="/lib/modules/`uname -r`/build"
 	fi
@@ -359,8 +359,7 @@ if test "x$have_free" != "xyes"; then
 	AC_CHECK_LIB(freeipmi, ipmi_ctx_open_inband, [have_free=yes], [have_free=no])
 fi
 AC_ARG_ENABLE([intf-free],
-	[AC_HELP_STRING([--enable-intf-free],
-		[enable FreeIPMI IPMI interface [default=auto]])],
+	[AS_HELP_STRING([--enable-intf-free],[enable FreeIPMI IPMI interface [default=auto]])],
 	[xenable_intf_free=$enableval],
 	[xenable_intf_free=$have_free])
 if test "x$xenable_intf_free" = "xstatic" || test "x$xenable_intf_free" = "xplugin"; then
@@ -373,12 +372,12 @@ fi
 if test "x$xenable_intf_free" = "xyes"; then
 dnl Determine if you got the right FreeIPMI version  
     AC_MSG_CHECKING([for libfreeipmi version 0.3.0])
-    AC_TRY_COMPILE([
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>	/* For size_t */
 #include <stdio.h>	/* For NULL */
 #include <freeipmi/freeipmi.h>
 #include <freeipmi/udm/ipmi-udm.h>
-    ], [
+    ]], [[
     ipmi_device_t dev;
     dev = ipmi_open_inband(IPMI_DEVICE_KCS,
                            0,
@@ -386,15 +385,15 @@ dnl Determine if you got the right FreeIPMI version
                            0,
                            NULL,
                            0);
-    ], ac_free_version_0_3_0=yes, ac_free_version_0_3_0=no)
+    ]])],[ac_free_version_0_3_0=yes],[ac_free_version_0_3_0=no])
     AC_MSG_RESULT($ac_free_version_0_3_0)
     AC_MSG_CHECKING([for libfreeipmi version 0.4.0])
-    AC_TRY_COMPILE([
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>	/* For size_t */
 #include <stdio.h>	/* For NULL */
 #include <freeipmi/freeipmi.h>
 #include <freeipmi/udm/ipmi-udm.h>
-    ], [
+    ]], [[
     ipmi_device_t dev = NULL;
     int rv;
     dev = ipmi_device_create();
@@ -405,15 +404,15 @@ dnl Determine if you got the right FreeIPMI version
                           0,
                           NULL,
                           0);
-    ], ac_free_version_0_4_0=yes, ac_free_version_0_4_0=no)
+    ]])],[ac_free_version_0_4_0=yes],[ac_free_version_0_4_0=no])
     AC_MSG_RESULT($ac_free_version_0_4_0)
     AC_MSG_CHECKING([for libfreeipmi version 0.5.0])
-    AC_TRY_COMPILE([
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>	/* For size_t */
 #include <stdio.h>	/* For NULL */
 #include <freeipmi/freeipmi.h>
 #include <freeipmi/udm/ipmi-udm.h>
-    ], [
+    ]], [[
     ipmi_device_t dev = NULL;
     int rv;
     dev = ipmi_device_create();
@@ -425,14 +424,14 @@ dnl Determine if you got the right FreeIPMI version
                           NULL,
                           0,
                           0);
-    ], ac_free_version_0_5_0=yes, ac_free_version_0_5_0=no)
+    ]])],[ac_free_version_0_5_0=yes],[ac_free_version_0_5_0=no])
     AC_MSG_RESULT($ac_free_version_0_5_0)
 
     AC_MSG_CHECKING([for libfreeipmi version 0.6.0])
-    AC_TRY_COMPILE([
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>	/* For NULL */
 #include <freeipmi/freeipmi.h>
-    ], [
+    ]], [[
     ipmi_ctx_t ctx = NULL;
     int rv;
     ctx = ipmi_ctx_create();
@@ -444,7 +443,7 @@ dnl Determine if you got the right FreeIPMI version
                               NULL,
                               0,
                               0);
-    ], ac_free_version_0_6_0=yes, ac_free_version_0_6_0=no)
+    ]])],[ac_free_version_0_6_0=yes],[ac_free_version_0_6_0=no])
     AC_MSG_RESULT($ac_free_version_0_6_0)
 
     if test "x$ac_free_version_0_3_0" = "xyes" \
@@ -486,21 +485,18 @@ AC_CHECK_HEADER([termios.h],
 
 dnl set RPM distro tag for use in RPM name
 AC_ARG_WITH([rpm-distro],
-	[AC_HELP_STRING([--with-rpm-distro=DISTRO],
-			[set Linux distribution tag for use in RPM version string])],
+	[AS_HELP_STRING([--with-rpm-distro=DISTRO],[set Linux distribution tag for use in RPM version string])],
 	[AC_SUBST(DISTRO, $with_rpm_distro)])
 
 dnl set RPM release tag
 AC_ARG_WITH([rpm-release],
-	[AC_HELP_STRING([--with-rpm-release=RELEASE],
-			[set release number for RPM release field])],
+	[AS_HELP_STRING([--with-rpm-release=RELEASE],[set release number for RPM release field])],
 	[], [with_rpm_release=1])
 AC_SUBST(RPM_RELEASE, $with_rpm_release)
 
 dnl enable Linux OpenIPMI interface
 AC_ARG_ENABLE([intf-open],
-	[AC_HELP_STRING([--enable-intf-open],
-			[enable Linux OpenIPMI interface [default=auto]])],
+	[AS_HELP_STRING([--enable-intf-open],[enable Linux OpenIPMI interface [default=auto]])],
 	[xenable_intf_open=$enableval],
 	[])
 if test "x$xenable_intf_open" = "xstatic" || test "x$xenable_intf_open" = "xplugin"; then
@@ -517,7 +513,7 @@ if test "x$xenable_intf_open" = "xyes"; then
 	have_openipmi_dual_bridge=no
 	ORIG_CPPFLAGS="$CPPFLAGS"
 	CPPFLAGS="$CPPFLAGS -Isrc/plugins/open -DENABLE_INTF_OPEN_DUAL_BRIDGE"
-	AC_TRY_COMPILE([
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			#if defined(HAVE_OPENIPMI_H)
 			# if defined(HAVE_LINUX_COMPILER_H)
 			#  include <linux/compiler.h>
@@ -528,10 +524,10 @@ if test "x$xenable_intf_open" = "xyes"; then
 			#else
 			# include "open.h"
 			#endif
-		], [
+		]], [[
 			struct ipmi_ipmb_addr a;
 			a.transit_slave_addr = 0;
-		], [have_openipmi_dual_bridge=yes])
+		]])],[have_openipmi_dual_bridge=yes],[])
 	if test x"$have_openipmi_dual_bridge" = x"yes"; then
 		AC_DEFINE(ENABLE_INTF_OPEN_DUAL_BRIDGE, [1],
 			[Define to 1 to enable OpenIPMI interface dual bridge support])
@@ -542,8 +538,7 @@ fi
 
 dnl enable Intel IMB interface
 AC_ARG_ENABLE([intf-imb],
-	[AC_HELP_STRING([--enable-intf-imb],
-			[enable Intel IMB driver interface [default=auto]])],
+	[AS_HELP_STRING([--enable-intf-imb],[enable Intel IMB driver interface [default=auto]])],
 	[xenable_intf_imb=$enableval],
 	[])
 if test "x$xenable_intf_imb" = "xstatic" || test "x$xenable_intf_imb" = "xplugin"; then
@@ -559,8 +554,7 @@ fi
 dnl enable Solaris LIPMI interface
 AC_CHECK_HEADER([sys/lipmi/lipmi_intf.h], [have_lipmi=yes], [have_lipmi=no])
 AC_ARG_ENABLE([intf-lipmi],
-	[AC_HELP_STRING([--enable-intf-lipmi],
-			[enable Solaris 9 x86 IPMI interface [default=no]])],
+	[AS_HELP_STRING([--enable-intf-lipmi],[enable Solaris 9 x86 IPMI interface [default=no]])],
 	[xenable_intf_lipmi=$enableval],
 	[])
 if test "x$xenable_intf_lipmi" = "xstatic" || test "x$xenable_intf_lipmi" = "xplugin"; then
@@ -579,8 +573,7 @@ fi
 
 dnl enable Solaris BMC interface
 AC_ARG_ENABLE([intf-bmc],
-	[AC_HELP_STRING([--enable-intf-bmc],
-			[enable Solaris 10 x86 IPMI interface [default=auto]])],
+	[AS_HELP_STRING([--enable-intf-bmc],[enable Solaris 10 x86 IPMI interface [default=auto]])],
 	[xenable_intf_bmc=$enableval],
 	[xenable_intf_bmc=no])
 if test "x$xenable_intf_bmc" = "xstatic" || test "x$xenable_intf_bmc" = "xplugin"; then
@@ -595,8 +588,7 @@ fi
 
 dnl enable IPMI dbus interface
 AC_ARG_ENABLE([intf-dbus],
-		[AC_HELP_STRING([--enable-intf-dbus],
-			[enable IPMI dbus interface [default=no]])],
+		[AS_HELP_STRING([--enable-intf-dbus],[enable IPMI dbus interface [default=no]])],
 		[xenable_intf_dbus=$enableval],
 		[xenable_intf_dbus=no])
 if test "x$xenable_intf_dbus" != "xno"; then
@@ -614,8 +606,7 @@ fi
 
 dnl enable Dummy interface for testing
 AC_ARG_ENABLE([intf-dummy],
-	[AC_HELP_STRING([--enable-intf-dummy],
-			[enable Dummy(test) interface [default=no]])],
+	[AS_HELP_STRING([--enable-intf-dummy],[enable Dummy(test) interface [default=no]])],
 	[xenable_intf_dummy=$enableval], [xenable_intf_dummy=no])
 if test "x$xenable_intf_dummy" = "xyes"; then
 	AC_DEFINE(IPMI_INTF_DUMMY, [1], [Define to 1 to enable Dummy interface.])
@@ -627,8 +618,7 @@ fi
 AC_SUBST(IPMITOOL_INTF_LIB)
 
 AC_ARG_ENABLE([ipmishell],
-	[AC_HELP_STRING([--enable-ipmishell],
-			[enable IPMI shell interface [default=auto]])],
+	[AS_HELP_STRING([--enable-ipmishell],[enable IPMI shell interface [default=auto]])],
 	[xenable_ipmishell=$enableval],
 	[])
 
@@ -648,8 +638,7 @@ fi
 
 dnl Enable -Wall -Werror
 AC_ARG_ENABLE([buildcheck],
-	[AC_HELP_STRING([--enable-buildcheck],
-			[enable -Wall -Werror for build testing [default=no]])],
+	[AS_HELP_STRING([--enable-buildcheck],[enable -Wall -Werror for build testing [default=no]])],
 	[xenable_buildcheck=$enableval],
 	[xenable_buildcheck=no])
 if test "x$xenable_buildcheck" != "xno"; then
@@ -659,8 +648,7 @@ AC_SUBST(CFLAGS)
 
 dnl Enable extra file security paranoia
 AC_ARG_ENABLE([file-security],
-	[AC_HELP_STRING([--enable-file-security],
-			[enable extra security checks on files opened for read [default=no]])],
+	[AS_HELP_STRING([--enable-file-security],[enable extra security checks on files opened for read [default=no]])],
 	[xenable_file_security=$enableval],
 	[xenable_file_security=no])
 if test "x$xenable_file_security" != "xno"; then
@@ -668,7 +656,7 @@ if test "x$xenable_file_security" != "xno"; then
 fi
 
 
-AC_TRY_COMPILE([],[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 	#include <stdio.h>
 	
 	struct packstruct {
@@ -687,11 +675,9 @@ AC_TRY_COMPILE([],[
 	else
 	return(0);
 	}
-	],
-	[],
-	[AC_DEFINE(HAVE_PRAGMA_PACK,[1],
-		[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])]
-)
+	]])],[],[AC_DEFINE(HAVE_PRAGMA_PACK,[1],
+		[Define to 1 if you need to use #pragma pack instead of __attribute__ ((packed))])
+])
 
 dnl if no environment variable is set, set the default value for the default intf
 if test "${xenable_intf_open}" = "yes"; then
