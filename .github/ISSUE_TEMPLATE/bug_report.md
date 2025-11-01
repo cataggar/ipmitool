@@ -9,12 +9,14 @@ assignees: AlexanderAmelkin
 
 **Describe the bug**
 A clear and concise description of what the bug is.
-*Please **DO NOT** report ANYTHING about 1.8.18, it is outdated. Please first check your alleged bug with the latest code from the top of the master branch here.*
+*Please **DO NOT** report ANYTHING about 1.8.19 or older, those are outdated.
+Please first check your alleged bug with the latest code from the top of the master branch here.*
 
 **IPMITOOL Version**
 
-Make sure you're reporting a bug in the latest code taken from `master` branch here, NOT a bug
-that you've found in some version that you've got from your OS vendor or any source other than this repository.
+Please make sure you're reporting a bug in the latest code taken from `master` branch
+here, NOT a bug that you've found in some version that you've got from your OS vendor
+or any source other than this repository.
 
 ```none
 $ ipmitool -V
