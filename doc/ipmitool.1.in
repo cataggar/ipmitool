@@ -3104,10 +3104,10 @@ Displays the SEL clock's current time.
 .BR
 
 Sets the SEL clock.  Future SEL entries will use the time
-set by this command.  <\fBtime string\fR> is of the
-form "MM/DD/YYYY HH:MM:SS".  Note that hours are in 24\-hour
-form.  It is recommended that the SEL be cleared before
-setting the time.
+set by this command.  <\fBtime string\fR> is using the
+locale-specific date/time format. It is recommended to
+clear SEL before setting the time to avoid having records
+with inconsistent timestamps in the log.
 .RE
 .RE
 .TP
