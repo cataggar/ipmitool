@@ -4945,13 +4945,9 @@ f_type, uint8_t f_index, char *f_string)
 			/* FRU area size must be block-aligned */
 			new_fru_size = FRU_BYTES_ALIGNED(fru.size + change);
 		}
-		if (ipmi_fru_set_field_string_rebuild(intf, fruId, fru, header,
-                                                f_type, f_index, f_string,
-                                                new_fru_size))
-		{
-			rc = -1;
-			goto ipmi_fru_set_field_string_out;
-		}
+		rc = ipmi_fru_set_field_string_rebuild(intf, fruId, fru, header,
+		                                       f_type, f_index, f_string,
+		                                       new_fru_size);
 	}
 
 ipmi_fru_set_field_string_out:
