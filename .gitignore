@@ -1,3 +1,8 @@
+# Zig build system (see build.zig)
+zig-out/
+.zig-cache/
+
+# autotools build (kept as a cross-check during the Zig migration)
 .deps
 .dirstamp
 .libs
@@ -9,24 +14,30 @@
 *.lo
 *.la
 *.*~
+*.tar.gz
+*.tar.bz2
 Makefile
 Makefile.in
 aclocal.m4
+ar-lib
 autom4te.cache
 compile
 config.guess
 config.h
 config.h.in
+config.h.in~
 config.log
 config.status
 config.sub
 configure
+configure~
 depcomp
 install-sh
 ltmain.sh
 libtool
 missing
 stamp-h1
+test-driver
 control/ipmitool.spec
 control/pkginfo
 control/prototype
@@ -35,5 +46,8 @@ src/ipmievd
 src/ipmitool
 doc/ipmievd.8
 doc/ipmitool.1
+enterprise-numbers
+
+# editors and tooling
 cscope.out
 tags
