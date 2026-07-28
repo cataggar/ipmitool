@@ -90,9 +90,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
-          # build.zig derives the version string from `git describe --tags`
-          # (mirroring ./csv-revision), so the full history and tags are needed
-          # for the binaries to report a real version.
+          # build.zig derives the version string from `git describe --tags`,
+          # mirroring ./csv-revision, so fetch the whole history and the tags.
+          # NOTE: no tags are pushed to this fork today, so both fall back to
+          # their snapshot version; this starts reporting the real revision on
+          # its own once tags are pushed.
           fetch-depth: 0
 
       - name: Install system dependencies
