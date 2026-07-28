@@ -1,120 +1,221 @@
-# vi: set et ts=2 sw=2 :
-name: build
+# CI for the incremental Zig rewrite (tracking issue #2, this workflow is #6).
+#
+# Upstream ipmitool is hosted on Codeberg and gated by Woodpecker CI
+# (.woodpecker.yml); that configuration does not apply to this GitHub fork, so
+# this is a native GitHub Actions replacement rather than a port of it.
+#
+# Design notes:
+#   * Every job below is a separate status context so that `protect-main` can
+#     require them individually.
+#   * Third-party and first-party actions are pinned to a commit SHA; dependabot
+#     (.github/dependabot.yml) keeps the pins fresh.
+#   * The Zig toolchain is pinned to a single version in one place (ZIG_VERSION).
+#   * Nothing here hardcodes a list of .zig files: `fmt` derives the file set
+#     from `git ls-files`, and `build`/`test` go through `zig build`, so the
+#     workflow keeps working unchanged as the C sources are replaced by Zig
+#     under new directories in later phases.
+name: CI
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Nightly, so runner-image and toolchain drift surfaces even when there are
+    # no pull requests open.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+# Read-only: no job here publishes anything back to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  # One in-flight run per pull request / per branch. Superseded pull request
+  # runs are cancelled; pushes to main are left alone so every commit on main
+  # keeps a complete result.
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # The one place the toolchain version is pinned. build.zig.zon also declares
+  # .minimum_zig_version = "0.16.0".
+  ZIG_VERSION: '0.16.0'
+  # System packages required by the default `zig build` configuration:
+  #   libssl-dev      -> libcrypto, for -Dopenssl (RMCP+ crypto, SHA256/MD5)
+  #   libreadline-dev -> libreadline, for -Dipmishell (the `shell`/`exec` cmds)
+  #   pkg-config      -> how build.zig locates readline
+  BUILD_APT_PACKAGES: 'libssl-dev libreadline-dev pkg-config'
 
 jobs:
-  linux:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+
+      - name: Set up Zig ${{ env.ZIG_VERSION }}
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: ${{ env.ZIG_VERSION }}
+          # Nothing is compiled in this job, so there is no build cache worth
+          # storing.
+          use-cache: false
+
+      - name: zig fmt --check
+        run: |
+          set -euo pipefail
+          # Tracked .zig files at any depth. New Zig sources added by later
+          # migration phases are picked up automatically; build outputs
+          # (zig-out/, .zig-cache/) are untracked and therefore excluded.
+          mapfile -d '' -t files < <(git ls-files -z -- '*.zig')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::no tracked .zig files found; the fmt gate would be a no-op"
+            exit 1
+          fi
+          printf 'checking %d file(s):\n' "${#files[@]}"
+          printf '  %s\n' "${files[@]}"
+          zig fmt --check "${files[@]}"
+
+  build:
+    name: build
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: install dependencies
-      run: |
-        sudo apt install \
-          automake \
-          gcc \
-          git \
-          libssl-dev \
-          libtool \
-          make \
-          wget
-    - name: install extra libraries
-      # This build job tries to verify as much of ipmitool code
-      # as possible, hence these libraries. They aren't usually
-      # needed for normal user builds:
-      run: |
-        sudo apt update
-        sudo apt install \
-          libsystemd-dev \
-          libreadline-dev \
-          libfreeipmi-dev \
-          libusb-dev
-    - uses: actions/checkout@v2
-    - name: bootstrap
-      run: ./bootstrap
-    - name: configure
-      run: |
-        # For Linux, build as many extra interfaces as possible
-        # to verify the code
-        ./configure --enable-intf-dummy \
-                    --enable-intf-dbus \
-                    --enable-intf-usb \
-                    --enable-intf-free
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          # build.zig derives the version string from `git describe --tags`
+          # (mirroring ./csv-revision), so the full history and tags are needed
+          # for the binaries to report a real version.
+          fetch-depth: 0
 
-  macos:
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          # shellcheck disable=SC2086  # deliberate word splitting of the list
+          sudo apt-get install -y --no-install-recommends ${BUILD_APT_PACKAGES}
+
+      - name: Set up Zig ${{ env.ZIG_VERSION }}
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: ${{ env.ZIG_VERSION }}
+          # setup-zig points ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR at
+          # $GITHUB_WORKSPACE/.zig-cache and caches it. The key below adds the
+          # build definition, so a build.zig change starts a fresh entry while
+          # still restoring the previous one as a base.
+          cache-key: ${{ matrix.os }}-${{ hashFiles('build.zig', 'build.zig.zon') }}
+
+      - name: zig build
+        run: zig build --summary all
+
+      - name: Smoke-check the built binaries
+        run: |
+          set -euo pipefail
+          test -x zig-out/bin/ipmitool
+          test -x zig-out/sbin/ipmievd
+          echo "--- ipmitool -V ---"
+          zig-out/bin/ipmitool -V
+          echo "--- ipmievd -V ---"
+          zig-out/sbin/ipmievd -V
+          # -h exits 0 and writes the usage (including the interface list) to
+          # stderr; byte-parity of this output with the autotools oracle is a
+          # load-bearing property of the migration.
+          echo "--- ipmitool -h ---"
+          zig-out/bin/ipmitool -h
+          echo "--- ipmievd -h ---"
+          zig-out/sbin/ipmievd -h
+          # Installed data files, as produced by `zig build`.
+          test -f zig-out/share/man/man1/ipmitool.1
+          test -f zig-out/share/man/man8/ipmievd.8
+          test -d zig-out/share/ipmitool/contrib
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ipmitool-${{ matrix.os }}
+          path: zig-out/
+          if-no-files-found: error
+          retention-days: 14
+
+  test:
+    name: test
     strategy:
+      fail-fast: false
       matrix:
-        os: [ macos-10.15, macos-11, macos-12 ]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-
     steps:
-    - name: install dependencies
-      run: brew install automake openssl libtool freeipmi wget
-    - uses: actions/checkout@v2
-    - name: bootstrap
-      run: ./bootstrap
-    - name: configure
-      run: |
-        ./configure --enable-intf-dummy \
-                    LDFLAGS=-L/usr/local/opt/openssl@1.1/lib \
-                    CFLAGS=-I/usr/local/opt/openssl@1.1/include
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          fetch-depth: 0
 
-  windows:
-    strategy:
-      matrix:
-        os: [ windows-2019, windows-2022 ]
-    runs-on: ${{ matrix.os }}
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          # shellcheck disable=SC2086  # deliberate word splitting of the list
+          sudo apt-get install -y --no-install-recommends ${BUILD_APT_PACKAGES}
 
+      - name: Set up Zig ${{ env.ZIG_VERSION }}
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: ${{ env.ZIG_VERSION }}
+          cache-key: ${{ matrix.os }}-${{ hashFiles('build.zig', 'build.zig.zon') }}
+
+      - name: zig build test
+        run: zig build test --summary all
+
+  oracle:
+    # Differential-testing reference build (issue #3). The autotools build is
+    # the oracle every Zig port stage is diffed against, so it has to keep
+    # working until the C sources are deleted in issue #13. It costs about a
+    # minute, which is cheap enough to gate every pull request on rather than
+    # deferring to a nightly-only job.
+    name: oracle (autotools cross-check)
+    runs-on: ubuntu-latest
     steps:
-    - name: install dependencies
-      run: |-
-        choco install cygwin -y
-        choco install cyg-get -y
-        # Line continuation in PowerShell is backtick. Weird as Windows.
-        cyg-get gcc-g++ `
-                make `
-                automake `
-                autoconf `
-                m4 `
-                libtool `
-                libncurses-devel `
-                libreadline-devel `
-                libssl-devel `
-                dos2unix `
-                wget
-        echo "C:/tools/cygwin/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "C:/tools/cygwin/usr/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-    - uses: actions/checkout@v2
-    - name: convert line ends
-      # checkout action on Windows apparently converts line ends
-      # so we have to convert them back because cygwin bash can't
-      # can't handle Windows line ends
-      run: dos2unix bootstrap configure.ac csv-revision
-    - name: bootstrap
-      run: bash -c "./bootstrap"
-    - name: configure
-      run: bash -c "./configure"
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          # shellcheck disable=SC2086  # deliberate word splitting of the list
+          sudo apt-get install -y --no-install-recommends \
+            build-essential autoconf automake libtool ${BUILD_APT_PACKAGES}
+
+      - name: scripts/build-oracle.sh
+        env:
+          ORACLE_DIR: ${{ runner.temp }}/ipmitool-oracle
+        run: scripts/build-oracle.sh
+
+      - name: Smoke-check the oracle binaries
+        env:
+          ORACLE_DIR: ${{ runner.temp }}/ipmitool-oracle
+        run: |
+          set -euo pipefail
+          "$ORACLE_DIR/ipmitool" -V
+          "$ORACLE_DIR/ipmievd" -V
+          cat "$ORACLE_DIR/metadata.txt"
+          # Stage inside the workspace so the upload path is workspace relative.
+          mkdir -p oracle-artifact
+          cp -a "$ORACLE_DIR/." oracle-artifact/
+
+      - name: Upload oracle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: oracle-ubuntu-latest
+          path: oracle-artifact/
+          if-no-files-found: error
+          retention-days: 14
