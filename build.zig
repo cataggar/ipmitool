@@ -86,6 +86,42 @@ const ipmievd_sources: CSourceSet = .{
     .files = &.{"ipmievd.c"},
 };
 
+// ---------------------------------------------------------------------------
+// Zig module registry
+//
+// Phase 2 of the migration (issue #7).  Every entry maps one `-Dzig-modules`
+// name to the C translation unit it replaces; selecting a name drops that `.c`
+// from the compile and links `src/zig/exports.zig` instead, which `@export`s
+// the same C symbols.  Adding a port means one entry here plus one guarded
+// `@import` in `src/zig/exports.zig`.
+//
+// See doc/zig-migration/interop-seams.md.
+// ---------------------------------------------------------------------------
+
+/// One C translation unit that has a Zig implementation available.
+const ZigModule = struct {
+    /// Name used in `-Dzig-modules=<name>`.
+    name: []const u8,
+    /// C translation unit it replaces, relative to the build root.
+    replaces: []const u8,
+    /// Zig implementation, for documentation and `zig build --help`.
+    implementation: []const u8,
+};
+
+const zig_modules = [_]ZigModule{
+    .{
+        .name = "oem",
+        .replaces = "lib/ipmi_oem.c",
+        .implementation = "src/zig/cmd/oem.zig",
+    },
+};
+
+/// Root of the Zig source tree.
+const zig_root = "src/zig";
+
+/// Umbrella header translated into the `ipmi_c` module.
+const zig_bridge_header = zig_root ++ "/ipmi_c.h";
+
 /// How the default value of an `-Dintf-*` option is computed.
 const DefaultPolicy = enum {
     /// Enabled everywhere.
@@ -316,6 +352,17 @@ pub fn build(b: *std.Build) void {
         "Download and install the IANA PEN registry; needs network access [default=false]",
     ) orelse false;
 
+    const zig_modules_opt = b.option(
+        []const u8,
+        "zig-modules",
+        b.fmt(
+            "Comma separated modules to build from Zig instead of C; " ++
+                "available: {s} [default=none]",
+            .{comptime zigModuleNames()},
+        ),
+    );
+    const zig_selection = parseZigModules(b, zig_modules_opt);
+
     const iana_dir = b.option(
         []const u8,
         "iana-dir",
@@ -493,17 +540,56 @@ pub fn build(b: *std.Build) void {
         .sanitize_c = if (sanitize_c) .full else .off,
     });
     configure(b, core_mod, config_h, default_intf);
-    addSources(b, core_mod, lib_sources, flags);
-    addSources(b, core_mod, intf_sources, flags);
+    addSources(b, core_mod, lib_sources, flags, zig_selection);
+    addSources(b, core_mod, intf_sources, flags, zig_selection);
     for (plugins, 0..) |plugin, i| {
         if (!enabled[i]) continue;
-        addSources(b, core_mod, plugin.sources, flags);
+        addSources(b, core_mod, plugin.sources, flags, zig_selection);
     }
     const core = b.addLibrary(.{
         .name = "ipmitool_core",
         .linkage = .static,
         .root_module = core_mod,
     });
+
+    // -- Zig replacement library --------------------------------------------
+    //
+    // `ipmi_c` is the Zig -> C half of the bridge: `translate-c` output for the
+    // headers listed in `src/zig/ipmi_c.h`, built with the same include path,
+    // config header and macros a C translation unit sees.  `libipmitool_zig.a`
+    // is the C -> Zig half: it carries the `@export`ed replacements for the
+    // translation units named in `-Dzig-modules`.
+
+    const bridge = b.addTranslateC(.{
+        .root_source_file = b.path(zig_bridge_header),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    bridge.addConfigHeader(config_h);
+    bridge.addIncludePath(b.path("include"));
+    bridge.defineCMacro("HAVE_CONFIG_H", "1");
+    bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{default_intf}));
+    const bridge_mod = bridge.createModule();
+
+    const zig_options = b.addOptions();
+    zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, zig_selection));
+
+    const zig_lib: ?*std.Build.Step.Compile = if (anySelected(zig_selection)) blk: {
+        const mod = b.createModule(.{
+            .root_source_file = b.path(zig_root ++ "/exports.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        mod.addImport("ipmi_c", bridge_mod);
+        mod.addImport("build_options", zig_options.createModule());
+        break :blk b.addLibrary(.{
+            .name = "ipmitool_zig",
+            .linkage = .static,
+            .root_module = mod,
+        });
+    } else null;
 
     // System libraries are attached to the executables rather than to the
     // static archive: a `.a` cannot usefully carry shared objects.
@@ -535,6 +621,8 @@ pub fn build(b: *std.Build) void {
         .default_intf = default_intf,
         .flags = flags,
         .core = core,
+        .zig_lib = zig_lib,
+        .zig_selection = zig_selection,
         .system_libs = libs,
     });
     const ipmievd = addTool(b, .{
@@ -547,6 +635,8 @@ pub fn build(b: *std.Build) void {
         .default_intf = default_intf,
         .flags = flags,
         .core = core,
+        .zig_lib = zig_lib,
+        .zig_selection = zig_selection,
         .system_libs = libs,
     });
 
@@ -626,10 +716,28 @@ pub fn build(b: *std.Build) void {
 
     // -- `zig build test` ----------------------------------------------------
     //
-    // Smoke tests only for now; issue #4 adds the golden transcript suite on
-    // top of the dummy interface.
+    // Smoke tests plus the Zig/C ABI parity assertions; issue #4 adds the
+    // golden transcript suite on top of the dummy interface.
 
     const test_step = b.step("test", "Run the build smoke tests");
+
+    // Compiling `src/zig/root.zig` runs every `comptime` layout assertion in
+    // the header ports, so this fails the build when a C header and its Zig
+    // mirror drift apart.  Nothing here is exported, so the test binary needs
+    // no C objects.
+    const abi_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    abi_mod.addImport("ipmi_c", bridge_mod);
+    const abi_tests = b.addTest(.{ .root_module = abi_mod });
+    test_step.dependOn(&b.addRunArtifact(abi_tests).step);
+
+    // Every registered Zig module has to keep compiling even when it is not
+    // selected, otherwise a port only breaks for whoever passes the flag.
+    if (zig_lib) |lib| test_step.dependOn(&lib.step);
 
     const version_check = b.addRunArtifact(ipmitool);
     version_check.addArg("-V");
@@ -668,7 +776,31 @@ pub fn build(b: *std.Build) void {
     evd_usage.expectExitCode(0);
     _ = evd_usage.captureStdErr(.{});
     test_step.dependOn(&evd_usage.step);
+
+    // Differential check for the swap flag: `-o list` is the whole observable
+    // surface of `lib/ipmi_oem.c` / `src/zig/cmd/oem.zig`, and the expected
+    // text below is the archived autotools oracle's output.  It has to be
+    // byte-identical with and without `-Dzig-modules=oem`.
+    const oem_list = b.addRunArtifact(ipmitool);
+    oem_list.addArgs(&.{ "-o", "list" });
+    oem_list.expectExitCode(0);
+    oem_list.expectStdErrEqual(oem_list_output);
+    test_step.dependOn(&oem_list.step);
 }
+
+/// `ipmitool -o list` as produced by the autotools baseline oracle; see
+/// doc/zig-migration/baseline-oracle.md.
+const oem_list_output =
+    "\nOEM Support:\n" ++
+    "\tsupermicro   Supermicro IPMIv1.5 BMC with OEM LAN authentication support\n" ++
+    "\tintelwv2     Intel SE7501WV2 IPMIv1.5 BMC with extra LAN communication support\n" ++
+    "\tintelplus    Intel IPMI 2.0 BMC with RMCP+ communication support\n" ++
+    "\ticts         IPMI 2.0 ICTS compliance support\n" ++
+    "\tibm          IBM OEM support\n" ++
+    "\ti82571spt    Intel 82571 MAC with integrated RMCP+ support in super pass-through mode\n" ++
+    "\tkontron      Kontron OEM big buffer support\n" ++
+    "\tquanta       Quanta IPMIv1.5 BMC with OEM LAN authentication support\n" ++
+    "\n";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -712,13 +844,87 @@ fn addSources(
     mod: *std.Build.Module,
     set: CSourceSet,
     flags: []const []const u8,
+    zig_selection: []const bool,
 ) void {
+    var files: std.ArrayList([]const u8) = .empty;
+    for (set.files) |file| {
+        const path = b.fmt("{s}/{s}", .{ set.dir, file });
+        if (replacedByZig(path, zig_selection)) continue;
+        files.append(b.allocator, file) catch @panic("OOM");
+    }
+    if (files.items.len == 0) return;
     mod.addCSourceFiles(.{
         .root = b.path(set.dir),
-        .files = set.files,
+        .files = files.toOwnedSlice(b.allocator) catch @panic("OOM"),
         .flags = flags,
         .language = .c,
     });
+}
+
+/// True when `path` is a C translation unit a selected Zig module replaces.
+/// Keeping the `.c` out of the compile is what makes the swap a link-time
+/// substitution instead of a duplicate-symbol error.
+fn replacedByZig(path: []const u8, zig_selection: []const bool) bool {
+    for (zig_modules, 0..) |module, i| {
+        if (zig_selection[i] and std.mem.eql(u8, module.replaces, path)) return true;
+    }
+    return false;
+}
+
+/// `-Dzig-modules` value list for `zig build --help`.
+fn zigModuleNames() []const u8 {
+    comptime {
+        var names: []const u8 = "";
+        for (zig_modules, 0..) |module, i| {
+            names = names ++ (if (i == 0) "" else ", ") ++ module.name;
+        }
+        return if (names.len == 0) "(none yet)" else names;
+    }
+}
+
+/// Parses `-Dzig-modules=a,b`, rejecting unknown names.
+fn parseZigModules(b: *std.Build, value: ?[]const u8) []const bool {
+    const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
+    @memset(selection, false);
+    const list = value orelse return selection;
+
+    var it = std.mem.tokenizeAny(u8, list, ", \t");
+    outer: while (it.next()) |name| {
+        for (zig_modules, 0..) |module, i| {
+            if (std.mem.eql(u8, module.name, name)) {
+                selection[i] = true;
+                continue :outer;
+            }
+        }
+        std.debug.print(
+            \\error: unknown -Dzig-modules entry '{s}'.
+            \\
+            \\  Valid module names are: {s}
+            \\
+            \\  Each name selects the Zig implementation of one C translation unit;
+            \\  see doc/zig-migration/interop-seams.md for the list and for how to
+            \\  add a new one.
+            \\
+        , .{ name, comptime zigModuleNames() });
+        std.process.exit(1);
+    }
+    return selection;
+}
+
+fn anySelected(zig_selection: []const bool) bool {
+    for (zig_selection) |selected| {
+        if (selected) return true;
+    }
+    return false;
+}
+
+/// Selected module names, passed to `src/zig/exports.zig` as build options.
+fn selectedZigModules(b: *std.Build, zig_selection: []const bool) []const []const u8 {
+    var names: std.ArrayList([]const u8) = .empty;
+    for (zig_modules, 0..) |module, i| {
+        if (zig_selection[i]) names.append(b.allocator, module.name) catch @panic("OOM");
+    }
+    return names.toOwnedSlice(b.allocator) catch @panic("OOM");
 }
 
 /// Include paths and macros every translation unit needs.
@@ -745,6 +951,8 @@ const ToolOptions = struct {
     default_intf: []const u8,
     flags: []const []const u8,
     core: *std.Build.Step.Compile,
+    zig_lib: ?*std.Build.Step.Compile,
+    zig_selection: []const bool,
     system_libs: []const []const u8,
 };
 
@@ -756,8 +964,11 @@ fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
         .sanitize_c = if (options.sanitize_c) .full else .off,
     });
     configure(b, mod, options.config_h, options.default_intf);
-    addSources(b, mod, options.sources, options.flags);
+    addSources(b, mod, options.sources, options.flags, options.zig_selection);
     mod.linkLibrary(options.core);
+    // Listed after the C archive so the linker resolves the symbols the
+    // remaining C still references out of the Zig replacements.
+    if (options.zig_lib) |zig_lib| mod.linkLibrary(zig_lib);
     for (options.system_libs) |lib| mod.linkSystemLibrary(lib, .{});
     return b.addExecutable(.{ .name = options.name, .root_module = mod });
 }
