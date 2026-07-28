@@ -1,0 +1,17 @@
+# Keeps the SHA-pinned actions in .github/workflows/ up to date. Without this,
+# pinning to a commit SHA means never picking up upstream fixes.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels:
+      - ci
+    groups:
+      # One pull request per week for all action bumps instead of one each.
+      actions:
+        patterns:
+          - '*'
