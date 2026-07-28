@@ -101,7 +101,8 @@ defaults:
 | `-Dintf-lipmi`, `-Dintf-bmc` | off | Solaris only; do not build on Linux |
 | `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
-| `-Dipmishell` | off | `ipmitool shell`/`exec`, requires `libreadline` |
+| `-Dipmishell` | on | `ipmitool shell`/`exec`; requires `libreadline` |
+| `-Dreadline-libs` | autodetected | override the readline libraries to link |
 | `-Dall-options` | on | `ENABLE_ALL_OPTIONS` |
 | `-Dfile-security` | off | extra checks on files opened for read |
 | `-Dbuildcheck` | off | adds `-Werror` and stricter warnings |
@@ -113,6 +114,13 @@ defaults:
 `zig build test` currently runs smoke tests only: both binaries must print
 their version, exit successfully for `-h`, and list exactly the interfaces
 that were enabled. The golden transcript suite is built on top of this.
+
+`-Dipmishell` is on by default so that the command table matches the autotools
+baseline. Readline is located with `pkg-config --libs readline`, falling back to
+a search for `readline/readline.h` under the usual prefixes. If it cannot be
+found the build fails with an explicit error rather than quietly dropping the
+`shell` command; install `readline-devel`/`libreadline-dev`, pass
+`-Dreadline-libs=readline,tinfo`, or build with `-Dipmishell=false`.
 
 The autotools build (`./bootstrap && ./configure && make`) is still present and
 still works. It is kept as a cross-check while the code base is incrementally

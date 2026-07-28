@@ -282,8 +282,13 @@ pub fn build(b: *std.Build) void {
     const ipmishell = b.option(
         bool,
         "ipmishell",
-        "Enable the readline-based IPMI shell; requires libreadline [default=false]",
-    ) orelse false;
+        "Enable the readline-based IPMI shell; requires libreadline [default=true]",
+    ) orelse true;
+    const readline_libs_opt = b.option(
+        []const u8,
+        "readline-libs",
+        "Comma separated libraries to link for readline, overriding autodetection",
+    );
     const all_options = b.option(
         bool,
         "all-options",
@@ -337,6 +342,29 @@ pub fn build(b: *std.Build) void {
         );
         enabled[lanplus_index] = false;
     }
+
+    // configure.ac errors out when --enable-ipmishell is requested without
+    // readline. Do the same instead of silently dropping the `shell` command,
+    // which would make the binary diverge from the autotools baseline.
+    const readline_libs: []const []const u8 = if (!ipmishell)
+        &.{}
+    else
+        (if (readline_libs_opt) |list| nonEmpty(splitList(b, list)) else detectReadline(b)) orelse {
+            std.debug.print(
+                \\error: -Dipmishell is enabled but libreadline was not found.
+                \\
+                \\  The `shell` and `exec` commands need readline, and the autotools
+                \\  baseline is built with --enable-ipmishell, so disabling it silently
+                \\  would drop a command that the reference build has.
+                \\
+                \\  Install the readline development package (readline-devel /
+                \\  libreadline-dev), or point the build at it explicitly with
+                \\  -Dreadline-libs=readline,tinfo, or build without the shell using
+                \\  -Dipmishell=false.
+                \\
+            , .{});
+            std.process.exit(1);
+        };
 
     const default_intf = b.option(
         []const u8,
@@ -483,7 +511,9 @@ pub fn build(b: *std.Build) void {
     // lib/Makefile.am: libipmitool_la_LIBADD = -lm
     if (!is_windows) system_libs.append(b.allocator, "m") catch @panic("OOM");
     if (openssl) system_libs.append(b.allocator, "crypto") catch @panic("OOM");
-    if (ipmishell) system_libs.append(b.allocator, "readline") catch @panic("OOM");
+    if (ipmishell) {
+        for (readline_libs) |lib| system_libs.append(b.allocator, lib) catch @panic("OOM");
+    }
     for (plugins, 0..) |plugin, i| {
         if (!enabled[i]) continue;
         for (plugin.system_libs) |lib| {
@@ -781,4 +811,58 @@ fn detectVersion(b: *std.Build) []const u8 {
     const hash = it.next() orelse return base_version;
     if (rev.len == 0 or hash.len == 0) return base_version;
     return b.fmt("{s}.{s}.{s}", .{ base_version, rev, hash });
+}
+
+/// Splits a comma separated `-D` option value into individual entries.
+fn splitList(b: *std.Build, list: []const u8) []const []const u8 {
+    var out: std.ArrayList([]const u8) = .empty;
+    var it = std.mem.tokenizeAny(u8, list, ", \t");
+    while (it.next()) |item| out.append(b.allocator, b.dupe(item)) catch @panic("OOM");
+    return out.toOwnedSlice(b.allocator) catch @panic("OOM");
+}
+
+fn nonEmpty(list: []const []const u8) ?[]const []const u8 {
+    return if (list.len == 0) null else list;
+}
+
+/// Standard prefixes searched for `readline/readline.h` when pkg-config has no
+/// answer, mirroring autoconf's `AC_SEARCH_LIBS` fallback.
+const readline_prefixes = [_][]const u8{
+    "/usr",
+    "/usr/local",
+    "/opt/homebrew",
+    "/opt/local",
+};
+
+/// Mirrors `PKG_CHECK_MODULES([READLINE], [readline])` with autoconf's
+/// `AC_SEARCH_LIBS([readline], [readline edit])` fallback: ask pkg-config
+/// first, then look for the header under the usual prefixes.
+/// Returns the libraries to link, or null when readline is unavailable.
+fn detectReadline(b: *std.Build) ?[]const []const u8 {
+    var code: u8 = 0;
+    if (b.runAllowFail(&.{ "pkg-config", "--libs", "readline" }, &code, .ignore)) |out| {
+        var libs: std.ArrayList([]const u8) = .empty;
+        var it = std.mem.tokenizeAny(u8, out, " \t\r\n");
+        while (it.next()) |arg| {
+            if (std.mem.startsWith(u8, arg, "-l")) {
+                libs.append(b.allocator, b.dupe(arg[2..])) catch @panic("OOM");
+            }
+        }
+        if (libs.items.len > 0) return libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+    } else |_| {}
+
+    const io = b.graph.io;
+    for (b.search_prefixes.items) |prefix| {
+        if (hasReadlineHeader(b, io, prefix)) return &.{"readline"};
+    }
+    for (readline_prefixes) |prefix| {
+        if (hasReadlineHeader(b, io, prefix)) return &.{"readline"};
+    }
+    return null;
+}
+
+fn hasReadlineHeader(b: *std.Build, io: std.Io, prefix: []const u8) bool {
+    const path = b.fmt("{s}/include/readline/readline.h", .{prefix});
+    std.Io.Dir.accessAbsolute(io, path, .{}) catch return false;
+    return true;
 }
