@@ -1,0 +1,7 @@
+# A well formed HPM.1 image whose trailing MD5 does not match its content.
+# This is the first check HpmfwupgValidateImageIntegrity() performs, so it
+# should fail before the signature and header checks are even reached.
+
+@mark image
+@hpm/image.hex
+@poke image -1 0x00       # last byte of the 16-byte MD5 digest

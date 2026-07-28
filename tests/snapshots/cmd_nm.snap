@@ -1,0 +1,25 @@
+#!golden 1
+#!case cmd_nm
+#!section exit
+1
+#!section stdout
+#!section stderr
+
+Node Manager Interface commands
+    discover    Discover Node Manager
+    capability    Get Node Manager Capabilities
+    control    Enable/Disable Policy Control
+    policy    Add/Remove Policies
+    statistics    Get Statistics
+    power    Set Power Draw Range
+    suspend    Set/Get Policy suspend periods
+    reset    Reset Statistics
+    alert    Set/Get/Clear Alert destination
+    threshold    Set/Get Alert Thresholds
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

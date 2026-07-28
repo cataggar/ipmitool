@@ -1,0 +1,6 @@
+# The good FRU image with a corrupted common header checksum. This is the
+# earliest possible rejection point in the FRU parser.
+
+@mark image
+@fru/board.hex
+@poke image 7 0x00    # common header checksum byte

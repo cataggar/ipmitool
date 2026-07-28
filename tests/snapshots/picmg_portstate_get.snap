@@ -1,0 +1,25 @@
+#!golden 1
+#!case picmg_portstate_get
+#!section exit
+0
+#!section stdout
+      Link Grouping ID:     0x00
+      Link Type Extension:  0x00
+      Link Type:            0x10  Reserved
+      Link Designator:\x20
+        Port Flag:          0x00
+        Interface:          0x01 - Fabric Interface
+        Channel Number:     0x01
+      STATE:                enabled
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_properties ccode=0x00 len=4 data=00 23 01 00
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_properties ccode=0x00 len=4 data=00 23 01 00
+> netfn=0x2c lun=0x00 cmd=0x0f target_cmd=0x00 data=00 40
+< rule=picmg_get_portstate ccode=0x00 len=6 data=00 41 00 01 00 01
+bye

@@ -1,0 +1,160 @@
+# Per-command cases against a BMC that implements the common IPMI 2.0 command
+# set (tests/transcripts/bmc.tr). These complement 10-commands.cases, which
+# only covers the bare and `help' invocation of every command; here the
+# commands actually talk to a BMC and render a response.
+
+[chassis_status]
+desc: Get Chassis Status decoded into the power/fault summary
+args: -I dummy chassis status
+transcript: bmc.tr
+covers: chassis
+
+[chassis_power_status]
+desc: chassis power status
+args: -I dummy chassis power status
+transcript: bmc.tr
+covers: chassis
+
+[power_status]
+desc: the top-level power alias for chassis power
+args: -I dummy power status
+transcript: bmc.tr
+covers: power
+
+[chassis_policy_list]
+desc: supported power restore policies
+args: -I dummy chassis policy list
+transcript: bmc.tr
+covers: chassis
+
+[chassis_bootparam_get]
+desc: Get System Boot Options parameter 5, the boot flags
+args: -I dummy chassis bootparam get 5
+transcript: bmc.tr
+covers: chassis
+
+[chassis_selftest]
+desc: Get Self Test Results through the chassis command
+args: -I dummy chassis selftest
+transcript: bmc.tr
+covers: chassis
+
+[mc_info]
+desc: Get Device ID with the manufacturer resolved through the IANA registry
+args: -I dummy mc info
+transcript: bmc.tr
+covers: mc
+
+[mc_guid]
+desc: Get System GUID rendered as a UUID and a timestamp
+args: -I dummy mc guid
+transcript: bmc.tr
+covers: mc
+
+[mc_getenables]
+desc: Get BMC Global Enables bit decode
+args: -I dummy mc getenables
+transcript: bmc.tr
+covers: mc
+
+[mc_selftest]
+desc: Get Self Test Results
+args: -I dummy mc selftest
+transcript: bmc.tr
+covers: mc
+
+[mc_watchdog_get]
+desc: Get Watchdog Timer decode
+args: -I dummy mc watchdog get
+transcript: bmc.tr
+covers: mc
+
+[bmc_info]
+desc: the deprecated bmc alias for mc
+args: -I dummy bmc info
+transcript: bmc.tr
+covers: bmc
+
+[channel_info]
+desc: Get Channel Info for channel 1
+args: -I dummy channel info 1
+transcript: bmc.tr
+covers: channel
+
+[channel_authcap]
+desc: Get Channel Authentication Capabilities for channel 1, privilege ADMIN
+args: -I dummy channel authcap 1 4
+transcript: bmc.tr
+covers: channel
+
+[channel_getaccess]
+desc: Get Channel Access for user 1 on channel 1
+args: -I dummy channel getaccess 1 1
+transcript: bmc.tr
+covers: channel
+
+[user_list]
+desc: user list for channel 1
+args: -I dummy user list 1
+transcript: bmc.tr
+covers: user
+
+[user_summary]
+desc: user summary for channel 1
+args: -I dummy user summary 1
+transcript: bmc.tr
+covers: user
+
+[session_info_active]
+desc: Get Session Info for the active session
+args: -I dummy session info active
+transcript: bmc.tr
+covers: session
+
+[sel_time_get]
+desc: Get SEL Time
+args: -I dummy sel time get
+transcript: bmc.tr
+covers: sel
+
+[pef_info]
+desc: Get PEF Capabilities decode
+args: -I dummy pef info
+transcript: bmc.tr
+covers: pef
+
+[raw_get_device_id]
+desc: raw 0x06 0x01 is Get Device ID; the reply is printed as hex
+args: -I dummy raw 0x06 0x01
+transcript: bmc.tr
+covers: raw
+
+[raw_bad_hex]
+desc: raw with a byte that is not valid hex
+args: -I dummy raw 0x06 0xzz
+transcript: bmc.tr
+covers: raw
+
+[raw_missing_args]
+desc: raw with no netfn or command at all
+args: -I dummy raw
+transcript: bmc.tr
+covers: raw
+
+[raw_unsupported_command]
+desc: raw for a command the BMC answers 0xc1 to
+args: -I dummy raw 0x06 0xfe
+transcript: bmc.tr
+covers: raw
+
+[event_predefined]
+desc: send a predefined temperature event through the SEL
+args: -I dummy event 1
+transcript: bmc.tr
+covers: event
+
+[event_bad_number]
+desc: event with a predefined event number that does not exist
+args: -I dummy event 99
+transcript: bmc.tr
+covers: event

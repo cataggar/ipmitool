@@ -1,0 +1,8 @@
+# SEL record type C0h - OEM timestamped record (IPMI 2.0 Table 32-2).
+# The layout after the timestamp is entirely OEM defined.
+
+03 00        # [0:1]  Record ID = 0x0003
+c0           # [2]    Record type C0h = OEM timestamped
+00 e3 0b 5e  # [3:6]  Timestamp = 1577837312 = 2020-01-01 00:08:32 UTC
+0b 00 00     # [7:9]  Manufacturer ID (IANA PEN 11 = Hewlett-Packard)
+de ad be ef 00 01   # [10:15] OEM defined data

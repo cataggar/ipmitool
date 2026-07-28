@@ -1,0 +1,5 @@
+# An HPM.1 image that is cut off inside the upload-firmware action record: the
+# record claims 16 bytes of firmware but the file ends first.
+
+@hpm/image.hex
+@truncate 70

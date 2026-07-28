@@ -1,0 +1,11 @@
+# A complete 256-byte FRU inventory image: the common header at offset 0, then
+# the chassis, board, product and multirecord areas at exactly the offsets the
+# common header advertises. This is the blob the Read FRU Data transcript rule
+# slices, so its layout is what lib/ipmi_fru.c actually walks.
+
+@fru/common_header.hex        # offset   0,  8 bytes
+@fru/chassis_area.hex         # offset   8, 24 bytes
+@fru/board_area.hex           # offset  32, 64 bytes
+@fru/product_area.hex         # offset  96, 64 bytes
+@fru/multirecord_area.hex     # offset 160, 34 bytes
+@pad 62 0x00                  # unused tail, up to the advertised 256 bytes

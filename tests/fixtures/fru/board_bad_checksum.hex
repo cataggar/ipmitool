@@ -1,0 +1,8 @@
+# The good FRU image with a single corrupted byte in the board info area, so
+# the board area checksum no longer verifies. lib/ipmi_fru.c prints the fields
+# anyway and reports "Board Area Checksum : INVALID"; a Zig port must keep
+# doing exactly that rather than refusing the whole image.
+
+@mark image
+@fru/board.hex
+@poke image 63 0xff   # board area checksum byte (area at 32, length 64)

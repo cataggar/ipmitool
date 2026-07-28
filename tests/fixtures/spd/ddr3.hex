@@ -1,0 +1,28 @@
+# JEDEC DDR3 Serial Presence Detect image (256 bytes), as read over I2C by
+# `ipmitool spd'. Parsed by ipmi_spd_print() in lib/dimm_spd.c; only the
+# bytes that function looks at are non-zero.
+
+92           # [  0] bytes used 176, SPD device size 256
+11           # [  1] SPD revision 1.1
+0b           # [  2] memory type 0Bh = DDR3 SDRAM
+02           # [  3] module type 02h = UDIMM
+13           # [  4] 8 banks, 4 Gbit density -> SDRAM capacity 2048 MB
+11           # [  5] row/column addressing
+02           # [  6] module nominal voltage: 1.5 V yes, 1.35 V no
+0b           # [  7] 2 ranks, SDRAM device width 8 bits
+0b           # [  8] primary bus width 64 bits, 8 bits of ECC
+11           # [  9]
+01           # [ 10]
+08           # [ 11]
+0a           # [ 12]
+@pad 104 0x00   # [ 13:116] unused by ipmi_spd_print()
+80           # [117] module manufacturer JEDEC ID, 0 continuation bytes
+2c           # [118] JEDEC bank 1 code 2Ch = Micron Technology
+01           # [119] module manufacturing location
+15           # [120] manufacturing year 15
+23           # [121] manufacturing week 23
+de ad be ef  # [122:125] serial number deadbeef
+@pad 2 0x00   # [126:127] unused by ipmi_spd_print()
+# [128:145] part number, 18 ASCII characters: "18KSF25672AZ-1G4D1"
+31 38 4b 53 46 32 35 36 37 32 41 5a 2d 31 47 34 44 31
+@pad 110 0x00   # [146:255] unused by ipmi_spd_print()

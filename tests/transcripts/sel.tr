@@ -1,0 +1,101 @@
+# A BMC with a four-entry System Event Log.
+#
+# Exercises lib/ipmi_sel.c: Get SEL Info (0Ah/40h) then Get SEL Entry
+# (0Ah/43h) for each record. The Get SEL Entry request is
+# `00 00, record ID LSB/MSB, offset 00, length FF' (see
+# ipmi_sel_get_std_entry()), so each rule matches on the record ID.
+# Record ID 0x0000 means "the first entry".
+#
+# The SDR rules are here because `sel list' resolves sensor numbers to names
+# through the SDR repository.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  # SEL version 51h, 4 entries, 0xffff free bytes,
+  # last add 2020-01-01 00:08:32 UTC, no erase timestamp,
+  # operation support: reserve + delete
+  data 51 04 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data 01 00
+end
+
+respond get_sel_first
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 02 00 @sel/system_event_threshold.hex
+end
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 @sel/system_event_threshold.hex
+end
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 @sel/system_event_discrete.hex
+end
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 @sel/oem_timestamped.hex
+end
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  # 0xffff is the "no more entries" marker
+  data ff ff @sel/oem_nontimestamped.hex
+end
+
+# --- SDR side, for sensor name resolution ---------------------------------
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data 03 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+respond get_sdr_0001
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 01 00
+  data 03 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+respond get_sdr_0003
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 03 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/eventonly_pwr.hex
+end

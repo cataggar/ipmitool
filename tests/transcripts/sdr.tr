@@ -1,0 +1,123 @@
+# A BMC with a four-record SDR repository, one record of each type that
+# lib/ipmi_sdr.c renders differently.
+#
+# The walk is: Get SDR Repository Info (0Ah/20h), Reserve SDR Repository
+# (0Ah/22h), then per record a 5-byte header read followed by as many body
+# reads as the transport's maximum response size allows. Get SDR request data
+# is `reservation LSB/MSB, record ID LSB/MSB, offset, length', so `partial 4 1
+# 5' slices the record for whatever offset/length ipmitool asks for and the
+# transcript does not have to hard-code the chunking.
+#
+# Header reads use the *iterator* record ID (0x0000 first, then the `next
+# record ID' from the previous read); body reads use the record's own ID, so
+# the first record needs two rules.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # SDR version 51h, 4 records, 0xffff free bytes, no add/erase timestamps,
+  # operation support: reserve supported
+  data 51 04 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+# --- record 0x0001: full sensor ("CPU1 Temp") ------------------------------
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+respond get_sdr_0001
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 01 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+
+# --- record 0x0002: compact sensor ("FAN1") --------------------------------
+respond get_sdr_0002
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 02 00
+  data 03 00
+  partial 4 1 5
+  blob @sdr/compact_fan.hex
+end
+
+# --- record 0x0003: event-only sensor ("PWR Unit") -------------------------
+respond get_sdr_0003
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 03 00
+  data 04 00
+  partial 4 1 5
+  blob @sdr/eventonly_pwr.hex
+end
+
+# --- record 0x0004: FRU device locator ("FRU Board") -----------------------
+respond get_sdr_0004
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 04 00
+  # 0xffff is SDR_RECORD_ID_LAST: this is the end of the repository
+  data ff ff
+  partial 4 1 5
+  blob @sdr/fru_locator.hex
+end
+
+# --- sensor readings -------------------------------------------------------
+respond get_sensor_reading_1
+  netfn 0x04
+  cmd 0x2d
+  match 01
+  # reading 0x2a (42 degrees C), event messages and scanning enabled
+  data 2a c0 c0 00
+end
+respond get_sensor_reading_2
+  netfn 0x04
+  cmd 0x2d
+  match 02
+  # reading 0x7b (123 RPM)
+  data 7b c0 c0 00
+end
+respond get_sensor_reading_3
+  netfn 0x04
+  cmd 0x2d
+  match 03
+  # discrete sensor: state bit 0 asserted
+  data 00 c0 01 00
+end
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  # all six thresholds readable, values match the SDR record
+  data 3f 0f 0a 05 4b 55 5f
+end
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

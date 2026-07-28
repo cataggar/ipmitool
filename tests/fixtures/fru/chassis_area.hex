@@ -1,0 +1,20 @@
+# FRU Chassis Info Area (FRU spec section 10). Parsed by
+# fru_area_print_chassis() in lib/ipmi_fru.c. The area size must be a multiple
+# of 8 bytes and the last byte is the zero checksum over the whole area.
+#
+# The length and checksum bytes are reserved in place and filled in at the end,
+# because the checksum covers the length byte.
+
+@mark area
+01           # [0] Format version 1
+@mark lenslot
+00           # [1] Area length / 8 (filled in below)
+17           # [2] Chassis type 17h = Rack Mount Chassis
+c5 43 48 2d 30 31                # Part number,   8-bit ASCII, 5 chars: "CH-01"
+c6 53 4e 43 48 30 31             # Serial number, 8-bit ASCII, 6 chars: "SNCH01"
+c1                               # C1h: no more fields in this area
+@pad 6 0x00                      # Pad to a multiple of 8 bytes
+@mark sumslot
+00                               # [23] Zero checksum (filled in below)
+@fill_size8 lenslot area
+@fill_checksum sumslot area

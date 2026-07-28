@@ -1,0 +1,38 @@
+#!golden 1
+#!case fru_truncated
+#!section exit
+0
+#!section stdout
+ Chassis Type          : Rack Mount Chassis
+ Chassis Part Number   : CH-01
+ Chassis Serial        : SNCH01
+ Chassis Area Checksum : OK
+ Board Mfg Date        : Wed Jan  1 00:00:00 2020 UTC
+ Board Mfg             : Acme Corp
+ Board Area Checksum   : INVALID
+#!section stderr
+FRU Read failed: Parameter out of range
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 08 00 02
+< rule=read_fru_data ccode=0x00 len=3 data=02 01 03
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 08 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 01 03 17 c5 43 48 2d 30 31 c6 53 4e 43 48 30 31 c1 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 1f 00 01
+< rule=read_fru_data ccode=0x00 len=2 data=01 f3
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 20 00 02
+< rule=read_fru_data ccode=0x00 len=3 data=02 01 08
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 20 00 17
+< rule=read_fru_data ccode=0x00 len=17 data=10 01 08 00 c0 9c c0 c9 41 63 6d 65 20 43 6f 72 70
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 30 00 17
+< rule=read_fru_data ccode=0x00 len=1 data=00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 60 00 02
+< rule=read_fru_data ccode=0xc9 len=0 data=
+bye

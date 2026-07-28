@@ -1,0 +1,104 @@
+[global_help]
+desc: `ipmitool help` prints the command table and exits 0
+args: -I dummy help
+
+[global_version]
+desc: `ipmitool -V` writes the version to stdout and exits 0
+args: -I dummy -V
+
+[global_usage]
+desc: `ipmitool -h` writes usage to *stderr* and still exits 0
+args: -I dummy -h
+
+[global_no_args]
+desc: no command at all
+args: -I dummy
+
+[global_unknown_command]
+desc: unknown top level command
+args: -I dummy notacommand
+
+[global_unknown_interface]
+desc: -I with an interface that does not exist
+args: -I notaninterface mc info
+
+[global_missing_option_arg]
+desc: an option that needs an argument but does not get one
+args: -I dummy -H
+
+[global_bad_option]
+desc: an option that does not exist
+args: -I dummy -Q mc info
+
+[global_no_registry]
+desc: startup with no IANA PEN registry reachable; the lookup failure is on stderr
+args: -I dummy mc info
+transcript: mc_info.tr
+registry: none
+covers: mc
+
+[global_verbose_1]
+desc: -v turns on the interface request/response trace
+args: -I dummy -v mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_verbose_2]
+desc: -vv adds the debug level trace
+args: -I dummy -vv mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_verbose_3]
+desc: -vvv, the most detailed trace ipmitool emits on the dummy interface
+args: -I dummy -vvv mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_csv_mc_info]
+desc: -c switches to CSV output
+args: -I dummy -c mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_csv_sdr_list]
+desc: -c CSV output for the SDR walk
+args: -I dummy -c sdr list
+transcript: sdr.tr
+covers: sdr
+
+[global_csv_sel_list]
+desc: -c CSV output for the SEL walk
+args: -I dummy -c sel list
+transcript: sel.tr
+covers: sel
+
+[global_csv_fru_print]
+desc: -c CSV output for FRU decoding
+args: -I dummy -c fru print 0
+transcript: fru.tr
+covers: fru
+
+[global_addr_override]
+desc: -m overrides the IPMB address, which skips PICMG/VITA discovery
+args: -I dummy -m 0x20 mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_target_bridging]
+desc: -t enables bridged requests, which changes the request stream
+args: -I dummy -t 0x82 mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_oem_unknown]
+desc: -o with an unknown OEM type
+args: -I dummy -o notanoem mc info
+transcript: mc_info.tr
+covers: mc
+
+[global_oem_list]
+desc: -o list prints the supported OEM types
+args: -I dummy -o list mc info
+transcript: mc_info.tr
+covers: mc

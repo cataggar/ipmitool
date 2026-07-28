@@ -1,0 +1,27 @@
+#!golden 1
+#!case cmd_dcmi
+#!section exit
+1
+#!section stdout
+#!section stderr
+
+Data Center Management Interface commands
+    discover    Used to discover supported DCMI capabilities
+    power    Platform power limit command options
+    sensors    Prints the available DCMI sensors
+    asset_tag    Prints the platform's asset tag
+    set_asset_tag    Sets the platform's asset tag
+    get_mc_id_string    Get management controller ID string
+    set_mc_id_string    Set management controller ID string
+    thermalpolicy    Thermal policy get/set
+    get_temp_reading    Get Temperature Readings
+    get_conf_param    Get DCMI Config Parameters
+    set_conf_param    Set DCMI Config Parameters
+    oob_discover    Ping/Pong Message for DCMI Discovery
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

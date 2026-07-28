@@ -1,0 +1,27 @@
+#!golden 1
+#!case vita_properties
+#!section exit
+0
+#!section stdout
+VSO Identifier    : 0x03
+IPMC Identifier   : 0x11
+    Tier  2
+    Layer 2
+IPMB Capabilities : 0x10
+    Frequency  400kHz
+    1 IPMB interface supported
+VSO Standard      : VITA 46.11
+VSO Spec Revision : 1.0
+Max FRU Device ID : 0x01
+FRU Device ID     : 0x00
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=vita_properties ccode=0x00 len=7 data=03 11 10 00 01 01 00
+> netfn=0x2c lun=0x00 cmd=0x40 target_cmd=0x00 data=03
+< rule=vita_address_info ccode=0x00 len=7 data=03 41 82 ff 00 01 00
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=vita_properties ccode=0x00 len=7 data=03 11 10 00 01 01 00
+bye

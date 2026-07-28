@@ -1,0 +1,51 @@
+#!golden 1
+#!case global_no_args
+#!section exit
+1
+#!section stdout
+#!section stderr
+No command provided!
+Commands:
+\traw           Send a RAW IPMI request and print response
+\ti2c           Send an I2C Master Write-Read command and print response
+\tspd           Print SPD info from remote I2C device
+\tlan           Configure LAN Channels
+\tchassis       Get chassis status and set power state
+\tpower         Shortcut to chassis power commands
+\tevent         Send pre-defined events to MC
+\tmc            Management Controller status and global enables
+\tsdr           Print Sensor Data Repository entries and readings
+\tsensor        Print detailed sensor information
+\tfru           Print built-in FRU and scan SDR for FRU locators
+\tgendev        Read/Write Device associated with Generic Device locators sdr
+\tsel           Print System Event Log (SEL)
+\tpef           Configure Platform Event Filtering (PEF)
+\tsol           Configure and connect IPMIv2.0 Serial-over-LAN
+\ttsol          Configure and connect with Tyan IPMIv1.5 Serial-over-LAN
+\tisol          Configure IPMIv1.5 Serial-over-LAN
+\tuser          Configure Management Controller users
+\tchannel       Configure Management Controller channels
+\tsession       Print session information
+\tdcmi          Data Center Management Interface
+\tnm            Node Manager Interface
+\tsunoem        OEM Commands for Sun servers
+\tkontronoem    OEM Commands for Kontron devices
+\tpicmg         Run a PICMG/ATCA extended cmd
+\tfwum          Update IPMC using Kontron OEM Firmware Update Manager
+\tfirewall      Configure Firmware Firewall
+\tdelloem       OEM Commands for Dell systems
+\tshell         Launch interactive IPMI shell
+\texec          Run list of commands from file
+\tset           Set runtime variable for shell and exec
+\thpm           Update HPM components using PICMG HPM.1 file
+\tekanalyzer    run FRU-Ekeying analyzer using FRU files
+\time           Update Intel Manageability Engine Firmware
+\tvita          Run a VITA 46.11 extended cmd
+\tlan6          Configure IPv6 LAN Channels
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

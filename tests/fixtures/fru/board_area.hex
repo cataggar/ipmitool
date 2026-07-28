@@ -1,0 +1,21 @@
+# FRU Board Info Area (FRU spec section 11). Parsed by
+# fru_area_print_board() in lib/ipmi_fru.c.
+
+@mark area
+01           # [0] Format version 1
+@mark lenslot
+00           # [1] Area length / 8 (filled in below)
+00           # [2] Language code 0 = English
+c0 9c c0     # [3:5] Mfg date/time: minutes since 1996-01-01 00:00 UTC,
+             #       12623040 = 2020-01-01 00:00:00
+c9 41 63 6d 65 20 43 6f 72 70                # Manufacturer, 9 chars: "Acme Corp"
+c9 4d 61 69 6e 62 6f 61 72 64                # Product name, 9 chars: "Mainboard"
+ca 42 52 44 2d 30 30 30 31 32 33             # Serial number, 10: "BRD-000123"
+c8 50 4e 2d 30 30 30 34 32                   # Part number, 8 chars: "PN-00042"
+c6 46 52 55 31 2e 30                         # FRU file ID, 6 chars: "FRU1.0"
+c1                                           # C1h: end of fields
+@pad 9 0x00                                  # Pad to a multiple of 8 bytes
+@mark sumslot
+00                                           # [63] Zero checksum (below)
+@fill_size8 lenslot area
+@fill_checksum sumslot area

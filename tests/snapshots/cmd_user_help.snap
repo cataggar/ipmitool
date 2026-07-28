@@ -1,0 +1,30 @@
+#!golden 1
+#!case cmd_user_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+User Commands:
+               summary      [<channel number>]
+               list         [<channel number>]
+               set name     <user id> <username>
+               set password <user id> [<password> [<16|20>]]
+               disable      <user id>
+               enable       <user id>
+               priv         <user id> <privilege level> [<channel number>]
+                     Privilege levels:
+                      * 0x1 - Callback
+                      * 0x2 - User
+                      * 0x3 - Operator
+                      * 0x4 - Administrator
+                      * 0x5 - OEM Proprietary
+                      * 0xF - No Access
+
+               test         <user id> <16|20> [<password>]
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,26 @@
+#!golden 1
+#!case cmd_set
+#!section exit
+1
+#!section stdout
+#!section stderr
+Usage: set <option> <value>
+
+Options are:
+    hostname <host>        Session hostname
+    username <user>        Session username
+    password <pass>        Session password
+    privlvl <level>        Session privilege level force
+    authtype <type>        Authentication type force
+    localaddr <addr>       Local IPMB address
+    targetaddr <addr>      Remote target IPMB address
+    port <port>            Remote RMCP port
+    csv [level]            enable output in comma separated format
+    verbose [level]        Verbose level
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

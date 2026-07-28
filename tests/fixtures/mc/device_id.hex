@@ -1,0 +1,15 @@
+# Get Device ID response (IPMI 2.0 spec 20.1, netfn 0x06 cmd 0x01).
+#
+# Decoded by ipmi_mc_get_deviceid() in lib/ipmi_mc.c via struct ipm_devid_rsp
+# in include/ipmitool/ipmi_mc.h.
+
+20        # Device ID
+81        # Device Revision: bit 7 = provides Device SDRs, bits 3:0 = revision 1
+02        # FW rev 1: bit 7 = device available (0 = normal), bits 6:0 = major 2
+03        # FW rev 2: minor revision, BCD encoded -> "2.03"
+02        # IPMI version, BCD: LSN major, MSN minor -> 2.0
+bf        # Additional device support: chassis, bridge, IPMB gen/recv, FRU,
+          #   SEL, SDR repository, sensor device
+57 01 00  # Manufacturer ID, LSB first: 0x000157 = 343 = Intel Corporation
+01 00     # Product ID, LSB first: 0x0001
+00 00 00 00   # Auxiliary firmware revision information

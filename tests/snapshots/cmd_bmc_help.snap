@@ -1,0 +1,36 @@
+#!golden 1
+#!case cmd_bmc_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+MC Commands:
+  reset <warm|cold>
+  guid [auto|smbios|ipmi|rfc4122|dump]
+  info
+  watchdog <get|reset|off>
+  selftest
+  getenables
+  setenables <option=on|off> ...
+    recv_msg_intr         Receive Message Queue Interrupt
+    event_msg_intr        Event Message Buffer Full Interrupt
+    event_msg             Event Message Buffer
+    system_event_log      System Event Logging
+    oem0                  OEM 0
+    oem1                  OEM 1
+    oem2                  OEM 2
+  getsysinfo <argument>
+  setsysinfo <argument> <string>
+    system_fw_version   System firmware (e.g. BIOS) version
+    primary_os_name     Primary operating system name
+    os_name             Operating system name
+    system_name         System Name of server(vendor dependent)
+    delloem_os_version  Running version of operating system
+    delloem_url         URL of BMC webserver
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

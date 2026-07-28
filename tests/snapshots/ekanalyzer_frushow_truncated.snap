@@ -1,0 +1,52 @@
+#!golden 1
+#!case ekanalyzer_frushow_truncated
+#!section exit
+1
+#!section stdout
+Start converting file '<WORK>/board.fru'...
+=================================================================
+FRU Header Info
+=================================================================
+Format Version          :0x01\x20
+Internal Use Offset     :0x00
+Chassis Info Offset     :0x01
+Board Info Offset       :0x04
+Product Info Offset     :0x0c
+MultiRecord Offset      :0x14
+Common header Checksum  :0xda
+=================================================================
+Chassis Info Area
+=================================================================
+Format Version Number: 1
+Area Length: 24
+Chassis Type: 23
+Chassis Part Number type: 0xc5
+Chassis Part Number: CH-01
+Chassis Serial Number type: 0xc6
+Chassis Serial Number: SNCH01
+No Additional Custom Mfg. fields (0xc1)
+Unused space: 6 (bytes)
+Checksum: 0xf3
+=================================================================
+FRU Board Info Area
+=================================================================
+Format Version: 1
+Area Length: 64
+Language Code: 0
+Board Mfg Date: 1577836800, 01/01/20 00:00:00 UTC
+Board Manufacture Data type: 0xc9
+Board Manufacture Data: Acme Corp
+***empty list***
+#!section stderr
+Invalid Length!
+Invalid Length!
+Invalid Length!
+Invalid Length!
+Invalid Length!
+Invalid Header!
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,313 @@
+# Byte-level parser cases.
+#
+# Every case here feeds a hand-written, commented binary fixture through one of
+# the parsers in lib/: SDR records, FRU areas, SEL entries, DIMM SPD,
+# PICMG/VITA records and HPM.1 firmware images. Each parser also gets at least
+# one malformed or truncated fixture, because "what does ipmitool print for
+# corrupt input" is exactly the behaviour a Zig port must not silently change.
+
+[sdr_list]
+desc: SDR walk over one record of each type ipmitool renders differently
+args: -I dummy sdr list
+transcript: sdr.tr
+covers: sdr
+
+[sdr_elist]
+desc: extended SDR listing (adds entity, sensor number and generator ID)
+args: -I dummy sdr elist
+transcript: sdr.tr
+covers: sdr
+
+[sdr_info]
+desc: SDR repository info record counts and free space
+args: -I dummy sdr info
+transcript: sdr.tr
+covers: sdr
+
+[sdr_entity]
+desc: SDR records grouped by entity id
+args: -I dummy sdr entity 3
+transcript: sdr.tr
+covers: sdr
+
+[sdr_type_temperature]
+desc: SDR records filtered by sensor type
+args: -I dummy sdr type Temperature
+transcript: sdr.tr
+covers: sdr
+
+[sdr_type_list]
+desc: the sensor type table itself
+args: -I dummy sdr type list
+transcript: sdr.tr
+covers: sdr
+
+[sdr_get_by_name]
+desc: full detail dump of a single full sensor record
+args: -I dummy sdr get "CPU1 Temp"
+transcript: sdr.tr
+covers: sdr
+
+[sensor_list]
+desc: sensor list built from the same SDR repository
+args: -I dummy sensor list
+transcript: sdr.tr
+covers: sensor
+
+[sensor_get]
+desc: sensor get for a named threshold sensor
+args: -I dummy sensor get "CPU1 Temp"
+transcript: sdr.tr
+covers: sensor
+
+[fru_print]
+desc: full FRU inventory walk - common header, chassis, board, product and multirecord areas
+args: -I dummy fru print 0
+transcript: fru.tr
+covers: fru
+
+[fru_print_all]
+desc: FRU discovery through the SDR FRU device locator records
+args: -I dummy fru print
+transcript: fru.tr
+covers: fru
+
+[fru_list]
+desc: fru list is the same walk under a different verb
+args: -I dummy fru list 0
+transcript: fru.tr
+covers: fru
+
+[fru_print_verbose]
+desc: verbose FRU walk, which also renders the multirecord area
+args: -I dummy -v fru print 0
+transcript: fru.tr
+covers: fru
+
+[fru_bad_area_checksum]
+desc: FRU board area with a corrupt checksum - fields still print, checksum reported INVALID
+args: -I dummy fru print 0
+transcript: fru_bad_checksum.tr
+covers: fru
+
+[fru_bad_common_header]
+desc: FRU common header with a corrupt checksum - earliest rejection point
+args: -I dummy fru print 0
+transcript: fru_bad_header.tr
+covers: fru
+
+[fru_truncated]
+desc: FRU image that ends in the middle of the board info area
+args: -I dummy fru print 0
+transcript: fru_truncated.tr
+covers: fru
+
+[fru_bad_area_offsets]
+desc: FRU common header pointing the product area past the end of the device
+args: -I dummy fru print 0
+transcript: fru_bad_offsets.tr
+covers: fru
+
+[sel_info]
+desc: SEL repository info
+args: -I dummy sel info
+transcript: sel.tr
+covers: sel
+
+[sel_list]
+desc: SEL walk over a threshold event, a discrete event and two OEM records
+args: -I dummy sel list
+transcript: sel.tr
+covers: sel
+
+[sel_elist]
+desc: extended SEL listing, which resolves sensor numbers through the SDR
+args: -I dummy sel elist
+transcript: sel.tr
+covers: sel
+
+[sel_list_verbose]
+desc: verbose SEL listing, one block per record
+args: -I dummy -v sel list
+transcript: sel.tr
+covers: sel
+
+[sel_get_entry]
+desc: single SEL entry by record id
+args: -I dummy sel get 0x0002
+transcript: sel.tr
+covers: sel
+
+[sel_truncated_entry]
+desc: BMC returns a SEL entry shorter than the mandatory 16 bytes
+args: -I dummy sel list
+transcript: sel_truncated.tr
+covers: sel
+
+[spd_ddr3]
+desc: JEDEC DDR3 SPD image read over I2C Master Write-Read
+args: -I dummy spd 0 0xa0
+transcript: spd.tr
+covers: spd
+
+[spd_short_read]
+desc: SPD EEPROM that returns fewer bytes than ipmi_spd_print() requires
+args: -I dummy spd 0 0xa0
+transcript: spd_short.tr
+covers: spd
+
+[spd_missing_args]
+desc: spd without the mandatory i2cbus/i2caddr arguments
+args: -I dummy spd
+covers: spd
+
+[spd_bad_arg]
+desc: spd with a non-numeric i2cbus
+args: -I dummy spd zz 0xa0
+covers: spd
+
+[i2c_read]
+desc: raw I2C Master Write-Read through the i2c command
+args: -I dummy i2c 0xa0 8 00
+transcript: spd.tr
+covers: i2c
+
+[i2c_odd_address]
+desc: i2c rejects odd (7-bit shifted) slave addresses
+args: -I dummy i2c 0xa1 8 00
+covers: i2c
+
+[hpm_target_check]
+desc: HPM.1 target information without an image file
+args: -I dummy hpm check
+transcript: hpm.tr
+covers: hpm
+
+[hpm_check_image]
+desc: HPM.1 firmware image header, action records and MD5 are all valid
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm.tr
+blob: fw.img hpm/image.hex
+covers: hpm
+
+[hpm_check_bad_md5]
+desc: HPM.1 image whose trailing MD5 does not match the content
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm.tr
+blob: fw.img hpm/image_bad_md5.hex
+covers: hpm
+
+[hpm_check_bad_signature]
+desc: HPM.1 image with a corrupt "PICMGFWU" signature
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm.tr
+blob: fw.img hpm/image_bad_signature.hex
+covers: hpm
+
+[hpm_check_truncated]
+desc: HPM.1 image cut off inside the upload-firmware action record
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm.tr
+blob: fw.img hpm/image_truncated.hex
+covers: hpm
+
+[hpm_check_missing_file]
+desc: hpm check pointed at a file that does not exist
+args: -I dummy hpm check {work}/does-not-exist.img
+transcript: hpm.tr
+covers: hpm
+
+[picmg_properties]
+desc: PICMG extension version and FRU device id range
+args: -I dummy picmg properties
+transcript: picmg.tr
+covers: picmg
+
+[picmg_addrinfo]
+desc: PICMG Get Address Info record - hardware address, site id and site type
+args: -I dummy picmg addrinfo
+transcript: picmg.tr
+covers: picmg
+
+[picmg_led_prop]
+desc: PICMG FRU LED properties record
+args: -I dummy picmg led prop 0
+transcript: picmg.tr
+covers: picmg
+
+[picmg_led_get]
+desc: PICMG FRU LED state record
+args: -I dummy picmg led get 0 0
+transcript: picmg.tr
+covers: picmg
+
+[picmg_policy_get]
+desc: PICMG FRU activation policy record
+args: -I dummy picmg policy get 0
+transcript: picmg.tr
+covers: picmg
+
+[picmg_portstate_get]
+desc: PICMG port state link descriptor record
+args: -I dummy picmg portstate get 1 0
+transcript: picmg.tr
+covers: picmg
+
+[picmg_bad_subcommand]
+desc: picmg with an unknown subcommand
+args: -I dummy picmg notasubcommand
+transcript: picmg.tr
+covers: picmg
+
+[vita_properties]
+desc: VITA 46.11 VSO properties record
+args: -I dummy vita properties
+transcript: vita.tr
+covers: vita
+
+[vita_addrinfo]
+desc: VITA Get Address Info record
+args: -I dummy vita addrinfo
+transcript: vita.tr
+covers: vita
+
+[vita_led_prop]
+desc: VITA FRU LED properties record
+args: -I dummy vita led prop 0
+transcript: vita.tr
+covers: vita
+
+[vita_bad_subcommand]
+desc: vita with an unknown subcommand
+args: -I dummy vita notasubcommand
+transcript: vita.tr
+covers: vita
+
+[ekanalyzer_frushow]
+desc: ekanalyzer parses a FRU image straight out of a file
+args: -I dummy ekanalyzer frushow b2={work}/board.fru
+blob: board.fru fru/board.hex
+covers: ekanalyzer
+
+[ekanalyzer_frushow_bad_checksum]
+desc: ekanalyzer on a FRU image with a corrupt board area checksum
+args: -I dummy ekanalyzer frushow b2={work}/board.fru
+blob: board.fru fru/board_bad_checksum.hex
+covers: ekanalyzer
+
+[ekanalyzer_frushow_truncated]
+desc: ekanalyzer on a FRU image that ends inside the board info area
+args: -I dummy ekanalyzer frushow b2={work}/board.fru
+blob: board.fru fru/board_truncated.hex
+covers: ekanalyzer
+
+[ekanalyzer_missing_file]
+desc: ekanalyzer pointed at a file that does not exist
+args: -I dummy ekanalyzer frushow b2={work}/nope.fru
+covers: ekanalyzer
+
+[ekanalyzer_bad_filetype]
+desc: ekanalyzer with an unrecognised file type prefix
+args: -I dummy ekanalyzer frushow zz={work}/board.fru
+blob: board.fru fru/board.hex
+covers: ekanalyzer

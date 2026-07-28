@@ -1,0 +1,21 @@
+# SDR Type 03h - Event-Only Sensor Record (IPMI 2.0 spec Table 43-3).
+# Parsed by struct sdr_record_eventonly_sensor.
+
+03 00        # [1:2]  Record ID = 0x0003
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+14           # [5]    Record length = 20 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+03           # [8]    Sensor number 3
+15           # [9]    Entity ID 21 = Power unit
+01           # [10]   Entity instance 1
+09           # [11]   Sensor type 09h = Power Unit
+6f           # [12]   Event/reading type 6Fh = sensor-specific discrete
+00           # [13]   Sensor record sharing
+00           # [14]   Sensor record sharing / entity instance increment
+00           # [15]   Reserved
+00           # [16]   OEM
+c8           # [17]   ID string type/length: 8-bit ASCII, 8 characters
+50 57 52 20 55 6e 69 74      # [18:25] "PWR Unit"

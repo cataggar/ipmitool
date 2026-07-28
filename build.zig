@@ -716,8 +716,7 @@ pub fn build(b: *std.Build) void {
 
     // -- `zig build test` ----------------------------------------------------
     //
-    // Smoke tests plus the Zig/C ABI parity assertions; issue #4 adds the
-    // golden transcript suite on top of the dummy interface.
+    // Smoke tests, the Zig/C ABI parity assertions, and the golden CLI suite.
 
     const test_step = b.step("test", "Run the build smoke tests");
 
@@ -777,30 +776,159 @@ pub fn build(b: *std.Build) void {
     _ = evd_usage.captureStdErr(.{});
     test_step.dependOn(&evd_usage.step);
 
-    // Differential check for the swap flag: `-o list` is the whole observable
-    // surface of `lib/ipmi_oem.c` / `src/zig/cmd/oem.zig`, and the expected
-    // text below is the archived autotools oracle's output.  It has to be
-    // byte-identical with and without `-Dzig-modules=oem`.
-    const oem_list = b.addRunArtifact(ipmitool);
-    oem_list.addArgs(&.{ "-o", "list" });
-    oem_list.expectExitCode(0);
-    oem_list.expectStdErrEqual(oem_list_output);
-    test_step.dependOn(&oem_list.step);
+    // -- `zig build test-golden` ---------------------------------------------
+    //
+    // The golden CLI suite (issue #4).  It drives the `dummy` interface over a
+    // Unix socket and compares the exit status, stdout, stderr *and the IPMI
+    // request bytes* of every case against committed snapshots, so a Zig port
+    // has to be observably identical to the C it replaces -- including on the
+    // wire.  See doc/zig-migration/golden-harness.md.
+    //
+    // `-o list` used to be asserted here as an interim stand-in while this
+    // suite lived outside the build; the `global_oem_list` case now covers it
+    // (byte-identical stderr, plus the exit status and the absence of IPMI
+    // traffic), so there is one obvious place for CLI expectations.
+
+    const golden_exe = b.addExecutable(.{
+        .name = "golden",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/golden/main.zig"),
+            // The harness drives the binary under test as a subprocess, so it
+            // always builds for the host rather than for `target`.
+            .target = b.graph.host,
+            .optimize = .Debug,
+        }),
+    });
+
+    const golden_step = b.step("test-golden", "Run the golden CLI test suite");
+    golden_step.dependOn(&addGolden(b, golden_exe, ipmitool).step);
+
+    // The whole point of the suite is to prove that a Zig replacement is
+    // observably identical to the C it replaced, so run it a second time
+    // against a binary with every registered module swapped to Zig.  This is
+    // additive rather than a rebuild: the C objects are shared with the build
+    // above through the compilation cache, so only the archive and the two
+    // links are redone.  When `-Dzig-modules` already selects everything the
+    // second binary is the same as the first and is skipped.
+    if (!allSelected(zig_selection)) {
+        const swapped = addSwappedTool(b, .{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .system_libs = libs,
+        });
+        golden_step.dependOn(&addGolden(b, golden_exe, swapped).step);
+    }
+
+    test_step.dependOn(golden_step);
 }
 
-/// `ipmitool -o list` as produced by the autotools baseline oracle; see
-/// doc/zig-migration/baseline-oracle.md.
-const oem_list_output =
-    "\nOEM Support:\n" ++
-    "\tsupermicro   Supermicro IPMIv1.5 BMC with OEM LAN authentication support\n" ++
-    "\tintelwv2     Intel SE7501WV2 IPMIv1.5 BMC with extra LAN communication support\n" ++
-    "\tintelplus    Intel IPMI 2.0 BMC with RMCP+ communication support\n" ++
-    "\ticts         IPMI 2.0 ICTS compliance support\n" ++
-    "\tibm          IBM OEM support\n" ++
-    "\ti82571spt    Intel 82571 MAC with integrated RMCP+ support in super pass-through mode\n" ++
-    "\tkontron      Kontron OEM big buffer support\n" ++
-    "\tquanta       Quanta IPMIv1.5 BMC with OEM LAN authentication support\n" ++
-    "\n";
+/// One run of the golden CLI suite against `exe`.
+///
+/// Extra arguments are forwarded, so `zig build test -- --filter sdr`,
+/// `zig build test-golden -- --update` and `-- -v` all work.
+fn addGolden(
+    b: *std.Build,
+    golden_exe: *std.Build.Step.Compile,
+    exe: *std.Build.Step.Compile,
+) *std.Build.Step.Run {
+    const run = b.addRunArtifact(golden_exe);
+    run.setName(b.fmt("golden {s}", .{exe.name}));
+    run.addArg("--tests-dir");
+    run.addDirectoryArg(b.path("tests"));
+    // Only used to locate `src/ipmitool.c` for the command coverage check.
+    // Passed as a plain path so the step does not take a hash dependency on
+    // the entire work tree; `src/ipmitool.c` is a source of `exe`, so a change
+    // to the command table already invalidates this step through the binary.
+    run.addArgs(&.{ "--repo", b.build_root.path orelse "." });
+    run.addArg("--binary");
+    run.addFileArg(exe.getEmittedBin());
+    // A private scratch root per run: the default and the Zig-swapped suites
+    // are independent steps and the build runner may execute them at the same
+    // time.  `tmpPath` lives in the cache and is cleaned up on success.
+    run.addArg("--work-dir");
+    run.addDirectoryArg(b.tmpPath());
+    if (b.args) |args| run.addArgs(args);
+    run.expectExitCode(0);
+    return run;
+}
+
+const SwappedOptions = struct {
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    sanitize_c: bool,
+    config_h: *std.Build.Step.ConfigHeader,
+    default_intf: []const u8,
+    flags: []const []const u8,
+    plugins_enabled: []const bool,
+    bridge_mod: *std.Build.Module,
+    system_libs: []const []const u8,
+};
+
+/// An `ipmitool` with every entry of `zig_modules` served by Zig, built only
+/// for `zig build test-golden`.  Nothing installs it.
+///
+/// This mirrors the main build rather than refactoring it, so that adding a
+/// module stays a one-entry change to `zig_modules` and does not touch here.
+fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compile {
+    const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
+    @memset(selection, true);
+
+    const core_mod = b.createModule(.{
+        .target = options.target,
+        .optimize = options.optimize,
+        .link_libc = true,
+        .sanitize_c = if (options.sanitize_c) .full else .off,
+    });
+    configure(b, core_mod, options.config_h, options.default_intf);
+    addSources(b, core_mod, lib_sources, options.flags, selection);
+    addSources(b, core_mod, intf_sources, options.flags, selection);
+    for (plugins, 0..) |plugin, i| {
+        if (!options.plugins_enabled[i]) continue;
+        addSources(b, core_mod, plugin.sources, options.flags, selection);
+    }
+    const core = b.addLibrary(.{
+        .name = "ipmitool_core_zig",
+        .linkage = .static,
+        .root_module = core_mod,
+    });
+
+    const zig_options = b.addOptions();
+    zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
+    const exports_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/exports.zig"),
+        .target = options.target,
+        .optimize = options.optimize,
+        .link_libc = true,
+    });
+    exports_mod.addImport("ipmi_c", options.bridge_mod);
+    exports_mod.addImport("build_options", zig_options.createModule());
+    const zig_lib = b.addLibrary(.{
+        .name = "ipmitool_zig_all",
+        .linkage = .static,
+        .root_module = exports_mod,
+    });
+
+    return addTool(b, .{
+        .name = "ipmitool-zig",
+        .sources = ipmitool_sources,
+        .target = options.target,
+        .optimize = options.optimize,
+        .sanitize_c = options.sanitize_c,
+        .config_h = options.config_h,
+        .default_intf = options.default_intf,
+        .flags = options.flags,
+        .core = core,
+        .zig_lib = zig_lib,
+        .zig_selection = selection,
+        .system_libs = options.system_libs,
+    });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -916,6 +1044,13 @@ fn anySelected(zig_selection: []const bool) bool {
         if (selected) return true;
     }
     return false;
+}
+
+fn allSelected(zig_selection: []const bool) bool {
+    for (zig_selection) |selected| {
+        if (!selected) return false;
+    }
+    return true;
 }
 
 /// Selected module names, passed to `src/zig/exports.zig` as build options.

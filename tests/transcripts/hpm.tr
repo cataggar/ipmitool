@@ -1,0 +1,72 @@
+# A BMC that implements the PICMG HPM.1 firmware upgrade commands for a single
+# component (component 0, "IPMC").
+#
+# lib/ipmi_hpmfwupg.c first calls Get Device ID, then Get Target Upgrade
+# Capabilities (2Ch/2Eh) and Get Component Properties (2Ch/2Fh) once per
+# property selector. Every PICMG request and response starts with the PICMG
+# identifier byte 00h.
+
+default_ccode 0xc1
+
+respond picmg_discover
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  # PICMG identifier 00h, PICMG extension version 2.3
+  data 00 23
+end
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond hpm_target_capabilities
+  netfn 0x2c
+  cmd 0x2e
+  # picmgId, HPM.1 version 0, global capabilities, upgrade/selftest/rollback/
+  # inaccessibility timeouts, components present bitmask (component 0 only)
+  data 00 00 1f 05 05 05 05 01
+end
+
+respond hpm_comp0_general_properties
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 00
+  # picmgId, general properties: rollback backup supported, preparation and
+  # comparison supported, deferred activation supported
+  data 00 1e
+end
+
+respond hpm_comp0_current_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 01
+  # picmgId, firmware revision 1.2 build 0034
+  data 00 01 02 34 00 00 00
+end
+
+respond hpm_comp0_description
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 02
+  # picmgId, 12 character description string "IPMC        "
+  data 00 49 50 4d 43 20 20 20 20 20 20 20 20
+end
+
+respond hpm_comp0_rollback_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 03
+  # picmgId, rollback firmware revision 1.1 build 0022
+  data 00 01 01 22 00 00 00
+end
+
+respond hpm_comp0_deferred_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 04
+  # picmgId, deferred firmware revision 0.0 build 0000
+  data 00 00 00 00 00 00 00
+end

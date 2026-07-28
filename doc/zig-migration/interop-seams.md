@@ -297,16 +297,22 @@ zig build -Dzig-modules=<name> -p zig-out/zig
 # differential check of the affected code paths
 diff <(./zig-out/c/bin/ipmitool <args> 2>&1) <(./zig-out/zig/bin/ipmitool <args> 2>&1)
 
-# ABI assertions and unit tests, both ways
+# the same check for the whole CLI surface, including the IPMI request bytes
+./tests/run.sh --binary ./zig-out/c/bin/ipmitool --candidate ./zig-out/zig/bin/ipmitool
+
+# ABI assertions, smoke tests and the golden suite, both ways
 zig build test
 zig build test -Dzig-modules=<name>
 
 zig fmt --check build.zig src/zig/
 ```
 
-`zig build test` also runs the `-o list` differential check that covers the
-`oem` module in both modes; add an equivalent check when porting a module whose
-output is not yet covered by the golden suite.
+`zig build test` runs the golden CLI suite (issue #4,
+[golden-harness.md](golden-harness.md)) twice: once against the default all-C
+binary and once against a binary with every registered module swapped to Zig.
+That is the differential check that used to be spelled out here as an inline
+`-o list` assertion. When porting a module, add a golden case that exercises it
+if the existing cases do not already reach it.
 
 To confirm the substitution actually happened rather than the C silently winning
 the link:

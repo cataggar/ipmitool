@@ -1,0 +1,21 @@
+#!golden 1
+#!case mc_getenables
+#!section exit
+0
+#!section stdout
+Receive Message Queue Interrupt          : enabled
+Event Message Buffer Full Interrupt      : enabled
+Event Message Buffer                     : enabled
+System Event Logging                     : enabled
+OEM 0                                    : disabled
+OEM 1                                    : disabled
+OEM 2                                    : disabled
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x2f target_cmd=0x00 data=
+< rule=get_bmc_global_enables ccode=0x00 len=1 data=0f
+bye

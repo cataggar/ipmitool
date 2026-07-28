@@ -1,0 +1,93 @@
+#!golden 1
+#!case cmd_sunoem_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+Usage: sunoem <command> [option...]
+
+Commands:
+ - cli [<command string> ...]
+      Execute SP CLI commands.
+
+ - led get [<sensor_id>] [ledtype]
+      - Read status of LED found in Generic Device Locator.
+
+ - led set <sensor_id> <led_mode> [led_type]
+      - Set mode of LED found in Generic Device Locator.
+      - You can pass 'all' as the <senso_rid> to change the LED mode of all sensors.
+      - Use 'sdr list generic' command to get list of Generic
+      - Devices that are controllable LEDs.
+
+      - Required SIS LED Mode:
+          OFF          Off
+          ON           Steady On
+          STANDBY      100ms on 2900ms off blink rate
+          SLOW         1HZ blink rate
+          FAST         4HZ blink rate
+
+      - Optional SIS LED Type:
+          OK2RM        OK to Remove
+          SERVICE      Service Required
+          ACT          Activity
+          LOCATE       Locate
+
+ - nacname <ipmi_nac_name>
+      - Returns the full nac name
+
+ - ping NUMBER <q>
+      - Send and Receive NUMBER (64 Byte) packets.
+
+      - q - Quiet. Displays output at start and end
+
+ - getval <target_name>
+      - Returns the ILOM property value
+
+ - setval <property name> <property value> <timeout>
+      - Sets the ILOM property value
+      - If timeout is not specified, the default is 5 sec.
+      - NOTE: must be executed locally on host, not remotely over LAN!
+
+ - sshkey del <user_id>
+      - Delete ssh key for user id from authorized_keys,
+      - view users with 'user list' command.
+
+ - sshkey set <user_id> <id_rsa.pub>
+      - Set ssh key for a userid into authorized_keys,
+      - view users with 'user list' command.
+
+ - version
+      - Display the software version
+
+ - nacname <ipmi_nac_name>
+      - Returns the full nac name
+
+ - getfile <file_string_id> <destination_file_name>
+      - Copy file <file_string_id> to <destination_file_name>
+
+      - File string ids:
+          SSH_PUBKEYS
+          DIAG_PASSED
+          DIAG_FAILED
+          DIAG_END_TIME
+          DIAG_INVENTORY
+          DIAG_TEST_LOG
+          DIAG_START_TIME
+          DIAG_UEFI_LOG
+          DIAG_TEST_LOG
+          DIAG_LAST_LOG
+          DIAG_LAST_CMD
+
+ - getbehavior <behavior_string_id>
+      - Test if ILOM behavior is enabled
+
+      - Behavior string ids:
+          SUPPORTS_SIGNED_PACKAGES
+          REQUIRES_SIGNED_PACKAGES
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

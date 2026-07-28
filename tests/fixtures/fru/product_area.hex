@@ -1,0 +1,21 @@
+# FRU Product Info Area (FRU spec section 12). Parsed by
+# fru_area_print_product() in lib/ipmi_fru.c.
+
+@mark area
+01           # [0] Format version 1
+@mark lenslot
+00           # [1] Area length / 8 (filled in below)
+00           # [2] Language code 0 = English
+c9 41 63 6d 65 20 43 6f 72 70                # Manufacturer, 9 chars: "Acme Corp"
+c6 57 69 64 67 65 74                         # Product name, 6 chars: "Widget"
+c8 4d 44 4c 2d 31 32 33 34                   # Part/model number, 8: "MDL-1234"
+c3 31 2e 30                                  # Product version, 3 chars: "1.0"
+c9 50 53 30 30 30 30 30 30 31                # Serial number, 9: "PS0000001"
+c6 41 53 53 45 54 31                         # Asset tag, 6 chars: "ASSET1"
+c6 46 52 55 31 2e 30                         # FRU file ID, 6 chars: "FRU1.0"
+c1                                           # C1h: end of fields
+@pad 5 0x00                                  # Pad to a multiple of 8 bytes
+@mark sumslot
+00                                           # [63] Zero checksum (below)
+@fill_size8 lenslot area
+@fill_checksum sumslot area

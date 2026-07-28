@@ -1,0 +1,20 @@
+#!golden 1
+#!case spd_short_read
+#!section exit
+1
+#!section stdout
+#!section stderr
+I2C Master Write-Read command failed: Parameter out of range
+Unable to perform I2C Master Write-Read
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 40 00
+< rule=master_write_read ccode=0x00 len=64 data=92 11 0b 02 13 11 02 0b 0b 11 01 08 0a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 40 40
+< rule=master_write_read ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 40 80
+< rule=master_write_read ccode=0xc9 len=0 data=
+bye
