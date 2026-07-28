@@ -1,0 +1,11 @@
+{
+  "_comment": "Last upstream commit reconciled into this fork. Updated by scripts/sync-upstream.sh --record; see doc/zig-migration/upstream-sync.md.",
+  "upstream_url": "https://codeberg.org/IPMITool/ipmitool.git",
+  "upstream_branch": "master",
+  "last_upstream_commit": "d62a996c8bad7b3f8d67ffe3742985a3c96ed218",
+  "last_upstream_commit_date": "2026-03-30",
+  "last_upstream_commit_subject": "fru: Fix false failure when changing string length",
+  "fork_commit": "20ded3198e7131af358a8e39c65c00aecb266e87",
+  "fork_ref": "main",
+  "recorded_at": "2026-07-28T22:35:11Z"
+}
