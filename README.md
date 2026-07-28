@@ -69,6 +69,55 @@ If you want to provide a hosted runner for another operating system,
 you are welcome to submit a PR with relevant configuration changes
 (see `.woodpecker.yml`).
 
+## Building
+
+`zig build` is the primary build system. It compiles the existing C sources
+with `zig cc` and needs nothing but [Zig](https://ziglang.org/) 0.16.0 and
+OpenSSL's `libcrypto`:
+
+```
+zig build              # binaries land in zig-out/bin and zig-out/sbin
+zig build test         # smoke tests (see below)
+zig build run -- -V    # run the freshly built ipmitool
+zig build run-ipmievd -- -h
+zig build --prefix /usr/local   # install layout matches `make install`
+```
+
+The interface plugins and the `configure.ac` feature switches are exposed as
+build options; run `zig build --help` for the full list with the current
+defaults:
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `-Dintf-lan` | on | IPMIv1.5 LAN |
+| `-Dintf-lanplus` | on | IPMIv2.0 RMCP+, requires `libcrypto` |
+| `-Dintf-open` | on for Linux | Linux OpenIPMI driver |
+| `-Dintf-serial` | on | serial basic/terminal mode |
+| `-Dintf-dummy` | on | test interface used by the golden test harness |
+| `-Dintf-imb` | on for Linux | Intel IMB driver |
+| `-Dintf-usb` | off | AMI USB |
+| `-Dintf-free` | off | needs `libfreeipmi` |
+| `-Dintf-dbus` | off | needs `libsystemd` |
+| `-Dintf-lipmi`, `-Dintf-bmc` | off | Solaris only; do not build on Linux |
+| `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
+| `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
+| `-Dipmishell` | off | `ipmitool shell`/`exec`, requires `libreadline` |
+| `-Dall-options` | on | `ENABLE_ALL_OPTIONS` |
+| `-Dfile-security` | off | extra checks on files opened for read |
+| `-Dbuildcheck` | off | adds `-Werror` and stricter warnings |
+| `-Dsanitize-c` | off | C UB sanitizer; off so behaviour matches gcc |
+| `-Dregistry-download` | off | fetch and install the IANA PEN registry |
+| `-Ddefault-intf` | `open`, else `lan` | interface used when `-I` is omitted |
+| `-Dversion` | from `git describe` | version string baked into the binaries |
+
+`zig build test` currently runs smoke tests only: both binaries must print
+their version, exit successfully for `-h`, and list exactly the interfaces
+that were enabled. The golden transcript suite is built on top of this.
+
+The autotools build (`./bootstrap && ./configure && make`) is still present and
+still works. It is kept as a cross-check while the code base is incrementally
+rewritten in Zig and will be removed once the migration is complete.
+
 ## Requirements
 
 Obviously the largest requirement is hardware with a service processor

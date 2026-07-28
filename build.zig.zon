@@ -1,0 +1,28 @@
+.{
+    .name = .ipmitool,
+
+    // Mirrors AC_INIT([ipmitool],[1.8.19...]) in configure.ac. The full
+    // version string baked into the binaries (VERSION in config.h) adds the
+    // git revision suffix, exactly like ./csv-revision does for autotools.
+    .version = "1.8.19",
+
+    .fingerprint = 0x67115ca750b62eaf, // Changing this has security and trust implications.
+
+    .minimum_zig_version = "0.16.0",
+
+    .dependencies = .{},
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "AUTHORS",
+        "COPYING",
+        "ChangeLog",
+        "README.md",
+        "contrib",
+        "doc",
+        "include",
+        "lib",
+        "src",
+    },
+}

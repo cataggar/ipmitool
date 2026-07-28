@@ -1,0 +1,784 @@
+//! Zig build definition for ipmitool.
+//!
+//! This replaces autotools as the primary build system while still compiling
+//! the existing C sources with `zig cc`.  It is a translation of `configure.ac`
+//! plus the `Makefile.am` files; those remain in the tree as a cross-check
+//! until the C sources are gone.
+//!
+//! The source inventory below is kept in named, per-component data structures
+//! on purpose: the incremental Zig migration replaces translation units one at
+//! a time, so every group of C files must stay individually addressable.
+
+const std = @import("std");
+
+/// Base version, mirroring `AC_INIT([ipmitool],[1.8.19...])` in configure.ac.
+/// The suffix produced by `./csv-revision` is appended at configure time.
+const base_version = "1.8.19";
+
+/// `IANA_PEN` from the top level Makefile.am.
+const iana_pen_url = "https://www.iana.org/assignments/enterprise-numbers.txt";
+
+/// Warning flags configure.ac unconditionally appends to CFLAGS.
+const base_cflags = [_][]const u8{
+    "-std=gnu11",
+    "-Wall",
+    "-Wextra",
+    "-pedantic",
+    "-Wformat",
+    "-Wformat-nonliteral",
+};
+
+/// Extra flags for `-Dbuildcheck`, mirroring `--enable-buildcheck`.
+const buildcheck_cflags = [_][]const u8{
+    "-Werror",
+    "-Wpointer-arith",
+    "-Wstrict-prototypes",
+};
+
+// ---------------------------------------------------------------------------
+// Source inventory
+//
+// Each entry corresponds to one `*_SOURCES` variable in a `Makefile.am`.
+// Phase 2 of the migration (issue #7) swaps individual entries here for Zig
+// implementations, so keep the lists narrow and named.
+// ---------------------------------------------------------------------------
+
+/// A set of C translation units rooted at a single directory.
+const CSourceSet = struct {
+    /// Directory relative to the build root.
+    dir: []const u8,
+    /// File names relative to `dir`.
+    files: []const []const u8,
+};
+
+/// `lib/Makefile.am`: `libipmitool_la_SOURCES`.
+const lib_sources: CSourceSet = .{
+    .dir = "lib",
+    .files = &.{
+        "helper.c",       "ipmi_sdr.c",        "ipmi_sel.c",        "ipmi_sol.c",
+        "ipmi_pef.c",     "ipmi_lanp.c",       "ipmi_fru.c",        "ipmi_chassis.c",
+        "ipmi_mc.c",      "log.c",             "dimm_spd.c",        "ipmi_sensor.c",
+        "ipmi_channel.c", "ipmi_event.c",      "ipmi_session.c",    "ipmi_strings.c",
+        "ipmi_user.c",    "ipmi_raw.c",        "ipmi_oem.c",        "ipmi_isol.c",
+        "ipmi_sunoem.c",  "ipmi_fwum.c",       "ipmi_picmg.c",      "ipmi_main.c",
+        "ipmi_tsol.c",    "ipmi_firewall.c",   "ipmi_kontronoem.c", "ipmi_hpmfwupg.c",
+        "ipmi_sdradd.c",  "ipmi_ekanalyzer.c", "ipmi_gendev.c",     "ipmi_ime.c",
+        "ipmi_delloem.c", "ipmi_dcmi.c",       "hpm2.c",            "ipmi_vita.c",
+        "ipmi_lanp6.c",   "ipmi_cfgp.c",       "ipmi_quantaoem.c",  "ipmi_time.c",
+    },
+};
+
+/// `src/plugins/Makefile.am`: `libintf_la_SOURCES` (the interface dispatcher).
+const intf_sources: CSourceSet = .{
+    .dir = "src/plugins",
+    .files = &.{"ipmi_intf.c"},
+};
+
+/// `src/Makefile.am`: `ipmitool_SOURCES`.
+const ipmitool_sources: CSourceSet = .{
+    .dir = "src",
+    .files = &.{ "ipmitool.c", "ipmishell.c" },
+};
+
+/// `src/Makefile.am`: `ipmievd_SOURCES`.
+const ipmievd_sources: CSourceSet = .{
+    .dir = "src",
+    .files = &.{"ipmievd.c"},
+};
+
+/// How the default value of an `-Dintf-*` option is computed.
+const DefaultPolicy = enum {
+    /// Enabled everywhere.
+    on,
+    /// Disabled unless explicitly requested.
+    off,
+    /// Enabled only when targeting Linux.
+    linux_only,
+};
+
+/// One IPMI transport plugin, i.e. one `src/plugins/<dir>/Makefile.am` plus the
+/// matching `AC_ARG_ENABLE([intf-...])` block in configure.ac.
+const Plugin = struct {
+    /// Name used for the `-Dintf-<name>` build option.
+    name: []const u8,
+    /// config.h macro that gates the plugin in `src/plugins/ipmi_intf.c`.
+    macro: []const u8,
+    sources: CSourceSet,
+    default: DefaultPolicy,
+    /// System libraries this plugin needs on top of libc.
+    system_libs: []const []const u8 = &.{},
+    /// `zig build --help` text.
+    help: []const u8,
+};
+
+/// Every plugin known to the tree, in the order `ipmi_intf_table` lists them.
+const plugins = [_]Plugin{
+    .{
+        .name = "open",
+        .macro = "IPMI_INTF_OPEN",
+        .sources = .{ .dir = "src/plugins/open", .files = &.{"open.c"} },
+        .default = .linux_only,
+        .help = "Linux OpenIPMI kernel driver interface",
+    },
+    .{
+        .name = "imb",
+        .macro = "IPMI_INTF_IMB",
+        .sources = .{ .dir = "src/plugins/imb", .files = &.{ "imbapi.c", "imb.c" } },
+        .default = .linux_only,
+        .help = "Intel IMB driver interface",
+    },
+    .{
+        .name = "lipmi",
+        .macro = "IPMI_INTF_LIPMI",
+        .sources = .{ .dir = "src/plugins/lipmi", .files = &.{"lipmi.c"} },
+        .default = .off,
+        .help = "Solaris 9 x86 IPMI interface (needs <sys/lipmi/lipmi_intf.h>)",
+    },
+    .{
+        .name = "bmc",
+        .macro = "IPMI_INTF_BMC",
+        .sources = .{ .dir = "src/plugins/bmc", .files = &.{"bmc.c"} },
+        .default = .off,
+        .help = "Solaris 10 x86 BMC interface (needs <sys/stropts.h>)",
+    },
+    .{
+        .name = "lan",
+        .macro = "IPMI_INTF_LAN",
+        .sources = .{
+            .dir = "src/plugins/lan",
+            .files = &.{ "lan.c", "auth.c", "md5.c" },
+        },
+        .default = .on,
+        .help = "IPMIv1.5 LAN interface",
+    },
+    .{
+        .name = "lanplus",
+        .macro = "IPMI_INTF_LANPLUS",
+        .sources = .{
+            .dir = "src/plugins/lanplus",
+            .files = &.{
+                "lanplus.c",
+                "lanplus_strings.c",
+                "lanplus_crypt.c",
+                "lanplus_dump.c",
+                "lanplus_crypt_impl.c",
+            },
+        },
+        .default = .on,
+        .system_libs = &.{"crypto"},
+        .help = "IPMIv2.0 RMCP+ LAN interface (requires libcrypto)",
+    },
+    .{
+        .name = "free",
+        .macro = "IPMI_INTF_FREE",
+        .sources = .{ .dir = "src/plugins/free", .files = &.{"free.c"} },
+        .default = .off,
+        .system_libs = &.{"freeipmi"},
+        .help = "FreeIPMI interface (requires libfreeipmi)",
+    },
+    .{
+        .name = "serial",
+        .macro = "IPMI_INTF_SERIAL",
+        .sources = .{
+            .dir = "src/plugins/serial",
+            .files = &.{ "serial_terminal.c", "serial_basic.c" },
+        },
+        .default = .on,
+        .help = "direct Serial Basic/Terminal mode interface",
+    },
+    .{
+        .name = "dummy",
+        .macro = "IPMI_INTF_DUMMY",
+        .sources = .{ .dir = "src/plugins/dummy", .files = &.{"dummy.c"} },
+        .default = .on,
+        .help = "Dummy (test) interface used by the golden test harness",
+    },
+    .{
+        .name = "usb",
+        .macro = "IPMI_INTF_USB",
+        .sources = .{ .dir = "src/plugins/usb", .files = &.{"usb.c"} },
+        .default = .off,
+        .help = "AMI USB interface",
+    },
+    .{
+        .name = "dbus",
+        .macro = "IPMI_INTF_DBUS",
+        .sources = .{ .dir = "src/plugins/dbus", .files = &.{"dbus.c"} },
+        .default = .off,
+        .system_libs = &.{"systemd"},
+        .help = "OpenBMC dbus interface (requires libsystemd)",
+    },
+};
+
+/// `contrib/Makefile.am`: `dist_pkgdata_DATA`, installed into `share/ipmitool`.
+const contrib_data = [_][]const u8{"oem_ibm_sel_map"};
+
+/// `contrib/Makefile.am`: `EXTRA_DIST` helper scripts and unit files.
+const contrib_scripts = [_][]const u8{
+    "README",
+    "bmc-snmp-proxy",
+    "bmc-snmp-proxy.service",
+    "bmc-snmp-proxy.sysconf",
+    "bmclanconf",
+    "collect_data.sh",
+    "create_rrds.sh",
+    "create_webpage.sh",
+    "create_webpage_compact.sh",
+    "exchange-bmc-os-info.init.redhat",
+    "exchange-bmc-os-info.service.redhat",
+    "exchange-bmc-os-info.sysconf",
+    "ipmi.init.basic",
+    "ipmi.init.redhat",
+    "ipmievd.init.debian",
+    "ipmievd.init.redhat",
+    "ipmievd.init.suse",
+    "log_bmc.sh",
+};
+
+/// Top level `Makefile.am`: `DOCLIST`, installed into `share/doc/ipmitool`.
+const doc_files = [_][]const u8{ "README.md", "COPYING", "AUTHORS", "ChangeLog" };
+
+// ---------------------------------------------------------------------------
+// Build
+// ---------------------------------------------------------------------------
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+    const os = target.result.os.tag;
+    const is_linux = os == .linux;
+    const is_windows = os == .windows;
+    const is_bsdish = switch (os) {
+        .freebsd, .netbsd, .openbsd, .dragonfly, .macos, .ios, .tvos, .watchos, .illumos => true,
+        else => false,
+    };
+
+    // -- feature options, mirroring configure.ac ----------------------------
+
+    var enabled: [plugins.len]bool = undefined;
+    for (plugins, 0..) |plugin, i| {
+        const default = switch (plugin.default) {
+            .on => true,
+            .off => false,
+            .linux_only => is_linux,
+        };
+        enabled[i] = b.option(
+            bool,
+            b.fmt("intf-{s}", .{plugin.name}),
+            b.fmt("Enable the {s} [default={}]", .{ plugin.help, default }),
+        ) orelse default;
+    }
+
+    const openssl = b.option(
+        bool,
+        "openssl",
+        "Link libcrypto for SHA256/MD5 and RMCP+ crypto [default=true]",
+    ) orelse true;
+    const internal_md5 = b.option(
+        bool,
+        "internal-md5",
+        "Use the bundled MD5 implementation instead of libcrypto [default=false]",
+    ) orelse false;
+    const ipmishell = b.option(
+        bool,
+        "ipmishell",
+        "Enable the readline-based IPMI shell; requires libreadline [default=false]",
+    ) orelse false;
+    const all_options = b.option(
+        bool,
+        "all-options",
+        "Enable all command line options (ENABLE_ALL_OPTIONS) [default=true]",
+    ) orelse true;
+    const file_security = b.option(
+        bool,
+        "file-security",
+        "Extra security checks on files opened for read [default=false]",
+    ) orelse false;
+    const buildcheck = b.option(
+        bool,
+        "buildcheck",
+        "Add -Werror and stricter warnings for build testing [default=false]",
+    ) orelse false;
+    const sanitize_c = b.option(
+        bool,
+        "sanitize-c",
+        "Enable the C undefined behaviour sanitizer; off by default so that " ++
+            "behaviour matches the autotools/gcc build [default=false]",
+    ) orelse false;
+    const registry_download = b.option(
+        bool,
+        "registry-download",
+        "Download and install the IANA PEN registry; needs network access [default=false]",
+    ) orelse false;
+
+    const iana_dir = b.option(
+        []const u8,
+        "iana-dir",
+        "Path to the system IANA PEN dictionary [default=<prefix>/share/misc]",
+    ) orelse b.getInstallPath(.prefix, "share/misc");
+    const iana_user_dir = b.option(
+        []const u8,
+        "iana-user-dir",
+        "Path to the per-user IANA PEN dictionary, relative to $HOME",
+    ) orelse ".local/usr/share/misc";
+
+    const version = b.option(
+        []const u8,
+        "version",
+        "Override the version string baked into the binaries",
+    ) orelse detectVersion(b);
+
+    // lanplus is the only component that hard-requires libcrypto.
+    const lanplus_index = pluginIndex("lanplus");
+    if (enabled[lanplus_index] and !openssl) {
+        std.debug.print(
+            "warning: -Dintf-lanplus requires libcrypto; disabling it because -Dopenssl=false\n",
+            .{},
+        );
+        enabled[lanplus_index] = false;
+    }
+
+    const default_intf = b.option(
+        []const u8,
+        "default-intf",
+        "Interface used when none is given on the command line [default=open, or lan]",
+    ) orelse blk: {
+        if (enabled[pluginIndex("open")]) break :blk "open";
+        if (enabled[pluginIndex("lan")]) break :blk "lan";
+        for (plugins, 0..) |plugin, i| if (enabled[i]) break :blk plugin.name;
+        break :blk "lan";
+    };
+    validateDefaultIntf(b, default_intf, &enabled);
+
+    // -- config.h ------------------------------------------------------------
+
+    const config_h = b.addConfigHeader(.{
+        .style = .blank,
+        .include_path = "config.h",
+    }, .{
+        // AC_INIT
+        .PACKAGE = "ipmitool",
+        .PACKAGE_NAME = "ipmitool",
+        .PACKAGE_TARNAME = "ipmitool",
+        .PACKAGE_STRING = b.fmt("ipmitool {s}", .{version}),
+        .PACKAGE_VERSION = version,
+        .PACKAGE_BUGREPORT = "",
+        .PACKAGE_URL = "",
+        .VERSION = version,
+
+        // AC_C_BIGENDIAN
+        .WORDS_BIGENDIAN = flag(target.result.cpu.arch.endian() == .big),
+
+        // AC_CHECK_HEADERS.  Zig ships the libc headers for every supported
+        // target, so availability is a pure function of the target triple.
+        .STDC_HEADERS = flag(true),
+        .HAVE_STDIO_H = flag(true),
+        .HAVE_STDLIB_H = flag(true),
+        .HAVE_STRING_H = flag(true),
+        .HAVE_STRINGS_H = flag(!is_windows),
+        .HAVE_INTTYPES_H = flag(true),
+        .HAVE_STDINT_H = flag(true),
+        .HAVE_UNISTD_H = flag(!is_windows),
+        .HAVE_FCNTL_H = flag(true),
+        .HAVE_PATHS_H = flag(!is_windows),
+        .HAVE_NETDB_H = flag(!is_windows),
+        .HAVE_ARPA_INET_H = flag(!is_windows),
+        .HAVE_NETINET_IN_H = flag(!is_windows),
+        .HAVE_SYS_IOCTL_H = flag(!is_windows),
+        .HAVE_SYS_SELECT_H = flag(!is_windows),
+        .HAVE_SYS_SOCKET_H = flag(!is_windows),
+        .HAVE_SYS_STAT_H = flag(true),
+        .HAVE_SYS_TYPES_H = flag(true),
+        .HAVE_BYTESWAP_H = flag(is_linux),
+        .HAVE_SYS_BYTEORDER_H = flag(os == .illumos),
+        .HAVE_SYS_IOCCOM_H = flag(is_bsdish),
+        .HAVE_TERMIOS_H = flag(!is_windows),
+        .HAVE_SYS_TERMIOS_H = flag(false),
+        .HAVE_LINUX_COMPILER_H = flag(false),
+        .HAVE_OPENIPMI_H = flag(is_linux),
+        .HAVE_FREEBSD_IPMI_H = flag(os == .freebsd or os == .netbsd),
+
+        // AC_CHECK_FUNCS
+        .HAVE_ALARM = flag(!is_windows),
+        .HAVE_GETADDRINFO = flag(true),
+        .HAVE_GETHOSTBYNAME = flag(true),
+        .HAVE_GETIFADDRS = flag(!is_windows),
+        .HAVE_GETPASSPHRASE = flag(os == .illumos),
+        .HAVE_MEMMOVE = flag(true),
+        .HAVE_MEMSET = flag(true),
+        .HAVE_SELECT = flag(true),
+        .HAVE_SOCKET = flag(true),
+        .HAVE_STRCHR = flag(true),
+        .HAVE_STRDUP = flag(true),
+        .HAVE_STRERROR = flag(true),
+
+        // libcrypto capabilities.  OpenSSL 3 no longer provides MD2.
+        .HAVE_CRYPTO_SHA256 = flag(openssl),
+        .HAVE_CRYPTO_MD5 = flag(openssl and !internal_md5),
+        .HAVE_CRYPTO_MD2 = flag(false),
+
+        // Interfaces
+        .IPMI_INTF_OPEN = flag(enabled[pluginIndex("open")]),
+        .IPMI_INTF_IMB = flag(enabled[pluginIndex("imb")]),
+        .IPMI_INTF_LIPMI = flag(enabled[pluginIndex("lipmi")]),
+        .IPMI_INTF_BMC = flag(enabled[pluginIndex("bmc")]),
+        .IPMI_INTF_LAN = flag(enabled[pluginIndex("lan")]),
+        .IPMI_INTF_LANPLUS = flag(enabled[pluginIndex("lanplus")]),
+        .IPMI_INTF_FREE = flag(enabled[pluginIndex("free")]),
+        .IPMI_INTF_SERIAL = flag(enabled[pluginIndex("serial")]),
+        .IPMI_INTF_DUMMY = flag(enabled[pluginIndex("dummy")]),
+        .IPMI_INTF_USB = flag(enabled[pluginIndex("usb")]),
+        .IPMI_INTF_DBUS = flag(enabled[pluginIndex("dbus")]),
+        .ENABLE_INTF_OPEN_DUAL_BRIDGE = flag(false),
+
+        // FreeIPMI ABI variants; only 0.6.0+ is still realistic.
+        .IPMI_INTF_FREE_0_3_0 = flag(false),
+        .IPMI_INTF_FREE_0_4_0 = flag(false),
+        .IPMI_INTF_FREE_0_5_0 = flag(false),
+        .IPMI_INTF_FREE_0_6_0 = flag(enabled[pluginIndex("free")]),
+        .IPMI_INTF_FREE_BRIDGING = flag(enabled[pluginIndex("free")]),
+
+        // Misc feature switches
+        .ENABLE_ALL_OPTIONS = flag(all_options),
+        .ENABLE_FILE_SECURITY = flag(file_security),
+        .HAVE_READLINE = flag(ipmishell),
+        // configure.ac's anonymous-bitfield probe never succeeds, so autotools
+        // always defines this; keep the same layout decision.
+        .HAVE_PRAGMA_PACK = flag(true),
+
+        .IANADIR = iana_dir,
+        .IANAUSERDIR = iana_user_dir,
+        .PATH_SEPARATOR = if (is_windows) "\\" else "/",
+    });
+
+    // -- shared C module -----------------------------------------------------
+
+    var cflags: std.ArrayList([]const u8) = .empty;
+    cflags.appendSlice(b.allocator, &base_cflags) catch @panic("OOM");
+    if (buildcheck) cflags.appendSlice(b.allocator, &buildcheck_cflags) catch @panic("OOM");
+    const flags = cflags.toOwnedSlice(b.allocator) catch @panic("OOM");
+
+    const core_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+        .sanitize_c = if (sanitize_c) .full else .off,
+    });
+    configure(b, core_mod, config_h, default_intf);
+    addSources(b, core_mod, lib_sources, flags);
+    addSources(b, core_mod, intf_sources, flags);
+    for (plugins, 0..) |plugin, i| {
+        if (!enabled[i]) continue;
+        addSources(b, core_mod, plugin.sources, flags);
+    }
+    const core = b.addLibrary(.{
+        .name = "ipmitool_core",
+        .linkage = .static,
+        .root_module = core_mod,
+    });
+
+    // System libraries are attached to the executables rather than to the
+    // static archive: a `.a` cannot usefully carry shared objects.
+    var system_libs: std.ArrayList([]const u8) = .empty;
+    // lib/Makefile.am: libipmitool_la_LIBADD = -lm
+    if (!is_windows) system_libs.append(b.allocator, "m") catch @panic("OOM");
+    if (openssl) system_libs.append(b.allocator, "crypto") catch @panic("OOM");
+    if (ipmishell) system_libs.append(b.allocator, "readline") catch @panic("OOM");
+    for (plugins, 0..) |plugin, i| {
+        if (!enabled[i]) continue;
+        for (plugin.system_libs) |lib| {
+            if (std.mem.eql(u8, lib, "crypto")) continue;
+            system_libs.append(b.allocator, lib) catch @panic("OOM");
+        }
+    }
+    const libs = system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+
+    // -- executables ---------------------------------------------------------
+
+    const ipmitool = addTool(b, .{
+        .name = "ipmitool",
+        .sources = ipmitool_sources,
+        .target = target,
+        .optimize = optimize,
+        .sanitize_c = sanitize_c,
+        .config_h = config_h,
+        .default_intf = default_intf,
+        .flags = flags,
+        .core = core,
+        .system_libs = libs,
+    });
+    const ipmievd = addTool(b, .{
+        .name = "ipmievd",
+        .sources = ipmievd_sources,
+        .target = target,
+        .optimize = optimize,
+        .sanitize_c = sanitize_c,
+        .config_h = config_h,
+        .default_intf = default_intf,
+        .flags = flags,
+        .core = core,
+        .system_libs = libs,
+    });
+
+    // -- install layout ------------------------------------------------------
+    //
+    // Matches `make install`: bin/ipmitool, sbin/ipmievd, share/man/man{1,8},
+    // share/ipmitool (pkgdatadir) and share/doc/ipmitool (docdir).
+
+    b.installArtifact(ipmitool);
+    b.getInstallStep().dependOn(&b.addInstallArtifact(ipmievd, .{
+        .dest_dir = .{ .override = .{ .custom = "sbin" } },
+    }).step);
+
+    const man_subs = [_]Substitution{
+        .{ .name = "IANADIR", .value = iana_dir },
+        .{ .name = "IANAUSERDIR", .value = iana_user_dir },
+    };
+    const man_pages = b.addWriteFiles();
+    b.getInstallStep().dependOn(&b.addInstallFileWithDir(
+        substitute(b, man_pages, "doc/ipmitool.1.in", "ipmitool.1", &man_subs),
+        .prefix,
+        "share/man/man1/ipmitool.1",
+    ).step);
+    b.getInstallStep().dependOn(&b.addInstallFileWithDir(
+        substitute(b, man_pages, "doc/ipmievd.8.in", "ipmievd.8", &man_subs),
+        .prefix,
+        "share/man/man8/ipmievd.8",
+    ).step);
+
+    for (contrib_data) |name| {
+        b.getInstallStep().dependOn(&b.addInstallFileWithDir(
+            b.path(b.fmt("contrib/{s}", .{name})),
+            .prefix,
+            b.fmt("share/ipmitool/{s}", .{name}),
+        ).step);
+    }
+    for (contrib_scripts) |name| {
+        b.getInstallStep().dependOn(&b.addInstallFileWithDir(
+            b.path(b.fmt("contrib/{s}", .{name})),
+            .prefix,
+            b.fmt("share/ipmitool/contrib/{s}", .{name}),
+        ).step);
+    }
+    for (doc_files) |name| {
+        b.getInstallStep().dependOn(&b.addInstallFileWithDir(
+            b.path(name),
+            .prefix,
+            b.fmt("share/doc/ipmitool/{s}", .{name}),
+        ).step);
+    }
+
+    if (registry_download) {
+        const fetch = b.addSystemCommand(&.{
+            "curl",   "--location", "--silent", "--show-error",
+            "--fail", "--output",
+        });
+        const registry = fetch.addOutputFileArg("enterprise-numbers");
+        fetch.addArg(iana_pen_url);
+        b.getInstallStep().dependOn(&b.addInstallFileWithDir(
+            registry,
+            .prefix,
+            "share/misc/enterprise-numbers",
+        ).step);
+    }
+
+    // -- `zig build run` -----------------------------------------------------
+
+    const run_cmd = b.addRunArtifact(ipmitool);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| run_cmd.addArgs(args);
+    b.step("run", "Run ipmitool with the given arguments").dependOn(&run_cmd.step);
+
+    const run_evd = b.addRunArtifact(ipmievd);
+    run_evd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| run_evd.addArgs(args);
+    b.step("run-ipmievd", "Run ipmievd with the given arguments").dependOn(&run_evd.step);
+
+    // -- `zig build test` ----------------------------------------------------
+    //
+    // Smoke tests only for now; issue #4 adds the golden transcript suite on
+    // top of the dummy interface.
+
+    const test_step = b.step("test", "Run the build smoke tests");
+
+    const version_check = b.addRunArtifact(ipmitool);
+    version_check.addArg("-V");
+    version_check.expectStdOutEqual(b.fmt("ipmitool version {s}\n", .{version}));
+    test_step.dependOn(&version_check.step);
+
+    const evd_version_check = b.addRunArtifact(ipmievd);
+    evd_version_check.addArg("-V");
+    evd_version_check.expectStdOutEqual(b.fmt("ipmievd version {s}\n", .{version}));
+    test_step.dependOn(&evd_version_check.step);
+
+    // `-h` writes the usage, including the interface list, to stderr.
+    const usage = b.addRunArtifact(ipmitool);
+    usage.addArg("-h");
+    usage.expectExitCode(0);
+    const usage_text = usage.captureStdErr(.{});
+    var expected: std.ArrayList([]const u8) = .empty;
+    expected.append(b.allocator, "Interfaces:") catch @panic("OOM");
+    for (plugins, 0..) |plugin, i| {
+        if (!enabled[i]) continue;
+        // The serial plugin registers under two different interface names.
+        if (std.mem.eql(u8, plugin.name, "serial")) {
+            expected.append(b.allocator, "serial-terminal") catch @panic("OOM");
+            expected.append(b.allocator, "serial-basic") catch @panic("OOM");
+            continue;
+        }
+        expected.append(b.allocator, plugin.name) catch @panic("OOM");
+    }
+    const usage_check = b.addCheckFile(usage_text, .{
+        .expected_matches = expected.toOwnedSlice(b.allocator) catch @panic("OOM"),
+    });
+    test_step.dependOn(&usage_check.step);
+
+    const evd_usage = b.addRunArtifact(ipmievd);
+    evd_usage.addArg("-h");
+    evd_usage.expectExitCode(0);
+    _ = evd_usage.captureStdErr(.{});
+    test_step.dependOn(&evd_usage.step);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/// Renders `#define NAME 1` when set and `/* #undef NAME */` when not, which is
+/// what autoconf's `AC_DEFINE` produces.
+fn flag(value: bool) ?u8 {
+    return if (value) 1 else null;
+}
+
+fn pluginIndex(comptime name: []const u8) usize {
+    return comptime blk: {
+        for (plugins, 0..) |plugin, i| {
+            if (std.mem.eql(u8, plugin.name, name)) break :blk i;
+        }
+        @compileError("unknown plugin: " ++ name);
+    };
+}
+
+fn validateDefaultIntf(b: *std.Build, name: []const u8, enabled: []const bool) void {
+    for (plugins, 0..) |plugin, i| {
+        if (std.mem.eql(u8, plugin.name, name)) {
+            if (!enabled[i]) {
+                std.debug.print(
+                    "error: cannot set '{s}' as the default interface; -Dintf-{s} is disabled\n",
+                    .{ name, name },
+                );
+                std.process.exit(1);
+            }
+            return;
+        }
+    }
+    std.debug.print("error: unknown default interface '{s}'\n", .{name});
+    std.process.exit(1);
+    _ = b;
+}
+
+fn addSources(
+    b: *std.Build,
+    mod: *std.Build.Module,
+    set: CSourceSet,
+    flags: []const []const u8,
+) void {
+    mod.addCSourceFiles(.{
+        .root = b.path(set.dir),
+        .files = set.files,
+        .flags = flags,
+        .language = .c,
+    });
+}
+
+/// Include paths and macros every translation unit needs.
+fn configure(
+    b: *std.Build,
+    mod: *std.Build.Module,
+    config_h: *std.Build.Step.ConfigHeader,
+    default_intf: []const u8,
+) void {
+    mod.addConfigHeader(config_h);
+    mod.addIncludePath(b.path("include"));
+    mod.addCMacro("HAVE_CONFIG_H", "1");
+    // src/plugins/Makefile.am: libintf_la_CFLAGS
+    mod.addCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{default_intf}));
+}
+
+const ToolOptions = struct {
+    name: []const u8,
+    sources: CSourceSet,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    sanitize_c: bool,
+    config_h: *std.Build.Step.ConfigHeader,
+    default_intf: []const u8,
+    flags: []const []const u8,
+    core: *std.Build.Step.Compile,
+    system_libs: []const []const u8,
+};
+
+fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
+    const mod = b.createModule(.{
+        .target = options.target,
+        .optimize = options.optimize,
+        .link_libc = true,
+        .sanitize_c = if (options.sanitize_c) .full else .off,
+    });
+    configure(b, mod, options.config_h, options.default_intf);
+    addSources(b, mod, options.sources, options.flags);
+    mod.linkLibrary(options.core);
+    for (options.system_libs) |lib| mod.linkSystemLibrary(lib, .{});
+    return b.addExecutable(.{ .name = options.name, .root_module = mod });
+}
+
+const Substitution = struct {
+    name: []const u8,
+    value: []const u8,
+};
+
+/// Expands `@NAME@` placeholders the way `AC_CONFIG_FILES` does. Used for the
+/// `doc/*.in` man page templates, which cannot go through `addConfigHeader`
+/// because that prepends a C comment.
+fn substitute(
+    b: *std.Build,
+    wf: *std.Build.Step.WriteFile,
+    in_path: []const u8,
+    out_name: []const u8,
+    subs: []const Substitution,
+) std.Build.LazyPath {
+    const gpa = b.allocator;
+    var text = b.build_root.handle.readFileAlloc(
+        b.graph.io,
+        in_path,
+        gpa,
+        .limited(4 * 1024 * 1024),
+    ) catch |err| std.debug.panic("unable to read '{s}': {s}", .{ in_path, @errorName(err) });
+    for (subs) |sub| {
+        const needle = b.fmt("@{s}@", .{sub.name});
+        text = std.mem.replaceOwned(u8, gpa, text, needle, sub.value) catch @panic("OOM");
+    }
+    return wf.add(out_name, text);
+}
+
+/// Reproduces `./csv-revision`: `1.8.19` plus the `.<rev>.<hash>` suffix from
+/// `git describe`. Falls back to the plain base version outside a git checkout,
+/// so that packaged tarballs and CI without git still build.
+fn detectVersion(b: *std.Build) []const u8 {
+    // `runAllowFail` only writes `code` when the child fails, and reports any
+    // failure as an error, so the error path is the only one that matters.
+    var code: u8 = 0;
+    const raw = b.runAllowFail(
+        &.{ "git", "-C", b.pathFromRoot("."), "describe", "--first-parent", "--tags" },
+        &code,
+        .ignore,
+    ) catch return base_version;
+
+    const described = std.mem.trim(u8, raw, " \t\r\n");
+    var it = std.mem.splitScalar(u8, described, '-');
+    _ = it.next(); // tag
+    const rev = it.next() orelse return base_version;
+    const hash = it.next() orelse return base_version;
+    if (rev.len == 0 or hash.len == 0) return base_version;
+    return b.fmt("{s}.{s}.{s}", .{ base_version, rev, hash });
+}
