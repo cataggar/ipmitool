@@ -1,28 +1,23 @@
+# ipmitool
 
-                              ipmitool
-                            Duncan Laurie
+> **⚠️ Experimental and unofficial fork** — This repository is an experimental,
+> unofficial fork of [ipmitool](https://codeberg.org/IPMITool/ipmitool),
+> maintained with AI assistance (GitHub Copilot). It is not affiliated with or
+> endorsed by the upstream project or its maintainers.
+>
+> Upstream: <https://codeberg.org/IPMITool/ipmitool>
+>
+> Please report issues that are specific to this fork here, and take everything
+> else upstream.
 
-               https://codeberg.org/IPMITool/ipmitool
+Originally written by Duncan Laurie.
 
+## Overview
 
-*** EXPERIMENTAL AND UNOFFICIAL FORK ***
-=========================================
-This repository is an experimental, unofficial fork of ipmitool, developed
-with AI assistance (GitHub Copilot).  It is not affiliated with or endorsed
-by the upstream project or its maintainers.
-
-Upstream: https://codeberg.org/IPMITool/ipmitool
-
-Please report issues against this fork here, and use upstream for anything
-that is not specific to the changes made in this fork.
-
-
-Overview
-========
 ipmitool is a utility for managing and configuring devices that support
-the Intelligent Platform Management Interface.  IPMI is an open standard
+the Intelligent Platform Management Interface. IPMI is an open standard
 for monitoring, logging, recovery, inventory, and control of hardware
-that is implemented independent of the main CPU, BIOS, and OS.  The
+that is implemented independent of the main CPU, BIOS, and OS. The
 service processor (or Baseboard Management Controller, BMC) is the brain
 behind platform management and its primary purpose is to handle the
 autonomous sensor monitoring and event logging features.
@@ -33,26 +28,25 @@ sensor values, display the contents of the System Event Log (SEL), print
 Field Replaceable Unit (FRU) inventory information, read and set LAN
 configuration parameters, and perform remote chassis power control.
 
+## Background
 
-Background
-==========
 I originally wrote ipmitool while between projects and employed at Sun
-Microsystems.  Sun had just embarked on a new line of general-purpose x86
+Microsystems. Sun had just embarked on a new line of general-purpose x86
 servers that included an OEM Intel board with an IPMIv1.5 BMC on board.
 It started with an idea that remote chassis power control would be a handy
-feature for my systems in the lab and from there it grew into a multi-
-purpose tool that lots of people found useful.  I decided to release it
+feature for my systems in the lab and from there it grew into a multi-purpose
+tool that lots of people found useful. I decided to release it
 under a BSD license and give others the chance to make use of it.
 
 ipmitool was not written to provide large-scale (aka Enterprise) management
-application functionality.  The functionality that ipmitool proivides is
+application functionality. The functionality that ipmitool provides is
 easily accomplished by sending simple IPMI request messages and parsing
-the returned response.  It is intended to be used by system administrators
+the returned response. It is intended to be used by system administrators
 who like the simplicity and scriptability of command-line utilities, as
 well as those debugging or developing their own BMC implementations.
 
-OS Support
-==========
+## OS Support
+
 Although originally `ipmitool` supported a lot of operating systems,
 such as Solaris, macOS, Windows and FreeBSD, as of 2025 it doesn't
 seem feasible to support all of them. Hence, even though the old
@@ -60,226 +54,245 @@ code that supports those systems still exists, no checks are performed
 for the new changes in regard to their compatibility with any operating
 systems beside Linux.
 
-The checks are run automatically using the continous integration facilities
+The checks are run automatically using the continuous integration facilities
 of Codeberg.org that only provide support for Linux runners. That's why
 every PR is checked for buildability with the following distributions:
 
- - Ubuntu Noble
- - Ubuntu Plucky
- - Ubunty Questing
- - Fedora 39
- - Fedora 41
- - Fedora 42
+- Ubuntu Noble
+- Ubuntu Plucky
+- Ubuntu Questing
+- Fedora 39
+- Fedora 41
+- Fedora 42
 
 If you want to provide a hosted runner for another operating system,
 you are welcome to submit a PR with relevant configuration changes
-(see `.woodpecker.yml`)
+(see `.woodpecker.yml`).
 
+## Requirements
 
-Requirements
-============
 Obviously the largest requirement is hardware with a service processor
-that supports the IPMI specification.  Many x86-based servers are now
+that supports the IPMI specification. Many x86-based servers are now
 coming with IPMI support, check with your preferred hardware vendor
 about available products.
 
 Once you are certain you have the required hardware, you then need to
-decide how you want to access the BMC.  The most common case involve
-access through the System Interface or over the LAN.  (or serial, but
+decide how you want to access the BMC. The most common case involve
+access through the System Interface or over the LAN. (or serial, but
 currently ipmitool does not support the serial interface)
 
-System Interface
-----------------
+### System Interface
+
 There are multiple types of system interfaces, but they are all similar
-enough to allow a single well-designed driver to support them all.  
+enough to allow a single well-designed driver to support them all.
 Different types of system interfaces include Keyboard Controller Style
 (KCS), Block Transfer (BT), System Management Interface Chip (SMIC) and
-SMBus.  Different hardware vendors will have different preference and
+SMBus. Different hardware vendors will have different preference and
 implementations.
 
 On Linux the OpenIPMI kernel driver should support all of these system
 interfaces and it should be a simple matter of loading the right
-kernel modules and setting up the device node to use it.  The driver
+kernel modules and setting up the device node to use it. The driver
 module names vary slightly in different kernel versions, but for all
 releases you need these two modules:
 
-  ipmi_msghandler: incoming and outgoing message handler
-  ipmi_devintf: character device interface to IPMI driver
+- `ipmi_msghandler`: incoming and outgoing message handler
+- `ipmi_devintf`: character device interface to IPMI driver
 
 For 2.4.x and early 2.6.x kernels you need to choose a module based on
-the type of system interface your hardware supports.  For example:
+the type of system interface your hardware supports. For example:
 
-  ipmi_kcs_drv: Keyboard Controller Style driver
+- `ipmi_kcs_drv`: Keyboard Controller Style driver
 
 More recent 2.6.x kernels have combined these into a single module:
 
-  ipmi_si: a universal IPMI system interface driver
+- `ipmi_si`: a universal IPMI system interface driver
 
 See the documentation that comes with your distribution and/or kernel
-for more information on what kernel modules are required.  Once the
+for more information on what kernel modules are required. Once the
 required modules are loaded and the driver has found a suitable system
 interface to the BMC then you need to ensure the device node at
-/dev/ipmi0 is pointing at the correct major number.
+`/dev/ipmi0` is pointing at the correct major number.
 
 This is because OpenIPMI is given a dynamically assigned major number
 when it is loaded, but depending on what other modules are present
-this number may be anywhere from 254 on down.  The easiest way to tell
-is to check the output of /proc/devices and see what major number the
-"ipmidev" device is assigned to.
+this number may be anywhere from 254 on down. The easiest way to tell
+is to check the output of `/proc/devices` and see what major number the
+`ipmidev` device is assigned to.
 
-There is a sample script included with ipmitool called ipmi.init that
+There is a sample script included with ipmitool called `ipmi.init` that
 can be used to automate this process at bootup.
 
+### LAN Interface
 
-LAN Interface
--------------
 This is often referred to as "IPMI-over-LAN" and defines how IPMI messages
 can be sent to and from the BMC encapsulated in Remote Management Control
 Protocol (RMCP) packets which are then transferred as UDP datagrams.
 
 IPMI-over-LAN is only supported with version 1.5 and higher of the IPMI
-specification.  The RMCP packet format is defined by the Alert Standard
+specification. The RMCP packet format is defined by the Alert Standard
 Forum, and it has been followed up with the RMCP+ protocol that adds
-encryption and payload support.  The IPMIv2 specification was updated
-accordingly to to support the RMCP+ protocol and brings with it enhanced
+encryption and payload support. The IPMIv2 specification was updated
+accordingly to support the RMCP+ protocol and brings with it enhanced
 security with encryption as well as support for Serial over LAN.
 
-There are different types of LAN interfaces as well.  Some systems have
+There are different types of LAN interfaces as well. Some systems have
 shared management networks where the NIC will intercept UDP packets to
-port 623 and redirect them to the BMC over SMBUS.  This type of LAN
+port 623 and redirect them to the BMC over SMBUS. This type of LAN
 interface requires that the BMC be configured with the same settings that
-the system uses.  It also suffers from an increased security risk just by
+the system uses. It also suffers from an increased security risk just by
 the nature of sharing that interface with normal traffic.
 
 I have also seen bugs in some implementations that have rendered the
-IPMI-over-LAN feature "dangerous" to enable in some situations.  (in
+IPMI-over-LAN feature "dangerous" to enable in some situations. (in
 particular there can be an issue with RPC because it will sometimes choose
 to use port 623 and you will lose response packets...)
 
-There is a sample shell script included with ipmitool called bmclanconf
+There is a sample shell script included with ipmitool called `bmclanconf`
 that can be used to simplify the LAN settings configuration process using
-the System Interface to configure the settings.  In some cases the
+the System Interface to configure the settings. In some cases the
 hardware will come with a utility (often a DOS bootable CD) for configuring
 enabling the LAN interface as well.
 
 In order to support the IPMIv2.0 interface you must have an OpenSSL library
-with the required encryption functions.  Recent distributions should have
-no problems.  The IPMIv1.5 interface will attempt to use OpenSSL for MD5
+with the required encryption functions. Recent distributions should have
+no problems. The IPMIv1.5 interface will attempt to use OpenSSL for MD5
 hash function at compile time but if that is not found it will use an
 internal library.
 
-IPMB Dual Bridging in  IPMITOOL
--------------------------------
+### IPMB Dual Bridging in ipmitool
 
 IPMI offers a standard messaging interface.
 
 The following concepts are related to this messaging interface:
 
-Channel type     : Communication channel type (SMS/KCS, IPMB, LAN) 
-Channel number   : Channel descriptor
-Requester        : Address of the requester
-Responder        : Address of the responder
-NetFN            : The logical function  for the request/response.
-Command          : The command number 
-Sequence         : An ID identifiying the request/response pair
-Message tracking : The ability to match request/response pair.
+| Concept | Description |
+| --- | --- |
+| Channel type | Communication channel type (SMS/KCS, IPMB, LAN) |
+| Channel number | Channel descriptor |
+| Requester | Address of the requester |
+| Responder | Address of the responder |
+| NetFN | The logical function for the request/response |
+| Command | The command number |
+| Sequence | An ID identifying the request/response pair |
+| Message tracking | The ability to match request/response pair |
 
-When a communication is issued through any of the channels, an application 
-formats a request and expect a response. 
+When a communication is issued through any of the channels, an application
+formats a request and expects a response.
 
-Direct Command
---------------
-The simplest form of communication is a "direct command" using SMS/KCS
+#### Direct Command
+
+The simplest form of communication is a "direct command" using SMS/KCS.
 
 Example:
- ipmitool raw 6 4
-  55 00
 
-This send raw command 4 (selftest) from netfn 6(application) to KCS, the driver 
-takes care of 'message tracking' and provides the answer.
+```console
+$ ipmitool raw 6 4
+ 55 00
+```
+
+This sends raw command 4 (selftest) from netfn 6 (application) to KCS, the
+driver takes care of "message tracking" and provides the answer.
 
 Hopefully, the application also includes a "human readable" instance of the API:
- ipmitool mc selftest
- Selftest: passed
 
-Bridged Command
----------------
-One slightly more complicated communication mode is the so-called 
-"bridged command" using IPMB. 
+```console
+$ ipmitool mc selftest
+Selftest: passed
+```
+
+#### Bridged Command
+
+One slightly more complicated communication mode is the so-called
+"bridged command" using IPMB.
 
 Example:
- ipmitool -m 0x94 -t 0x9a raw 6 4
- 55 00
- 
- or
- 
- ipmitool -m 0x94 -t 0x9a mc selftest
- Selftest: passed
- 
 
-This still sends the same command  4 (selftest) from netfn 6(application) to 
+```console
+$ ipmitool -m 0x94 -t 0x9a raw 6 4
+ 55 00
+```
+
+or
+
+```console
+$ ipmitool -m 0x94 -t 0x9a mc selftest
+Selftest: passed
+```
+
+This still sends the same command 4 (selftest) from netfn 6 (application) to
 the target. However, to do so, the command is encapsulated (by the driver) and
-sent using the command 0x34 (send message) from netfn 6(application) to KCS. 
+sent using the command 0x34 (send message) from netfn 6 (application) to KCS.
 Then KCS is polled by the driver until a message has been received, then the
-driver uses command 0x33 (get message). The driver also tracks the message 
-and makes sure the response matches the request. Then it decapsultates the
+driver uses command 0x33 (get message). The driver also tracks the message
+and makes sure the response matches the request. Then it decapsulates the
 message and gives the response back to the application.
 
-Dual Bridged Command
---------------------
+#### Dual Bridged Command
+
 Things get a little more ugly when the application needs to reach a management
-controller sitting on an interface (or channel) not directly connected to the 
-BMC/IPMC. In the case the application must encapsulate its message itself and 
+controller sitting on an interface (or channel) not directly connected to the
+BMC/IPMC. In that case the application must encapsulate its message itself and
 request the IPMC to deal with message tracking itself.
 
-Its been working well with IPMITOOL on the LAN interface with:
- ipmitool -H <ip> -U <user> -P <password> -B 0 -T 0x8a  -m 0x20 -t 0x7a -b 7  
-    mc selftest
+It's been working well with ipmitool on the LAN interface with:
 
-However, trying to dual bridge commands locally with :
- ipmitool -B 0 -T 0x9a -m 0x94 -t 0x7a -b 7 mc selftest didn't work 
- (it returned the same data as  ipmitool -m 0x20 -t 0x7a -b 7 mc selftest )
- 
-The reason was that the "openipmi" interface plugin didn't 
+```console
+$ ipmitool -H <ip> -U <user> -P <password> -B 0 -T 0x8a -m 0x20 -t 0x7a -b 7 \
+    mc selftest
+```
+
+However, trying to dual bridge commands locally with
+`ipmitool -B 0 -T 0x9a -m 0x94 -t 0x7a -b 7 mc selftest` didn't work
+(it returned the same data as `ipmitool -m 0x20 -t 0x7a -b 7 mc selftest`).
+
+The reason was that the "openipmi" interface plugin didn't
 encapsulate/decapsulate the message and didn't even detect the intent
 to double bridge the request.
 
- ./src/ipmitool -B 0 -T 0x8a -m 0x94 -t 0x7a -b 7 mc selftest
- 
--B    0  : transit channel for first bridge level (channel 0: IPMB-0) 
--T 0x8a  : transit destination address (remote IPMC address)
--m 0x94  : source address (local IPMC address on IPMB-0)
--t 0x7a  : remote target (AMC IPMB-L address)
--b    7  : remote channel (channel 7: IPMB-L)
+```console
+$ ./src/ipmitool -B 0 -T 0x8a -m 0x94 -t 0x7a -b 7 mc selftest
+```
 
-The transit source address (remote IPMC address on remote channel) is 
+| Option | Meaning |
+| --- | --- |
+| `-B 0` | transit channel for first bridge level (channel 0: IPMB-0) |
+| `-T 0x8a` | transit destination address (remote IPMC address) |
+| `-m 0x94` | source address (local IPMC address on IPMB-0) |
+| `-t 0x7a` | remote target (AMC IPMB-L address) |
+| `-b 7` | remote channel (channel 7: IPMB-L) |
+
+The transit source address (remote IPMC address on remote channel) is
 automatically assigned by the remote IPMC.
 
-Payload Size Limit
-------------------
-Because some commands return a lot of data (fru read/get sdr) and because 2 
-levels of encapsulation are used, some command will fail.
+#### Payload Size Limit
 
-For instance this works.
+Because some commands return a lot of data (`fru read`/`get sdr`) and because 2
+levels of encapsulation are used, some commands will fail.
 
-ipmitool -H <ip> -U <user> -P <password>  -B 0 -T 0x8a  -m 0x94 -t 0x7a -b 7 
+For instance this works:
+
+```console
+$ ipmitool -H <ip> -U <user> -P <password> -B 0 -T 0x8a -m 0x94 -t 0x7a -b 7 \
     mc selftest
+```
 
 but this does not:
-    
-ipmitool -H <ip> -U <user> -P <password>  -B 0 -T 0x8a  -m 0x94 -t 0x7a -b 7 
-    fru print.
 
+```console
+$ ipmitool -H <ip> -U <user> -P <password> -B 0 -T 0x8a -m 0x94 -t 0x7a -b 7 \
+    fru print
+```
 
+## Usage
 
-Usage
-=====
 All invocations of ipmitool require specifying an interface to use, unless
-you want to use the default interface as set at compile time.  Each call
-must also specify a command to run.  You can see the list of supported
+you want to use the default interface as set at compile time. Each call
+must also specify a command to run. You can see the list of supported
 interfaces and which is default as well as a list of top level commands in
-the usage output available with the -h option:
+the usage output available with the `-h` option:
 
+```text
 usage: ipmitool [options...] <command>
 
    -h            This help
@@ -314,7 +327,7 @@ Commands:
     sdr          Print Sensor Data Repository entries and readings
     sensor       Print detailed sensor information
     fru          Print built-in FRU and scan SDR for FRU locators
-    sel          Print System Evelnt Log
+    sel          Print System Event Log
     sol          Configure IPMIv2.0 Serial-over-LAN
     user         Configure BMC users
     channel      Configure BMC channels
@@ -322,18 +335,21 @@ Commands:
     shell        Launch interactive IPMI shell
     exec         Run list of commands from file
     set          Set runtime variable for shell and exec
+```
 
+## Commands
 
-Commands
-========
 More help on the supported commands can be found by running them with the
-help argument, for example "chassis help".  There are a few commands with
+help argument, for example `chassis help`. There are a few commands with
 special meaning:
 
-> shell:  This command will launch an shell interface to the ipmitool
-  command set.  You can use this for interactively entering commands to
-  monitor system status.  An example session:
+### `shell`
 
+This command will launch a shell interface to the ipmitool command set. You
+can use this for interactively entering commands to monitor system status. An
+example session:
+
+```console
 # ipmitool -I open shell
 ipmitool> chassis status
 System Power         : off
@@ -351,10 +367,14 @@ ipmitool> user list 7
 ID  Name             Callin  Link Auth  IPMI Msg   Channel Priv Limit
 1                    true    false      true       ADMINISTRATOR
 ipmitool> exit
+```
 
-> exec:  This command will read a text file and execute ipmitool commands
-  in sequence.  It can be used for scriptable commands:
+### `exec`
 
+This command will read a text file and execute ipmitool commands in sequence.
+It can be used for scriptable commands:
+
+```console
 # cat lansetup.scr
 lan set 7 ipsrc static
 lan set 7 ipaddr 10.1.1.10
@@ -364,10 +384,14 @@ lan set 7 defgw ipaddr 10.1.1.254
 Setting LAN IP Address to 10.1.1.10
 Setting Lan Subnet Mask to 255.255.255.0
 Setting Lan Default Gateway IP to 10.1.1.254
+```
 
-> set:  This command can be used by the shell and exec modes to configure
-  various session parameters:
+### `set`
 
+This command can be used by the shell and exec modes to configure various
+session parameters:
+
+```text
   hostname <host>        Session hostname
   username <user>        Session username
   password <pass>        Session password
@@ -378,7 +402,9 @@ Setting Lan Default Gateway IP to 10.1.1.254
   port <port>            Remote RMCP port
   csv [level]            enable output in comma separated format
   verbose [level]        Verbose level
+```
 
+```console
 # cat getstatus.scr
 set hostname sf-v20z-1
 set password admin
@@ -397,18 +423,19 @@ Chassis Intrusion    : active
 Front-Panel Lockout  : inactive
 Drive Fault          : false
 Cooling/Fan Fault    : false
+```
 
+## ipmievd
 
-ipmievd
-=======
-Included with ipmitool is another utility called ipmievd that is a daemon
+Included with ipmitool is another utility called `ipmievd` that is a daemon
 which will listen for events from the BMC that are being sent to the SEL
-and also log those messages to syslog.  By default when run (as root) with
+and also log those messages to syslog. By default when run (as root) with
 no arguments it will daemonize and poll on the OpenIPMI device waiting for
-an event notification.  Upon receipt of an event it will log it to syslog
-with the LOG_LOCAL4 facility.  You can test ipmievd by sending test events
+an event notification. Upon receipt of an event it will log it to syslog
+with the `LOG_LOCAL4` facility. You can test `ipmievd` by sending test events
 over the LAN interface with ipmitool:
 
+```console
 remote# ipmievd
 
 local$ ipmitool -I lan -H lx50 -P admin event help
@@ -428,26 +455,20 @@ ipmievd: Waiting for events...
 ipmievd: Temperature Sensor 30 - Upper Critical - going high
 ipmievd: Voltage Sensor 60 - Lower Critical - going low
 ipmievd: Memory Sensor 01 - Correctable ECC
+```
 
+## Resources
 
-Resources
-=========
-IPMItool homepage
-http://codeberg.org/IPMITool/ipmitool
-
-IPMItool manpage
-https://codeberg.org/IPMITool/ipmitool/src/branch/master/doc/ipmitool.1.in
-
-IPMItool bugtracker (and archives):
-https://codeberg.org/IPMITool/ipmitool/issues
-https://github.com/ipmitool/ipmitool/issues (2018/08 to 2023/03)
-https://sourceforge.net/p/ipmitool/bugs/ (up to 2018/08)
-
-IPMItool commit archive
-https://lists.sourceforge.net/lists/listinfo/ipmitool-cvs
-
-Intelligent Platform Management Interface specification
-https://www.intel.com/content/www/us/en/servers/ipmi/ipmi-home.html
-
-OpenIPMI project: Linux IPMI kernel driver and userland library
-http://openipmi.sourceforge.net
+- ipmitool homepage: <https://codeberg.org/IPMITool/ipmitool>
+- ipmitool manpage:
+  <https://codeberg.org/IPMITool/ipmitool/src/branch/master/doc/ipmitool.1.in>
+- ipmitool bugtracker (and archives):
+  - <https://codeberg.org/IPMITool/ipmitool/issues>
+  - <https://github.com/ipmitool/ipmitool/issues> (2018/08 to 2023/03)
+  - <https://sourceforge.net/p/ipmitool/bugs/> (up to 2018/08)
+- ipmitool commit archive:
+  <https://lists.sourceforge.net/lists/listinfo/ipmitool-cvs>
+- Intelligent Platform Management Interface specification:
+  <https://www.intel.com/content/www/us/en/servers/ipmi/ipmi-home.html>
+- OpenIPMI project: Linux IPMI kernel driver and userland library:
+  <http://openipmi.sourceforge.net>
