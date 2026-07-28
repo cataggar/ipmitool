@@ -29,7 +29,7 @@
 # EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 DOCDIR = $(docdir)
-DOCLIST = $(top_srcdir)/README $(top_srcdir)/COPYING $(top_srcdir)/AUTHORS $(top_srcdir)/ChangeLog
+DOCLIST = $(top_srcdir)/README.md $(top_srcdir)/COPYING $(top_srcdir)/AUTHORS $(top_srcdir)/ChangeLog
 
 EXTRA_DIST = $(DOCLIST) bootstrap
 
