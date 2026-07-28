@@ -28,12 +28,22 @@ log is what catches it.
 * [Differential mode](#differential-mode)
 * [Determinism: what is controlled, what is normalized](#determinism-what-is-controlled-what-is-normalized)
 * [Command coverage check](#command-coverage-check)
-* [Wiring it into build.zig](#wiring-it-into-buildzig)
+* [How it is wired into `zig build`](#how-it-is-wired-into-zig-build)
 
 ## Quick start
 
 ```sh
-# Run the whole suite against the baseline oracle (see baseline-oracle.md).
+# The usual way: build and run the suite against what was just built, plus a
+# second run against a binary with every registered Zig module swapped in.
+zig build test
+
+# Only the golden suite. Extra arguments are forwarded to the harness.
+zig build test-golden
+zig build test-golden -- --filter fru_
+zig build test-golden -- --update
+
+# Standalone, without the build system, against the baseline oracle
+# (see baseline-oracle.md).
 IPMITOOL_ORACLE=/path/to/oracle/ipmitool ./tests/run.sh
 
 # Run a subset.
@@ -51,14 +61,19 @@ IPMITOOL_ORACLE=/path/to/oracle/ipmitool ./tests/run.sh
 ```
 
 `tests/run.sh` is a thin POSIX shell wrapper around
-`zig run tests/golden/main.zig`. The harness is written in Zig 0.16 with no
-dependency on `build.zig`, so it works before, during and after the build system
-migration.
+`zig run tests/golden/main.zig`. The harness needs nothing from `build.zig`, so
+it also works against an autotools build, against an archived oracle, and on a
+tree where `zig build` is broken.
 
 The binary under test is picked in this order: `--binary`, `$IPMITOOL_BINARY`,
 `$IPMITOOL_ORACLE`, `tests/oracle/ipmitool`.
 
 Full option list: `./tests/run.sh --help`.
+
+The report is written to stdout when the run passes and to stderr when it
+fails. That is deliberate: `zig build` discards a `Step.Run`'s stdout but
+surfaces its stderr as the failure diagnostic, so a failing case prints its diff
+under `zig build test` rather than just an exit code.
 
 ## How the dummy interface is driven
 
@@ -432,42 +447,64 @@ So when a future PR adds a command, the suite fails until that command has a
 test. `--allow-uncovered` suppresses the failure; it exists for local
 experiments and should not be used in CI.
 
-## Wiring it into build.zig
+## How it is wired into `zig build`
 
-This PR deliberately does not touch `build.zig` (issue #5 owns it). The build
-agent should add roughly this:
+`build.zig` compiles `tests/golden/main.zig` into a `golden` host executable and
+runs it. Two steps exist:
 
-```zig
-// Golden CLI tests. Runs the harness in tests/ against the binary this build
-// produced; see doc/zig-migration/golden-harness.md.
-const golden = b.addSystemCommand(&.{ b.graph.zig_exe, "run" });
-golden.addFileArg(b.path("tests/golden/main.zig"));
-golden.addArgs(&.{ "--", "--tests-dir" });
-golden.addDirectoryArg(b.path("tests"));
-golden.addArgs(&.{"--repo"});
-golden.addDirectoryArg(b.path("."));
-golden.addArg("--binary");
-golden.addFileArg(ipmitool_exe.getEmittedBin());
-golden.step.dependOn(&ipmitool_exe.step);
-if (b.args) |args| golden.addArgs(args); // forwards --filter, --update, ...
+| step                    | what it does                                                     |
+| ----------------------- | ---------------------------------------------------------------- |
+| `zig build test-golden` | the golden suite only                                             |
+| `zig build test`        | the ABI/layout assertions, the smoke tests, and `test-golden`     |
 
-const golden_step = b.step("test-golden", "Run the golden CLI tests");
-golden_step.dependOn(&golden.step);
-b.getInstallStep().dependOn(&ipmitool_exe.step);
+`zig build test` is what CI runs (`.github/workflows/ci.yml`, the `test` job),
+so every pull request is gated on the suite.
 
-const test_step = b.step("test", "Run all tests");
-test_step.dependOn(golden_step);
+### Two binaries per run
+
+`test-golden` runs the suite **twice**:
+
+1. against the binary the current options produce, which by default is all C,
+   and
+2. against `ipmitool-zig`, a binary with *every* module registered in
+   `zig_modules` served by Zig.
+
+The second run is what makes this a migration safety net rather than a
+regression test: it proves that the ported Zig modules produce byte-identical
+stdout, stderr, exit status and IPMI request bytes. Because the two binaries
+share their C objects through the compilation cache, the second one costs a
+static archive and two links - about 3 s here, against roughly 10 s for the
+build itself.
+
+When `-Dzig-modules` already selects everything, the two binaries would be
+identical and the second run is skipped, so `zig build test -Dzig-modules=oem`
+runs the suite once, against the swapped binary.
+
+Adding a module to `zig_modules` automatically extends the swapped build; there
+is nothing to update in the test wiring.
+
+### Arguments
+
+Everything after `--` is forwarded to the harness:
+
+```sh
+zig build test-golden -- --filter sel_
+zig build test-golden -- --update
+zig build test -- -v
 ```
 
-Two things also belong to the build agent:
+### Scratch space
 
-* add `.golden-work/` to `.gitignore` (the harness deletes it on exit, but a
-  crashed run can leave it behind),
-* keep `IPMITOOL_ORACLE` working as the default binary so the suite can be run
-  against the C oracle without a Zig build.
+Under `zig build` each run gets a private scratch root inside `.zig-cache`
+(`b.tmpPath()`), because the two runs are independent steps that the build
+runner may execute concurrently. Run standalone, the harness uses
+`<repo>/.golden-work`, which is in `.gitignore` and removed on exit.
 
 ## Related
 
 * `doc/zig-migration/baseline-oracle.md` - how the reference binaries are built
   (`scripts/build-oracle.sh`). The oracle is what the snapshots in this
   directory were generated from.
+* `doc/zig-migration/interop-seams.md` - the `-Dzig-modules` swap flag and the
+  per-module port checklist. The golden suite is the acceptance test for every
+  entry on that checklist.

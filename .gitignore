@@ -2,6 +2,11 @@
 zig-out/
 .zig-cache/
 
+# golden test harness scratch root (see doc/zig-migration/golden-harness.md).
+# The harness removes it on exit; this covers interrupted runs. Under
+# `zig build test` the scratch root lives in .zig-cache instead.
+.golden-work/
+
 # autotools build (kept as a cross-check during the Zig migration)
 .deps
 .dirstamp

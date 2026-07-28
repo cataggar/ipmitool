@@ -10,8 +10,9 @@
 # The binary under test is, in order of precedence:
 #   --binary <path>, $IPMITOOL_BINARY, $IPMITOOL_ORACLE, tests/oracle/ipmitool
 #
-# This wrapper exists so the suite can be run before build.zig knows about it.
-# See doc/zig-migration/golden-harness.md for the `zig build test` wiring.
+# This wrapper runs the suite without the build system, which is useful against
+# an archived oracle or an autotools build. `zig build test-golden` is the
+# usual entry point; see doc/zig-migration/golden-harness.md.
 set -eu
 
 # shellcheck disable=SC1007 # CDPATH= is a command prefix assignment, not a typo

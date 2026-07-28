@@ -8,6 +8,7 @@
 //!
 //! Usage:
 //!
+//!     zig build test-golden [-- options]
 //!     tests/run.sh [options]
 //!     zig run tests/golden/main.zig -- [options]
 //!
@@ -26,6 +27,10 @@
 //!     --keep               keep the scratch directories
 //!     --allow-uncovered    do not fail when a C command has no case
 //!     -v, --verbose        print each case as it runs
+//!
+//! The report goes to stdout on success and to stderr on failure, so a failing
+//! case surfaces its diff through `zig build`, which discards a run step's
+//! stdout but reports its stderr.
 
 const std = @import("std");
 const Io = std.Io;
@@ -61,11 +66,26 @@ pub fn main(init: std.process.Init) !u8 {
     const gpa = init.arena.allocator();
     const io = init.io;
 
-    var stdout_buf: [64 * 1024]u8 = undefined;
-    var stdout_file = Io.File.stdout().writer(io, &stdout_buf);
-    const out = &stdout_file.interface;
-    defer out.flush() catch {};
+    // The report is buffered and then routed by outcome: to stdout when the
+    // run succeeded, to stderr when it did not.  `zig build` discards a Run
+    // step's stdout but surfaces its stderr as the failure diagnostic, so this
+    // is what makes a failing case print its diff under `zig build test`
+    // instead of just an exit code.
+    var report: Io.Writer.Allocating = .init(gpa);
+    defer report.deinit();
 
+    const status = dispatch(gpa, io, init, &report.writer);
+
+    var buf: [64 * 1024]u8 = undefined;
+    const failed = if (status) |code| code != 0 else |_| true;
+    var file = (if (failed) Io.File.stderr() else Io.File.stdout()).writer(io, &buf);
+    file.interface.writeAll(report.written()) catch {};
+    file.interface.flush() catch {};
+
+    return status;
+}
+
+fn dispatch(gpa: std.mem.Allocator, io: Io, init: std.process.Init, out: *Io.Writer) !u8 {
     var opts: Options = .{};
     opts.tests_dir = try defaultTestsDir(gpa);
 
