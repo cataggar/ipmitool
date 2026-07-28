@@ -4,6 +4,19 @@
 
                https://codeberg.org/IPMITool/ipmitool
 
+
+*** EXPERIMENTAL AND UNOFFICIAL FORK ***
+=========================================
+This repository is an experimental, unofficial fork of ipmitool, developed
+with AI assistance (GitHub Copilot).  It is not affiliated with or endorsed
+by the upstream project or its maintainers.
+
+Upstream: https://codeberg.org/IPMITool/ipmitool
+
+Please report issues against this fork here, and use upstream for anything
+that is not specific to the changes made in this fork.
+
+
 Overview
 ========
 ipmitool is a utility for managing and configuring devices that support
