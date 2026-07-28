@@ -1,0 +1,71 @@
+# Trimmed IANA Private Enterprise Number registry fixture.
+#
+# The real registry is ~4 MB and is not shipped with ipmitool (the Phase 0
+# oracle is configured with --disable-registry-download).  Without a registry
+# every run prints "IANA PEN registry open failed" on stderr and every
+# manufacturer shows up as "Unknown", which makes the golden output depend on
+# whatever happens to be installed on the machine.  The harness therefore points
+# $HOME at a scratch directory containing this file, so that
+# oem_info_list_load() in lib/ipmi_strings.c finds a known registry.
+#
+# Format, from the header of the real file (and the parser in
+# lib/ipmi_strings.c): the enterprise number in column 0, the organization name
+# indented by exactly two spaces on the following line, then contact and email.
+# Lines that do not start with a digit are ignored by the parser, so this
+# comment block is skipped.
+#
+# Entries were chosen to match the IPMI_OEM ids in include/ipmitool/ipmi.h that
+# the test transcripts use.
+Decimal
+| Organization
+| | Contact
+| | | Email
+| | | |
+0
+  Reserved
+    Internet Assigned Numbers Authority
+      iana&iana.org
+2
+  IBM
+    Not available
+      not-available&example.com
+11
+  Hewlett-Packard Company
+    Not available
+      not-available&example.com
+42
+  Sun Microsystems, Inc.
+    Not available
+      not-available&example.com
+343
+  Intel Corporation
+    Not available
+      not-available&example.com
+674
+  Dell Inc.
+    Not available
+      not-available&example.com
+6653
+  Tyan Computer Corporation
+    Not available
+      not-available&example.com
+7244
+  Quanta Computer Inc.
+    Not available
+      not-available&example.com
+10876
+  Super Micro Computer, Inc.
+    Not available
+      not-available&example.com
+12634
+  PICMG
+    Not available
+      not-available&example.com
+15000
+  Kontron
+    Not available
+      not-available&example.com
+33196
+  VITA
+    Not available
+      not-available&example.com

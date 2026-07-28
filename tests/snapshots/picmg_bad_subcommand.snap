@@ -1,0 +1,41 @@
+#!golden 1
+#!case picmg_bad_subcommand
+#!section exit
+1
+#!section stdout
+#!section stderr
+PICMG commands:
+ properties           - get PICMG properties
+ frucontrol           - FRU control
+ addrinfo             - get address information
+ activate             - activate a FRU
+ deactivate           - deactivate a FRU
+ policy get           - get the FRU activation policy
+ policy set           - set the FRU activation policy
+ portstate get        - get port state
+ portstate getdenied  - get all denied[disabled] port description
+ portstate getgranted - get all granted[enabled] port description
+ portstate getall     - get all port state description
+ portstate set        - set port state
+ amcportstate get     - get port state
+ amcportstate set     - set port state
+ led prop             - get led properties
+ led cap              - get led color capabilities
+ led get              - get led state
+ led set              - set led state
+ power get            - get power level info
+ power set            - set power level
+ clk get              - get clk state
+ clk getdenied        - get all(up to 16) denied[disabled] clock descriptions
+ clk getgranted       - get all(up to 16) granted[enabled] clock descriptions
+ clk getall           - get all(up to 16) clock descriptions
+ clk set              - set clk state
+ busres summary       - display brief bused resource status info
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_properties ccode=0x00 len=4 data=00 23 01 00
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_properties ccode=0x00 len=4 data=00 23 01 00
+bye

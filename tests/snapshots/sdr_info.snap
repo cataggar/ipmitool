@@ -1,0 +1,25 @@
+#!golden 1
+#!case sdr_info
+#!section exit
+0
+#!section stdout
+SDR Version                         : 0x51
+Record Count                        : 4
+Free Space                          : unspecified
+Most recent Addition                : NA
+Most recent Erase                   : NA
+SDR overflow                        : no
+SDR Repository Update Support       : unspecified
+Delete SDR supported                : no
+Partial Add SDR supported           : no
+Reserve SDR repository supported    : yes
+SDR Repository Alloc info supported : no
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 04 00 ff ff 00 00 00 00 00 00 00 00 02
+bye

@@ -1,0 +1,15 @@
+# A BMC that exposes a DDR3 DIMM's SPD EEPROM over IPMI Master Write-Read.
+#
+# `ipmitool spd <bus> <addr>' issues Master Write-Read (06h/52h) with request
+# data `bus, slave address, bytes to read, offset', so `partial 3 1 2' returns
+# the right slice of the SPD image for whatever chunk ipmitool asks for. See
+# ipmi_rawspd_main()/ipmi_master_write_read() in lib/ipmi_raw.c.
+
+default_ccode 0xc1
+
+respond master_write_read
+  netfn 0x06
+  cmd 0x52
+  partial 3 1 2
+  blob @spd/ddr3.hex
+end

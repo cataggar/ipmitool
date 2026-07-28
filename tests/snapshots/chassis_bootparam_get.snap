@@ -1,0 +1,25 @@
+#!golden 1
+#!case chassis_bootparam_get
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 5 is valid/unlocked
+Boot parameter data: 8004000000
+ Boot Flags :
+   - Boot Flag Valid
+   - Options apply to only next boot
+   - BIOS PC Compatible (legacy) boot\x20
+   - Boot Device Selector : Force PXE
+   - BIOS verbosity : System Default
+   - Console Redirection control : Console redirection occurs per BIOS configuration setting (default)
+   - BIOS Mux Control Override : BIOS uses recommended setting of the mux at the end of POST
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=05 00 00
+< rule=get_system_boot_options ccode=0x00 len=7 data=01 05 80 04 00 00 00
+bye

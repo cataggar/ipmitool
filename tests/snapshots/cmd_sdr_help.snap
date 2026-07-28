@@ -1,0 +1,49 @@
+#!golden 1
+#!case cmd_sdr_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+usage: sdr <command> [options]
+               list | elist [option]
+                     all           All SDR Records
+                     full          Full Sensor Record
+                     compact       Compact Sensor Record
+                     event         Event-Only Sensor Record
+                     mcloc         Management Controller Locator Record
+                     fru           FRU Locator Record
+                     generic       Generic Device Locator Record
+
+               type [option]
+                     <Sensor_Type> Retrieve the state of specified sensor.
+                                   Sensor_Type can be specified either as
+                                   a string or a hex value.
+                     list          Get a list of available sensor types
+
+               get <Sensor_ID>
+                     Retrieve state of the first sensor matched by Sensor_ID
+
+               info
+                     Display information about the repository itself
+
+               entity <Entity_ID>[.<Instance_ID>]
+                     Display all sensors associated with an entity
+
+               dump <file>
+                     Dump raw SDR data to a file
+
+               fill <option>
+                     sensors       Creates the SDR repository for the current
+                                   configuration
+                     nosat         Creates the SDR repository for the current
+                                   configuration, without satellite scan
+                     file <file>   Load SDR repository from a file
+                     range <range> Load SDR repository from a provided list
+                                   or range. Use ',' for list or '-' for
+                                   range, eg. 0x28,0x32,0x40-0x44
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

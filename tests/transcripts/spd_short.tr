@@ -1,0 +1,10 @@
+# The same DIMM, but the BMC only ever returns the first 64 bytes.
+
+default_ccode 0xc1
+
+respond master_write_read
+  netfn 0x06
+  cmd 0x52
+  partial 3 1 2
+  blob @spd/ddr3_truncated.hex
+end

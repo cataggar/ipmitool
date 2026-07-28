@@ -1,0 +1,23 @@
+# The same BMC as fru.tr but serving the malformed FRU image
+# fixtures/fru/board_bad_header.hex.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond get_fru_area_info
+  netfn 0x0a
+  cmd 0x10
+  data 00 01 00
+end
+
+respond read_fru_data
+  netfn 0x0a
+  cmd 0x11
+  partial 1 2 3 count_prefix
+  blob @fru/board_bad_header.hex
+end

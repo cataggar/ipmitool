@@ -1,0 +1,49 @@
+# SDR Type 01h - Full Sensor Record (IPMI 2.0 spec Table 43-1).
+# Parsed by struct sdr_record_full_sensor in include/ipmitool/ipmi_sdr.h.
+# Layout is header (5 bytes) + body; `Record Length' must equal the body size.
+
+01 00        # [1:2]  Record ID = 0x0001
+51           # [3]    SDR version 1.5 (51h)
+01           # [4]    Record type 01h = Full Sensor Record
+34           # [5]    Record length = 52 bytes follow
+
+20           # [6]    Sensor owner ID (BMC, slave address 20h)
+00           # [7]    Owner LUN 0, channel 0
+01           # [8]    Sensor number 1
+03           # [9]    Entity ID 3 = Processor
+01           # [10]   Entity instance 1
+7f           # [11]   Sensor initialization: scan/events/thresholds/hysteresis/type all init
+68           # [12]   Sensor capabilities: thresholds readable+settable, per-threshold rearm
+01           # [13]   Sensor type 01h = Temperature
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask (all six thresholds)
+00           # [21]   Units 1: unsigned analog, no rate, no modifier, not a percentage
+01           # [22]   Units 2: base unit 01h = degrees C
+00           # [23]   Units 3: no modifier unit
+00           # [24]   Linearization: linear
+01           # [25]   M = 1 (LS 8 bits)
+00           # [26]   M MS 2 bits | tolerance
+00           # [27]   B = 0 (LS 8 bits)
+00           # [28]   B MS 2 bits | accuracy LS 6 bits
+00           # [29]   Accuracy MS | accuracy exp | sensor direction
+00           # [30]   R exponent | B exponent (both 0)
+07           # [31]   Analog flags: nominal, normal max and normal min all specified
+28           # [32]   Nominal reading = 40
+50           # [33]   Normal maximum = 80
+0a           # [34]   Normal minimum = 10
+ff           # [35]   Sensor maximum reading = 255
+00           # [36]   Sensor minimum reading = 0
+5f           # [37]   Upper non-recoverable = 95
+55           # [38]   Upper critical = 85
+4b           # [39]   Upper non-critical = 75
+05           # [40]   Lower non-recoverable = 5
+0a           # [41]   Lower critical = 10
+0f           # [42]   Lower non-critical = 15
+02           # [43]   Positive-going threshold hysteresis
+02           # [44]   Negative-going threshold hysteresis
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c9           # [48]   ID string type/length: 8-bit ASCII, 9 characters
+43 50 55 31 20 54 65 6d 70   # [49:57] "CPU1 Temp"

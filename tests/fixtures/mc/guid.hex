@@ -1,0 +1,6 @@
+# A 16-byte IPMI GUID (Get System GUID, 06h/37h). IPMI stores the GUID
+# least-significant byte first, so reversing these bytes gives the RFC 4122
+# form 0xffeeddcc-bbaa-1988-a766-554433221100: version 1 (time based) and
+# the RFC 4122 variant. Decoded by ipmi_guid_t handling in lib/ipmi_mc.c.
+
+00 11 22 33 44 55 66 a7 88 19 aa bb cc dd ee ff

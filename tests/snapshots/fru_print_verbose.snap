@@ -1,0 +1,364 @@
+#!golden 1
+#!case fru_print_verbose
+#!section exit
+0
+#!section stdout
+ Chassis Type          : Rack Mount Chassis
+ Chassis Part Number   : CH-01
+ Chassis Serial        : SNCH01
+ Chassis Area Checksum : OK
+ Board Mfg Date        : Wed Jan  1 00:00:00 2020 UTC
+ Board Mfg             : Acme Corp
+ Board Product         : Mainboard
+ Board Serial          : BRD-000123
+ Board Part Number     : PN-00042
+ Board FRU ID          : FRU1.0
+ Board Area Checksum   : OK
+ Product Manufacturer  : Acme Corp
+ Product Name          : Widget
+ Product Part Number   : MDL-1234
+ Product Version       : 1.0
+ Product Serial        : PS0000001
+ Product Asset Tag     : ASSET1
+ Product FRU ID        : FRU1.0
+ Product Area Checksum : OK
+ DC Output Record
+  Output Number              : 1
+  Standby power              : No
+  Nominal voltage            : 30.00 V
+  Max negative deviation     : -1.00 V
+  Max positive deviation     : 1.00 V
+  Ripple and noise pk-pk     : 50 mV
+  Minimum current draw       : 0.000 A
+  Maximum current draw       : 1.000 A
+ System Ping Address   : http://bmc
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: a
+msg.cmd: 10
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: b
+msg.cmd: 10
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 19
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 19
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 12
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 08 00 02
+< rule=read_fru_data ccode=0x00 len=3 data=02 01 03
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 08 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 01 03 17 c5 43 48 2d 30 31 c6 53 4e 43 48 30 31 c1 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 1f 00 01
+< rule=read_fru_data ccode=0x00 len=2 data=01 f3
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 20 00 02
+< rule=read_fru_data ccode=0x00 len=3 data=02 01 08
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 20 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 01 08 00 c0 9c c0 c9 41 63 6d 65 20 43 6f 72 70 c9 4d 61 69 6e 62 6f
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 37 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 61 72 64 ca 42 52 44 2d 30 30 30 31 32 33 c8 50 4e 2d 30 30 30 34 32
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 4e 00 12
+< rule=read_fru_data ccode=0x00 len=19 data=12 c6 46 52 55 31 2e 30 c1 00 00 00 00 00 00 00 00 00 11
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 60 00 02
+< rule=read_fru_data ccode=0x00 len=3 data=02 01 08
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 60 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 01 08 00 c9 41 63 6d 65 20 43 6f 72 70 c6 57 69 64 67 65 74 c8 4d 44
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 77 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 4c 2d 31 32 33 34 c3 31 2e 30 c9 50 53 30 30 30 30 30 30 31 c6 41 53
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 8e 00 12
+< rule=read_fru_data ccode=0x00 len=19 data=12 53 45 54 31 c6 46 52 55 31 2e 30 c1 00 00 00 00 00 b5
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a0 00 05
+< rule=read_fru_data ccode=0x00 len=6 data=05 01 02 0d 20 f0
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a5 00 0d
+< rule=read_fru_data ccode=0x00 len=14 data=0d 01 b8 0b 9c ff 64 00 32 00 00 00 e8 03
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 b2 00 05
+< rule=read_fru_data ccode=0x00 len=6 data=05 03 82 0b 73 70
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 b7 00 0b
+< rule=read_fru_data ccode=0x00 len=12 data=0b 03 68 74 74 70 3a 2f 2f 62 6d 63
+bye

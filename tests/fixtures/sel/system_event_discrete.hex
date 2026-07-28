@@ -1,0 +1,13 @@
+# SEL record type 02h with a sensor-specific discrete event.
+
+02 00        # [0:1]  Record ID = 0x0002
+02           # [2]    Record type 02h = system event
+00 e2 0b 5e  # [3:6]  Timestamp = 1577837056 = 2020-01-01 00:04:16 UTC
+20 00        # [7:8]  Generator ID
+04           # [9]    EvM revision
+09           # [10]   Sensor type 09h = Power Unit
+03           # [11]   Sensor number 3
+6f           # [12]   Event dir/type: assertion, sensor specific discrete
+00           # [13]   Event data 1: offset 0 = Power Off / Power Down
+ff           # [14]   Event data 2: unspecified
+ff           # [15]   Event data 3: unspecified

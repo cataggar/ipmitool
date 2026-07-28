@@ -1,0 +1,18 @@
+#!golden 1
+#!case cmd_ekanalyzer
+#!section exit
+1
+#!section stdout
+#!section stderr
+Not enough parameters given.
+Ekeying analyzer tool version 1.00
+ekanalyzer Commands:
+      print    [carrier | power | all] <oc=filename1> <b1=filename2>...
+      frushow  <b2=filename>
+      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

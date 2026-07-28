@@ -1,0 +1,17 @@
+#!golden 1
+#!case sel_truncated_entry
+#!section exit
+0
+#!section stdout
+   5 | 01/01/20 | 00:12:48 UTC | Temperature #0x0a |  | Asserted
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_short ccode=0x00 len=13 data=ff ff 05 00 02 00 e4 0b 5e 20 00 04 01
+bye

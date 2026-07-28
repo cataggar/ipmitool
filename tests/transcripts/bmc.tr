@@ -1,0 +1,200 @@
+# A general purpose BMC: enough of the standard IPMI 2.0 command set for the
+# chassis, mc, user, channel, session, event and sel-time paths to produce real
+# output instead of an error message.
+#
+# Anything not listed here answers 0xc1 "Invalid command", which is what a BMC
+# that does not implement an optional command does.
+
+default_ccode 0xc1
+
+# --- app / mc -------------------------------------------------------------
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  # 0x55 = self test passed
+  data 55 00
+end
+
+respond get_device_guid
+  netfn 0x06
+  cmd 0x08
+  data @mc/guid.hex
+end
+
+respond get_system_guid
+  netfn 0x06
+  cmd 0x37
+  data @mc/guid.hex
+end
+
+respond get_bmc_global_enables
+  netfn 0x06
+  cmd 0x2f
+  # receive message queue interrupt + event message buffer + SEL enabled
+  data 0f
+end
+
+respond get_watchdog_timer
+  netfn 0x06
+  cmd 0x25
+  # timer use SMS/OS, don't log; action hard reset; pre-timeout 0;
+  # expiration flags 0; initial countdown 600 * 100ms; present countdown 600
+  data 44 01 00 00 58 02 58 02
+end
+
+respond get_acpi_power_state
+  netfn 0x06
+  cmd 0x07
+  # system power state S0/G0 working, device power state D0
+  data 00 00
+end
+
+# --- channel --------------------------------------------------------------
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  # channel 1, auth type support, per-message auth, IPMI v2.0 capable,
+  # OEM ID 0, OEM auxiliary 0
+  data 01 15 06 0a 00 00 00 00
+end
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  # channel 1, medium 802.3 LAN, protocol IPMB-1.0, session support
+  # multi-session with 4 active sessions, vendor IANA 7154 (IPMI forum)
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access
+  netfn 0x06
+  cmd 0x41
+  # alerting enabled, access mode always available, privilege limit ADMIN
+  data 02 04
+end
+
+# --- users ----------------------------------------------------------------
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  # max user ids 4, 1 enabled user id, 1 fixed name, channel access:
+  # link auth + ipmi messaging enabled, privilege limit ADMINISTRATOR
+  data 04 41 01 34
+end
+
+respond get_user_name
+  netfn 0x06
+  cmd 0x46
+  # 16 byte fixed-length user name "admin"
+  data 61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+end
+
+# --- sessions -------------------------------------------------------------
+respond get_session_info
+  netfn 0x06
+  cmd 0x3d
+  # session handle 1, 4 possible / 1 active session, user id 1,
+  # privilege ADMIN, channel 1
+  data 01 04 01 01 01 04 01
+end
+
+# --- chassis --------------------------------------------------------------
+respond get_chassis_status
+  netfn 0x00
+  cmd 0x01
+  # power on, power restore policy always-on, last event AC failed,
+  # front panel buttons all enabled
+  data 61 10 40 5f
+end
+
+respond get_chassis_capabilities
+  netfn 0x00
+  cmd 0x00
+  # capabilities flags, FRU/SDR/SEL/system management device addresses
+  data 0f 20 20 20 20
+end
+
+respond get_por_policy
+  netfn 0x00
+  cmd 0x06
+  # supported policies: always off, previous, always on
+  data 07
+end
+
+respond get_system_boot_options
+  netfn 0x00
+  cmd 0x09
+  # parameter 5 (boot flags), valid, boot device = PXE
+  data 01 05 80 04 00 00 00
+end
+
+# --- SEL time -------------------------------------------------------------
+respond get_sel_time
+  netfn 0x0a
+  cmd 0x48
+  # 1577836800 = 2020-01-01 00:00:00 UTC
+  data 00 e1 0b 5e
+end
+
+respond get_sel_time_utc_offset
+  netfn 0x0a
+  cmd 0x5c
+  data 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 00 00 ff ff 00 00 00 00 00 00 00 00 0a
+end
+
+# --- PEF ------------------------------------------------------------------
+respond get_pef_capabilities
+  netfn 0x04
+  cmd 0x10
+  # PEF version 1.5, action support, 16 event filter table entries
+  data 51 3f 10
+end
+
+# Get PEF Configuration Parameters (04h/13h); request byte 0 is the parameter
+# selector, so one rule per parameter ipmi_pef_print_info() asks for.
+respond get_pef_filter_table_size
+  netfn 0x04
+  cmd 0x13
+  match 05
+  # parameter revision, 16 event filter table entries
+  data 11 10
+end
+respond get_pef_alert_policy_table_size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  # parameter revision, 8 alert policy table entries
+  data 11 08
+end
+respond get_pef_system_guid
+  netfn 0x04
+  cmd 0x13
+  match 0a
+  # parameter revision, "GUID used in PET" flag, then the 16 byte GUID
+  data 11 01 @mc/guid.hex
+end
+
+respond platform_event_message
+  netfn 0x04
+  cmd 0x02
+  data
+end
+
+# --- SOL ------------------------------------------------------------------
+respond get_sol_config_params
+  netfn 0x0c
+  cmd 0x22
+  data 11 01
+end

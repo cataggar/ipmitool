@@ -1,0 +1,18 @@
+#!golden 1
+#!case global_oem_list
+#!section exit
+0
+#!section stdout
+#!section stderr
+
+OEM Support:
+\tsupermicro   Supermicro IPMIv1.5 BMC with OEM LAN authentication support
+\tintelwv2     Intel SE7501WV2 IPMIv1.5 BMC with extra LAN communication support
+\tintelplus    Intel IPMI 2.0 BMC with RMCP+ communication support
+\ticts         IPMI 2.0 ICTS compliance support
+\tibm          IBM OEM support
+\ti82571spt    Intel 82571 MAC with integrated RMCP+ support in super pass-through mode
+\tkontron      Kontron OEM big buffer support
+\tquanta       Quanta IPMIv1.5 BMC with OEM LAN authentication support
+
+#!section requests

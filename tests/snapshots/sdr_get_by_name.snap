@@ -1,0 +1,207 @@
+#!golden 1
+#!case sdr_get_by_name
+#!section exit
+0
+#!section stdout
+Sensor ID              : CPU1 Temp (0x1)
+ Entity ID             : 3.1 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 42 (+/- 0) degrees C
+ Status                : ok
+ Nominal Reading       : 40.000
+ Normal Minimum        : 10.000
+ Normal Maximum        : 80.000
+ Upper non-recoverable : 95.000
+ Upper critical        : 85.000
+ Upper non-critical    : 75.000
+ Lower non-recoverable : 5.000
+ Lower critical        : 10.000
+ Lower non-critical    : 15.000
+ Positive Hysteresis   : 2.000
+ Negative Hysteresis   : 2.000
+ Minimum sensor range  : Unspecified
+ Maximum sensor range  : Unspecified
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+#!section stderr
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 20
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 20
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 22
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: b
+msg.cmd: 22
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 8
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 04 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=02 00 01 00 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 05 17
+< rule=get_sdr_0001 ccode=0x00 len=25 data=02 00 20 00 01 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 1c 17
+< rule=get_sdr_0001 ccode=0x00 len=25 data=02 00 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 43 50 55
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 33 06
+< rule=get_sdr_0001 ccode=0x00 len=8 data=02 00 31 20 54 65 6d 70
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=01
+< rule=get_sensor_reading_1 ccode=0x00 len=4 data=2a c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=01
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=01
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+bye

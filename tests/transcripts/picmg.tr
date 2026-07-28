@@ -1,0 +1,78 @@
+# An AdvancedTCA board that answers the PICMG extension commands.
+#
+# ipmitool probes for PICMG at startup by sending Get PICMG Properties
+# (2Ch/00h) with the PICMG identifier 00h; lib/ipmi_picmg.c then uses the
+# reported extension version to decide which commands exist. Every PICMG
+# request and response carries the PICMG identifier as its first data byte.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond picmg_properties
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  # picmgId 00h, PICMG extension version 2.3, max FRU device ID 1,
+  # FRU device ID for the IPM controller 0
+  data 00 23 01 00
+end
+
+respond picmg_address_info
+  netfn 0x2c
+  cmd 0x01
+  # picmgId, hardware address 0x41, IPMB-0 address 0x82, reserved,
+  # FRU device ID 0, site ID 1, site type 00h (AdvancedTCA board)
+  data 00 41 82 ff 00 01 00
+end
+
+respond picmg_get_fru_led_properties
+  netfn 0x2c
+  cmd 0x05
+  # picmgId, general status LED properties (BLUE, LED1, LED2, LED3),
+  # application specific LED count 0
+  data 00 0f 00
+end
+
+respond picmg_get_led_color_capabilities
+  netfn 0x2c
+  cmd 0x06
+  # picmgId, colour capabilities bitmask, default local colour,
+  # default override colour
+  data 00 3e 01 02
+end
+
+respond picmg_get_fru_led_state
+  netfn 0x2c
+  cmd 0x08
+  # picmgId, LED states (local control), local function ON, on-duration,
+  # local colour BLUE
+  data 00 01 ff 00 01
+end
+
+respond picmg_get_power_level
+  netfn 0x2c
+  cmd 0x12
+  # picmgId, properties, delay to stable power, power multiplier,
+  # then the power draw levels
+  data 00 81 00 0a 14 28 3c
+end
+
+respond picmg_get_portstate
+  netfn 0x2c
+  cmd 0x0f
+  # picmgId, link info: channel 1, interface base, grouping id 0,
+  # link type BASE, link type extension, link state enabled
+  data 00 41 00 01 00 01
+end
+
+respond picmg_get_fru_activation_policy
+  netfn 0x2c
+  cmd 0x0b
+  # picmgId, FRU activation policy bits
+  data 00 03
+end

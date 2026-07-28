@@ -1,0 +1,44 @@
+# FRU MultiRecord Area (FRU spec section 16). Parsed by
+# fru_area_print_multirec() in lib/ipmi_fru.c. Each record has a 5-byte header:
+# type, format/end-of-list, body length, body checksum, header checksum. The
+# length and body checksum sit *before* the bytes they describe, so they are
+# reserved and filled in afterwards.
+
+# --- record 1: DC Output (type 01h), FRU spec section 18.2 -----------------
+@mark r1hdr
+01           # [0] Record type 01h = DC Output
+02           # [1] Record format version 2, bit 7 clear: more records follow
+@mark r1len
+00           # [2] Record body length (filled in below)
+@mark r1sum
+00           # [3] Record body checksum (filled in below)
+@mark r1hsum
+00           # [4] Header checksum (filled in below)
+@mark r1body
+01           # Output number 1, not standby
+b8 0b        # Nominal voltage        = 3000 * 10mV = 3.00 V
+9c ff        # Max negative deviation = -100 * 10mV
+64 00        # Max positive deviation = +100 * 10mV
+32 00        # Ripple and noise pk-pk = 50 mV
+00 00        # Minimum current draw   = 0 mA
+e8 03        # Maximum current draw   = 1000 mA
+@fill_size r1len r1body
+@fill_checksum r1sum r1body
+@fill_checksum r1hsum r1hdr
+
+# --- record 2: Management Access Record (type 03h), spec section 18.4 ------
+@mark r2hdr
+03           # [0] Record type 03h = Management Access Record
+82           # [1] Format version 2, bit 7 set: this is the last record
+@mark r2len
+00           # [2] Record body length (filled in below)
+@mark r2sum
+00           # [3] Record body checksum (filled in below)
+@mark r2hsum
+00           # [4] Header checksum (filled in below)
+@mark r2body
+03           # Sub-record type 03h = System Management URL
+68 74 74 70 3a 2f 2f 62 6d 63   # "http://bmc"
+@fill_size r2len r2body
+@fill_checksum r2sum r2body
+@fill_checksum r2hsum r2hdr

@@ -1,0 +1,22 @@
+#!golden 1
+#!case session_info_active
+#!section exit
+0
+#!section stdout
+session handle                : 1
+slot count                    : 4
+active sessions               : 1
+user id                       : 1
+privilege level               : CALLBACK
+session type                  : IPMIv1.5
+channel number                : 0x04
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x3d target_cmd=0x00 data=00
+< rule=get_session_info ccode=0x00 len=7 data=01 04 01 01 01 04 01
+bye

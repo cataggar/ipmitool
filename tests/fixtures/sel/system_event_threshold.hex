@@ -1,0 +1,16 @@
+# SEL record type 02h - standard System Event Record (IPMI 2.0 Table 32-1).
+# Parsed by struct sel_event_record in include/ipmitool/ipmi_sel.h.
+# Every SEL record is exactly 16 bytes.
+
+01 00        # [0:1]  Record ID = 0x0001
+02           # [2]    Record type 02h = system event
+00 e1 0b 5e  # [3:6]  Timestamp = 1577836800 = 2020-01-01 00:00:00 UTC
+20 00        # [7:8]  Generator ID: BMC slave address 20h, LUN 0, channel 0
+04           # [9]    EvM revision 04h (IPMI 2.0)
+01           # [10]   Sensor type 01h = Temperature
+01           # [11]   Sensor number 1
+01           # [12]   Event dir/type: assertion, threshold event/reading type
+59           # [13]   Event data 1: data2 and data3 both raw, offset 9
+             #        = upper critical going high
+55           # [14]   Event data 2: trigger reading = 85
+55           # [15]   Event data 3: trigger threshold = 85

@@ -1,0 +1,6 @@
+# SEL record type E0h - OEM non-timestamped record (IPMI 2.0 Table 32-3).
+# There is no timestamp at all: 13 bytes of OEM data follow the record type.
+
+04 00        # [0:1]  Record ID = 0x0004
+e0           # [2]    Record type E0h = OEM non-timestamped
+00 01 02 03 04 05 06 07 08 09 0a 0b 0c   # [3:15] OEM defined data

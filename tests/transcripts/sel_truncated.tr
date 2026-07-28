@@ -1,0 +1,21 @@
+# A BMC that returns a short (11-byte) Get SEL Entry response.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_short
+  netfn 0x0a
+  cmd 0x43
+  data ff ff @sel/truncated_entry.hex
+end

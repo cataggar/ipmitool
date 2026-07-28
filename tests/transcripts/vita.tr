@@ -1,0 +1,49 @@
+# A VITA 46.11 chassis that answers the VSO extension commands.
+#
+# The VITA probe is the same Get PICMG Properties command (2Ch/00h) but with
+# the VITA identifier 03h as the first request byte; lib/ipmi_vita.c keys off
+# the identifier echoed back in the response.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond vita_properties
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  # VITA identifier 03h; IPMC identifier (tier 2, layer 2); IPMB
+  # capabilities (400 kHz, one interface); VSO standard VITA 46.11;
+  # specification revision 1.0; max FRU device ID 1; FRU device ID 0
+  data 03 11 10 00 01 01 00
+end
+
+respond vita_address_info
+  netfn 0x2c
+  cmd 0x40
+  # VITA identifier, hardware address 0x41, IPMB-0 address 0x82,
+  # reserved, FRU device ID 0, site ID 1, site type 00h
+  data 03 41 82 ff 00 01 00
+end
+
+respond vita_get_fru_led_properties
+  netfn 0x2c
+  cmd 0x05
+  data 03 0f 00
+end
+
+respond vita_get_led_color_capabilities
+  netfn 0x2c
+  cmd 0x06
+  data 03 3e 01 02
+end
+
+respond vita_get_fru_led_state
+  netfn 0x2c
+  cmd 0x08
+  data 03 01 ff 00 01
+end

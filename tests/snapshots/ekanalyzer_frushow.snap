@@ -1,0 +1,92 @@
+#!golden 1
+#!case ekanalyzer_frushow
+#!section exit
+0
+#!section stdout
+Start converting file '<WORK>/board.fru'...
+=================================================================
+FRU Header Info
+=================================================================
+Format Version          :0x01\x20
+Internal Use Offset     :0x00
+Chassis Info Offset     :0x01
+Board Info Offset       :0x04
+Product Info Offset     :0x0c
+MultiRecord Offset      :0x14
+Common header Checksum  :0xda
+=================================================================
+Chassis Info Area
+=================================================================
+Format Version Number: 1
+Area Length: 24
+Chassis Type: 23
+Chassis Part Number type: 0xc5
+Chassis Part Number: CH-01
+Chassis Serial Number type: 0xc6
+Chassis Serial Number: SNCH01
+No Additional Custom Mfg. fields (0xc1)
+Unused space: 6 (bytes)
+Checksum: 0xf3
+=================================================================
+FRU Board Info Area
+=================================================================
+Format Version: 1
+Area Length: 64
+Language Code: 0
+Board Mfg Date: 1577836800, 01/01/20 00:00:00 UTC
+Board Manufacture Data type: 0xc9
+Board Manufacture Data: Acme Corp
+Board Product Name type: 0xc9
+Board Product Name: Mainboard
+Board Serial Number type: 0xca
+Board Serial Number: BRD-000123
+Board Part Number type: 0xc8
+Board Part Number: PN-00042
+FRU File ID type: 0xc6
+FRU File ID: FRU1.0
+No Additional Custom Mfg. fields (0xc1)
+Unused space: 9 (bytes)
+Checksum: 0x11
+=================================================================
+Product Info Area
+=================================================================
+Format Version Number: 1
+Area Length: 64
+Language Code: 0
+Product Manufacture Data type: 0xc9
+Product Manufacture Data: Acme Corp
+Product Name type: 0xc6
+Product Name: Widget
+Product Part/Model Number type: 0xc8
+Product Part/Model Number: MDL-1234
+Product Version type: 0xc3
+Product Version: 1.0
+Product Serial Number type: 0xc9
+Product Serial Number: PS0000001
+Asset Tag type: 0xc6
+Asset Tag: ASSET1
+FRU File ID type: 0xc6
+FRU File ID: FRU1.0
+No Additional Custom Mfg. fields (0xc1)
+Unused space: 5 (bytes)
+Checksum: 0xb5
+=================================================================
+FRU Multi Info area
+=================================================================
+Record Type ID: 0x01
+Record Format version: 0x02
+Manufacturer ID: 0bb801 h
+Picmg record ID: Unsupported {0x9c}
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0x03
+Record Format version: 0x82
+Manufacturer ID: 746803 h
+Picmg record ID: Unsupported {0x74}
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,394 @@
+# One case per top-level command in the C command table
+# (`ipmitool_cmd_list[]` in src/ipmitool.c), in table order:
+#
+#   cmd_<name>        the command with no arguments
+#   cmd_<name>_help   the command's `help` path
+#
+# tests/golden/coverage.zig re-reads that table on every run and fails the
+# suite if a command has no case here, so adding a command to ipmitool (or
+# forgetting to register one in a port) cannot slip through unnoticed.
+#
+# These cases use the baseline transcript: the point is the argument parsing,
+# usage text and exit status, not BMC data. Cases that exercise the binary
+# parsers live in 20-parsers.cases.
+
+[cmd_raw]
+desc: `ipmitool raw` with no arguments
+args: -I dummy raw
+covers: raw
+
+[cmd_raw_help]
+desc: `ipmitool raw help`
+args: -I dummy raw help
+covers: raw
+
+[cmd_i2c]
+desc: `ipmitool i2c` with no arguments
+args: -I dummy i2c
+covers: i2c
+
+[cmd_i2c_help]
+desc: `ipmitool i2c help`
+args: -I dummy i2c help
+covers: i2c
+
+[cmd_spd]
+desc: `ipmitool spd` with no arguments
+args: -I dummy spd
+covers: spd
+
+[cmd_spd_help]
+desc: `ipmitool spd help`
+args: -I dummy spd help
+covers: spd
+
+[cmd_lan]
+desc: `ipmitool lan` with no arguments
+args: -I dummy lan
+covers: lan
+
+[cmd_lan_help]
+desc: `ipmitool lan help`
+args: -I dummy lan help
+covers: lan
+
+[cmd_chassis]
+desc: `ipmitool chassis` with no arguments
+args: -I dummy chassis
+covers: chassis
+
+[cmd_chassis_help]
+desc: `ipmitool chassis help`
+args: -I dummy chassis help
+covers: chassis
+
+[cmd_power]
+desc: `ipmitool power` with no arguments
+args: -I dummy power
+covers: power
+
+[cmd_power_help]
+desc: `ipmitool power help`
+args: -I dummy power help
+covers: power
+
+[cmd_event]
+desc: `ipmitool event` with no arguments
+args: -I dummy event
+covers: event
+
+[cmd_event_help]
+desc: `ipmitool event help`
+args: -I dummy event help
+covers: event
+
+[cmd_mc]
+desc: `ipmitool mc` with no arguments
+args: -I dummy mc
+covers: mc
+
+[cmd_mc_help]
+desc: `ipmitool mc help`
+args: -I dummy mc help
+covers: mc
+
+[cmd_bmc]
+desc: `ipmitool bmc` with no arguments
+args: -I dummy bmc
+covers: bmc
+
+[cmd_bmc_help]
+desc: `ipmitool bmc help`
+args: -I dummy bmc help
+covers: bmc
+
+[cmd_sdr]
+desc: `ipmitool sdr` with no arguments
+args: -I dummy sdr
+covers: sdr
+
+[cmd_sdr_help]
+desc: `ipmitool sdr help`
+args: -I dummy sdr help
+covers: sdr
+
+[cmd_sensor]
+desc: `ipmitool sensor` with no arguments
+args: -I dummy sensor
+covers: sensor
+
+[cmd_sensor_help]
+desc: `ipmitool sensor help`
+args: -I dummy sensor help
+covers: sensor
+
+[cmd_fru]
+desc: `ipmitool fru` with no arguments
+args: -I dummy fru
+covers: fru
+
+[cmd_fru_help]
+desc: `ipmitool fru help`
+args: -I dummy fru help
+covers: fru
+
+[cmd_gendev]
+desc: `ipmitool gendev` with no arguments
+args: -I dummy gendev
+covers: gendev
+
+[cmd_gendev_help]
+desc: `ipmitool gendev help`
+args: -I dummy gendev help
+covers: gendev
+
+[cmd_sel]
+desc: `ipmitool sel` with no arguments
+args: -I dummy sel
+covers: sel
+
+[cmd_sel_help]
+desc: `ipmitool sel help`
+args: -I dummy sel help
+covers: sel
+
+[cmd_pef]
+desc: `ipmitool pef` with no arguments
+args: -I dummy pef
+covers: pef
+
+[cmd_pef_help]
+desc: `ipmitool pef help`
+args: -I dummy pef help
+covers: pef
+
+[cmd_sol]
+desc: `ipmitool sol` with no arguments
+args: -I dummy sol
+covers: sol
+
+[cmd_sol_help]
+desc: `ipmitool sol help`
+args: -I dummy sol help
+covers: sol
+
+[cmd_tsol]
+desc: `ipmitool tsol` with no arguments
+args: -I dummy tsol
+covers: tsol
+
+[cmd_tsol_help]
+desc: `ipmitool tsol help`
+args: -I dummy tsol help
+covers: tsol
+
+[cmd_isol]
+desc: `ipmitool isol` with no arguments
+args: -I dummy isol
+covers: isol
+
+[cmd_isol_help]
+desc: `ipmitool isol help`
+args: -I dummy isol help
+covers: isol
+
+[cmd_user]
+desc: `ipmitool user` with no arguments
+args: -I dummy user
+covers: user
+
+[cmd_user_help]
+desc: `ipmitool user help`
+args: -I dummy user help
+covers: user
+
+[cmd_channel]
+desc: `ipmitool channel` with no arguments
+args: -I dummy channel
+covers: channel
+
+[cmd_channel_help]
+desc: `ipmitool channel help`
+args: -I dummy channel help
+covers: channel
+
+[cmd_session]
+desc: `ipmitool session` with no arguments
+args: -I dummy session
+covers: session
+
+[cmd_session_help]
+desc: `ipmitool session help`
+args: -I dummy session help
+covers: session
+
+[cmd_dcmi]
+desc: `ipmitool dcmi` with no arguments
+args: -I dummy dcmi
+covers: dcmi
+
+[cmd_dcmi_help]
+desc: `ipmitool dcmi help`
+args: -I dummy dcmi help
+covers: dcmi
+
+[cmd_nm]
+desc: `ipmitool nm` with no arguments
+args: -I dummy nm
+covers: nm
+
+[cmd_nm_help]
+desc: `ipmitool nm help`
+args: -I dummy nm help
+covers: nm
+
+[cmd_sunoem]
+desc: `ipmitool sunoem` with no arguments
+args: -I dummy sunoem
+covers: sunoem
+
+[cmd_sunoem_help]
+desc: `ipmitool sunoem help`
+args: -I dummy sunoem help
+covers: sunoem
+
+[cmd_kontronoem]
+desc: `ipmitool kontronoem` with no arguments
+args: -I dummy kontronoem
+covers: kontronoem
+
+[cmd_kontronoem_help]
+desc: `ipmitool kontronoem help`
+args: -I dummy kontronoem help
+covers: kontronoem
+
+[cmd_picmg]
+desc: `ipmitool picmg` with no arguments
+args: -I dummy picmg
+covers: picmg
+
+[cmd_picmg_help]
+desc: `ipmitool picmg help`
+args: -I dummy picmg help
+covers: picmg
+
+[cmd_fwum]
+desc: `ipmitool fwum` with no arguments
+args: -I dummy fwum
+covers: fwum
+
+[cmd_fwum_help]
+desc: `ipmitool fwum help`
+args: -I dummy fwum help
+covers: fwum
+
+[cmd_firewall]
+desc: `ipmitool firewall` with no arguments
+args: -I dummy firewall
+covers: firewall
+
+[cmd_firewall_help]
+desc: `ipmitool firewall help`
+args: -I dummy firewall help
+covers: firewall
+
+[cmd_delloem]
+desc: `ipmitool delloem` with no arguments
+args: -I dummy delloem
+covers: delloem
+
+[cmd_delloem_help]
+desc: `ipmitool delloem help`
+args: -I dummy delloem help
+covers: delloem
+
+[cmd_shell]
+desc: `ipmitool shell` with no arguments
+args: -I dummy shell
+covers: shell
+
+[cmd_shell_help]
+desc: `ipmitool shell help`
+args: -I dummy shell help
+covers: shell
+
+[cmd_exec]
+desc: `ipmitool exec` with no arguments
+args: -I dummy exec
+covers: exec
+
+[cmd_exec_help]
+desc: `ipmitool exec help`
+args: -I dummy exec help
+covers: exec
+
+[cmd_set]
+desc: `ipmitool set` with no arguments
+args: -I dummy set
+covers: set
+
+[cmd_set_help]
+desc: `ipmitool set help`
+args: -I dummy set help
+covers: set
+
+[cmd_echo]
+desc: `ipmitool echo` with no arguments
+args: -I dummy echo
+covers: echo
+
+[cmd_echo_help]
+desc: `ipmitool echo help`
+args: -I dummy echo help
+covers: echo
+
+[cmd_hpm]
+desc: `ipmitool hpm` with no arguments
+args: -I dummy hpm
+covers: hpm
+
+[cmd_hpm_help]
+desc: `ipmitool hpm help`
+args: -I dummy hpm help
+covers: hpm
+
+[cmd_ekanalyzer]
+desc: `ipmitool ekanalyzer` with no arguments
+args: -I dummy ekanalyzer
+covers: ekanalyzer
+
+[cmd_ekanalyzer_help]
+desc: `ipmitool ekanalyzer help`
+args: -I dummy ekanalyzer help
+covers: ekanalyzer
+
+[cmd_ime]
+desc: `ipmitool ime` with no arguments
+args: -I dummy ime
+covers: ime
+
+[cmd_ime_help]
+desc: `ipmitool ime help`
+args: -I dummy ime help
+covers: ime
+
+[cmd_vita]
+desc: `ipmitool vita` with no arguments
+args: -I dummy vita
+covers: vita
+
+[cmd_vita_help]
+desc: `ipmitool vita help`
+args: -I dummy vita help
+covers: vita
+
+[cmd_lan6]
+desc: `ipmitool lan6` with no arguments
+args: -I dummy lan6
+covers: lan6
+
+[cmd_lan6_help]
+desc: `ipmitool lan6 help`
+args: -I dummy lan6 help
+covers: lan6
+

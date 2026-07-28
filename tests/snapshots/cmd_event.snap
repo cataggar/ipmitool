@@ -1,0 +1,28 @@
+#!golden 1
+#!case cmd_event
+#!section exit
+0
+#!section stdout
+#!section stderr
+
+usage: event <num>
+   Send generic test events
+   1 : Temperature - Upper Critical - Going High
+   2 : Voltage Threshold - Lower Critical - Going Low
+   3 : Memory - Correctable ECC
+
+usage: event file <filename>
+   Read and generate events from file
+   Use the 'sel save' command to generate from SEL
+
+usage: event <sensorid> <state> [event_dir]
+   sensorid  : Sensor ID string to use for event data
+   state     : Sensor state, use 'list' to see possible states for sensor
+   event_dir : assert, deassert [default=assert]
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

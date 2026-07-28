@@ -1,0 +1,31 @@
+# SDR Type 02h - Compact Sensor Record (IPMI 2.0 spec Table 43-2).
+# Parsed by struct sdr_record_compact_sensor.
+
+02 00        # [1:2]  Record ID = 0x0002
+51           # [3]    SDR version 1.5
+02           # [4]    Record type 02h = Compact Sensor Record
+1f           # [5]    Record length = 31 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+02           # [8]    Sensor number 2
+1d           # [9]    Entity ID 29 = Fan device
+01           # [10]   Entity instance 1
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+04           # [13]   Sensor type 04h = Fan
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask
+00           # [21]   Units 1: unsigned analog
+12           # [22]   Units 2: base unit 12h = RPM
+00           # [23]   Units 3
+00           # [24]   Sensor record sharing: 1 sensor, no instance offset
+00           # [25]   Sensor record sharing / entity instance increment
+02           # [26]   Positive-going threshold hysteresis
+02           # [27]   Negative-going threshold hysteresis
+00 00 00     # [28:30] Reserved
+00           # [31]   OEM
+c4           # [32]   ID string type/length: 8-bit ASCII, 4 characters
+46 41 4e 31  # [33:36] "FAN1"

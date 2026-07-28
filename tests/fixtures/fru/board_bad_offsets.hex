@@ -1,0 +1,8 @@
+# A FRU image whose common header points the product info area past the end of
+# the device. Historically this class of input is where FRU parsers overrun.
+
+@mark image
+@fru/board.hex
+@poke image 4 0xfe    # product info area offset = 254 * 8 = 2032, past the end
+@poke image 7 0xe8    # header checksum recomputed for the line above:
+                      # -(01+00+01+04+fe+14+00) mod 256 = 0xe8

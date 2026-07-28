@@ -1,0 +1,20 @@
+#!golden 1
+#!case cmd_firewall
+#!section exit
+0
+#!section stdout
+#!section stderr
+Firmware Firewall Commands:
+\tinfo [channel H] [lun L]
+\tinfo [channel H] [lun L [netfn N [command C [subfn S]]]]
+\tenable [channel H] [lun L [netfn N [command C [subfn S]]]]
+\tdisable [channel H] [lun L [netfn N [command C [subfn S]]]] [force])
+\treset [channel H]
+\t\twhere H is a Channel, L is a LUN, N is a NetFn,
+\t\tC is a Command and S is a Sub-Function
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,33 @@
+#!golden 1
+#!case hpm_check_bad_signature
+#!section exit
+1
+#!section stdout no-final-newline
+Validating firmware image integrity...
+#!section stderr
+
+PICMG HPM.1 Upgrade Agent 1.0.9:\x20
+
+
+    Invalid image signature
+\x20
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_discover ccode=0x00 len=2 data=00 23
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=hpm_target_capabilities ccode=0x00 len=8 data=00 00 1f 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=hpm_comp0_general_properties ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 02
+< rule=hpm_comp0_description ccode=0x00 len=13 data=00 49 50 4d 43 20 20 20 20 20 20 20 20
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 01
+< rule=hpm_comp0_current_version ccode=0x00 len=7 data=00 01 02 34 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 03
+< rule=hpm_comp0_rollback_version ccode=0x00 len=7 data=00 01 01 22 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 04
+< rule=hpm_comp0_deferred_version ccode=0x00 len=7 data=00 00 00 00 00 00 00
+bye

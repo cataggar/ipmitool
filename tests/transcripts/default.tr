@@ -1,0 +1,12 @@
+# Baseline transcript: a BMC that answers "Invalid command" (0xc1) to
+# everything.
+#
+# ipmitool always probes for PICMG and VITA extensions right after opening the
+# interface (picmg_discover()/vita_discover() in lib/ipmi_main.c), so even a
+# case that only prints usage text produces two exchanges. Answering 0xc1 is
+# what a plain IPMI 2.0 BMC without those extensions does.
+#
+# Used by every case whose behaviour does not depend on BMC data: usage/help
+# paths, option parsing, and error paths.
+
+default_ccode 0xc1

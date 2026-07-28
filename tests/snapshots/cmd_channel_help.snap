@@ -1,0 +1,25 @@
+#!golden 1
+#!case cmd_channel_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+Channel Commands: authcap   <channel number> <max privilege>
+                  getaccess <channel number> [user id]
+                  setaccess <channel number> <user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]
+                  info      [channel number]
+                  getciphers <ipmi | sol> [channel]
+
+Possible privilege levels are:
+   1   Callback level
+   2   User level
+   3   Operator level
+   4   Administrator level
+   5   OEM Proprietary level
+  15   No access
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

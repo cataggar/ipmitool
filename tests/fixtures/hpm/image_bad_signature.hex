@@ -1,0 +1,30 @@
+# The same HPM.1 image with a corrupted signature. Because the MD5 is computed
+# over the corrupted bytes the image is still self-consistent, so the failure
+# ipmitool reports is specifically "Invalid image signature".
+
+@mark image
+@mark header
+50 49 43 4d 47 46 57 58   # "PICMGFWX" - last byte wrong
+00
+20
+57 01 00
+01 00
+00 e1 0b 5e
+08
+01
+05
+05
+05
+00 02
+01 00 00 00 00 00
+00 00
+@mark hdrsum
+00
+@fill_checksum hdrsum header
+@mark a1
+01
+01
+@mark a1sum
+00
+@fill_checksum a1sum a1
+@md5 image

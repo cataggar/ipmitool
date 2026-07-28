@@ -1,0 +1,6 @@
+# A DDR3 SPD image the BMC only returns 64 bytes of. ipmi_spd_print() needs at
+# least 148 bytes for DDR3 and 92 bytes for anything, so this exercises the
+# length guards at the top of the function.
+
+@spd/ddr3.hex
+@truncate 64

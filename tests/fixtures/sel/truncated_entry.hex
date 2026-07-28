@@ -1,0 +1,11 @@
+# A Get SEL Entry response that is shorter than the 16 bytes a SEL record must
+# have. A BMC should never do this; the point of the fixture is to pin down
+# what ipmitool prints when one does.
+
+05 00        # [0:1]  Record ID = 0x0005
+02           # [2]    Record type 02h = system event
+00 e4 0b 5e  # [3:6]  Timestamp
+20 00        # [7:8]  Generator ID
+04           # [9]    EvM revision
+01           # [10]   Sensor type
+             # record ends here - bytes 11..15 are missing

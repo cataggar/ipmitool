@@ -1,0 +1,13 @@
+# FRU Common Header (IPMI Platform Management FRU Information Storage
+# Definition v1.0, section 8). Parsed by struct fru_header in
+# include/ipmitool/ipmi_fru.h; the area offsets are in 8-byte multiples.
+
+@mark hdr
+01           # [0] Format version 1, no internal use area
+00           # [1] Internal use area offset  = 0 (absent)
+01           # [2] Chassis info area offset  = 1 * 8 =  8
+04           # [3] Board info area offset    = 4 * 8 = 32
+0c           # [4] Product info area offset  = 12 * 8 = 96
+14           # [5] Multirecord area offset   = 20 * 8 = 160
+00           # [6] PAD, must be 0
+@checksum hdr # [7] Zero checksum over bytes 0..6

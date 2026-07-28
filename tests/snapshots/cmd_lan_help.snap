@@ -1,0 +1,19 @@
+#!golden 1
+#!case cmd_lan_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+LAN Commands:
+\t\t   print [<channel number>]
+\t\t   set <channel number> <command> <parameter>
+\t\t   alert print <channel number> <alert destination>
+\t\t   alert set <channel number> <alert destination> <command> <parameter>
+\t\t   stats get [<channel number>]
+\t\t   stats clear [<channel number>]
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

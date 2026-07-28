@@ -1,0 +1,49 @@
+# HPM.1 firmware upgrade image (IPM Controller Firmware Upgrade Specification
+# v1.0, section 4). Parsed by HpmfwupgValidateImageIntegrity() and
+# HpmfwupgPreparationStage() in lib/ipmi_hpmfwupg.c.
+#
+# Layout: 34-byte image header, OEM data, header checksum, then a sequence of
+# action records, and finally the MD5 of everything before it.
+
+@mark image
+@mark header
+50 49 43 4d 47 46 57 55   # [0:7]   Signature "PICMGFWU"
+00                        # [8]     Image format version (must be 0)
+20                        # [9]     Device ID (must match the target BMC)
+57 01 00                  # [10:12] Manufacturer ID (IANA PEN 343, Intel)
+01 00                     # [13:14] Product ID 0x0001
+00 e1 0b 5e               # [15:18] Image creation time, 2020-01-01 00:00:00 UTC
+08                        # [19]    Image capabilities: manual rollback supported
+01                        # [20]    Components present: bitmask, component 0 (IPMC)
+05                        # [21]    Self test timeout, 5 * 5s
+05                        # [22]    Rollback timeout, 5 * 5s
+05                        # [23]    Inaccessibility timeout, 5 * 5s
+00 02                     # [24:25] Earliest compatible revision 2.0
+01 00 00 00 00 00         # [26:31] Firmware revision 1.0 build 0000
+00 00                     # [32:33] OEM data length = 0
+@mark hdrsum
+00                        # [34]    Header zero checksum (filled in below)
+@fill_checksum hdrsum header
+
+# --- action record 1: prepare components ----------------------------------
+@mark a1
+01                        # Action type 01h = prepare components
+01                        # Components: IPMC
+@mark a1sum
+00                        # Action record checksum (filled in below)
+@fill_checksum a1sum a1
+
+# --- action record 2: upload firmware image -------------------------------
+@mark a2
+02                        # Action type 02h = upload firmware image
+01                        # Components: IPMC
+@mark a2sum
+00                        # Action record checksum (filled in below)
+@fill_checksum a2sum a2
+01 00 00 00 00 00         # Component firmware revision 1.0 build 0000
+# 21-byte description string, NUL padded: "golden harness fw"
+67 6f 6c 64 65 6e 20 68 61 72 6e 65 73 73 20 66 77 00 00 00 00
+10 00 00 00               # Firmware image length = 16 bytes
+de ad be ef de ad be ef de ad be ef de ad be ef   # the firmware payload
+
+@md5 image                # 16-byte MD5 over everything above

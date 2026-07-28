@@ -1,0 +1,12 @@
+# A BMC that answers Get Device ID and nothing else.
+#
+# Exercises ipmi_mc_get_deviceid()/print_devid() in lib/ipmi_mc.c plus the IANA
+# PEN lookup for the manufacturer name.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end

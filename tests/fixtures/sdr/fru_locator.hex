@@ -1,0 +1,20 @@
+# SDR Type 11h - FRU Device Locator Record (IPMI 2.0 spec Table 43-7).
+# Parsed by struct sdr_record_fru_locator.
+
+04 00        # [1:2]  Record ID = 0x0004
+51           # [3]    SDR version 1.5
+11           # [4]    Record type 11h = FRU Device Locator
+14           # [5]    Record length = 20 bytes follow
+
+20           # [6]    Device access address (BMC)
+00           # [7]    FRU device ID / slave address = 0
+80           # [8]    Logical FRU device, LUN 0, bus 0
+00           # [9]    Channel number
+00           # [10]   Reserved
+07           # [11]   Device type 07h = FRU inventory device behind management controller
+00           # [12]   Device type modifier
+0b           # [13]   Entity ID 11 = Add-in card
+01           # [14]   Entity instance 1
+00           # [15]   OEM
+c9           # [16]   ID string type/length: 8-bit ASCII, 9 characters
+46 52 55 20 42 6f 61 72 64   # [17:25] "FRU Board"
