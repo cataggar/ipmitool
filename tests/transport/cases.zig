@@ -188,7 +188,6 @@ const big_args: [15 + big_request_data.len][]const u8 = blk: {
 };
 
 pub const all: []const Case = &.{
-    // -- ipmi_intf registry -------------------------------------------------
     .{
         .name = "intf/unknown",
         .desc = "ipmi_intf_load rejects an unregistered interface name",
@@ -197,6 +196,7 @@ pub const all: []const Case = &.{
     },
 
     // -- IPMI v1.5 over LAN -------------------------------------------------
+
     .{
         .name = "lan/none-mc-info",
         .desc = "v1.5 session with authtype NONE, then Get Device ID",
@@ -206,6 +206,7 @@ pub const all: []const Case = &.{
         },
         .bmc = .{ .auth_types = 1 << 0, .extra = canned },
     },
+
     .{
         .name = "lan/md5-mc-info",
         .desc = "v1.5 session with an MD5 authcode on every packet",
@@ -215,6 +216,7 @@ pub const all: []const Case = &.{
         },
         .bmc = .{ .username = user, .password = pass, .extra = canned },
     },
+
     .{
         .name = "lan/md5-raw-long",
         .desc = "v1.5 raw command whose data pins both checksum ranges",
@@ -231,6 +233,7 @@ pub const all: []const Case = &.{
             .extra = &.{.{ .netfn = 0x2e, .cmd = 0x91, .data = &.{ 0xde, 0xad, 0xbe, 0xef, 0x01 } }},
         },
     },
+
     .{
         .name = "lan/md5-raw-zeros",
         .desc = "v1.5 raw command with embedded NULs, pinning the length byte",
@@ -246,6 +249,7 @@ pub const all: []const Case = &.{
             .extra = &.{.{ .netfn = 0x2e, .cmd = 0x92, .data = &.{ 0x00, 0x7f, 0x00 } }},
         },
     },
+
     .{
         .name = "lan/md5-raw-lun",
         .desc = "-l 7 puts a non-zero LUN in the low two bits of the netfn byte",
@@ -260,6 +264,7 @@ pub const all: []const Case = &.{
             .extra = &.{.{ .netfn = 0x2e, .cmd = 0x96, .data = &.{ 0x5c, 0xa3 } }},
         },
     },
+
     .{
         .name = "lan/none-retry",
         .desc = "v1.5 retransmission: three ignored datagrams, answered on the fourth try",
@@ -276,6 +281,7 @@ pub const all: []const Case = &.{
             .extra = &.{.{ .netfn = 0x2e, .cmd = 0x93, .data = &.{0x24} }},
         },
     },
+
     .{
         .name = "lan/none-timeout",
         .desc = "v1.5 command the BMC never answers: pins the retry limit exactly",
@@ -289,6 +295,7 @@ pub const all: []const Case = &.{
             .deaf = .{ .netfn = 0x2e, .cmd = 0x99 },
         },
     },
+
     .{
         .name = "lan/none-ping-retry",
         .desc = "the RMCP presence ping is retried before the session starts",
@@ -299,6 +306,7 @@ pub const all: []const Case = &.{
         },
         .bmc = .{ .auth_types = 1 << 0, .drop = &.{1}, .extra = canned },
     },
+
     .{
         .name = "lan/authcap-error",
         .desc = "session setup aborts on a Get Channel Auth Cap completion code",
@@ -309,6 +317,7 @@ pub const all: []const Case = &.{
         },
         .bmc = .{ .auth_types = 1 << 0, .authcap_ccode = 0xd4 },
     },
+
     .{
         .name = "lan/activate-error",
         .desc = "session setup aborts on an Activate Session completion code",
@@ -319,6 +328,7 @@ pub const all: []const Case = &.{
         },
         .bmc = .{ .username = user, .password = pass, .activate_ccode = 0x81 },
     },
+
     .{
         .name = "lan/oem-supermicro",
         .desc = "-o supermicro skips the RMCP presence ping",
@@ -336,6 +346,7 @@ pub const all: []const Case = &.{
             .extra = canned,
         },
     },
+
     .{
         .name = "lan/md5-chassis-status",
         .desc = "a non-App netfn over v1.5, exercising the netfn/lun packing",
@@ -344,16 +355,6 @@ pub const all: []const Case = &.{
             "-U", user,  "-P", pass,        "chassis", "status",
         },
         .bmc = .{ .username = user, .password = pass, .extra = canned },
-    },
-
-    .{
-        .name = "lan/md5-long-creds",
-        .desc = "credentials that fill both fixed size fields, pinning the truncation",
-        .args = &.{
-            "-I", "lan",     "-H", "127.0.0.1", "-p", "${port}",
-            "-U", long_user, "-P", pass_16,     "mc", "info",
-        },
-        .bmc = .{ .username = long_user, .password = pass_16, .extra = canned },
     },
 
     .{
@@ -395,6 +396,173 @@ pub const all: []const Case = &.{
                 .{ .netfn = 0x2e, .cmd = 0x98, .data = &.{ 0x5e, 0x5f } },
             },
         },
+    },
+
+    // -- RMCP+ (lanplus) ----------------------------------------------------
+
+    .{
+        .name = "lanplus/cipher1-mc-info",
+        .desc = "cipher suite 1: RAKP-HMAC-SHA1, no integrity, no confidentiality",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "1",
+            "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .extra = canned },
+    },
+
+    .{
+        .name = "lanplus/cipher3-mc-info",
+        .desc = "cipher suite 3: HMAC-SHA1-96 integrity and AES-CBC-128",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .extra = canned },
+    },
+
+    .{
+        .name = "lanplus/cipher17-mc-info",
+        .desc = "cipher suite 17: RAKP-HMAC-SHA256 and HMAC-SHA256-128",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "17",
+            "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .extra = canned },
+    },
+
+    .{
+        .name = "lanplus/cipher3-kg",
+        .desc = "two key login: the SIK is keyed with Kg instead of Kuid",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-k", "bmc-key",
+            "-C", "3",       "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .kg = "bmc-key", .extra = canned },
+    },
+
+    .{
+        .name = "lanplus/cipher1-raw-long",
+        .desc = "RMCP+ payload assembly with a long raw command, unencrypted",
+        .args = &.{
+            "-I",   "lanplus", "-H",   "127.0.0.1", "-p",   "${port}",
+            "-U",   user,      "-P",   pass,        "-C",   "1",
+            "raw",  "0x2e",    "0x94", "0x11",      "0x22", "0x33",
+            "0x44", "0x55",    "0x66", "0x77",      "0x88", "0x99",
+            "0xaa", "0xbb",    "0xcc", "0xdd",      "0xee", "0xff",
+            "0x13",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x94, .data = &.{ 0xc0, 0xff, 0xee } }},
+        },
+    },
+
+    .{
+        .name = "lanplus/cipher1-raw-big",
+        .desc = "a payload over 255 bytes each way, pinning the u16 payload size",
+        .args = &big_args,
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x97, .data = &big_response_data }},
+        },
+    },
+
+    .{
+        .name = "lanplus/cipher3-raw-pad",
+        .desc = "confidentiality padding: a payload one byte short of a block",
+        .args = &.{
+            "-I",   "lanplus", "-H",   "127.0.0.1", "-p",   "${port}",
+            "-U",   user,      "-P",   pass,        "-C",   "3",
+            "raw",  "0x2e",    "0x95", "0x11",      "0x22", "0x33",
+            "0x44", "0x55",    "0x66", "0x77",      "0x88",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x95, .data = &.{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 } }},
+        },
+    },
+
+    .{
+        .name = "lanplus/cipher3-retry",
+        .desc = "RMCP+ retransmission: the BMC ignores one datagram mid-session",
+        .args = &.{
+            "-I",   "lanplus", "-H",  "127.0.0.1", "-p",   "${port}",
+            "-U",   user,      "-P",  pass,        "-C",   "3",
+            "-N",   "1",       "raw", "0x2e",      "0x96", "0x41",
+            "0x42",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .drop = &.{5},
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x96, .data = &.{0x24} }},
+        },
+    },
+
+    .{
+        .name = "lanplus/cipher3-timeout",
+        .desc = "RMCP+ command the BMC never answers: pins the retry limit exactly",
+        .args = &.{
+            "-I",   "lanplus", "-H",  "127.0.0.1", "-p",   "${port}",
+            "-U",   user,      "-P",  pass,        "-C",   "3",
+            "-N",   "1",       "raw", "0x2e",      "0x9a", "0x51",
+            "0x52",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .deaf = .{ .netfn = 0x2e, .cmd = 0x9a },
+        },
+    },
+
+    .{
+        .name = "lanplus/open-session-error",
+        .desc = "the tool aborts when the Open Session Response carries a status",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .open_session_status = 0x01 },
+    },
+
+    .{
+        .name = "lanplus/rakp2-error",
+        .desc = "the tool aborts when RAKP 2 carries a non-zero status code",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .rakp2_status = 0x0d },
+    },
+
+    .{
+        .name = "lanplus/rakp2-bad-authcode",
+        .desc = "the tool rejects a RAKP 2 message whose authcode does not verify",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .corrupt_rakp2 = true },
+    },
+
+    .{
+        .name = "lan/md5-long-creds",
+        .desc = "credentials that fill both fixed size fields, pinning the truncation",
+        .args = &.{
+            "-I", "lan",     "-H", "127.0.0.1", "-p", "${port}",
+            "-U", long_user, "-P", pass_16,     "mc", "info",
+        },
+        .bmc = .{ .username = long_user, .password = pass_16, .extra = canned },
     },
 
     .{
@@ -472,46 +640,7 @@ pub const all: []const Case = &.{
     },
 
     // -- RMCP+ (lanplus) ----------------------------------------------------
-    .{
-        .name = "lanplus/cipher1-mc-info",
-        .desc = "cipher suite 1: RAKP-HMAC-SHA1, no integrity, no confidentiality",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-C", "1",
-            "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .extra = canned },
-    },
-    .{
-        .name = "lanplus/cipher3-mc-info",
-        .desc = "cipher suite 3: HMAC-SHA1-96 integrity and AES-CBC-128",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-C", "3",
-            "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .extra = canned },
-    },
-    .{
-        .name = "lanplus/cipher17-mc-info",
-        .desc = "cipher suite 17: RAKP-HMAC-SHA256 and HMAC-SHA256-128",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-C", "17",
-            "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .extra = canned },
-    },
-    .{
-        .name = "lanplus/cipher3-kg",
-        .desc = "two key login: the SIK is keyed with Kg instead of Kuid",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-k", "bmc-key",
-            "-C", "3",       "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .kg = "bmc-key", .extra = canned },
-    },
+
     .{
         .name = "lanplus/cipher3-long-creds",
         .desc = "credentials that fill both fixed size fields, pinning the truncation",
@@ -526,107 +655,111 @@ pub const all: []const Case = &.{
         // rather than merely diffing.
         .bmc = .{ .username = long_user, .password = pass_20, .extra = canned },
     },
+
     .{
-        .name = "lanplus/cipher1-raw-long",
-        .desc = "RMCP+ payload assembly with a long raw command, unencrypted",
+        .name = "lan/none-privlvl-user",
+        .desc = "-L USER stays at or below the default, so no Set Session Privilege Level is sent",
         .args = &.{
-            "-I",   "lanplus", "-H",   "127.0.0.1", "-p",   "${port}",
-            "-U",   user,      "-P",   pass,        "-C",   "1",
-            "raw",  "0x2e",    "0x94", "0x11",      "0x22", "0x33",
-            "0x44", "0x55",    "0x66", "0x77",      "0x88", "0x99",
-            "0xaa", "0xbb",    "0xcc", "0xdd",      "0xee", "0xff",
-            "0x13",
+            "-I", "lan",  "-H", "127.0.0.1", "-p", "${port}",
+            "-U", "",     "-P", "",          "-L", "USER",
+            "mc", "info",
+        },
+        // `ipmi_set_session_privlvl_cmd` returns early when the requested level
+        // is `<= IPMI_SESSION_PRIV_USER`.  The absence of a 0x3b datagram is
+        // what pins both the comparison and the constant: widening it to `<`
+        // adds a datagram, narrowing the constant to OPERATOR removes one from
+        // the other cases.
+        .bmc = .{ .auth_types = 1 << 0, .extra = canned },
+    },
+
+    .{
+        .name = "lan/none-authtype-unsupported",
+        .desc = "-A MD5 against a BMC that only advertises NONE",
+        .args = &.{
+            "-I", "lan", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,  "-P", pass,        "-A", "MD5",
+            "-N", "1",   "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .auth_types = 1 << 0 },
+    },
+
+    .{
+        .name = "lan/none-challenge-error",
+        .desc = "Get Session Challenge answered 0x81, the named 'Invalid user name' path",
+        .args = &.{
+            "-I", "lan", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", "",    "-P", "",          "-N", "1",
+            "-R", "1",   "mc", "info",
+        },
+        .bmc = .{ .auth_types = 1 << 0, .challenge_ccode = 0x81 },
+    },
+
+    .{
+        .name = "lan/md5-privlvl-error",
+        .desc = "Set Session Privilege Level fails, so the session just opened is closed again",
+        .args = &.{
+            "-I", "lan", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,  "-P", pass,        "-N", "1",
+            "-R", "1",   "mc", "info",
+        },
+        // Two Close Session datagrams are expected: one from the `close_fail`
+        // label in `ipmi_lan_activate_session`, and one from `ipmi_lan_close`,
+        // which runs because `intf->abort` was already cleared by Activate
+        // Session and `intf->session->active` is still set.
+        .bmc = .{ .username = user, .password = pass, .privlvl_ccode = 0x81 },
+    },
+
+    .{
+        .name = "lan/md5-close-error",
+        .desc = "Close Session answered 0x87, which renders the session id in the message",
+        .args = &.{
+            "-I", "lan", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,  "-P", pass,        "-N", "1",
+            "-R", "1",   "mc", "info",
         },
         .bmc = .{
             .username = user,
             .password = pass,
-            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x94, .data = &.{ 0xc0, 0xff, 0xee } }},
+            .close_ccode = 0x87,
+            .extra = canned,
         },
     },
+
     .{
-        .name = "lanplus/cipher1-raw-big",
-        .desc = "a payload over 255 bytes each way, pinning the u16 payload size",
-        .args = &big_args,
+        .name = "lan/none-dup-request",
+        .desc = "a 0xCF Duplicate Request response is discarded and the command retried",
+        .args = &.{
+            "-I",  "lan",  "-H",   "127.0.0.1", "-p",   "${port}",
+            "-U",  "",     "-P",   "",          "-N",   "1",
+            "raw", "0x2e", "0x9a", "0x61",      "0x62",
+        },
+        // `ipmi_lan_send_cmd` throws the 0xCF away and polls again; nothing
+        // arrives, so the retry loop retransmits and the second attempt is
+        // answered normally.  The retransmission reuses `rq_seq`, which is what
+        // distinguishes this from an ordinary drop.
         .bmc = .{
-            .username = user,
-            .password = pass,
-            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x97, .data = &big_response_data }},
+            .auth_types = 1 << 0,
+            .dup_once = .{ .netfn = 0x2e, .cmd = 0x9a },
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x9a, .data = &.{ 0x37, 0x48 } }},
         },
     },
+
     .{
-        .name = "lanplus/cipher3-raw-pad",
-        .desc = "confidentiality padding: a payload one byte short of a block",
+        .name = "lan/none-intelwv2",
+        .desc = "-o intelwv2 sends a 16 byte thump after the ping and a 10 byte thump after every request",
         .args = &.{
-            "-I",   "lanplus", "-H",   "127.0.0.1", "-p",   "${port}",
-            "-U",   user,      "-P",   pass,        "-C",   "3",
-            "raw",  "0x2e",    "0x95", "0x11",      "0x22", "0x33",
-            "0x44", "0x55",    "0x66", "0x77",      "0x88",
+            "-I",  "lan",  "-H",   "127.0.0.1", "-p",   "${port}",
+            "-U",  "",     "-P",   "",          "-o",   "intelwv2",
+            "raw", "0x2e", "0x9b", "0x71",      "0x72",
         },
+        // The thump datagrams are not RMCP, so the model BMC has to be told to
+        // ignore them rather than report them; their bytes are still pinned.
         .bmc = .{
-            .username = user,
-            .password = pass,
-            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x95, .data = &.{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 } }},
+            .auth_types = 1 << 0,
+            .tolerate_junk = true,
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x9b, .data = &.{ 0x83, 0x94 } }},
         },
     },
-    .{
-        .name = "lanplus/cipher3-retry",
-        .desc = "RMCP+ retransmission: the BMC ignores one datagram mid-session",
-        .args = &.{
-            "-I",   "lanplus", "-H",  "127.0.0.1", "-p",   "${port}",
-            "-U",   user,      "-P",  pass,        "-C",   "3",
-            "-N",   "1",       "raw", "0x2e",      "0x96", "0x41",
-            "0x42",
-        },
-        .bmc = .{
-            .username = user,
-            .password = pass,
-            .drop = &.{5},
-            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x96, .data = &.{0x24} }},
-        },
-    },
-    .{
-        .name = "lanplus/cipher3-timeout",
-        .desc = "RMCP+ command the BMC never answers: pins the retry limit exactly",
-        .args = &.{
-            "-I",   "lanplus", "-H",  "127.0.0.1", "-p",   "${port}",
-            "-U",   user,      "-P",  pass,        "-C",   "3",
-            "-N",   "1",       "raw", "0x2e",      "0x9a", "0x51",
-            "0x52",
-        },
-        .bmc = .{
-            .username = user,
-            .password = pass,
-            .deaf = .{ .netfn = 0x2e, .cmd = 0x9a },
-        },
-    },
-    .{
-        .name = "lanplus/open-session-error",
-        .desc = "the tool aborts when the Open Session Response carries a status",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-C", "3",
-            "-N", "1",       "-R", "1",         "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .open_session_status = 0x01 },
-    },
-    .{
-        .name = "lanplus/rakp2-error",
-        .desc = "the tool aborts when RAKP 2 carries a non-zero status code",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-C", "3",
-            "-N", "1",       "-R", "1",         "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .rakp2_status = 0x0d },
-    },
-    .{
-        .name = "lanplus/rakp2-bad-authcode",
-        .desc = "the tool rejects a RAKP 2 message whose authcode does not verify",
-        .args = &.{
-            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
-            "-U", user,      "-P", pass,        "-C", "3",
-            "-N", "1",       "-R", "1",         "mc", "info",
-        },
-        .bmc = .{ .username = user, .password = pass, .corrupt_rakp2 = true },
-    },
+
+    // -- RMCP+ (lanplus) ----------------------------------------------------
 };

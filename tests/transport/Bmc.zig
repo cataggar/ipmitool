@@ -155,8 +155,27 @@ pub const Personality = struct {
     /// Completion code to answer a Get Channel Authentication Capabilities
     /// request with.  Non-zero exercises the session-setup failure path.
     authcap_ccode: u8 = 0,
+    /// Completion code for Get Session Challenge.  0x81 and 0x82 have their own
+    /// messages in `ipmi_get_session_challenge_cmd`.
+    challenge_ccode: u8 = 0,
     /// Completion code for Activate Session.
     activate_ccode: u8 = 0,
+    /// Completion code for Set Session Privilege Level.  Non-zero sends the
+    /// tool down `ipmi_lan_activate_session`'s `close_fail` path, which closes
+    /// the session it has just opened.
+    privlvl_ccode: u8 = 0,
+    /// Completion code for Close Session.  0x87 has its own message.
+    close_ccode: u8 = 0,
+
+    /// A command the BMC answers once with 0xCF, "Duplicate Request", before
+    /// answering it properly.  `ipmi_lan_send_cmd` discards such a response and
+    /// polls again; no other case reaches that branch.
+    dup_once: ?Deaf = null,
+
+    /// Accept datagrams that are not RMCP at all instead of recording a
+    /// violation.  `-o intelwv2` makes `lan.c` send two "thump" packets that a
+    /// real BMC ignores, and they are the only way to observe them.
+    tolerate_junk: bool = false,
     /// RMCP+ Open Session Response status code (0 = no errors).
     open_session_status: u8 = 0,
     /// RAKP 2 status code.
@@ -233,6 +252,8 @@ v15: V15 = .{},
 v2: V2 = .{},
 /// Send Message nesting depth, so a bridged request cannot recurse forever.
 bridge_depth: u8 = 0,
+/// Whether `Personality.dup_once` has already fired.
+dup_fired: bool = false,
 hex_scratch: [2]u8 = undefined,
 
 const Bmc = @This();
@@ -315,8 +336,11 @@ pub fn handle(b: *Bmc, request: []const u8) !?[]const u8 {
         },
         else => {
             b.frame += 1;
-            try b.t.frame(b.frame, .in, request, &.{}, "unknown RMCP class");
-            try b.fail("unknown RMCP class 0x{x:0>2}", .{request[3]});
+            const kind = if (b.p.tolerate_junk) "non-RMCP (ignored)" else "unknown RMCP class";
+            try b.t.frame(b.frame, .in, request, &.{}, kind);
+            if (!b.p.tolerate_junk) {
+                try b.fail("unknown RMCP class 0x{x:0>2}", .{request[3]});
+            }
             return null;
         },
     }
@@ -583,6 +607,12 @@ const Response = struct {
 };
 
 fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
+    if (b.p.dup_once) |d| {
+        if (!b.dup_fired and d.netfn == m.netfn and d.cmd == m.cmd) {
+            b.dup_fired = true;
+            return .{ .ccode = 0xcf };
+        }
+    }
     for (b.p.extra) |c| {
         if (c.netfn == m.netfn and c.cmd == m.cmd) return .{ .ccode = c.ccode, .data = c.data };
     }
@@ -649,6 +679,7 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
                     );
                 }
             }
+            if (b.p.challenge_ccode != 0) return .{ .ccode = b.p.challenge_ccode };
             std.mem.writeInt(u32, buf[0..4], b.p.temp_session_id, .little);
             @memcpy(buf[4..20], &b.p.challenge);
             return .{ .data = buf[0..20] };
@@ -675,11 +706,15 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
         },
         // Set Session Privilege Level.
         0x3b => {
+            if (b.p.privlvl_ccode != 0) return .{ .ccode = b.p.privlvl_ccode };
             buf[0] = if (m.data.len >= 1) m.data[0] else 0x04;
             return .{ .data = buf[0..1] };
         },
         // Close Session.
-        0x3c => return .{},
+        0x3c => {
+            if (b.p.close_ccode != 0) return .{ .ccode = b.p.close_ccode };
+            return .{};
+        },
         // Send Message: the bridged path.  Unwrap the encapsulated message,
         // answer it, and wrap the answer the same way, which is what makes
         // `ipmi_lan_poll_recv` take its "bridged answer data are inside the

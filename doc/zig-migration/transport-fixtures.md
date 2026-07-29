@@ -239,6 +239,7 @@ The audited constants and the reasoning for each are in the doc comments in
 ## Coverage
 
 33 cases, `tests/transport/cases.zig`.
+34 cases, `tests/transport/cases.zig`.
 
 | area | cases |
 | --- | --- |
@@ -254,7 +255,11 @@ The audited constants and the reasoning for each are in the doc comments in
 | the LUN reaching the wire in the low two bits of the netfn byte | `lan/md5-raw-lun` (M12) |
 | retry limit, exactly | `lan/none-timeout`, `lanplus/cipher3-timeout` (M4) |
 | retry then success | `lan/none-retry`, `lan/none-ping-retry`, `lanplus/cipher3-retry` |
-| session-setup error paths | `lan/authcap-error`, `lan/activate-error` |
+| session-setup error paths | `lan/authcap-error`, `lan/activate-error`, `lan/none-challenge-error`, `lan/md5-privlvl-error`, `lan/md5-close-error` |
+| the `privlvl <= USER` early return in `ipmi_set_session_privlvl_cmd` | `lan/none-privlvl-user` |
+| the unsupported-authtype refusal in `ipmi_get_auth_capabilities` | `lan/none-authtype-unsupported` |
+| a response the tool cannot match, then retransmission reusing `rq_seq` | `lan/none-dup-request` |
+| the `intelplus`/`-o intelwv2` non-RMCP "thump" datagrams | `lan/none-intelwv2` |
 | single and double `Send Message` bridging | `lan/md5-bridged`, `lan/md5-double-bridged` |
 | double bridging selected by the *transit channel* rather than the transit address | `lan/md5-fru-transit-channel` |
 | `ipmi_intf_get_max_response_data_size()` at bridging level 0, 1 and 2, including the clamp back to the default payload size | `lan/md5-fru`, `lan/md5-fru-bridged`, `lan/md5-fru-transit-channel` |
@@ -328,6 +333,10 @@ a future port PR still has to argue about separately.
 Each row is one mutation applied to the C source, rebuilt, run.  The counts in
 this first table were measured against the original 27-case suite; the
 baseline is now `33 passed, 0 failed`, so the failure counts are lower bounds.
+Each row is one mutation applied to the C source, rebuilt, run.  Baseline was
+`27 passed, 0 failed` — this table was recorded when the suite had 27 cases,
+before the `lan` port added seven more.  The counts below are therefore out of
+27, not out of 34.
 
 | # | file | mutation | transport result |
 | --- | --- | --- | --- |
@@ -424,6 +433,71 @@ does not read them as a gap.
 | `ipmi_intf.c`: `ipmi_intf_session_set_kgkey()` copies 20 bytes instead of `IPMI_KG_BUFFER_SIZE` (21) | `-k` is capped at 20 characters, so the 21st byte of the source buffer is always the NUL terminator and the destination is already zero.  No CLI input separates the two lengths.  The unit test still pins the full 21-byte copy. |
 | `ipmi_intf.c`: `ipmi_intf_get_max_response_data_size()` drops the first `-8` (the one applied *before* the clamp) | `lan` and `lanplus` both declare `max_response_data_size = 34`.  At bridging level 1 the value is clamped to the 25-byte default with or without the subtraction, and level 2 subtracts 8 from that same clamped 25 either way.  The mutation is only observable for an interface declaring between 26 and 32 bytes, and none exists. |
 | `ipmi_intf.c`: `ipmi_intf_get_max_response_data_size()` adds 8 instead of 7 when no size is declared | the `size == 0` branch only runs for an interface that never sets `max_response_data_size`.  Every network interface sets it, and there is no CLI option to zero it (`-z` only sets the *request* size), so the branch is unreachable from the fixtures. |
+
+## Mutation battery, Zig `lan`
+
+The C battery above establishes that the fixtures detect wire-level damage.  A
+*port* needs the converse: that every branch the port rewrites is pinned by
+something.  `src/zig/intf/lan.zig` was therefore put through its own battery
+of **80 textual mutations**, each applied to the Zig source, rebuilt and run
+against two detectors in order:
+
+1. the unit tests in `lan.zig` itself (`zig build test`), which drive
+   `build_cmd`, `poll_recv`, `send_cmd`, the request list, the SOL helpers and
+   `open` directly, over a real `AF_UNIX`/`SOCK_DGRAM` `socketpair`;
+2. the 34 transport fixtures, run against the `-Dzig-modules=lan` binary.
+
+**80 mutants, 80 caught, 0 survivors.**  73 were caught by the unit tests and
+7 only by the fixtures:
+| mutation | transport result |
+| --- | --- |
+| the authtype byte is emitted before the session is active | 23 passed, **11 failed** |
+| the LUN is masked to two bits instead of three values | 33 passed, **1 failed** |
+| the duplicate-request completion code (0xCF) is misidentified | 33 passed, **1 failed** |
+| one retry too many | 33 passed, **1 failed** |
+| the `intelwv2` per-request thump is dropped | 33 passed, **1 failed** |
+| `Set Session Privilege Level` is sent for USER as well | 33 passed, **1 failed** |
+| the inbound authcode is skipped before the session is active | 23 passed, **11 failed** |
+
+The remaining 73 cover, among others: every byte position and shift of the
+v1.5 session header; `rq_seq` allocation, wrap at 64 and reuse on retry; the
+`s->in_seq` skip-zero rule; all three checksum ranges and their order; the
+single- and double-bridge `Send Message` layout, transit channel and tracking
+bit; MD2/MD5/PASSWORD authcode offset, length and destination; the inbound
+authcode skip in all four combinations of session/response authtype; the SOL
+session-id marker, header field masks and fifth-byte skip; the bridged-reply
+unwrap offsets and its empty-reply special case; the RMCP class dispatch; and
+the compiled-in `IPMI_LAN_PORT`/`TIMEOUT`/`RETRY` defaults, which are
+`#define`d inside `lan.c` and so are not visible through the C bridge at all —
+they can only be pinned behaviourally, through `ipmi_lan_open`'s defaults.
+
+M1 was re-run against the ported code, as step 4 of the checklist at the end
+of this file requires.  `src/zig/intf/lan.zig` calls `ipmi_csum()` through the
+C bridge rather than reaching into `util/helper.zig` directly, exactly as the
+ported command modules call `buf2str()` and `str2uchar()`.  That keeps one
+checksum implementation in any `-Dzig-modules=...` binary, and it keeps the
+Zig transport under M1:
+
+```
+$ transport-fixtures --binary zig-out/zig/bin/ipmitool     # -Dzig-modules=lan
+transport fixtures: 1 passed, 33 failed, 0 skipped
+```
+
+The single survivor is `intf/unknown`, the same one the C battery leaves.
+Had the module used a private Zig checksum instead, M1 would have left 22
+cases passing — the port would have quietly routed itself around the
+harness's single most load-bearing detector.  That is the concrete reason for
+the bridge-call convention, and it is worth re-checking in every later
+transport port.
+
+### Documented equivalent mutants, Zig `lan`
+
+| mutation | why it is equivalent |
+| --- | --- |
+| `is_sol_partial_ack()`: dropping the `is_sol_packet(rsp)` conjunct | `sol_response_acks_packet()` already implies it, so the two forms agree for every input.  Ported as-is from `lan.c:1274`. |
+| `ipmi_req_remove_entry()`: dropping the `req_entries = p` store inside `if (req_entries == cur)` | unreachable.  `p` only advances past nodes that did **not** match, so if `cur` is the head then `p == req_entries == cur` and the `!=` arm cannot be taken.  Ported as-is from `lan.c:196`. |
+| `ipmi_lan_open()`: dropping the `if (intf == NULL)` guard | `intf` is the vtable receiver; every caller reaches it through `intf->open`.  No Zig counterpart exists, because the Zig signature takes a non-optional pointer. |
+| `ipmi_lan_close()`: dropping the trailing `intf = NULL` | a store to a by-value parameter, dead in the C.  No Zig counterpart. |
 
 ## Running it
 

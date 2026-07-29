@@ -64,6 +64,7 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
 #include <ipmitool/ipmi_user.h>
+#include <ipmitool/hpm2.h>
 
 /*
  * Plugin-private headers.  These are not under `include/`, so they are reached
@@ -72,6 +73,7 @@
  * `rmcp.h` pairs ambiguous.
  */
 #include "../plugins/dummy/dummy.h"
+#include "../plugins/lan/rmcp.h"
 #include "../plugins/lan/md5.h"
 #include "../plugins/lan/auth.h"
 /*
