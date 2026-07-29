@@ -662,3 +662,15 @@ desc: at -v the per-option log line is below the threshold and stays hidden
 args: -v -I dummy channel setaccess 1 2 callin=on privilege=4
 transcript: bmc.tr
 covers: channel
+
+[chan_authcap_wide_oem]
+desc: an OEM IANA whose three bytes are distinct and non-zero pins the 24 bit width
+args: -I dummy channel authcap 14 4
+transcript: channel_authcap_wide.tr
+covers: channel
+
+[chan_ciph_wide_iana]
+desc: an OEM cipher suite record IANA with distinct non-zero bytes, followed by a standard record
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_wide.tr
+covers: channel
