@@ -23,6 +23,20 @@ comptime {
         _ = @import("util/strings.zig");
         _ = @import("util/strings_registry.zig");
     }
+    // `util/` modules are also imported by `src/zig/root.zig` for their types
+    // and by other ports, so their `@export` calls cannot sit at file scope:
+    // they would collide with the C translation unit whenever a *different*
+    // module is the one selected.  Each port gathers them in `exportSymbols()`
+    // instead, and this is the only place that calls it.
+    if (selected("log")) {
+        @import("util/log.zig").exportSymbols();
+    }
+    if (selected("helper")) {
+        @import("util/helper.zig").exportSymbols();
+    }
+    if (selected("time")) {
+        @import("util/time.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

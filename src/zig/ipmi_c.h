@@ -15,6 +15,19 @@
 
 #pragma once
 
+/*
+ * POSIX headers used by ported modules.  `lib/helper.c` calls lstat(), fstat(),
+ * fork(), ioctl() and friends; Zig's standard library deliberately dropped the
+ * Linux `struct stat` bindings, so the bridge has to supply the libc ones to
+ * keep the ported code bit-identical to the C it replaces.
+ */
+#include <fcntl.h>
+#include <paths.h>
+#include <signal.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>

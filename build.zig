@@ -106,6 +106,11 @@ const ZigModule = struct {
     replaces: []const u8,
     /// Zig implementation, for documentation and `zig build --help`.
     implementation: []const u8,
+    /// C files the Zig implementation needs alongside it, relative to the
+    /// build root.  Only `lib/log.c` has one: Zig 0.16 cannot define a C
+    /// variadic function on aarch64, so `lprintf()`/`lperror()` keep a
+    /// `va_start` trampoline.  See doc/zig-migration/varargs-trampoline.md.
+    c_shims: []const []const u8 = &.{},
 };
 
 const zig_modules = [_]ZigModule{
@@ -118,6 +123,22 @@ const zig_modules = [_]ZigModule{
         .name = "strings",
         .replaces = "lib/ipmi_strings.c",
         .implementation = "src/zig/util/strings.zig",
+    },
+    .{
+        .name = "log",
+        .replaces = "lib/log.c",
+        .implementation = "src/zig/util/log.zig",
+        .c_shims = &.{"src/zig/util/log_varargs.c"},
+    },
+    .{
+        .name = "helper",
+        .replaces = "lib/helper.c",
+        .implementation = "src/zig/util/helper.zig",
+    },
+    .{
+        .name = "time",
+        .replaces = "lib/ipmi_time.c",
+        .implementation = "src/zig/util/time.zig",
     },
 };
 
@@ -589,6 +610,7 @@ pub fn build(b: *std.Build) void {
         });
         mod.addImport("ipmi_c", bridge_mod);
         mod.addImport("build_options", zig_options.createModule());
+        addZigCShims(b, mod, config_h, default_intf, flags, zig_selection);
         break :blk b.addLibrary(.{
             .name = "ipmitool_zig",
             .linkage = .static,
@@ -913,6 +935,14 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
     });
     exports_mod.addImport("ipmi_c", options.bridge_mod);
     exports_mod.addImport("build_options", zig_options.createModule());
+    addZigCShims(
+        b,
+        exports_mod,
+        options.config_h,
+        options.default_intf,
+        options.flags,
+        selection,
+    );
     const zig_lib = b.addLibrary(.{
         .name = "ipmitool_zig_all",
         .linkage = .static,
@@ -1002,6 +1032,30 @@ fn replacedByZig(path: []const u8, zig_selection: []const bool) bool {
         if (zig_selection[i] and std.mem.eql(u8, module.replaces, path)) return true;
     }
     return false;
+}
+
+/// Adds the `c_shims` of every selected module to the Zig replacement library.
+fn addZigCShims(
+    b: *std.Build,
+    mod: *std.Build.Module,
+    config_h: *std.Build.Step.ConfigHeader,
+    default_intf: []const u8,
+    flags: []const []const u8,
+    zig_selection: []const bool,
+) void {
+    var files: std.ArrayList([]const u8) = .empty;
+    for (zig_modules, 0..) |module, i| {
+        if (!zig_selection[i]) continue;
+        for (module.c_shims) |shim| files.append(b.allocator, shim) catch @panic("OOM");
+    }
+    if (files.items.len == 0) return;
+
+    configure(b, mod, config_h, default_intf);
+    mod.addCSourceFiles(.{
+        .files = files.toOwnedSlice(b.allocator) catch @panic("OOM"),
+        .flags = flags,
+        .language = .c,
+    });
 }
 
 /// `-Dzig-modules` value list for `zig build --help`.
