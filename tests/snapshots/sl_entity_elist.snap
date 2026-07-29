@@ -1,0 +1,42 @@
+#!golden 1
+#!case sl_entity_elist
+#!section exit
+0
+#!section stdout
+6001 | 06/14/26 | 23:50:37 UTC | Temperature #0x0b | Lower Non-critical going high | Asserted
+6002 | 06/14/26 | 23:50:37 UTC | Temperature VCORE 3V3 | Lower Critical going low  | Asserted | Reading 25.50 < Threshold 3 % Volts*Watts
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 02 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=02 60 01 60 02 4d 3e 2f 6a 20 00 04 01 0b 01 51 a1 b1
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 03 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_0000 ccode=0x00 len=7 data=02 00 01 00 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 05 17
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 00 05
+< rule=get_sdr_0002 ccode=0x00 len=7 data=09 00 05 00 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 05 17
+< rule=get_sdr_0002 ccode=0x00 len=25 data=09 00 20 00 2d 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 05 04 06 00 03 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 1c 17
+< rule=get_sdr_0002 ccode=0x00 len=25 data=09 00 00 f0 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 56 43 4f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 33 06
+< rule=get_sdr_0002 ccode=0x00 len=8 data=09 00 52 45 20 33 56 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 09 00 00 05
+< rule=get_sdr_0009 ccode=0x00 len=7 data=ff ff 09 00 51 11 13
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 09 00 05 13
+< rule=get_sdr_0009 ccode=0x00 len=21 data=ff ff 20 03 80 00 00 10 00 03 01 00 c8 43 50 55 20 46 52 55 31
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 60 00 ff
+< rule=get_sel_6002 ccode=0x00 len=18 data=ff ff 02 60 02 4d 3e 2f 6a 20 00 04 01 2d 01 52 55 0a
+bye

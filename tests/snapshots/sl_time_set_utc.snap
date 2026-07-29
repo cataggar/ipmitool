@@ -1,0 +1,17 @@
+#!golden 1
+#!case sl_time_set_utc
+#!section exit
+0
+#!section stdout
+06/14/26 23:50:37 GMT
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x49 target_cmd=0x00 data=26 27 4e 60
+< rule=set_sel_time ccode=0x00 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x48 target_cmd=0x00 data=
+< rule=get_sel_time ccode=0x00 len=4 data=4d 3e 2f 6a
+bye

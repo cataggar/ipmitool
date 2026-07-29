@@ -1,0 +1,23 @@
+#!golden 1
+#!case sl_delete_many
+#!section exit
+0
+#!section stdout
+Deleted entry 65535
+Deleted entry 4355
+Deleted entry 4386
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x42 target_cmd=0x00 data=
+< rule=reserve_sel ccode=0x00 len=2 data=cd ab
+> netfn=0x0a lun=0x00 cmd=0x46 target_cmd=0x00 data=cd ab ff ff
+< rule=delete_sel ccode=0x00 len=2 data=02 11
+> netfn=0x0a lun=0x00 cmd=0x46 target_cmd=0x00 data=cd ab 03 11
+< rule=delete_sel ccode=0x00 len=2 data=02 11
+> netfn=0x0a lun=0x00 cmd=0x46 target_cmd=0x00 data=cd ab 22 11
+< rule=delete_sel ccode=0x00 len=2 data=02 11
+bye

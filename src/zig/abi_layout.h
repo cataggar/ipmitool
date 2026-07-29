@@ -134,6 +134,38 @@ enum ipmitool_abi_layout {
 		offsetof(struct sdr_record_common_sensor, unit.type.base) - 1,
 	ABI_OFFSETOF_sdr_common__unit__type__base =
 		offsetof(struct sdr_record_common_sensor, unit.type.base),
+	ABI_OFFSETOF_sdr_common__unit__type__modifier =
+		offsetof(struct sdr_record_common_sensor, unit.type.modifier),
+
+	/*
+	 * struct entity_id - opaque: `instance:7` / `logical:1` are bitfields.
+	 * `lib/ipmi_sel.c` builds one on the stack for
+	 * ipmi_sdr_find_sdr_byentity(), so the mirror needs its size.
+	 */
+	ABI_SIZEOF_entity_id = sizeof(struct entity_id),
+	ABI_ALIGNOF_entity_id = _Alignof(struct entity_id),
+	ABI_OFFSETOF_entity_id__id = offsetof(struct entity_id, id),
+
+	/*
+	 * The ID string of every SDR record type `lib/ipmi_sel.c` can be handed
+	 * by ipmi_sdr_find_sdr_bynumtype(), plus the entity pair it copies out
+	 * of a full/compact or event-only record.  All six record types are
+	 * `opaque {}` on the Zig side, so the printer indexes them as bytes.
+	 */
+	ABI_OFFSETOF_sdr_compact__id_string =
+		offsetof(struct sdr_record_compact_sensor, id_string),
+	ABI_OFFSETOF_sdr_eventonly__id_string =
+		offsetof(struct sdr_record_eventonly_sensor, id_string),
+	ABI_OFFSETOF_sdr_eventonly__entity__id =
+		offsetof(struct sdr_record_eventonly_sensor, entity.id),
+	ABI_OFFSETOF_sdr_eventonly__entity__instance =
+		offsetof(struct sdr_record_eventonly_sensor, entity.id) + 1,
+	ABI_OFFSETOF_sdr_fruloc__id_string =
+		offsetof(struct sdr_record_fru_locator, id_string),
+	ABI_OFFSETOF_sdr_mcloc__id_string =
+		offsetof(struct sdr_record_mc_locator, id_string),
+	ABI_OFFSETOF_sdr_genloc__id_string =
+		offsetof(struct sdr_record_generic_locator, id_string),
 
 	/*
 	 * struct sdr_record_full_sensor / struct sdr_record_compact_sensor -

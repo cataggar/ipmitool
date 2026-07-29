@@ -1,0 +1,41 @@
+# A Dell BMC whose Get Device ID succeeds once and then starts failing.
+# 
+# ipmi_get_oem() caches the manufacturer ID after the first call, but the memory
+# branch of get_dell_evt_desc() issues its own Get Device ID to learn the IPMI
+# version.  This transcript makes that second command fail so the error path is
+# covered.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  match 
+  data 20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
+  times 1
+end
+
+respond get_device_id_fail
+  netfn 0x06
+  cmd 0x01
+  ccode 0xc1
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data 01 00
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data ff ff 00 06 02 4d 3e 2f 6a 20 00 04 0c 11 6f a0 00 01
+end

@@ -1,0 +1,7 @@
+"0xe0","XX","R","Code","0x44","Sub","XX","R","0x77","0x88","Flags","XX","R","End","Kernel fault"
+"0xe0","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","Any E0 record"
+"0xc0","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","A timestamped OEM record"
+"0xe1","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","Never matches anything here"
+"0xd0","0x11","0x22","0x33","0x44","XX","XX","XX","0x99","0xaa","XX","XX","XX","XX","All seven match bytes fixed"
+"0xd0","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","XX","Any D0 record"
+"0xd1","B4","B5","B6","B7","B8","B9","B10","B11","B12","B13","B14","B15","B16","Every field named"

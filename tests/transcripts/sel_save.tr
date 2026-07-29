@@ -1,0 +1,49 @@
+# A four-entry log used for `sel save' and `sel writeraw'.
+# 
+# `sel save' writes the text form produced by ipmi_sel_print_event_file(), which
+# is the same format `sel add' reads back.  Pointing it at /dev/stdout puts that
+# text in the captured output; the file is written through a separate FILE
+# handle, so it is flushed when the file is closed, before the process exits and
+# flushes the printf output.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 04 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 02 11 01 11 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+end
+
+respond get_sel_1102
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 11
+  data 03 11 02 11 02 01 e3 0b 5e 20 00 04 02 31 01 52 a2 b2
+end
+
+respond get_sel_1103
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 11
+  data 04 11 03 11 02 02 e3 0b 5e 20 00 04 04 32 01 07 a3 b3
+end
+
+respond get_sel_1104
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 11
+  data ff ff 04 11 02 03 e3 0b 5e 20 00 04 07 33 6f 00 a4 b4
+end

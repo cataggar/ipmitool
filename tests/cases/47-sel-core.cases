@@ -1,0 +1,99 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Byte-order pinning and Get SEL Info coverage.
+
+[sl_bytes_list]
+desc: SEL fields with four distinct non-zero bytes each
+args: -I dummy sel list
+transcript: sel_bytes.tr
+covers: sel
+
+[sl_bytes_list_v]
+desc: verbose listing of the byte-order pinning records
+args: -I dummy -v sel list
+transcript: sel_bytes.tr
+covers: sel
+
+[sl_bytes_csv]
+desc: csv listing of the byte-order pinning records
+args: -I dummy -c sel list
+transcript: sel_bytes.tr
+covers: sel
+
+[sl_bytes_get]
+desc: sel get by a record id with two distinct non-zero bytes
+args: -I dummy sel get 0x3ca5
+transcript: sel_bytes.tr
+covers: sel
+
+[sl_bytes_getdec]
+desc: sel get accepts the same id in decimal
+args: -I dummy sel get 15525
+transcript: sel_bytes.tr
+covers: sel
+
+[sl_info_wrap]
+desc: 16-bit overflow of the entries*16 percent-full maths
+args: -I dummy sel info
+transcript: sel_info_wrap.tr
+covers: sel
+
+[sl_info_alloc]
+desc: allocation info block with distinct 16-bit fields
+args: -I dummy sel info
+transcript: sel_info_alloc.tr
+covers: sel
+
+[sl_info_alloc_vvv]
+desc: allocation info with the -vvv request dump
+args: -I dummy -vvv sel info
+transcript: sel_info_alloc.tr
+covers: sel
+
+[sl_info_alloc_ccode]
+desc: Get SEL Allocation Info returns a completion code
+args: -I dummy sel info
+transcript: sel_info_alloc_cc.tr
+covers: sel
+
+[sl_info_nocmds]
+desc: overflow flag set, no optional SEL commands
+args: -I dummy sel info
+transcript: sel_info_nocmds.tr
+covers: sel
+
+[sl_info_empty]
+desc: empty SEL with unknown percent used
+args: -I dummy sel info
+transcript: sel_info_empty.tr
+covers: sel
+
+[sl_list_empty]
+desc: sel list on a SEL that reports no entries
+args: -I dummy sel list
+transcript: sel_info_empty.tr
+covers: sel
+
+[sl_info_short]
+desc: Get SEL Info with an invalid data length
+args: -I dummy sel info
+transcript: sel_info_short.tr
+covers: sel
+
+[sl_info_ccode]
+desc: Get SEL Info returns a completion code
+args: -I dummy sel info
+transcript: sel_info_ccode.tr
+covers: sel
+
+[sl_list_info_ccode]
+desc: sel list when Get SEL Info fails
+args: -I dummy sel list
+transcript: sel_info_ccode.tr
+covers: sel
+
+[sl_noargs_ccode]
+desc: bare `sel' falls through to sel info
+args: -I dummy sel
+transcript: sel_info_ccode.tr
+covers: sel

@@ -1,0 +1,38 @@
+#!golden 1
+#!case sl_bytes_getdec
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 3ca5
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 91b7
+ EvM Revision          : 4a
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 597b1e
+ Description           : Upper Critical going high
+
+#!section stderr
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 a5 3c 00 ff
+< rule=get_sel_3ca5 ccode=0x00 len=18 data=ff ff a5 3c 02 4d 3e 2f 6a b7 91 4a 01 2d 01 59 7b 1e
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,26 @@
+#!golden 1
+#!case sl_info_wrap
+#!section exit
+1
+#!section stdout
+SEL Information
+Version          : 2.0 (v1.5, v2 compliant)
+Entries          : 4096
+Free Space       : 100 bytes\x20
+Percent Used     : 0%
+Last Add Time    : 01/01/20 00:08:32 UTC
+Last Del Time    : 01/01/20 00:12:48 UTC
+Overflow         : false
+Supported Cmds   : 'Delete' 'Partial Add' 'Reserve' 'Get Alloc Info'\x20
+#!section stderr
+Get SEL Allocation Info command failed: Invalid command
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=02 00 10 64 00 00 e3 0b 5e 00 e4 0b 5e 0f
+> netfn=0x0a lun=0x00 cmd=0x41 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye

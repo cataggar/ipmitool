@@ -1,0 +1,179 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Clause-isolation fixtures: each record differs from its neighbour in
+# one field so that a single decision in the decoder is observable on
+# its own.
+
+[sl_getv_thresh]
+desc: verbose extended entry: threshold event data
+args: -I dummy sel get 0x7101 0x7102 0x7103 0x7104 0x7105 0x7111 0x7112
+transcript: sel_getv.tr
+covers: sel
+
+[sl_getv_ranges]
+desc: verbose extended entry: event type ranges
+args: -I dummy sel get 0x7121 0x7122 0x7123 0x7124 0x7125
+transcript: sel_getv.tr
+covers: sel
+
+[sl_getv_cpudimm]
+desc: verbose extended entry: the CPU/DIMM clause
+args: -I dummy sel get 0x7131 0x7132 0x7133 0x7134 0x7135 0x7136
+transcript: sel_getv.tr
+covers: sel
+
+[sl_getv_verchg]
+desc: verbose extended entry: the version change clause
+args: -I dummy sel get 0x7141 0x7142 0x7143
+transcript: sel_getv.tr
+covers: sel
+
+[sl_getv_panic]
+desc: verbose extended entry: Linux kernel panic records
+args: -I dummy sel get 0x7151 0x7152
+transcript: sel_getv.tr
+covers: sel
+
+[sl_getv_cpudimm_v]
+desc: the CPU/DIMM clause with -v
+args: -I dummy -v sel get 0x7131 0x7132 0x7133 0x7134 0x7135 0x7136
+transcript: sel_getv.tr
+covers: sel
+
+[sl_notfound_num]
+desc: sel get: a record whose sensor number alone is 1
+args: -I dummy sel get 0x8001
+transcript: sel_notfound.tr
+covers: sel
+
+[sl_notfound_type]
+desc: sel get: a record whose sensor type alone is 1
+args: -I dummy sel get 0x8002
+transcript: sel_notfound.tr
+covers: sel
+
+[sl_notfound_rec]
+desc: sel get: a record whose record type alone is 1
+args: -I dummy sel get 0x8003
+transcript: sel_notfound.tr
+covers: sel
+
+[sl_notfound_zero]
+desc: sel get: the all-zero record really is missing
+args: -I dummy sel get 0x8004
+transcript: sel_notfound.tr
+covers: sel
+
+[sl_notfound_all]
+desc: sel get: all four sentinel near-misses at once
+args: -I dummy sel get 0x8001 0x8002 0x8003 0x8004
+transcript: sel_notfound.tr
+covers: sel
+
+[sl_dellc_list]
+desc: Dell OEM guard conjuncts, one record each
+args: -I dummy sel list
+transcript: sel_dellc.tr
+covers: sel
+
+[sl_dellc_verbose]
+desc: the same, verbose
+args: -I dummy -v sel list
+transcript: sel_dellc.tr
+covers: sel
+
+[sl_dellc_csv]
+desc: the same, CSV
+args: -I dummy -c sel list
+transcript: sel_dellc.tr
+covers: sel
+
+[sl_smcodd_list]
+desc: Supermicro DIMM naming with an odd event data 3
+args: -I dummy sel list
+transcript: sel_smcodd.tr
+covers: sel
+
+[sl_smcodd_verbose]
+desc: the same, verbose
+args: -I dummy -v sel list
+transcript: sel_smcodd.tr
+covers: sel
+
+[sl_info_ffadd]
+desc: Get SEL Info with an all-ones Last Add Time
+args: -I dummy sel info
+transcript: sel_info_ffadd.tr
+covers: sel
+
+[sl_info_zeroadd]
+desc: Get SEL Info with an all-zero Last Add Time
+args: -I dummy sel info
+transcript: sel_info_zeroadd.tr
+covers: sel
+
+[sl_skip_last3]
+desc: sel list last 3 across a skip loop
+args: -I dummy sel list last 3
+transcript: sel_skip.tr
+covers: sel
+
+[sl_skip0_last3]
+desc: sel list last 3 when the first next ID is zero
+args: -I dummy sel list last 3
+transcript: sel_skip0.tr
+covers: sel
+
+[sl_skip_last9]
+desc: sel list last 9, more than the log holds
+args: -I dummy sel list last 9
+transcript: sel_skip.tr
+covers: sel
+
+[sl_time_nox]
+desc: sel time set with a string one character from 'now'
+args: -I dummy sel time set nox
+transcript: sel_timenow.tr
+covers: sel
+
+[sl_time_nov]
+desc: sel time set with a string one character below 'now'
+args: -I dummy sel time set nov
+transcript: sel_timenow.tr
+covers: sel
+
+[sl_savev_txt]
+desc: sel save with a deassertion and distinct event data
+args: -I dummy sel save {work}/sel.txt
+transcript: sel_savev.tr
+covers: sel
+
+[sl_savev_raw]
+desc: sel writeraw of the same log
+args: -I dummy sel writeraw {work}/sel.bin
+transcript: sel_savev.tr
+covers: sel
+
+[sl_savev_list]
+desc: the same log listed, for the stdout half
+args: -I dummy sel list
+transcript: sel_savev.tr
+covers: sel
+
+[sl_cpudimm_list]
+desc: the CPU/DIMM decode of the plain printer
+args: -I dummy sel list
+transcript: sel_cpudimm.tr
+covers: sel
+
+[sl_cpudimm_csv]
+desc: the same, CSV
+args: -I dummy -c sel list
+transcript: sel_cpudimm.tr
+covers: sel
+
+[sl_cpudimm_elist]
+desc: the same, extended listing
+args: -I dummy sel elist
+transcript: sel_cpudimm.tr
+covers: sel

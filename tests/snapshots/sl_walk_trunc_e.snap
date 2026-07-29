@@ -1,0 +1,41 @@
+#!golden 1
+#!case sl_walk_trunc_e
+#!section exit
+0
+#!section stdout
+4001 | 01/01/20 | 00:08:32 UTC | Temperature #0x30 | Lower Non-critical going high | Asserted
+4002 | 01/01/20 | 00:08:33 UTC | reserved |  | Asserted
+4003 | 01/01/20 | 00:08:34 UTC | Fan #0x32 | Lower Critical going high | Asserted
+#!section stderr
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 03 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=02 40 01 40 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 40 00 ff
+< rule=get_sel_4002 ccode=0x00 len=9 data=03 40 02 40 02 01 e3 0b 5e
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 40 00 ff
+< rule=get_sel_4003 ccode=0x00 len=18 data=ff ff 03 40 02 02 e3 0b 5e 20 00 04 04 32 01 53 a3 b3
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,22 @@
+# A BMC that answers Get SEL Time but rejects Set SEL Time.
+# 
+# `sel time set now' reads the host clock, which no snapshot can pin, so this
+# transcript uses the neighbouring string instead: strcasecmp() returns a
+# non-zero value for "nox" and the argument has to fall through to strptime(),
+# which cannot parse it.  "nox" makes strcasecmp() return a positive value and
+# "nov" a negative one, so a comparison against any single value other than zero
+# would take the "now" branch for one of them.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_time
+  netfn 0x0a
+  cmd 0x48
+  data 00 e3 0b 5e
+end

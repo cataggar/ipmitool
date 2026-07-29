@@ -1,0 +1,32 @@
+# A log whose second Get SEL Entry is rejected.
+# 
+# ipmi_sel_get_std_entry() returns zero, which the walk mistakes for the quirky
+# `next ID is randomly zero' case and retries once before stopping.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 03 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 02 40 01 40 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+end
+
+respond get_sel_4002_fail
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 40
+  ccode 0xcb
+end

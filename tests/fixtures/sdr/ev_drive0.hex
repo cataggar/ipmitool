@@ -1,0 +1,20 @@
+# SDR Type 03h - Event-Only Sensor Record, generated for issue #11.
+# Same sensor number as ev_mem0 but sensor type 0Dh, so the CPU/DIMM clause must not fire.
+
+12 00        # [1:2]  Record ID = 0x0012
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+12           # [5]    Record length = 18 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+00           # [8]    Sensor number
+04           # [9]    Entity ID
+01           # [10]   Entity instance
+0d           # [11]   Sensor type
+6f           # [12]   Event/reading type
+00 00        # [13:14] Sensor record sharing
+00           # [15]   Reserved
+00           # [16]   OEM
+c6           # [17]   ID string type/length: 8-bit ASCII, 6 chars
+44 52 49 56 45 30   # [18:23] "DRIVE0"

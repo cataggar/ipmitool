@@ -1,0 +1,27 @@
+# A BMC whose manufacturer ID uses all three bytes (0FDCBAh).
+# 
+# Every real OEM IANA that lib/ipmi_sel.c recognises has a zero most significant
+# byte, so a transcript built only from real vendors cannot tell ipmi24toh()'s
+# `<< 16' term from a missing one.  ipmi_get_oem() logs the value it decoded at
+# debug level, so -vvv turns that into observable output.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf ba dc 0f 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data ff ff 00 0b 02 4d 3e 2f 6a 20 00 04 0c 40 6f a0 11 22
+end

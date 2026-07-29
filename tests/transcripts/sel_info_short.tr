@@ -1,0 +1,15 @@
+# Get SEL Info answers with fewer than the mandatory 14 bytes.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 04 00 ff ff 00 e3 0b 5e
+end

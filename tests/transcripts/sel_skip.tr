@@ -1,0 +1,50 @@
+# `sel list last N' skipping forward through a log whose first next ID is 1.
+# 
+# __ipmi_sel_savelist_entries() walks past `entries + count' records before it
+# starts printing, and treats a next ID of zero as a hardware quirk worth one
+# retry.  Here no reply ever returns zero, so the retry must not fire: if it did,
+# the walk would consume an extra record and the listing would start one record
+# later.  Record ID 1 is deliberately the first next ID, because a test for zero
+# and a test for one are indistinguishable unless the log actually contains one.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 05 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 90 02 4d 3e 2f 6a 20 00 04 01 20 01 51 a1 b1
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 90 02 4d 3e 2f 6a 20 00 04 01 21 01 51 a1 b1
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 90 02 4d 3e 2f 6a 20 00 04 01 22 01 51 a1 b1
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data ff ff 04 90 02 4d 3e 2f 6a 20 00 04 01 23 01 51 a1 b1
+end

@@ -1,0 +1,123 @@
+# A Viking BMC (IANA 9237).
+# 
+# get_viking_evt_desc() issues an OEM command (netfn 2Eh, cmd 01h) carrying the
+# IANA and the SEL record ID split into LSB and MSB.  The record IDs below are
+# chosen so that the two halves differ (1234h, 5678h, 00abh, ab00h), which pins
+# the byte order of the request as well as of the record ID itself.
+# 
+# The responses cover the three validation clauses of the reply parser: a reply
+# shorter than five bytes, a reply whose declared text length disagrees with the
+# actual length, and a reply carrying somebody else's IANA.  A completion code
+# and a zero-length description are covered too.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 07 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 34 12 34 12 02 4d 3e 2f 6a 20 00 04 20 30 70 11 22 33
+end
+
+respond get_sel_1234
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 34 12
+  data 78 56 78 56 02 4d 3e 2f 6a 20 00 04 20 31 7e 11 22 33
+end
+
+respond get_sel_5678
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 78 56
+  data ab 00 ab 00 02 4d 3e 2f 6a 20 00 04 20 32 71 11 22 33
+end
+
+respond get_sel_00ab
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 ab 00
+  data 00 ab 00 ab 02 4d 3e 2f 6a 20 00 04 20 33 72 11 22 33
+end
+
+respond get_sel_ab00
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 ab
+  data 05 00 05 00 02 4d 3e 2f 6a 20 00 04 20 34 73 11 22 33
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 06 00 02 4d 3e 2f 6a 20 00 04 20 35 74 11 22 33
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data ff ff 07 00 02 4d 3e 2f 6a 20 00 04 20 36 7f 11 22 33
+end
+
+respond viking_ok
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 34 12
+  data 15 24 00 12 44 72 69 76 65 20 53 6c 6f 74 20 37 20 66 61 75 6c 74
+end
+
+respond viking_ok2
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 78 56
+  data 15 24 00 0d 45 6e 63 6c 6f 73 75 72 65 20 68 6f 74
+end
+
+respond viking_short
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 ab 00
+  data 15 24 00 01
+end
+
+respond viking_badlen
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 00 ab
+  data 15 24 00 09 41 42
+end
+
+respond viking_badiana
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 05 00
+  data 57 01 00 02 41 42
+end
+
+respond viking_ccode
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 06 00
+  ccode 0xd5
+end
+
+respond viking_empty
+  netfn 0x2e
+  cmd 0x01
+  match 15 24 00 01 07 00
+  data 15 24 00 00
+end

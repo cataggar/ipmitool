@@ -1,0 +1,16 @@
+# A BMC that rejects Add SEL Entry, which aborts the file walk after the first
+# line.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond add_sel_fail
+  netfn 0x0a
+  cmd 0x44
+  ccode 0xc9
+end

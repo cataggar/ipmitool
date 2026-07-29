@@ -1,0 +1,20 @@
+# SDR Type 03h - Event-Only Sensor Record, generated for issue #11.
+# Sensor type 2Ch, one above the version-change clause.
+
+14 00        # [1:2]  Record ID = 0x0014
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+14           # [5]    Record length = 20 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+11           # [8]    Sensor number
+22           # [9]    Entity ID
+02           # [10]   Entity instance
+2c           # [11]   Sensor type
+6f           # [12]   Event/reading type
+00 00        # [13:14] Sensor record sharing
+00           # [15]   Reserved
+00           # [16]   OEM
+c8           # [17]   ID string type/length: 8-bit ASCII, 8 chars
+46 57 20 45 52 52 4f 52   # [18:25] "FW ERROR"

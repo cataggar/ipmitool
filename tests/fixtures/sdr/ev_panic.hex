@@ -1,0 +1,20 @@
+# SDR Type 03h - Event-Only Sensor Record, generated for issue #11.
+# Owner 4Eh LUN 1, sensor 48h, type 20h: the identity an OEM record carrying the string "PANIC HERE!" presents through the standard-record overlay.
+
+16 00        # [1:2]  Record ID = 0x0016
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+18           # [5]    Record length = 24 bytes follow
+
+4e           # [6]    Sensor owner ID
+01           # [7]    Owner LUN 1, channel 0
+48           # [8]    Sensor number
+1e           # [9]    Entity ID
+01           # [10]   Entity instance
+20           # [11]   Sensor type
+6f           # [12]   Event/reading type
+00 00        # [13:14] Sensor record sharing
+00           # [15]   Reserved
+00           # [16]   OEM
+cc           # [17]   ID string type/length: 8-bit ASCII, 12 chars
+50 41 4e 49 43 20 53 45 4e 53 4f 52   # [18:29] "PANIC SENSOR"

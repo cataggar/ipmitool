@@ -1,0 +1,73 @@
+# Records that sit one field away from the `SEL Entry not found' sentinel.
+# 
+# ipmi_sel_show_entry() decides an entry is missing when its sensor number, its
+# sensor type and its record type are all zero.  8001 sets only the sensor
+# number to 1, 8002 only the sensor type and 8003 only the record type, so each
+# conjunct of that test is the only thing standing between the record and the
+# warning; 8004 is the all-zero record that really does trigger it.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_8001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 80
+  data ff ff 01 80 00 00 00 00 00 00 00 04 00 01 00 00 00 00
+end
+
+respond get_sel_8002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 80
+  data ff ff 02 80 00 00 00 00 00 00 00 04 01 00 00 00 00 00
+end
+
+respond get_sel_8003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 80
+  data ff ff 03 80 01 00 00 00 00 00 00 04 00 00 00 00 00 00
+end
+
+respond get_sel_8004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 80
+  data ff ff 04 80 00 00 00 00 00 00 00 04 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+respond get_sdr_0000
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/ev_generic.hex
+end
+
+respond get_sdr_0015
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 15 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/ev_generic.hex
+end

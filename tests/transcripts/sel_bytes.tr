@@ -1,0 +1,65 @@
+# Every multi-byte SEL field filled with four distinct non-zero bytes.
+# 
+# A record ID of 0x0001 or a timestamp whose top byte is zero cannot tell a
+# correct decode from a byte-swapped or short one, so this transcript uses
+# 0x3ca5, 0x6a2f3e4d, generator 0x91b7 and manufacturer 33 22 11.  The
+# next-record IDs are equally distinct, which pins the little-endian decode in
+# ipmi_sel_get_std_entry() and the request encoding on the way out.
+# 
+# Record 4 has a timestamp below 0x20000000, which selects the `Pre-Init'
+# branch and its %010d formatting.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 04 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data 01 00
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 a5 3c 02 4d 3e 2f 6a b7 91 4a 01 2d 01 59 7b 1e
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 c3 5a c1 11 22 33 44 11 22 33 a1 b2 c3 d4 e5 f6
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 6d 7e e3 1a 2b 3c 4d 5e 6f 71 82 93 a4 b5 c6 d7
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data ff ff 34 12 02 4d 3e 2f 1a 43 21 04 02 11 ef 00 00 00
+end
+
+respond get_sel_3ca5
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 a5 3c
+  data ff ff a5 3c 02 4d 3e 2f 6a b7 91 4a 01 2d 01 59 7b 1e
+end

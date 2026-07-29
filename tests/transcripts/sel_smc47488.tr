@@ -1,0 +1,273 @@
+# The Supermicro records of sel_smc.tr against IANA 47488.
+# 
+# ipmi_get_oem_desc() treats IPMI_OEM_SUPERMICRO_47488 exactly like
+# IPMI_OEM_SUPERMICRO; this transcript pins that the second IANA is wired up.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 80 b9 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 17 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 08 02 4d 3e 2f 6a 20 00 04 0c 40 6f 00 b7 0e
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 08 02 4d 3e 2f 6a 20 00 04 0c 41 6f 00 b7 0e
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 08 02 4d 3e 2f 6a 20 00 04 0c 42 6f 00 b7 0e
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 08 02 4d 3e 2f 6a 20 00 04 0c 43 6f 00 b7 0e
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 08 02 4d 3e 2f 6a 20 00 04 0c 44 6f 00 b7 0e
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 05 08 02 4d 3e 2f 6a 20 00 04 0c 45 6f 00 b7 0e
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 06 08 02 4d 3e 2f 6a 20 00 04 0c 46 6f 00 b7 0e
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 07 08 02 4d 3e 2f 6a 20 00 04 0c 47 6f 00 b7 0e
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 08 08 02 4d 3e 2f 6a 20 00 04 0c 48 6f 00 b7 0e
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 09 08 02 4d 3e 2f 6a 20 00 04 0c 49 6f 00 b7 0e
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 0a 08 02 4d 3e 2f 6a 20 00 04 0c 4a 6f 00 b7 0e
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data 0c 00 0b 08 02 4d 3e 2f 6a 20 00 04 0c 50 6f 00 1a 03
+end
+
+respond get_sel_000c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 00
+  data 0d 00 0c 08 02 4d 3e 2f 6a 20 00 04 0c 51 6f 01 f9 07
+end
+
+respond get_sel_000d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 00
+  data 0e 00 0d 08 02 4d 3e 2f 6a 20 00 04 0c 52 6f 00 4c 05
+end
+
+respond get_sel_000e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 00
+  data 0f 00 0e 08 02 4d 3e 2f 6a 20 00 04 d0 60 6f 80 00 ff
+end
+
+respond get_sel_000f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0f 00
+  data 10 00 0f 08 02 4d 3e 2f 6a 20 00 04 d0 61 6f 80 01 ff
+end
+
+respond get_sel_0010
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 10 00
+  data 11 00 10 08 02 4d 3e 2f 6a 20 00 04 d0 62 6f 80 02 ff
+end
+
+respond get_sel_0011
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 11 00
+  data 12 00 11 08 02 4d 3e 2f 6a 20 00 04 d0 63 6f 80 03 ff
+end
+
+respond get_sel_0012
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 12 00
+  data 13 00 12 08 02 4d 3e 2f 6a 20 00 04 d0 64 6f 80 00 fe
+end
+
+respond get_sel_0013
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 13 00
+  data 14 00 13 08 02 4d 3e 2f 6a 20 00 04 d0 65 6f 81 00 ff
+end
+
+respond get_sel_0014
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 14 00
+  data 15 00 14 08 02 4d 3e 2f 6a 20 00 04 01 66 6f 00 11 22
+end
+
+respond get_sel_0015
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 15 00
+  data 16 00 15 08 02 4d 3e 2f 6a 20 00 04 0c 67 01 00 b7 0e
+end
+
+respond get_sel_0016
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 16 00
+  data ff ff 16 08 02 4d 3e 2f 6a 20 00 04 d0 68 70 80 00 ff
+end
+
+respond board_id_0
+  netfn 0x30
+  cmd 0x21
+  # supermicro_X8 -> chipset 0
+  data 80 a8
+  times 1
+end
+
+respond board_id_1
+  netfn 0x30
+  cmd 0x21
+  # supermicro_older -> chipset 0
+  data 80 80
+  times 1
+end
+
+respond board_id_2
+  netfn 0x30
+  cmd 0x21
+  # supermicro_romely -> chipset 1
+  data 41 08
+  times 1
+end
+
+respond board_id_3
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x9 -> chipset 2
+  data 35 06
+  times 1
+end
+
+respond board_id_4
+  netfn 0x30
+  cmd 0x21
+  # supermicro_brickland -> chipset 3
+  data 26 07
+  times 1
+end
+
+respond board_id_5
+  netfn 0x30
+  cmd 0x21
+  # supermicro_brickland, second entry
+  data 3a 08
+  times 1
+end
+
+respond board_id_6
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10QRH -> chipset 4
+  data 72 08
+  times 1
+end
+
+respond board_id_7
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10QBL -> chipset 4
+  data 53 08
+  times 1
+end
+
+respond board_id_8
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10OBi -> chipset 5
+  data 23 09
+  times 1
+end
+
+respond board_id_9
+  netfn 0x30
+  cmd 0x21
+  # not in any table -> chipset 4 by default
+  data 21 43
+  times 1
+end
+
+respond board_id_10
+  netfn 0x30
+  cmd 0x21
+  # Get Board ID returns zero -> no description
+  data 00 00
+  times 1
+end
+
+respond board_id_x
+  netfn 0x30
+  cmd 0x21
+  data 72 08
+end

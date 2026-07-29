@@ -1,0 +1,40 @@
+# A three-entry log whose middle reply carries only nine bytes.
+# 
+# The walk keeps going because the next record ID happens to survive in the
+# first two bytes; the rest of the record is stale data from the previous reply.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 03 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 02 40 01 40 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+end
+
+respond get_sel_4002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 40
+  # only nine bytes: the record body is half stale
+  data 03 40 02 40 02 01 e3 0b 5e
+end
+
+respond get_sel_4003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 40
+  data ff ff 03 40 02 02 e3 0b 5e 20 00 04 04 32 01 53 a3 b3
+end

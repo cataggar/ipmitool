@@ -195,6 +195,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "lib/ipmi_sensor.c",
         .implementation = "src/zig/cmd/sensor.zig",
     },
+    .{
+        .name = "sel",
+        .replaces = "lib/ipmi_sel.c",
+        .implementation = "src/zig/cmd/sel.zig",
+    },
 };
 
 /// Root of the Zig source tree.

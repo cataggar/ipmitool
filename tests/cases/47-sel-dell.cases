@@ -1,0 +1,27 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Dell OEM event data decoding (get_dell_evt_desc).
+
+[sl_dell_list]
+desc: Dell OEM event data decoding, IPMI 2.0 device ID
+args: -I dummy sel list
+transcript: sel_dell.tr
+covers: sel
+
+[sl_dell_verbose]
+desc: verbose Dell OEM event data decoding
+args: -I dummy -v sel list
+transcript: sel_dell.tr
+covers: sel
+
+[sl_dell15_list]
+desc: Dell OEM decoding against an IPMI 1.5 device ID
+args: -I dummy sel list
+transcript: sel_dell15.tr
+covers: sel
+
+[sl_dell_devid_fail]
+desc: Dell memory decode when Get Device ID then fails
+args: -I dummy sel list
+transcript: sel_dell_devid_fail.tr
+covers: sel

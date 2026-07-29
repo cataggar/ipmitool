@@ -22,6 +22,7 @@
  * keep the ported code bit-identical to the C it replaces.
  */
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <paths.h>
 #include <signal.h>
@@ -39,11 +40,14 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_channel.h>
+#include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
+#include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_sel_supermicro.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>
@@ -100,6 +104,19 @@
  * spell `void` instead so that `assertCallSignature()` compares against the
  * non-variadic type the Zig replacement actually exports.  Neither function
  * takes an argument, so the two agree at the ABI level.
+ *
+ * `lib/ipmi_sel.c` contributes five more functions and one variable.  The four
+ * OEM description decoders and the two sensor-type lookups it defines are all
+ * global by omission - nothing declares them, and only `lib/ipmi_sel.c` itself
+ * calls them - and so is `sel_oem_msg`, the table `ipmi_sel_oem_init()` fills
+ * in, which is missing a `static`.  `struct ipmi_sel_oem_msg_rec` is defined
+ * inside the `.c`, so an incomplete type is enough here: only a pointer to it
+ * ever crosses the boundary, and `cmd/sel.zig` owns the complete definition.
+ *
+ * `strptime()` is declared by glibc's `<time.h>` only under `_XOPEN_SOURCE`;
+ * `lib/ipmi_sel.c` reaches it by defining `__USE_XOPEN` by hand before the
+ * include.  Restating the prototype here is the same trick without depending
+ * on glibc's internal feature macros.
  */
 void ipmi_raw_help(void);
 int ipmi_spd_print(uint8_t *spd_data, int len);
@@ -109,3 +126,12 @@ int ipmi_chassis_status(struct ipmi_intf *intf);
 void ipmi_chassis_set_bootflag_help(void);
 void print_sensor_get_usage(void);
 void print_sensor_thresh_usage(void);
+char *get_kontron_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec);
+char *get_supermicro_evt_desc(struct ipmi_intf *intf,
+			      struct sel_event_record *rec);
+char *get_dell_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec);
+const char *ipmi_get_generic_sensor_type(uint8_t code);
+const char *ipmi_get_oem_sensor_type(struct ipmi_intf *intf, uint8_t code);
+struct ipmi_sel_oem_msg_rec;
+extern struct ipmi_sel_oem_msg_rec *sel_oem_msg;
+char *strptime(const char *s, const char *format, struct tm *tm);

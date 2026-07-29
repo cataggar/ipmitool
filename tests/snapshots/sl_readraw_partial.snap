@@ -1,0 +1,14 @@
+#!golden 1
+#!case sl_readraw_partial
+#!section exit
+1
+#!section stdout
+2101 | 01/01/20 | 00:08:32 UTC | Temperature #0x30 | Lower Non-critical going high | Asserted
+#!section stderr
+ipmitool: incomplete record found in file.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

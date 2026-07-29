@@ -1,0 +1,188 @@
+# A Dell BMC (IANA 674) with one record per conjunct of the OEM byte guards.
+# 
+# Almost every clause of get_dell_evt_desc() is gated on bit 7 and bit 5 of event
+# data 1 -- OEM_CODE_IN_BYTE2 and OEM_CODE_IN_BYTE3.  ipmi_get_event_desc() only
+# reaches the decoder when data1 & C0h is 80h or data1 & 30h is 20h, and those
+# two are independent, so a record can clear either bit on its own and still be
+# decoded.  Each group below therefore has a record with both bits set, one with
+# bit 7 clear and one with bit 5 clear, which pins each conjunct separately
+# instead of pinning only their conjunction.
+# 
+# A063 is the mirror image: its data 1 satisfies neither half of the caller's
+# guard while its data 2 satisfies the second half, so the record is decoded if
+# and only if that guard reads the wrong event data byte.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 17 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 a0 02 4d 3e 2f 6a 20 00 04 0c 1c 6f a0 0f 03
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 a0 02 4d 3e 2f 6a 20 00 04 0c 1c 6f 80 0f 03
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 a0 02 4d 3e 2f 6a 20 00 04 0c 1c 6f 20 0f 03
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 11 a0 02 4d 3e 2f 6a 20 00 04 0c 20 6f 80 f3 03
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 12 a0 02 4d 3e 2f 6a 20 00 04 0c 20 6f 80 73 03
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 13 a0 02 4d 3e 2f 6a 20 00 04 0c 20 6f 80 23 03
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 21 a0 02 4d 3e 2f 6a 20 00 04 20 30 6f a0 11 01
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 22 a0 02 4d 3e 2f 6a 20 00 04 20 30 6f 80 11 01
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 23 a0 02 4d 3e 2f 6a 20 00 04 20 30 6f 20 11 01
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 31 a0 02 4d 3e 2f 6a 20 00 04 2b 31 6f a2 02 00
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 32 a0 02 4d 3e 2f 6a 20 00 04 2b 31 6f a1 02 00
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data 0c 00 33 a0 02 4d 3e 2f 6a 20 00 04 2b 31 6f 22 02 00
+end
+
+respond get_sel_000c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 00
+  data 0d 00 34 a0 02 4d 3e 2f 6a 20 00 04 2b 31 6f 82 02 00
+end
+
+respond get_sel_000d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 00
+  data 0e 00 35 a0 02 4d 3e 2f 6a 20 00 04 2b 31 6f a2 02 01
+end
+
+respond get_sel_000e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 00
+  data 0f 00 41 a0 02 4d 3e 2f 6a 20 00 04 c1 25 6f a1 5a 35
+end
+
+respond get_sel_000f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0f 00
+  data 10 00 42 a0 02 4d 3e 2f 6a 20 00 04 c1 25 6f 21 5a 35
+end
+
+respond get_sel_0010
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 10 00
+  data 11 00 43 a0 02 4d 3e 2f 6a 20 00 04 c1 25 6f 81 5a 35
+end
+
+respond get_sel_0011
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 11 00
+  data 12 00 51 a0 02 4d 3e 2f 6a 20 00 04 c2 29 6f a2 5a 35
+end
+
+respond get_sel_0012
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 12 00
+  data 13 00 52 a0 02 4d 3e 2f 6a 20 00 04 c2 29 6f 22 5a 35
+end
+
+respond get_sel_0013
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 13 00
+  data 14 00 53 a0 02 4d 3e 2f 6a 20 00 04 c2 29 6f 82 5a 35
+end
+
+respond get_sel_0014
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 14 00
+  data 15 00 61 a0 02 4d 3e 2f 6a 20 00 04 c2 30 6f 80 5a 35
+end
+
+respond get_sel_0015
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 15 00
+  data 16 00 62 a0 02 4d 3e 2f 6a 20 00 04 c2 30 6f 80 5a b5
+end
+
+respond get_sel_0016
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 16 00
+  data ff ff 63 a0 02 4d 3e 2f 6a 20 00 04 c2 30 6f 00 20 35
+end

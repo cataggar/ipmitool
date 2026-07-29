@@ -1,0 +1,1 @@
+0x0021: Event: at Mar 27 06:41:11 2007;from:(0x9a,0,7); sensor:(0xf0,120); event:0x6f(asserted): FRU 3 from M3 to M9999999999999999999999999999999999999999 cause=0x2

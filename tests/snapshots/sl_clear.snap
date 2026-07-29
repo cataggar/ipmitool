@@ -1,0 +1,17 @@
+#!golden 1
+#!case sl_clear
+#!section exit
+0
+#!section stdout
+Clearing SEL.  Please allow a few seconds to erase.
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x42 target_cmd=0x00 data=
+< rule=reserve_sel ccode=0x00 len=2 data=cd ab
+> netfn=0x0a lun=0x00 cmd=0x47 target_cmd=0x00 data=cd ab 43 4c 52 aa
+< rule=clear_sel ccode=0x00 len=1 data=01
+bye

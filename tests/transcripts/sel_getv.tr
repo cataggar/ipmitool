@@ -1,0 +1,288 @@
+# One record per clause of ipmi_sel_print_extended_entry_verbose().
+# 
+# That printer only runs from `sel get', and only after
+# ipmi_sdr_find_sdr_bynumtype() matches the record's generator ID, sensor number
+# and sensor type, so this repository carries an SDR for every identity the
+# records below present.  Records 7101..7105 walk both event-data switches of the
+# threshold branch with event data 2 and 3 set to different values, so the two
+# `OEM Data' and two `Sensor Extension Code' arms cannot be confused.  Record
+# 7111 is a threshold event against a *compact* record and 7112 a non-threshold
+# event against a *full* one, which pins both halves of the branch condition.
+# Records 7131..7136 isolate the CPU/DIMM decode and its three near misses,
+# 7141..7143 the version-change clause that deliberately prints nothing, and
+# 7151/7152 the kernel-panic record type and the value one above it.
+# 
+# The panic string doubles as the record's standard-type overlay: "PANIC HERE!"
+# puts 4Eh 49h in the generator ID, 20h in the sensor type and 48h in the sensor
+# number, which is exactly the sensor ev_panic.hex describes.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_7101
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 71
+  data ff ff 01 71 02 4d 3e 2f 6a 20 00 04 01 01 01 10 b7 4e
+end
+
+respond get_sel_7102
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 71
+  data ff ff 02 71 02 4d 3e 2f 6a 20 00 04 01 01 01 60 b7 4e
+end
+
+respond get_sel_7103
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 71
+  data ff ff 03 71 02 4d 3e 2f 6a 20 00 04 01 01 01 b0 b7 4e
+end
+
+respond get_sel_7104
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 71
+  data ff ff 04 71 02 4d 3e 2f 6a 20 00 04 01 01 01 c0 b7 4e
+end
+
+respond get_sel_7105
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 71
+  data ff ff 05 71 02 4d 3e 2f 6a 20 00 04 01 01 01 50 b7 4e
+end
+
+respond get_sel_7111
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 11 71
+  data ff ff 11 71 02 4d 3e 2f 6a 20 00 04 04 02 01 50 b7 4e
+end
+
+respond get_sel_7112
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 12 71
+  data ff ff 12 71 02 4d 3e 2f 6a 20 00 04 01 01 6f 40 b7 4e
+end
+
+respond get_sel_7121
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 21 71
+  data ff ff 21 71 02 4d 3e 2f 6a 20 00 04 07 12 02 50 b7 4e
+end
+
+respond get_sel_7122
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 22 71
+  data ff ff 22 71 02 4d 3e 2f 6a 20 00 04 07 12 0c 50 b7 4e
+end
+
+respond get_sel_7123
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 23 71
+  data ff ff 23 71 02 4d 3e 2f 6a 20 00 04 07 12 0d 50 b7 4e
+end
+
+respond get_sel_7124
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 24 71
+  data ff ff 24 71 02 4d 3e 2f 6a 20 00 04 07 12 70 50 b7 4e
+end
+
+respond get_sel_7125
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 25 71
+  data ff ff 25 71 02 4d 3e 2f 6a 20 00 04 07 12 7f 50 b7 4e
+end
+
+respond get_sel_7131
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 31 71
+  data ff ff 31 71 02 4d 3e 2f 6a 20 00 04 0c 00 6f a0 b7 59
+end
+
+respond get_sel_7132
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 32 71
+  data ff ff 32 71 02 4d 3e 2f 6a 20 00 04 0c 00 6f a1 b7 59
+end
+
+respond get_sel_7133
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 33 71
+  data ff ff 33 71 02 4d 3e 2f 6a 20 00 04 0c 00 6f b0 b7 59
+end
+
+respond get_sel_7134
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 34 71
+  data ff ff 34 71 02 4d 3e 2f 6a 20 00 04 0c 00 6f 90 b7 59
+end
+
+respond get_sel_7135
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 35 71
+  data ff ff 35 71 02 4d 3e 2f 6a 20 00 04 0c 03 6f a0 b7 59
+end
+
+respond get_sel_7136
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 36 71
+  data ff ff 36 71 02 4d 3e 2f 6a 20 00 04 0d 00 6f a0 b7 59
+end
+
+respond get_sel_7141
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 41 71
+  data ff ff 41 71 02 4d 3e 2f 6a 20 00 04 2b 10 6f c1 4e 59
+end
+
+respond get_sel_7142
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 42 71
+  data ff ff 42 71 02 4d 3e 2f 6a 20 00 04 2b 10 6f c2 4e 59
+end
+
+respond get_sel_7143
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 43 71
+  data ff ff 43 71 02 4d 3e 2f 6a 20 00 04 2c 11 6f c1 4e 59
+end
+
+respond get_sel_7151
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 51 71
+  data ff ff 51 71 f0 11 22 50 41 4e 49 43 20 48 45 52 45 21
+end
+
+respond get_sel_7152
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 52 71
+  data ff ff 52 71 f1 11 22 50 41 4e 49 43 20 48 45 52 45 21
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 09 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+respond get_sdr_0000
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+
+respond get_sdr_0001
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 01 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+
+respond get_sdr_0002
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 02 00
+  data 10 00
+  partial 4 1 5
+  blob @sdr/compact_fan.hex
+end
+
+respond get_sdr_0010
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 10 00
+  data 11 00
+  partial 4 1 5
+  blob @sdr/ev_mem0.hex
+end
+
+respond get_sdr_0011
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 11 00
+  data 12 00
+  partial 4 1 5
+  blob @sdr/ev_mem3.hex
+end
+
+respond get_sdr_0012
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 12 00
+  data 13 00
+  partial 4 1 5
+  blob @sdr/ev_drive0.hex
+end
+
+respond get_sdr_0013
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 13 00
+  data 14 00
+  partial 4 1 5
+  blob @sdr/ev_vchg.hex
+end
+
+respond get_sdr_0014
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 14 00
+  data 15 00
+  partial 4 1 5
+  blob @sdr/ev_fwerr.hex
+end
+
+respond get_sdr_0015
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 15 00
+  data 16 00
+  partial 4 1 5
+  blob @sdr/ev_generic.hex
+end
+
+respond get_sdr_0016
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 16 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/ev_panic.hex
+end

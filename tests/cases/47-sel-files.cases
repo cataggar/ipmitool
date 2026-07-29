@@ -1,0 +1,163 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# The file-driven SEL subcommands: readraw, ereadraw, add, save and
+# writeraw.
+
+[sl_readraw]
+desc: sel readraw: five records read back from a file
+args: -I dummy sel readraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_records.hex
+covers: sel
+
+[sl_readraw_e]
+desc: sel ereadraw: five records read back from a file
+args: -I dummy sel ereadraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_records.hex
+covers: sel
+
+[sl_readraw_partial]
+desc: sel readraw: a file whose last record is only seven bytes long
+args: -I dummy sel readraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_partial.hex
+covers: sel
+
+[sl_readraw_partial_e]
+desc: sel ereadraw: a file whose last record is only seven bytes long
+args: -I dummy sel ereadraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_partial.hex
+covers: sel
+
+[sl_readraw_tiny]
+desc: sel readraw: a file shorter than a single record
+args: -I dummy sel readraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_tiny.hex
+covers: sel
+
+[sl_readraw_tiny_e]
+desc: sel ereadraw: a file shorter than a single record
+args: -I dummy sel ereadraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_tiny.hex
+covers: sel
+
+[sl_readraw_verbose]
+desc: verbose sel readraw
+args: -I dummy -v sel readraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_records.hex
+covers: sel
+
+[sl_readraw_csv]
+desc: sel readraw with CSV output
+args: -I dummy -c sel readraw {work}/sel.bin
+transcript: sel_file.tr
+blob: sel.bin sel/raw_records.hex
+covers: sel
+
+[sl_readraw_missing]
+desc: sel readraw on a file that does not exist
+args: -I dummy sel readraw {work}/nope.bin
+transcript: sel_file.tr
+covers: sel
+
+[sl_readraw_dir]
+desc: sel readraw on a directory
+args: -I dummy sel readraw {work}
+transcript: sel_file.tr
+covers: sel
+
+[sl_add_ok]
+desc: sel add: three well formed events
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_ok.txt
+covers: sel
+
+[sl_add_comments]
+desc: sel add: comment and blank lines
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_comments.txt
+covers: sel
+
+[sl_add_badtok]
+desc: sel add: an unparseable seventh byte, which is sent as zero
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_badtok.txt
+covers: sel
+
+[sl_add_extra]
+desc: sel add: a line with ten bytes
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_extra.txt
+covers: sel
+
+[sl_add_empty]
+desc: sel add: an empty file
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_empty.txt
+covers: sel
+
+[sl_add_noeol]
+desc: sel add: a file with no trailing newline
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_noeol.txt
+covers: sel
+
+[sl_add_missing]
+desc: sel add on a file that does not exist
+args: -I dummy sel add {work}/nope.txt
+transcript: sel_file.tr
+covers: sel
+
+[sl_add_ccode]
+desc: sel add when the BMC rejects the entry
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_add_fail.tr
+text: ev.txt sel/add_ok.txt
+covers: sel
+
+[sl_save_stdout]
+desc: sel save writing the text form to stdout
+args: -I dummy sel save /dev/stdout
+transcript: sel_save.tr
+covers: sel
+
+[sl_writeraw_stdout]
+desc: sel writeraw writing raw records to stdout
+args: -I dummy sel writeraw /dev/stdout
+transcript: sel_save.tr
+covers: sel
+
+[sl_save_work]
+desc: sel save to a scratch file
+args: -I dummy sel save {work}/sel.txt
+transcript: sel_save.tr
+covers: sel
+
+[sl_writeraw_work]
+desc: sel writeraw to a scratch file
+args: -I dummy sel writeraw {work}/sel.bin
+transcript: sel_save.tr
+covers: sel
+
+[sl_save_unwritable]
+desc: sel save to a path that cannot be created
+args: -I dummy sel save {work}/nodir/sel.txt
+transcript: sel_save.tr
+covers: sel
+
+[sl_writeraw_unwritable]
+desc: sel writeraw to a path that cannot be created
+args: -I dummy sel writeraw {work}/nodir/sel.bin
+transcript: sel_save.tr
+covers: sel

@@ -1,0 +1,173 @@
+# Threshold events against a full SDR whose conversion is not the identity.
+# 
+# The SDR (sdr/full_frac.hex) has M=3 and R exponent -1, so raw 0x55 converts to
+# 25.5 and raw 0x0a to 3, which separates the `%.0f' and `%.2f' branches of
+# ipmi_sel_print_std_entry().  Its unit fields are percentage=1, modifier
+# action=2, base unit Volts and modifier unit Amps, all distinct and non-zero,
+# which pins every argument of ipmi_sdr_get_unit_string().
+# 
+# The sixteen records walk EV1[7:6] and EV1[5:4] through all four values each,
+# alternating the event direction so that the de-assert inequality flip is
+# covered too.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 10 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data 01 00
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 00 55 0a
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 11 55 0a
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 22 55 0a
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 33 55 0a
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 44 55 0a
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 05 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 55 55 0a
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 06 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 66 55 0a
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 07 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 77 55 0a
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 08 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 88 55 0a
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 09 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 99 55 0a
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 0a 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 aa 55 0a
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data 0c 00 0b 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 bb 55 0a
+end
+
+respond get_sel_000c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 00
+  data 0d 00 0c 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 c0 55 0a
+end
+
+respond get_sel_000d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 00
+  data 0e 00 0d 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 d1 55 0a
+end
+
+respond get_sel_000e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 00
+  data 0f 00 0e 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 e2 55 0a
+end
+
+respond get_sel_000f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0f 00
+  data ff ff 0f 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 f3 55 0a
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/full_frac.hex
+end
+
+respond get_sdr_0005
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 05 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/full_frac.hex
+end

@@ -1,0 +1,126 @@
+# A Kontron BMC (IANA 15000).
+# 
+# ipmi_get_first_event_sensor_type() substitutes oem_kontron_event_types for the
+# generic table when the sensor type is in the OEM range C0h..EFh, so these
+# records exercise that table directly.  Sensor types below C0h and at F0h fall
+# back to the generic table, and event/reading types in 70h..7Eh are routed to
+# get_kontron_evt_desc().
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 0f 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 07 02 4d 3e 2f 6a 20 00 04 c1 10 6f 00 00 00
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 07 02 4d 3e 2f 6a 20 00 04 c1 11 6f 08 00 00
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 07 02 4d 3e 2f 6a 20 00 04 c3 12 6f 03 00 00
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 07 02 4d 3e 2f 6a 20 00 04 c4 13 6f 09 00 00
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 07 02 4d 3e 2f 6a 20 00 04 c6 14 6f 0e 00 00
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 05 07 02 4d 3e 2f 6a 20 00 04 c7 15 6f 08 00 00
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 06 07 02 4d 3e 2f 6a 20 00 04 c8 16 6f 03 00 00
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 07 07 02 4d 3e 2f 6a 20 00 04 c9 17 6f 01 00 00
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 08 07 02 4d 3e 2f 6a 20 00 04 cf 18 6f 00 00 00
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 09 07 02 4d 3e 2f 6a 20 00 04 c1 19 6f 0d 00 00
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 0a 07 02 4d 3e 2f 6a 20 00 04 bf 1a 6f 00 00 00
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data 0c 00 0b 07 02 4d 3e 2f 6a 20 00 04 f0 1b 6f 00 00 00
+end
+
+respond get_sel_000c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 00
+  data 0d 00 10 07 02 4d 3e 2f 6a 20 00 04 20 30 70 00 11 22
+end
+
+respond get_sel_000d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 00
+  data 0e 00 11 07 02 4d 3e 2f 6a 20 00 04 c1 31 7e 01 11 22
+end
+
+respond get_sel_000e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 00
+  data ff ff 12 07 02 4d 3e 2f 6a 20 00 04 c1 32 7f 01 11 22
+end

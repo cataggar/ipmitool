@@ -1,0 +1,81 @@
+# Two threshold sensors whose SDRs share entity 03h/01h with a FRU device
+# locator.
+# 
+# ipmi_sel_show_entry() prints the SEL record, then the SDR for the sensor, then
+# walks the SDR repository for every FRU device locator with the same entity ID
+# and instance and prints each one.  The FRU commands themselves are refused by
+# this BMC, which keeps the FRU output short and deterministic.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 02 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 02 60 01 60 02 4d 3e 2f 6a 20 00 04 01 0b 01 51 a1 b1
+end
+
+respond get_sel_6001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 60
+  data 02 60 01 60 02 4d 3e 2f 6a 20 00 04 01 0b 01 51 a1 b1
+end
+
+respond get_sel_6002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 60
+  data ff ff 02 60 02 4d 3e 2f 6a 20 00 04 01 2d 01 52 55 0a
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 03 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+respond get_sdr_0000
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+
+respond get_sdr_0002
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 02 00
+  data 09 00
+  partial 4 1 5
+  blob @sdr/full_frac.hex
+end
+
+respond get_sdr_0009
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 09 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/fru_locator_cpu.hex
+end

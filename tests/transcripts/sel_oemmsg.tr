@@ -1,0 +1,83 @@
+# A log with OEM records that an `-O' message translation file can describe.
+# 
+# ipmi_sel_oem_match() keys on record byte 3 (the record type) and optionally on
+# bytes 4..7, 11 and 12; ipmi_sel_oem_message() then prints the text plus every
+# field the file named rather than fixing.  The record contents below make bytes
+# 6, 8, 13 and 16 -- the ones the named fields select -- all different and all
+# non-zero, so the SEL_BYTE() index arithmetic is pinned.
+# 
+# Records 4c05..4c07 pin the optional match bytes: 4c05 satisfies all seven
+# constraints of the "all seven match bytes fixed" line, while 4c06 and 4c07
+# each miss by one byte, one early and one late.  Record 5a08 has thirteen
+# distinct non-zero bytes at evt[1..13] and is described by a line that names
+# every field, so every index of the print loop is pinned too.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 08 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 50 e0 31 32 33 44 35 36 37 77 88 3a 3b 3c 3d
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 50 e0 31 32 33 99 35 36 37 77 88 3a 3b 3c 3d
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 50 c0 00 e3 0b 5e 11 22 33 41 42 43 44 45 46
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 04 50 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 05 4c d0 11 22 33 44 5a 6b 7c 99 aa bb cc dd ee
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 06 4c d0 11 23 33 44 5a 6b 7c 99 aa bb cc dd ee
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 07 4c d0 11 22 33 44 5a 6b 7c 99 ab bb cc dd ee
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data ff ff 08 5a d1 11 22 33 44 55 66 77 88 99 a1 b2 c3 d4
+end

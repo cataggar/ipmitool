@@ -1,0 +1,23 @@
+#!golden 1
+#!case sl_readraw_csv
+#!section exit
+0
+#!section stdout
+2101,01/01/20,00:08:32 UTC,Temperature #0x30,Lower Non-critical going high,Asserted
+2102,01/01/20,00:08:33 UTC,Processor #0x33,IERR,Asserted
+2103,01/01/20,00:08:34 UTC,OEM record c2,112233,414243444546
+2104,,,OEM record e4,2122232425262728292a2b2c2d
+2105, Pre-Init ,0536870911,Temperature #0x31,Lower Non-critical going low ,Deasserted
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+bye
