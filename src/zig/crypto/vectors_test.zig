@@ -23,6 +23,7 @@
 const std = @import("std");
 
 const aes_cbc = @import("aes_cbc.zig");
+const assert_text = @import("assert_text.zig");
 const mac_mod = @import("mac.zig");
 const md5_mod = @import("md5.zig");
 const payload_mod = @import("payload.zig");
@@ -34,7 +35,9 @@ const auth_vectors = @embedFile("crypto_vectors_auth");
 const hmac_vectors = @embedFile("crypto_vectors_hmac");
 const aes_vectors = @embedFile("crypto_vectors_aes_cbc");
 const payload_vectors = @embedFile("crypto_vectors_payload");
+const integrity_vectors = @embedFile("crypto_vectors_integrity");
 const rakp_vectors = @embedFile("crypto_vectors_rakp");
+const abort_vectors = @embedFile("crypto_vectors_aborts");
 
 // ---------------------------------------------------------------------------
 // Fixture parsing
@@ -222,7 +225,7 @@ fn checkAuth(case: Case) !void {
 
 test "auth.c vectors" {
     const count = try forEachCase(auth_vectors, checkAuth);
-    try std.testing.expectEqual(@as(usize, 8), count);
+    try std.testing.expectEqual(@as(usize, 94), count);
 }
 
 // ---------------------------------------------------------------------------
@@ -274,18 +277,36 @@ fn checkAesCbc(case: Case) !void {
         return;
     }
 
+    const encrypting = std.mem.startsWith(u8, case.name, "aes/encrypt") or
+        std.mem.startsWith(u8, case.name, "aes/keyvar") or
+        std.mem.startsWith(u8, case.name, "aes/ivvar");
+
     var out: [scratch_size]u8 = undefined;
-    if (std.mem.startsWith(u8, case.name, "aes/encrypt")) {
+    if (encrypting) {
         aes_cbc.encrypt(&key, &iv, data, out[0..data.len]);
     } else {
         aes_cbc.decrypt(&key, &iv, data, out[0..data.len]);
     }
     try std.testing.expectEqualSlices(u8, want, out[0..data.len]);
+
+    // The `-in-place` cases exist because the C hands the same buffer in and
+    // out, so run them that way too: CBC decryption in particular has to keep a
+    // copy of each input block before it is overwritten.
+    if (std.mem.indexOf(u8, case.name, "-in-place/") != null) {
+        var aliased: [scratch_size]u8 = undefined;
+        @memcpy(aliased[0..data.len], data);
+        if (encrypting) {
+            aes_cbc.encrypt(&key, &iv, aliased[0..data.len], aliased[0..data.len]);
+        } else {
+            aes_cbc.decrypt(&key, &iv, aliased[0..data.len], aliased[0..data.len]);
+        }
+        try std.testing.expectEqualSlices(u8, want, aliased[0..data.len]);
+    }
 }
 
 test "AES-128-CBC vectors" {
     const count = try forEachCase(aes_vectors, checkAesCbc);
-    try std.testing.expectEqual(@as(usize, 17), count);
+    try std.testing.expectEqual(@as(usize, 54), count);
 }
 
 // ---------------------------------------------------------------------------
@@ -348,7 +369,7 @@ fn checkPayload(case: Case) !void {
 
 test "confidentiality payload vectors" {
     const count = try forEachCase(payload_vectors, checkPayload);
-    try std.testing.expectEqual(@as(usize, 16), count);
+    try std.testing.expectEqual(@as(usize, 59), count);
 }
 
 // ---------------------------------------------------------------------------
@@ -507,12 +528,160 @@ fn checkRakp(case: Case) !void {
 
 test "RAKP key derivation vectors" {
     const count = try forEachCase(rakp_vectors, checkRakp);
+    try std.testing.expectEqual(@as(usize, 27), count);
+}
+
+// ---------------------------------------------------------------------------
+// lanplus_has_valid_auth_code
+// ---------------------------------------------------------------------------
+
+/// `IPMI_SESSION_AUTHTYPE_RMCP_PLUS`.
+const authtype_rmcp_plus = 0x06;
+/// `LANPLUS_STATE_ACTIVE`.
+const state_active = 3;
+
+fn checkIntegrity(case: Case) !void {
+    var k1: [mac_mod.max_digest_length]u8 = undefined;
+    var packet: [scratch_size]u8 = undefined;
+
+    const integrity_alg: u8 = @intCast(try case.int("integrity_alg"));
+    const key = try case.hex("k1", &k1);
+    const data = try case.hex("packet", &packet);
+
+    // The four early returns answer "valid" without hashing anything.
+    if (std.mem.startsWith(u8, case.name, "integrity/early/")) {
+        const authtype = try case.int("authtype");
+        const state = try case.int("session_state");
+        const authenticated = try case.int("authenticated");
+        const short_circuits = authtype != authtype_rmcp_plus or
+            state != state_active or
+            authenticated == 0 or
+            integrity_alg == 0;
+        try std.testing.expect(short_circuits);
+        try std.testing.expectEqual(@as(u32, 1), try case.int("valid"));
+        return;
+    }
+
+    const authcode_length = mac_mod.integrityAuthcodeLength(integrity_alg).?;
+    try std.testing.expectEqual(try case.int("authcode_length"), authcode_length);
+
+    const algorithm = mac_mod.algorithmFor(integrity_alg).?;
+    var generated: [mac_mod.max_digest_length]u8 = undefined;
+    const generated_length = mac_mod.hmac(algorithm, key, data[4 .. data.len - authcode_length], &generated);
+
+    var full: [mac_mod.max_digest_length]u8 = undefined;
+    try std.testing.expectEqual(try case.int("full_digest_length"), generated_length);
+    try std.testing.expectEqualSlices(
+        u8,
+        try case.hex("full_digest", &full),
+        generated[0..generated_length],
+    );
+
+    const bmc = data[data.len - authcode_length ..];
+    const valid = std.mem.eql(u8, bmc, generated[0..authcode_length]);
+    try std.testing.expectEqual(try case.int("valid"), @intFromBool(valid));
+    try std.testing.expect(valid);
+
+    // Every tampered variant the generator recorded must be rejected.  The
+    // last one is the important one: it swaps in the *tail* of the untruncated
+    // digest, which only a correctly truncated comparison notices.
+    var tampered: [scratch_size]u8 = undefined;
+    const variants = [_]struct { field: []const u8, index: usize }{
+        .{ .field = "valid_body_flipped", .index = 4 },
+        .{ .field = "valid_authcode_last_flipped", .index = data.len - 1 },
+        .{ .field = "valid_authcode_first_flipped", .index = data.len - authcode_length },
+    };
+    for (variants) |variant| {
+        @memcpy(tampered[0..data.len], data);
+        tampered[variant.index] ^= 0x01;
+        var got: [mac_mod.max_digest_length]u8 = undefined;
+        _ = mac_mod.hmac(algorithm, key, tampered[4 .. data.len - authcode_length], &got);
+        const still_valid = std.mem.eql(
+            u8,
+            tampered[data.len - authcode_length ..][0..authcode_length],
+            got[0..authcode_length],
+        );
+        try std.testing.expectEqual(try case.int(variant.field), @intFromBool(still_valid));
+        try std.testing.expect(!still_valid);
+    }
+
+    if (case.get("valid_digest_tail")) |_| {
+        @memcpy(tampered[0..data.len], data);
+        @memcpy(
+            tampered[data.len - authcode_length ..][0..authcode_length],
+            generated[generated_length - authcode_length ..][0..authcode_length],
+        );
+        const still_valid = std.mem.eql(
+            u8,
+            tampered[data.len - authcode_length ..][0..authcode_length],
+            generated[0..authcode_length],
+        );
+        try std.testing.expectEqual(try case.int("valid_digest_tail"), @intFromBool(still_valid));
+        try std.testing.expect(!still_valid);
+    } else {
+        // Only HMAC-MD5-128 has nothing to truncate, so it has no tail case.
+        try std.testing.expectEqual(generated_length, authcode_length);
+    }
+}
+
+test "integrity check value vectors" {
+    const count = try forEachCase(integrity_vectors, checkIntegrity);
+    try std.testing.expectEqual(@as(usize, 85), count);
+}
+
+// ---------------------------------------------------------------------------
+// assert() branches
+// ---------------------------------------------------------------------------
+
+/// `SIGABRT`.
+const sigabrt = 6;
+
+/// Every `assert()` expression the ported modules can reach, keyed by the
+/// probe in `tests/crypto/gen_vectors.c` that provoked it.
+///
+/// The C aborts on all of these, and the port has to abort with the same
+/// message, so the expression strings are checked against what the C actually
+/// printed rather than against a transcription of the source.  What is *not*
+/// compared is the file, line and function glibc also prints: those are
+/// toolchain dependent, and gcc and clang disagree on both (see
+/// doc/zig-migration/crypto.md).
+const abort_expressions = [_]struct { name: []const u8, expr: []const u8 }{
+    .{ .name = "abort/hmac/bad-mac", .expr = "0" },
+    .{ .name = "abort/aes/encrypt-unaligned", .expr = assert_text.aes_block_multiple },
+    .{ .name = "abort/aes/decrypt-unaligned", .expr = assert_text.aes_block_multiple },
+    .{ .name = "abort/payload/encrypt-bad-alg", .expr = assert_text.crypt_alg_is_aes },
+    .{ .name = "abort/payload/decrypt-bad-alg", .expr = assert_text.crypt_alg_is_aes },
+    .{ .name = "abort/payload/bad-padding", .expr = "0" },
+    .{ .name = "abort/payload/iv-only", .expr = "0" },
+    .{ .name = "abort/integrity/md5-128", .expr = "0" },
+    .{ .name = "abort/rakp2/bad-auth-alg", .expr = assert_text.supported_auth_algs },
+    .{ .name = "abort/rakp4/intelplus-sha256", .expr = assert_text.intelplus_integrity },
+    .{ .name = "abort/sik/bad-auth-alg", .expr = assert_text.supported_auth_algs },
+    .{ .name = "abort/rakp3/bad-auth-alg", .expr = assert_text.supported_auth_algs },
+};
+
+fn checkAbort(case: Case) !void {
+    // Every probe killed the C with SIGABRT rather than returning an error.
+    try std.testing.expectEqual(@as(u32, 1), try case.int("signalled"));
+    try std.testing.expectEqual(@as(u32, sigabrt), try case.int("signal"));
+
+    for (abort_expressions) |expected| {
+        if (!std.mem.eql(u8, expected.name, case.name)) continue;
+        try std.testing.expectEqualStrings(expected.expr, try case.str("assert_expr"));
+        return;
+    }
+    return error.UnexpectedAbortCase;
+}
+
+test "assert branch vectors" {
+    const count = try forEachCase(abort_vectors, checkAbort);
     try std.testing.expectEqual(@as(usize, 12), count);
+    try std.testing.expectEqual(abort_expressions.len, count);
 }
 
 test "every fixture file is covered" {
-    // 401 cases across six files; the per-file tests above pin each count, and
-    // this keeps the total honest if a file is ever added without a test.
-    const totals = 28 + 8 + 320 + 17 + 16 + 12;
-    try std.testing.expectEqual(@as(usize, 401), totals);
+    // The per-file tests above pin each count; this keeps the total honest if a
+    // fixture is ever added without a test to read it.
+    const totals = 28 + 94 + 320 + 54 + 59 + 85 + 27 + 12;
+    try std.testing.expectEqual(@as(usize, 679), totals);
 }

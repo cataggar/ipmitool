@@ -77,6 +77,24 @@ pub fn algorithmFor(mac: u8) ?Algorithm {
     };
 }
 
+/// The switch in `lanplus_has_valid_auth_code`, as a lookup.
+///
+/// This is *not* `algorithmFor(x).?.authcodeLength()`: the two disagree on
+/// `IPMI_INTEGRITY_MD5_128` (0x03), which `lanplus_HMAC` happily hashes as
+/// SHA-256 but which `lanplus_has_valid_auth_code` rejects with `assert(0)`.
+/// Returns null for the values the C asserts on.
+pub fn integrityAuthcodeLength(integrity_alg: u8) ?u32 {
+    return switch (integrity_alg) {
+        // IPMI_INTEGRITY_HMAC_SHA1_96
+        0x01 => Algorithm.sha1.authcodeLength(),
+        // IPMI_INTEGRITY_HMAC_MD5_128
+        0x02 => Algorithm.md5.authcodeLength(),
+        // IPMI_INTEGRITY_HMAC_SHA256_128
+        0x04 => Algorithm.sha256.authcodeLength(),
+        else => null,
+    };
+}
+
 /// HMAC `data` under `key`, writing the digest to the front of `out`.
 ///
 /// Returns the digest length, which is what the C hands back through `md_len`.
@@ -94,6 +112,26 @@ pub fn hmac(
         .sha256 => HmacSha256.create(out[0..HmacSha256.mac_length], data, key),
     }
     return algorithm.digestLength();
+}
+
+test "integrity check values are truncated, and 0x03 is not one" {
+    // The whole point: HMAC-SHA1-96 sends 12 of 20 bytes and HMAC-SHA256-128
+    // sends 16 of 32, so a port that skipped the truncation would still agree
+    // on the leading bytes and fail only against real hardware.
+    try std.testing.expectEqual(@as(u32, 12), integrityAuthcodeLength(0x01).?);
+    try std.testing.expectEqual(@as(u32, 20), Algorithm.sha1.digestLength());
+    try std.testing.expectEqual(@as(u32, 16), integrityAuthcodeLength(0x02).?);
+    try std.testing.expectEqual(@as(u32, 16), Algorithm.md5.digestLength());
+    try std.testing.expectEqual(@as(u32, 16), integrityAuthcodeLength(0x04).?);
+    try std.testing.expectEqual(@as(u32, 32), Algorithm.sha256.digestLength());
+
+    // IPMI_INTEGRITY_MD5_128: a real algorithm number this code never
+    // implemented, and the one place the two number spaces must not be merged.
+    try std.testing.expectEqual(@as(?u32, null), integrityAuthcodeLength(0x03));
+    try std.testing.expectEqual(Algorithm.sha256, algorithmFor(0x03).?);
+
+    try std.testing.expectEqual(@as(?u32, null), integrityAuthcodeLength(0x00));
+    try std.testing.expectEqual(@as(?u32, null), integrityAuthcodeLength(0x05));
 }
 
 test "algorithm numbers follow lanplus_HMAC, not the specification tables" {

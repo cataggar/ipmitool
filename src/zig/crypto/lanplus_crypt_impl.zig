@@ -15,6 +15,7 @@
 
 const std = @import("std");
 
+const assert_text = @import("assert_text.zig");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const aes_cbc = @import("aes_cbc.zig");
@@ -151,7 +152,7 @@ fn encryptAesCbc128(
         .file = source,
         .line = 199,
         .func = "lanplus_encrypt_aes_cbc_128",
-        .expr = "(input_length % IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE) == 0",
+        .expr = assert_text.aes_block_multiple,
     });
 
     aes_cbc.encrypt(
@@ -185,7 +186,7 @@ fn decryptAesCbc128(
         .file = source,
         .line = 282,
         .func = "lanplus_decrypt_aes_cbc_128",
-        .expr = "(input_length % IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE) == 0",
+        .expr = assert_text.aes_block_multiple,
     });
 
     aes_cbc.decrypt(

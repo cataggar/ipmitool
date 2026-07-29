@@ -1026,7 +1026,8 @@ fn addCryptoVectorGenerator(b: *std.Build, options: VectorGeneratorOptions) void
 /// than under `src/`, so they are exposed as named imports instead of by a
 /// relative path out of the module root.
 const crypto_vector_fixtures = [_][]const u8{
-    "md5", "auth", "hmac", "aes_cbc", "payload", "rakp",
+    "md5",     "auth",      "hmac", "aes_cbc",
+    "payload", "integrity", "rakp", "aborts",
 };
 
 fn addCryptoVectors(b: *std.Build, mod: *std.Build.Module) void {

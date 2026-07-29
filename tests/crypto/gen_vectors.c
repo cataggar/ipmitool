@@ -30,6 +30,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_constants.h>
@@ -297,33 +300,69 @@ static void gen_auth(const char *dir)
 
 	open_out(dir, "auth.txt", "IPMI v1.5 auth codes (src/plugins/lan/auth.c)");
 
-	for (i = 0; i < 4; ++i) {
-		char name[64];
-		int data_len = (int)(i * 23);
+	/*
+	 * `session_id` and `in_seq` are the two multi-byte fields, and the C
+	 * treats them differently: `session_id` is hashed in host order with no
+	 * swap at all, while `in_seq` is byte swapped on big-endian hosts.  The
+	 * values below are deliberately asymmetric (and include the ones that are
+	 * a single non-zero byte) so that no byte order other than the C's can
+	 * reproduce the digest.
+	 */
+	{
+		static const uint32_t ids[] = {
+			0x00000000u, 0x00000001u, 0x000000ffu,
+			0xff000000u, 0xa1b2c3d4u, 0x12345678u,
+		};
+		static const uint32_t seqs[] = {
+			0x00000000u, 0x00000001u, 0x000000ffu,
+			0xff000000u, 0x01020304u, 0x87654321u,
+		};
+		static const int data_lens[] = {
+			0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127,
+		};
 
-		memset(&session, 0, sizeof(session));
-		fill(session.authcode, 16, i + 1);
-		session.session_id = 0xa1b2c3d4u + (uint32_t)i;
-		session.in_seq = 0x01020304u + (uint32_t)i;
-		fill(data, sizeof(data), i + 9);
+		for (i = 0; i < (int)(sizeof(ids) / sizeof(ids[0])); ++i) {
+			int j;
+			for (j = 0; j < (int)(sizeof(data_lens) / sizeof(data_lens[0])); ++j) {
+				char name[64];
 
-		snprintf(name, sizeof(name), "auth/md5/%d", i);
-		emit_case(name);
-		emit_hex("authcode", session.authcode, 16);
-		emit_hex("session_id", (const uint8_t *)&session.session_id, 4);
-		emit_hex("in_seq", (const uint8_t *)&session.in_seq, 4);
-		emit_hex("data", data, data_len);
-		md = ipmi_auth_md5(&session, data, data_len);
-		emit_hex("authcode_out", md, 16);
+				memset(&session, 0, sizeof(session));
+				fill(session.authcode, 16, i * 13 + j + 1);
+				session.session_id = ids[i];
+				session.in_seq = seqs[i];
+				fill(data, sizeof(data), i + j + 9);
+
+				snprintf(name, sizeof(name), "auth/md5/%d/%d",
+				         i, data_lens[j]);
+				emit_case(name);
+				emit_hex("authcode", session.authcode, 16);
+				emit_hex("session_id",
+				         (const uint8_t *)&session.session_id, 4);
+				emit_hex("in_seq", (const uint8_t *)&session.in_seq, 4);
+				emit_hex("data", data, data_lens[j]);
+				md = ipmi_auth_md5(&session, data, data_lens[j]);
+				emit_hex("authcode_out", md, 16);
+			}
+		}
 	}
 
-	for (i = 0; i < 3; ++i) {
+	/*
+	 * `ipmi_auth_special` hashes the password with `strlen()`, not with the
+	 * fixed 16 bytes `ipmi_auth_md5` uses, so every length from empty to the
+	 * 20 byte maximum is covered.
+	 */
+	for (i = 0; i <= 20; ++i) {
 		char name[64];
-		static const char *passwords[] = { "", "password", "0123456789abcdefghij" };
+		char password[24];
+		int j;
+
+		for (j = 0; j < i; ++j)
+			password[j] = (char)('a' + (j % 26));
+		password[i] = 0;
 
 		memset(&session, 0, sizeof(session));
 		snprintf((char *)session.authcode, sizeof(session.authcode), "%s",
-		         passwords[i]);
+		         password);
 		fill(session.challenge, 16, i + 5);
 
 		snprintf(name, sizeof(name), "auth/special/%d", i);
@@ -402,7 +441,9 @@ static void gen_hmac(const char *dir)
 
 static void gen_aes(const char *dir)
 {
-	static const int lengths[] = { 0, 16, 32, 48, 64, 80, 160, 512 };
+	static const int lengths[] = {
+		0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 256, 512,
+	};
 	uint8_t iv[16];
 	uint8_t key[16];
 	uint8_t input[512];
@@ -446,19 +487,97 @@ static void gen_aes(const char *dir)
 		emit_hex("output", roundtrip, (int)back);
 	}
 
+	/*
+	 * Vary the key with everything else fixed.  A broken key schedule still
+	 * produces plausible looking ciphertext, so the same plaintext under many
+	 * keys is the cheapest way to catch one.
+	 */
+	fill(iv, 16, 200);
+	fill(input, 64, 201);
+	for (i = 0; i < 12; ++i) {
+		char name[64];
+
+		memset(key, 0, 16);
+		switch (i) {
+		case 0: break;                                  /* all zero      */
+		case 1: memset(key, 0xff, 16); break;           /* all ones      */
+		case 2: key[0] = 0x80; break;                   /* one high bit  */
+		case 3: key[15] = 0x01; break;                  /* one low bit   */
+		default: fill(key, 16, (int)i * 17 + 3); break;
+		}
+		memset(output, 0xcc, sizeof(output));
+		written = 0;
+		lanplus_encrypt_aes_cbc_128(iv, key, input, 64, output, &written);
+
+		snprintf(name, sizeof(name), "aes/keyvar/%zu", i);
+		emit_case(name);
+		emit_hex("iv", iv, 16);
+		emit_hex("key", key, 16);
+		emit_hex("input", input, 64);
+		emit_int("bytes_written", written);
+		emit_hex("output", output, (int)written);
+	}
+
+	/* Vary the IV with everything else fixed: catches a dropped or
+	 * mis-chained first block. */
+	fill(key, 16, 210);
+	fill(input, 64, 211);
+	for (i = 0; i < 8; ++i) {
+		char name[64];
+
+		memset(iv, 0, 16);
+		switch (i) {
+		case 0: break;
+		case 1: memset(iv, 0xff, 16); break;
+		case 2: iv[0] = 0x01; break;
+		case 3: iv[15] = 0x80; break;
+		default: fill(iv, 16, (int)i * 23 + 7); break;
+		}
+		memset(output, 0xcc, sizeof(output));
+		written = 0;
+		lanplus_encrypt_aes_cbc_128(iv, key, input, 64, output, &written);
+
+		snprintf(name, sizeof(name), "aes/ivvar/%zu", i);
+		emit_case(name);
+		emit_hex("iv", iv, 16);
+		emit_hex("key", key, 16);
+		emit_hex("input", input, 64);
+		emit_int("bytes_written", written);
+		emit_hex("output", output, (int)written);
+	}
+
 	/* In-place encryption: the RMCP+ path hands overlapping buffers around. */
-	fill(iv, 16, 77);
-	fill(key, 16, 78);
-	fill(input, 64, 79);
-	memcpy(output, input, 64);
-	written = 0;
-	lanplus_encrypt_aes_cbc_128(iv, key, output, 64, output, &written);
-	emit_case("aes/encrypt-in-place/64");
-	emit_hex("iv", iv, 16);
-	emit_hex("key", key, 16);
-	emit_hex("input", input, 64);
-	emit_int("bytes_written", written);
-	emit_hex("output", output, (int)written);
+	for (i = 0; i < 4; ++i) {
+		char name[64];
+		int len = (int)(i + 1) * 16;
+
+		fill(iv, 16, 77);
+		fill(key, 16, 78);
+		fill(input, len, 79);
+		memcpy(output, input, len);
+		written = 0;
+		lanplus_encrypt_aes_cbc_128(iv, key, output, len, output, &written);
+		snprintf(name, sizeof(name), "aes/encrypt-in-place/%d", len);
+		emit_case(name);
+		emit_hex("iv", iv, 16);
+		emit_hex("key", key, 16);
+		emit_hex("input", input, len);
+		emit_int("bytes_written", written);
+		emit_hex("output", output, (int)written);
+
+		/* And decryption in place, which has to carry the *input* block
+		 * forward before it is overwritten. */
+		memcpy(roundtrip, output, written);
+		back = 0;
+		lanplus_decrypt_aes_cbc_128(iv, key, roundtrip, written, roundtrip, &back);
+		snprintf(name, sizeof(name), "aes/decrypt-in-place/%d", len);
+		emit_case(name);
+		emit_hex("iv", iv, 16);
+		emit_hex("key", key, 16);
+		emit_hex("input", output, (int)written);
+		emit_int("bytes_written", back);
+		emit_hex("output", roundtrip, (int)back);
+	}
 
 	close_out();
 }
@@ -470,7 +589,13 @@ static void gen_aes(const char *dir)
 static void gen_payload(const char *dir)
 {
 	static const int lengths[] = {
-		0, 1, 2, 13, 14, 15, 16, 17, 30, 31, 32, 33, 47, 100, 255
+		/* Every residue class mod 16 at least three times over, so the
+		 * pad-length byte and the 1,2,3,... fill pattern are pinned for
+		 * every possible pad length including the zero-pad case. */
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+		16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+		32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+		48, 100, 127, 128, 255, 256, 511,
 	};
 	uint8_t key[16];
 	uint8_t input[512];
@@ -519,19 +644,197 @@ static void gen_payload(const char *dir)
 	}
 
 	/* IPMI_CRYPT_NONE: encrypt writes nothing, decrypt copies everything. */
-	fill(input, 40, 5);
-	memset(output, 0xcc, sizeof(output));
-	written = 0;
-	lanplus_encrypt_payload(IPMI_CRYPT_NONE, NULL, input, 40, output, &written);
-	emit_case("payload/none/40");
-	emit_hex("input", input, 40);
-	emit_int("bytes_written", written);
-	emit_hex("output", output, written);
-	memset(decoded, 0xcc, sizeof(decoded));
-	size = 0;
-	lanplus_decrypt_payload(IPMI_CRYPT_NONE, NULL, input, 40, decoded, &size);
-	emit_int("decrypted_size", size);
-	emit_hex("decrypted", decoded, size);
+	for (i = 0; i < 4; ++i) {
+		char name[64];
+		int len = (int)i * 40;
+
+		fill(input, len, (int)i + 5);
+		memset(output, 0xcc, sizeof(output));
+		written = 0;
+		lanplus_encrypt_payload(IPMI_CRYPT_NONE, NULL, input, len, output,
+		                        &written);
+		snprintf(name, sizeof(name), "payload/none/%d", len);
+		emit_case(name);
+		emit_hex("input", input, len);
+		emit_int("bytes_written", written);
+		emit_hex("output", output, written);
+		memset(decoded, 0xcc, sizeof(decoded));
+		size = 0;
+		lanplus_decrypt_payload(IPMI_CRYPT_NONE, NULL, input, len, decoded,
+		                        &size);
+		emit_int("decrypted_size", size);
+		emit_hex("decrypted", decoded, size);
+	}
+
+	close_out();
+}
+
+/* ------------------------------------------------------------------ */
+/* lanplus_crypt.c: integrity check values                              */
+/* ------------------------------------------------------------------ */
+
+/*
+ * `lanplus_has_valid_auth_code` is where a wrong HMAC truncation length hides
+ * best: HMAC-SHA1-96 compares 12 of 20 bytes and HMAC-SHA256-128 compares 16
+ * of 32, so an implementation that forgot to truncate still agrees with the
+ * C on the first 12/16 bytes and only diverges on the *length* of the slice
+ * taken out of the packet.  Every case below therefore records the authcode
+ * length the C chose as well as the accept/reject answers, and additionally
+ * tampers with a byte inside the authcode itself (not just the body), which
+ * only fails if the compared slice is exactly right.
+ */
+static void gen_integrity(const char *dir)
+{
+	static const struct {
+		uint8_t alg;
+		const char *label;
+	} algs[] = {
+		{ IPMI_INTEGRITY_HMAC_SHA1_96,    "sha1-96"    },
+		{ IPMI_INTEGRITY_HMAC_MD5_128,    "md5-128"    },
+		{ IPMI_INTEGRITY_HMAC_SHA256_128, "sha256-128" },
+	};
+	static const int payload_lens[] = { 32, 33, 47, 48, 64, 96, 97, 128, 255 };
+	static const int k1_lens[] = { 16, 20, 32 };
+	struct ipmi_rs rs;
+	struct ipmi_session session;
+	size_t a, p, k;
+
+	open_out(dir, "integrity.txt",
+	         "lanplus_has_valid_auth_code (src/plugins/lanplus/lanplus_crypt.c)");
+
+	for (a = 0; a < sizeof(algs) / sizeof(algs[0]); ++a) {
+		for (k = 0; k < sizeof(k1_lens) / sizeof(k1_lens[0]); ++k) {
+			for (p = 0; p < sizeof(payload_lens) / sizeof(payload_lens[0]); ++p) {
+				char name[80];
+				uint8_t generated[IPMI_MAX_MD_SIZE];
+				uint32_t generated_len = 0;
+				uint32_t authcode_length;
+				int payload_len = payload_lens[p];
+				int k1_len = k1_lens[k];
+
+				switch (algs[a].alg) {
+				case IPMI_INTEGRITY_HMAC_SHA1_96:
+					authcode_length = IPMI_SHA1_AUTHCODE_SIZE;
+					break;
+				case IPMI_INTEGRITY_HMAC_MD5_128:
+					authcode_length = IPMI_HMAC_MD5_AUTHCODE_SIZE;
+					break;
+				default:
+					authcode_length = IPMI_HMAC_SHA256_AUTHCODE_SIZE;
+					break;
+				}
+
+				memset(&session, 0, sizeof(session));
+				session.v2_data.integrity_alg = algs[a].alg;
+				session.v2_data.session_state = LANPLUS_STATE_ACTIVE;
+				session.v2_data.k1_len = k1_len;
+				fill(session.v2_data.k1, k1_len,
+				     (int)(a * 31 + k * 7 + p + 1));
+
+				memset(&rs, 0, sizeof(rs));
+				rs.data_len = payload_len;
+				fill(rs.data, payload_len, (int)(a * 5 + p + 60));
+				rs.session.authtype = IPMI_SESSION_AUTHTYPE_RMCP_PLUS;
+				rs.session.bAuthenticated = 1;
+
+				lanplus_HMAC(algs[a].alg, session.v2_data.k1, k1_len,
+				             rs.data + IPMI_LANPLUS_OFFSET_AUTHTYPE,
+				             rs.data_len - IPMI_LANPLUS_OFFSET_AUTHTYPE
+				                 - (int)authcode_length,
+				             generated, &generated_len);
+				memcpy(rs.data + rs.data_len - authcode_length, generated,
+				       authcode_length);
+
+				snprintf(name, sizeof(name), "integrity/%s/k%d/%d",
+				         algs[a].label, k1_len, payload_len);
+				emit_case(name);
+				emit_int("integrity_alg", algs[a].alg);
+				emit_hex("k1", session.v2_data.k1, k1_len);
+				emit_int("authcode_length", authcode_length);
+				emit_int("full_digest_length", generated_len);
+				emit_hex("full_digest", generated, (int)generated_len);
+				emit_hex("packet", rs.data, rs.data_len);
+				emit_int("valid", lanplus_has_valid_auth_code(&rs, &session));
+
+				/* Flip a byte in the hashed body. */
+				rs.data[IPMI_LANPLUS_OFFSET_AUTHTYPE] ^= 0x01;
+				emit_int("valid_body_flipped",
+				         lanplus_has_valid_auth_code(&rs, &session));
+				rs.data[IPMI_LANPLUS_OFFSET_AUTHTYPE] ^= 0x01;
+
+				/* Flip the *last* byte of the compared authcode slice.
+				 * Only an implementation that truncates to exactly
+				 * `authcode_length` rejects this. */
+				rs.data[rs.data_len - 1] ^= 0x01;
+				emit_int("valid_authcode_last_flipped",
+				         lanplus_has_valid_auth_code(&rs, &session));
+				rs.data[rs.data_len - 1] ^= 0x01;
+
+				/* Flip the first byte of the compared slice. */
+				rs.data[rs.data_len - authcode_length] ^= 0x01;
+				emit_int("valid_authcode_first_flipped",
+				         lanplus_has_valid_auth_code(&rs, &session));
+				rs.data[rs.data_len - authcode_length] ^= 0x01;
+
+				/*
+				 * Replace the authcode with the *untruncated* digest tail:
+				 * for SHA-1 and SHA-256 this differs from the truncated
+				 * prefix, so an implementation comparing the wrong slice
+				 * of the digest accepts where the C rejects.
+				 */
+				if (generated_len > authcode_length) {
+					memcpy(rs.data + rs.data_len - authcode_length,
+					       generated + generated_len - authcode_length,
+					       authcode_length);
+					emit_int("valid_digest_tail",
+					         lanplus_has_valid_auth_code(&rs, &session));
+					memcpy(rs.data + rs.data_len - authcode_length,
+					       generated, authcode_length);
+				}
+			}
+		}
+	}
+
+	/* The four early returns, all of which answer "valid" without hashing. */
+	{
+		static const char *labels[] = {
+			"integrity/early/not-rmcp-plus",
+			"integrity/early/not-active",
+			"integrity/early/not-authenticated",
+			"integrity/early/alg-none",
+		};
+		int i;
+
+		for (i = 0; i < 4; ++i) {
+			memset(&session, 0, sizeof(session));
+			session.v2_data.integrity_alg = IPMI_INTEGRITY_HMAC_SHA1_96;
+			session.v2_data.session_state = LANPLUS_STATE_ACTIVE;
+			session.v2_data.k1_len = 20;
+			fill(session.v2_data.k1, 20, i + 90);
+
+			memset(&rs, 0, sizeof(rs));
+			rs.data_len = 64;
+			fill(rs.data, 64, i + 91);
+			rs.session.authtype = IPMI_SESSION_AUTHTYPE_RMCP_PLUS;
+			rs.session.bAuthenticated = 1;
+
+			switch (i) {
+			case 0: rs.session.authtype = IPMI_SESSION_AUTHTYPE_MD5; break;
+			case 1: session.v2_data.session_state = LANPLUS_STATE_PRESESSION; break;
+			case 2: rs.session.bAuthenticated = 0; break;
+			default: session.v2_data.integrity_alg = IPMI_INTEGRITY_NONE; break;
+			}
+
+			emit_case(labels[i]);
+			emit_int("integrity_alg", session.v2_data.integrity_alg);
+			emit_int("authtype", rs.session.authtype);
+			emit_int("session_state", session.v2_data.session_state);
+			emit_int("authenticated", rs.session.bAuthenticated);
+			emit_hex("k1", session.v2_data.k1, 20);
+			emit_hex("packet", rs.data, rs.data_len);
+			emit_int("valid", lanplus_has_valid_auth_code(&rs, &session));
+		}
+	}
 
 	close_out();
 }
@@ -552,7 +855,7 @@ struct rakp_case {
 	uint8_t privlvl;
 };
 
-static void gen_rakp_case(const struct rakp_case *tc)
+static void gen_rakp_case(const struct rakp_case *tc, int index)
 {
 	struct ipmi_session session;
 	struct ipmi_intf intf;
@@ -577,12 +880,27 @@ static void gen_rakp_case(const struct rakp_case *tc)
 	session.v2_data.auth_alg = tc->auth_alg;
 	session.v2_data.integrity_alg = tc->integrity_alg;
 	session.v2_data.crypt_alg = IPMI_CRYPT_AES_CBC_128;
-	session.v2_data.console_id = 0xa0a1a2a3u;
-	session.v2_data.bmc_id = 0xb0b1b2b3u;
+	/*
+	 * The session ids are the only multi-byte scalars in the RAKP messages.
+	 * They are varied per case, and every value is asymmetric with at least
+	 * one zero byte, so an implementation that assembles them in the wrong
+	 * order cannot match by coincidence.
+	 */
+	{
+		static const uint32_t console_ids[] = {
+			0xa0a1a2a3u, 0x00000001u, 0xff000000u, 0x000000ffu, 0x12345678u,
+		};
+		static const uint32_t bmc_ids[] = {
+			0xb0b1b2b3u, 0x01000000u, 0x0000ff00u, 0x00ff0000u, 0x87654321u,
+		};
+		int n = (int)(sizeof(console_ids) / sizeof(console_ids[0]));
+		session.v2_data.console_id = console_ids[index % n];
+		session.v2_data.bmc_id = bmc_ids[index % n];
+	}
 	session.v2_data.requested_role = tc->requested_role;
-	fill(session.v2_data.console_rand, 16, 101);
-	fill(session.v2_data.bmc_rand, 16, 102);
-	fill(session.v2_data.bmc_guid, 16, 103);
+	fill(session.v2_data.console_rand, 16, 101 + index);
+	fill(session.v2_data.bmc_rand, 16, 102 + index * 3);
+	fill(session.v2_data.bmc_guid, 16, 103 + index * 5);
 
 	emit_case(tc->name);
 	emit_int("auth_alg", tc->auth_alg);
@@ -675,7 +993,7 @@ static void gen_rakp_case(const struct rakp_case *tc)
 		uint32_t authcode_length;
 		uint8_t generated[IPMI_MAX_MD_SIZE];
 		uint32_t generated_len = 0;
-		int payload_len = 96;
+		int payload_len = 64 + (int)((tc->privlvl * 16) % 96);
 
 		switch (tc->integrity_alg) {
 		case IPMI_INTEGRITY_HMAC_SHA1_96:
@@ -736,20 +1054,64 @@ static void gen_rakp(const char *dir)
 		{ "rakp/sha1/longuser",    IPMI_AUTH_RAKP_HMAC_SHA1,
 		  IPMI_INTEGRITY_HMAC_SHA1_96, "0123456789abcdef", "0123456789abcdefghij",
 		  "0123456789abcdefghij", NULL, 0x04, 2 },
+		{ "rakp/sha1/nopassword",  IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "", "", NULL, 0x14, 4 },
+		{ "rakp/sha1/user1",       IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "u", "p", "k", NULL, 0x11, 1 },
+		{ "rakp/sha1/priv5",       IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "oemuser", "oempass", "", NULL, 0x15, 5 },
+		{ "rakp/sha1/role-nolookup", IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", NULL, 0x04, 4 },
 		{ "rakp/md5/admin",        IPMI_AUTH_RAKP_HMAC_MD5,
 		  IPMI_INTEGRITY_HMAC_MD5_128, "admin", "password", "", NULL, 0x14, 4 },
 		{ "rakp/md5/kg",           IPMI_AUTH_RAKP_HMAC_MD5,
 		  IPMI_INTEGRITY_HMAC_MD5_128, "operator", "secret", "bmckey", NULL, 0x13, 3 },
+		{ "rakp/md5/longuser",     IPMI_AUTH_RAKP_HMAC_MD5,
+		  IPMI_INTEGRITY_HMAC_MD5_128, "0123456789abcdef", "0123456789abcdefghij",
+		  "0123456789abcdefghij", NULL, 0x14, 4 },
 		{ "rakp/sha256/admin",     IPMI_AUTH_RAKP_HMAC_SHA256,
 		  IPMI_INTEGRITY_HMAC_SHA256_128, "admin", "password", "", NULL, 0x14, 4 },
 		{ "rakp/sha256/kg",        IPMI_AUTH_RAKP_HMAC_SHA256,
 		  IPMI_INTEGRITY_HMAC_SHA256_128, "admin", "password", "bmckey", NULL, 0x14, 4 },
+		{ "rakp/sha256/longuser",  IPMI_AUTH_RAKP_HMAC_SHA256,
+		  IPMI_INTEGRITY_HMAC_SHA256_128, "0123456789abcdef", "0123456789abcdefghij",
+		  "0123456789abcdefghij", NULL, 0x14, 4 },
+		/*
+		 * The authentication and integrity algorithm numbers live in
+		 * different spaces and a session may mix them freely, so the
+		 * combinations below stop `lanplus_HMAC`'s shared dispatch from
+		 * being tested only on the diagonal.
+		 */
+		{ "rakp/mix/sha1-md5",     IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_MD5_128, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/sha1-sha256",  IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_SHA256_128, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/md5-sha1",     IPMI_AUTH_RAKP_HMAC_MD5,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/md5-sha256",   IPMI_AUTH_RAKP_HMAC_MD5,
+		  IPMI_INTEGRITY_HMAC_SHA256_128, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/sha256-sha1",  IPMI_AUTH_RAKP_HMAC_SHA256,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/sha256-md5",   IPMI_AUTH_RAKP_HMAC_SHA256,
+		  IPMI_INTEGRITY_HMAC_MD5_128, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/sha1-none",    IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_NONE, "admin", "password", "", NULL, 0x14, 4 },
+		{ "rakp/mix/sha256-none",  IPMI_AUTH_RAKP_HMAC_SHA256,
+		  IPMI_INTEGRITY_NONE, "admin", "password", "", NULL, 0x14, 4 },
 		{ "rakp/sha1/i82571spt",   IPMI_AUTH_RAKP_HMAC_SHA1,
 		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", "i82571spt", 0x14, 4 },
 		{ "rakp/sha1/intelplus",   IPMI_AUTH_RAKP_HMAC_SHA1,
 		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", "intelplus", 0x14, 4 },
 		{ "rakp/md5/intelplus",    IPMI_AUTH_RAKP_HMAC_MD5,
 		  IPMI_INTEGRITY_HMAC_MD5_128, "admin", "password", "", "intelplus", 0x14, 4 },
+		/*
+		 * `intelplus` + cipher suite 17 is deliberately absent: the C
+		 * asserts on it inside `lanplus_rakp4_hmac_matches` because the
+		 * Intel workaround only handles SHA1-96 and MD5-128 integrity.
+		 * That abort is recorded in aborts.txt instead.
+		 */
+		{ "rakp/sha1/i82571spt-kg", IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "bmckey", "i82571spt", 0x14, 4 },
 		{ "rakp/none/noauth",      IPMI_AUTH_RAKP_NONE,
 		  IPMI_INTEGRITY_NONE, "admin", "password", "", NULL, 0x14, 4 },
 	};
@@ -759,7 +1121,262 @@ static void gen_rakp(const char *dir)
 	         "RMCP+ RAKP key derivation (src/plugins/lanplus/lanplus_crypt.c)");
 
 	for (i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)
-		gen_rakp_case(&cases[i]);
+		gen_rakp_case(&cases[i], (int)i);
+
+	close_out();
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Abort probes: the assert() branches                                  */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Several of the C `assert()`s are reachable from a misbehaving BMC or from a
+ * cipher suite the code does not support, so the abort *is* the behaviour a
+ * drop-in replacement has to keep.  They cannot be recorded like an ordinary
+ * vector because they kill the process, so each one is run in a forked child
+ * whose stderr is captured.
+ *
+ * Only the signal and the asserted *expression* are recorded.  The file, line
+ * and function in glibc's message are deliberately not, because they are
+ * toolchain dependent and there is no single right answer: for a multi-line
+ * `assert(...)` gcc reports the opening line and the bare function name while
+ * clang reports the closing line and the full prototype.  Verified with both
+ * compilers on this machine.
+ */
+
+static void probe_hmac_bad_mac(void)
+{
+	uint8_t key[20], data[16], md[IPMI_MAX_MD_SIZE];
+	uint32_t md_len = 0;
+	memset(key, 1, sizeof(key));
+	memset(data, 2, sizeof(data));
+	lanplus_HMAC(0x7f, key, sizeof(key), data, sizeof(data), md, &md_len);
+}
+
+static void probe_encrypt_unaligned(void)
+{
+	uint8_t iv[16], key[16], in[17], out[64];
+	uint32_t written = 0;
+	memset(iv, 1, sizeof(iv));
+	memset(key, 2, sizeof(key));
+	memset(in, 3, sizeof(in));
+	lanplus_encrypt_aes_cbc_128(iv, key, in, 17, out, &written);
+}
+
+static void probe_decrypt_unaligned(void)
+{
+	uint8_t iv[16], key[16], in[17], out[64];
+	uint32_t written = 0;
+	memset(iv, 1, sizeof(iv));
+	memset(key, 2, sizeof(key));
+	memset(in, 3, sizeof(in));
+	lanplus_decrypt_aes_cbc_128(iv, key, in, 17, out, &written);
+}
+
+static void probe_encrypt_payload_bad_alg(void)
+{
+	uint8_t key[16], in[16], out[64];
+	uint16_t written = 0;
+	memset(key, 1, sizeof(key));
+	memset(in, 2, sizeof(in));
+	lanplus_encrypt_payload(0x02, key, in, 16, out, &written);
+}
+
+static void probe_decrypt_payload_bad_alg(void)
+{
+	uint8_t key[16], in[32], out[64];
+	uint16_t size = 0;
+	memset(key, 1, sizeof(key));
+	memset(in, 2, sizeof(in));
+	lanplus_decrypt_payload(0x02, key, in, 32, out, &size);
+}
+
+static void probe_decrypt_payload_bad_padding(void)
+{
+	uint8_t key[16], plain[32], packet[64], out[64];
+	uint32_t written = 0;
+	uint16_t size = 0;
+
+	memset(key, 1, sizeof(key));
+	memset(plain, 0, sizeof(plain));
+	/* Claim a pad length of 8 but do not write the 1,2,3,... fill. */
+	plain[31] = 8;
+	memset(packet, 0x5a, IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE);
+	lanplus_encrypt_aes_cbc_128(packet, key, plain, 32,
+	                            packet + IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE,
+	                            &written);
+	lanplus_decrypt_payload(IPMI_CRYPT_AES_CBC_128, key, packet,
+	                        IPMI_CRYPT_AES_CBC_128_BLOCK_SIZE + written,
+	                        out, &size);
+}
+
+static void probe_decrypt_payload_iv_only(void)
+{
+	uint8_t key[16], packet[16], out[64];
+	uint16_t size = 0;
+	memset(key, 1, sizeof(key));
+	memset(packet, 2, sizeof(packet));
+	/* Nothing after the IV: the inner decrypt writes zero bytes. */
+	lanplus_decrypt_payload(IPMI_CRYPT_AES_CBC_128, key, packet, 16, out, &size);
+}
+
+static void probe_has_valid_auth_code_md5_128(void)
+{
+	struct ipmi_rs rs;
+	struct ipmi_session session;
+
+	memset(&session, 0, sizeof(session));
+	memset(&rs, 0, sizeof(rs));
+	/* IPMI_INTEGRITY_MD5_128 is a real integrity algorithm number that this
+	 * code has never implemented. */
+	session.v2_data.integrity_alg = IPMI_INTEGRITY_MD5_128;
+	session.v2_data.session_state = LANPLUS_STATE_ACTIVE;
+	session.v2_data.k1_len = 20;
+	rs.data_len = 64;
+	rs.session.authtype = IPMI_SESSION_AUTHTYPE_RMCP_PLUS;
+	rs.session.bAuthenticated = 1;
+	lanplus_has_valid_auth_code(&rs, &session);
+}
+
+static void probe_rakp2_bad_auth_alg(void)
+{
+	struct ipmi_session session;
+	struct ipmi_intf intf;
+	uint8_t mac[IPMI_MAX_MD_SIZE];
+
+	memset(&session, 0, sizeof(session));
+	memset(&intf, 0, sizeof(intf));
+	memset(mac, 0, sizeof(mac));
+	/* 0x04 is HMAC_SHA256_128 in the *integrity* number space; it is not a
+	 * valid authentication algorithm. */
+	session.v2_data.auth_alg = 0x04;
+	lanplus_rakp2_hmac_matches(&session, mac, &intf);
+}
+
+static void probe_rakp4_intelplus_sha256(void)
+{
+	struct ipmi_session session;
+	struct ipmi_intf intf;
+	uint8_t mac[IPMI_MAX_MD_SIZE];
+
+	memset(&session, 0, sizeof(session));
+	memset(&intf, 0, sizeof(intf));
+	memset(mac, 0, sizeof(mac));
+	session.v2_data.auth_alg = IPMI_AUTH_RAKP_HMAC_SHA256;
+	session.v2_data.integrity_alg = IPMI_INTEGRITY_HMAC_SHA256_128;
+	active_oem = "intelplus";
+	lanplus_rakp4_hmac_matches(&session, mac, &intf);
+}
+
+static void probe_generate_sik_bad_auth_alg(void)
+{
+	struct ipmi_session session;
+	struct ipmi_intf intf;
+
+	memset(&session, 0, sizeof(session));
+	memset(&intf, 0, sizeof(intf));
+	session.v2_data.auth_alg = 0x7f;
+	lanplus_generate_sik(&session, &intf);
+}
+
+static void probe_rakp3_bad_auth_alg(void)
+{
+	struct ipmi_session session;
+	struct ipmi_intf intf;
+	uint8_t out[IPMI_MAX_MD_SIZE];
+	uint32_t len = 0;
+
+	memset(&session, 0, sizeof(session));
+	memset(&intf, 0, sizeof(intf));
+	session.v2_data.auth_alg = 0x7f;
+	lanplus_generate_rakp3_authcode(out, &session, &len, &intf);
+}
+
+/* Extract the `Assertion `...' failed.` expression out of a glibc message. */
+static int parse_assert_expr(const char *msg, char *expr, size_t size)
+{
+	const char *start = strstr(msg, "Assertion `");
+	const char *end;
+
+	if (!start)
+		return 0;
+	start += strlen("Assertion `");
+	end = strstr(start, "' failed.");
+	if (!end || (size_t)(end - start) >= size)
+		return 0;
+	memcpy(expr, start, (size_t)(end - start));
+	expr[end - start] = 0;
+	return 1;
+}
+
+static void gen_aborts(const char *dir)
+{
+	static const struct {
+		const char *name;
+		void (*fn)(void);
+	} probes[] = {
+		{ "abort/hmac/bad-mac",                probe_hmac_bad_mac              },
+		{ "abort/aes/encrypt-unaligned",       probe_encrypt_unaligned         },
+		{ "abort/aes/decrypt-unaligned",       probe_decrypt_unaligned         },
+		{ "abort/payload/encrypt-bad-alg",     probe_encrypt_payload_bad_alg   },
+		{ "abort/payload/decrypt-bad-alg",     probe_decrypt_payload_bad_alg   },
+		{ "abort/payload/bad-padding",         probe_decrypt_payload_bad_padding },
+		{ "abort/payload/iv-only",             probe_decrypt_payload_iv_only   },
+		{ "abort/integrity/md5-128",           probe_has_valid_auth_code_md5_128 },
+		{ "abort/rakp2/bad-auth-alg",          probe_rakp2_bad_auth_alg        },
+		{ "abort/rakp4/intelplus-sha256",      probe_rakp4_intelplus_sha256    },
+		{ "abort/sik/bad-auth-alg",            probe_generate_sik_bad_auth_alg },
+		{ "abort/rakp3/bad-auth-alg",          probe_rakp3_bad_auth_alg        },
+	};
+	size_t i;
+
+	open_out(dir, "aborts.txt",
+	         "assert() branches (src/plugins/lanplus/lanplus_crypt{,_impl}.c)");
+
+	for (i = 0; i < sizeof(probes) / sizeof(probes[0]); ++i) {
+		int fds[2];
+		pid_t pid;
+		int status = 0;
+		char buf[1024];
+		char expr[512];
+		ssize_t n;
+
+		fflush(NULL);
+		if (pipe(fds)) {
+			fprintf(stderr, "gen_vectors: pipe failed\n");
+			exit(1);
+		}
+		pid = fork();
+		if (pid < 0) {
+			fprintf(stderr, "gen_vectors: fork failed\n");
+			exit(1);
+		}
+		if (pid == 0) {
+			close(fds[0]);
+			dup2(fds[1], 2);
+			close(fds[1]);
+			probes[i].fn();
+			_exit(0);
+		}
+		close(fds[1]);
+		n = read(fds[0], buf, sizeof(buf) - 1);
+		if (n < 0)
+			n = 0;
+		buf[n] = 0;
+		close(fds[0]);
+		waitpid(pid, &status, 0);
+
+		emit_case(probes[i].name);
+		emit_int("signalled", WIFSIGNALED(status) ? 1 : 0);
+		emit_int("signal", WIFSIGNALED(status) ? WTERMSIG(status) : 0);
+		emit_int("exit_code", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+		if (parse_assert_expr(buf, expr, sizeof(expr)))
+			emit_str("assert_expr", expr);
+		else
+			emit_str("assert_expr", "");
+	}
 
 	close_out();
 }
@@ -775,6 +1392,8 @@ int main(int argc, char **argv)
 	gen_hmac(dir);
 	gen_aes(dir);
 	gen_payload(dir);
+	gen_integrity(dir);
 	gen_rakp(dir);
+	gen_aborts(dir);
 	return 0;
 }

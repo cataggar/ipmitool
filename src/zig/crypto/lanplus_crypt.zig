@@ -20,6 +20,7 @@
 
 const std = @import("std");
 
+const assert_text = @import("assert_text.zig");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const cassert = @import("../util/cassert.zig");
@@ -111,15 +112,7 @@ fn assertSupportedAuthAlg(auth_alg: u8, comptime site: cassert.Site) void {
     cassert.expect(supported, site);
 }
 
-const have_sha256 = @hasDecl(c, "HAVE_CRYPTO_SHA256");
-
-const supported_auth_algs_expr = if (have_sha256)
-    "(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1) " ++
-        "|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5) " ++
-        "|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA256)"
-else
-    "(session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_SHA1) " ++
-        "|| (session->v2_data.auth_alg == IPMI_AUTH_RAKP_HMAC_MD5)";
+const have_sha256 = assert_text.have_sha256;
 
 /// How much of a RAKP authentication code is compared against the BMC's.
 ///
@@ -187,7 +180,7 @@ fn rakp2HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf)
         .file = source,
         .line = if (have_sha256) 88 else 93,
         .func = "lanplus_rakp2_hmac_matches",
-        .expr = supported_auth_algs_expr,
+        .expr = assert_text.supported_auth_algs,
     });
 
     const inputs = inputsFor(session, intf, true);
@@ -233,8 +226,7 @@ fn rakp4HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf)
                 .file = source,
                 .line = 251,
                 .func = "lanplus_rakp4_hmac_matches",
-                .expr = "(session->v2_data.integrity_alg == IPMI_INTEGRITY_HMAC_SHA1_96) " ++
-                    "|| (session->v2_data.integrity_alg == IPMI_INTEGRITY_HMAC_MD5_128)",
+                .expr = assert_text.intelplus_integrity,
             },
         );
     } else {
@@ -243,7 +235,7 @@ fn rakp4HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf)
             .file = source,
             .line = if (have_sha256) 259 else 264,
             .func = "lanplus_rakp4_hmac_matches",
-            .expr = supported_auth_algs_expr,
+            .expr = assert_text.supported_auth_algs,
         });
     }
 
@@ -313,7 +305,7 @@ fn generateRakp3Authcode(
         .file = source,
         .line = if (have_sha256) 429 else 434,
         .func = "lanplus_generate_rakp3_authcode",
-        .expr = supported_auth_algs_expr,
+        .expr = assert_text.supported_auth_algs,
     });
 
     var inputs = inputsFor(session, intf, false);
@@ -363,7 +355,7 @@ fn generateSik(session: *Session, intf: *Intf) callconv(.c) c_int {
         .file = source,
         .line = if (have_sha256) 555 else 560,
         .func = "lanplus_generate_sik",
-        .expr = supported_auth_algs_expr,
+        .expr = assert_text.supported_auth_algs,
     });
 
     const inputs = inputsFor(session, intf, true);
@@ -479,7 +471,7 @@ fn encryptPayload(
         .file = source,
         .line = 841,
         .func = "lanplus_encrypt_payload",
-        .expr = "crypt_alg == IPMI_CRYPT_AES_CBC_128",
+        .expr = assert_text.crypt_alg_is_aes,
     });
     cassert.expect(input_length <= 0xFFFF, .{
         .file = source,
@@ -527,15 +519,8 @@ fn hasValidAuthCode(rs: *ipmi.Response, session: *Session) callconv(.c) c_int {
         return 1;
     }
 
-    const authcode_length: u32 = switch (session.v2_data.integrity_alg) {
-        integrity_hmac_sha1_96 => sha1_authcode_size,
-        integrity_hmac_md5_128 => hmac_md5_authcode_size,
-        integrity_hmac_sha256_128 => if (have_sha256)
-            hmac_sha256_authcode_size
-        else
-            cassert.unreachableBranch(unsupported_integrity_alg),
-        else => cassert.unreachableBranch(unsupported_integrity_alg),
-    };
+    const authcode_length: u32 = mac_mod.integrityAuthcodeLength(session.v2_data.integrity_alg) orelse
+        cassert.unreachableBranch(unsupported_integrity_alg);
 
     // The authcode sits at the end of the packet and the hash covers everything
     // from the AuthType/Format field up to it.
@@ -603,7 +588,7 @@ fn decryptPayload(
         .file = source,
         .line = 1019,
         .func = "lanplus_decrypt_payload",
-        .expr = "crypt_alg == IPMI_CRYPT_AES_CBC_128",
+        .expr = assert_text.crypt_alg_is_aes,
     });
 
     const decrypted = allocator.alloc(u8, input_length) catch return mallocFailure();

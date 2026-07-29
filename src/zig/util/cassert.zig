@@ -9,9 +9,25 @@
 //!
 //! The file, line, function and expression are passed in from the call site so
 //! the message names the C source the port replaced, which is what a user
-//! searching for the string will be looking at.  One detail is not reproduced:
-//! glibc prefixes the line with the program name, which it reads out of a
-//! non-portable global that neither Zig nor ipmitool exposes.
+//! searching for the string will be looking at.
+//!
+//! Two details are approximations rather than reproductions, because there is
+//! no single right answer to reproduce:
+//!
+//!   * glibc prefixes the line with the program name, which it reads out of a
+//!     non-portable global that neither Zig nor ipmitool exposes.
+//!   * gcc and clang disagree on what `__LINE__` and `__func__` expand to
+//!     inside a multi-line `assert()`.  gcc reports the line the `assert`
+//!     *opens* on and the bare function name; clang (and therefore `zig cc`)
+//!     reports the line the closing paren is on and the full prototype.  They
+//!     also disagree on `__FILE__`, since autotools compiles from inside the
+//!     source directory and gets a bare basename while `zig build` passes an
+//!     absolute path.  The `Site` values in the ported modules follow the gcc
+//!     convention with a repo-relative path.
+//!
+//! What *is* byte-exact is the assertion expression, so that is the part
+//! `src/zig/crypto/vectors_test.zig` pins against the captured C output.  See
+//! `doc/zig-migration/crypto.md`.
 
 const std = @import("std");
 
