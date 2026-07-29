@@ -1,0 +1,30 @@
+# Every user write command succeeds.  Get User Access is answered too so that
+# `user list`/`summary` work against the same transcript.
+default_ccode 0xc1
+
+respond set_user_access
+  netfn 0x06
+  cmd 0x43
+end
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  data 04 41 01 34
+end
+
+respond set_user_name
+  netfn 0x06
+  cmd 0x45
+end
+
+respond get_user_name
+  netfn 0x06
+  cmd 0x46
+  data 61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond set_user_password
+  netfn 0x06
+  cmd 0x47
+end

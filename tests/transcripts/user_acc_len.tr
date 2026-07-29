@@ -1,0 +1,9 @@
+# Get User Access answers with 5 bytes instead of 4, which _ipmi_get_user_access
+# rejects with (-2) "Unexpected data length received."
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  data 04 41 01 34 00
+end

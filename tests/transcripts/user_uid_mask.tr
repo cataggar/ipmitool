@@ -1,0 +1,17 @@
+# max_user_ids is reported as 0x81.  IPMI_UID() masks it to 0x3F & 0x81 = 1,
+# so exactly one user is listed.  Dropping the mask would walk to 63.
+# enabled_user_ids 0xC5 -> enable_status 0xC0 (reserved), 5 enabled.
+# fixed_user_ids 0x7A -> 0x3A = 58.
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  data 81 c5 7a 34
+end
+
+respond get_user_name
+  netfn 0x06
+  cmd 0x46
+  data 61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+end

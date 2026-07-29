@@ -1,0 +1,328 @@
+#!golden 1
+#!case user_list_uid_max
+#!section exit
+0
+#!section stdout
+ID  Name\t     Callin  Link Auth\tIPMI Msg   Channel Priv Limit
+1   u                true    true       true       ADMINISTRATOR
+2   u                true    true       true       ADMINISTRATOR
+3   u                true    true       true       ADMINISTRATOR
+4   u                true    true       true       ADMINISTRATOR
+5   u                true    true       true       ADMINISTRATOR
+6   u                true    true       true       ADMINISTRATOR
+7   u                true    true       true       ADMINISTRATOR
+8   u                true    true       true       ADMINISTRATOR
+9   u                true    true       true       ADMINISTRATOR
+10  u                true    true       true       ADMINISTRATOR
+11  u                true    true       true       ADMINISTRATOR
+12  u                true    true       true       ADMINISTRATOR
+13  u                true    true       true       ADMINISTRATOR
+14  u                true    true       true       ADMINISTRATOR
+15  u                true    true       true       ADMINISTRATOR
+16  u                true    true       true       ADMINISTRATOR
+17  u                true    true       true       ADMINISTRATOR
+18  u                true    true       true       ADMINISTRATOR
+19  u                true    true       true       ADMINISTRATOR
+20  u                true    true       true       ADMINISTRATOR
+21  u                true    true       true       ADMINISTRATOR
+22  u                true    true       true       ADMINISTRATOR
+23  u                true    true       true       ADMINISTRATOR
+24  u                true    true       true       ADMINISTRATOR
+25  u                true    true       true       ADMINISTRATOR
+26  u                true    true       true       ADMINISTRATOR
+27  u                true    true       true       ADMINISTRATOR
+28  u                true    true       true       ADMINISTRATOR
+29  u                true    true       true       ADMINISTRATOR
+30  u                true    true       true       ADMINISTRATOR
+31  u                true    true       true       ADMINISTRATOR
+32  u                true    true       true       ADMINISTRATOR
+33  u                true    true       true       ADMINISTRATOR
+34  u                true    true       true       ADMINISTRATOR
+35  u                true    true       true       ADMINISTRATOR
+36  u                true    true       true       ADMINISTRATOR
+37  u                true    true       true       ADMINISTRATOR
+38  u                true    true       true       ADMINISTRATOR
+39  u                true    true       true       ADMINISTRATOR
+40  u                true    true       true       ADMINISTRATOR
+41  u                true    true       true       ADMINISTRATOR
+42  u                true    true       true       ADMINISTRATOR
+43  u                true    true       true       ADMINISTRATOR
+44  u                true    true       true       ADMINISTRATOR
+45  u                true    true       true       ADMINISTRATOR
+46  u                true    true       true       ADMINISTRATOR
+47  u                true    true       true       ADMINISTRATOR
+48  u                true    true       true       ADMINISTRATOR
+49  u                true    true       true       ADMINISTRATOR
+50  u                true    true       true       ADMINISTRATOR
+51  u                true    true       true       ADMINISTRATOR
+52  u                true    true       true       ADMINISTRATOR
+53  u                true    true       true       ADMINISTRATOR
+54  u                true    true       true       ADMINISTRATOR
+55  u                true    true       true       ADMINISTRATOR
+56  u                true    true       true       ADMINISTRATOR
+57  u                true    true       true       ADMINISTRATOR
+58  u                true    true       true       ADMINISTRATOR
+59  u                true    true       true       ADMINISTRATOR
+60  u                true    true       true       ADMINISTRATOR
+61  u                true    true       true       ADMINISTRATOR
+62  u                true    true       true       ADMINISTRATOR
+63  u                true    true       true       ADMINISTRATOR
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 01
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=01
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 02
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=02
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 03
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=03
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 04
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=04
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 05
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=05
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 06
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=06
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 07
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=07
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 08
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=08
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 09
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=09
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 0a
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=0a
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 0b
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=0b
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 0c
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=0c
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 0d
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=0d
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 0e
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=0e
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 0f
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=0f
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 10
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=10
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 11
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=11
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 12
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=12
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 13
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=13
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 14
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=14
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 15
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=15
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 16
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=16
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 17
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=17
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 18
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=18
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 19
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=19
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 1a
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=1a
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 1b
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=1b
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 1c
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=1c
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 1d
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=1d
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 1e
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=1e
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 1f
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=1f
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 20
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=20
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 21
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=21
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 22
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=22
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 23
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=23
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 24
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=24
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 25
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=25
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 26
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=26
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 27
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=27
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 28
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=28
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 29
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=29
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 2a
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=2a
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 2b
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=2b
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 2c
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=2c
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 2d
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=2d
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 2e
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=2e
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 2f
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=2f
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 30
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=30
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 31
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=31
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 32
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=32
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 33
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=33
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 34
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=34
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 35
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=35
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 36
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=36
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 37
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=37
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 38
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=38
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 39
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=39
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 3a
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=3a
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 3b
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=3b
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 3c
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=3c
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 3d
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=3d
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 3e
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=3e
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 3f
+< rule=get_user_access ccode=0x00 len=4 data=3f 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=3f
+< rule=get_user_name ccode=0x00 len=16 data=75 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+bye

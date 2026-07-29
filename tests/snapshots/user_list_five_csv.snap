@@ -1,0 +1,37 @@
+#!golden 1
+#!case user_list_five_csv
+#!section exit
+0
+#!section stdout
+1,root,false,true,true,ADMINISTRATOR
+2,0123456789abcdef,true,false,true,CALLBACK
+3,,true,true,false,USER
+4,a,false,false,false,OPERATOR
+5,last,true,false,false,NO ACCESS
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 01
+< rule=get_user_access_1 ccode=0x00 len=4 data=05 43 02 74
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=01
+< rule=get_user_name_1 ccode=0x00 len=16 data=72 6f 6f 74 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 02
+< rule=get_user_access_2 ccode=0x00 len=4 data=05 43 02 11
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=02
+< rule=get_user_name_2 ccode=0x00 len=16 data=30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 03
+< rule=get_user_access_3 ccode=0x00 len=4 data=05 43 02 22
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=03
+< rule=get_user_name_3 ccode=0xcc len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 04
+< rule=get_user_access_4 ccode=0x00 len=4 data=05 43 02 43
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=04
+< rule=get_user_name_4 ccode=0x00 len=16 data=61 00 62 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 05
+< rule=get_user_access_5 ccode=0x00 len=4 data=05 43 02 0f
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=05
+< rule=get_user_name_5 ccode=0x00 len=16 data=6c 61 73 74 00 00 00 00 00 00 00 00 00 00 00 00
+bye

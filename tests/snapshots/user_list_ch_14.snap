@@ -1,0 +1,33 @@
+#!golden 1
+#!case user_list_ch_14
+#!section exit
+0
+#!section stdout
+ID  Name\t     Callin  Link Auth\tIPMI Msg   Channel Priv Limit
+1   admin            true    true       true       ADMINISTRATOR
+2   admin            true    true       true       ADMINISTRATOR
+3   admin            true    true       true       ADMINISTRATOR
+4   admin            true    true       true       ADMINISTRATOR
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=0e 01
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=01
+< rule=get_user_name ccode=0x00 len=16 data=61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=0e 02
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=02
+< rule=get_user_name ccode=0x00 len=16 data=61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=0e 03
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=03
+< rule=get_user_name ccode=0x00 len=16 data=61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=0e 04
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=04
+< rule=get_user_name ccode=0x00 len=16 data=61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+bye
