@@ -1,0 +1,32 @@
+#!golden 1
+#!case mc_info_wide_fields
+#!section exit
+0
+#!section stdout
+Device ID                 : 183
+Device Revision           : 9
+Firmware Revision         : 67.45
+IPMI Version              : 6.3
+Manufacturer ID           : 15975089
+Manufacturer Name         : Unknown (0xF3C2B1)
+Product ID                : 58836 (0xe5d4)
+Product Name              : Unknown (0xE5D4)
+Device Available          : no
+Provides Device SDRs      : no
+Additional Device Support :
+    SDR Repository Device
+    Chassis Device
+Aux Firmware Rev Info     :\x20
+    0x1a
+    0x2b
+    0x3c
+    0x4d
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=b7 59 c3 45 36 82 b1 c2 f3 d4 e5 1a 2b 3c 4d
+bye

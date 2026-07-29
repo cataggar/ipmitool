@@ -1,0 +1,29 @@
+# A Get Device ID response whose every multi-byte field uses distinct,
+# non-zero bytes.
+#
+# device_id.hex is a realistic BMC, and that is exactly what makes it a weak
+# pin: its manufacturer ID is 0x000157 and its product ID is 0x0001, so the
+# most significant byte of each is zero.  Dropping `ipmi[2] << 16` from
+# ipmi24toh(), or the high half of buf2short(), leaves both values unchanged -
+# the field widths are not pinned at all.  Its auxiliary firmware revision is
+# four zero bytes, so any offset slip inside that field is invisible too.
+#
+# Here every multi-byte field is chosen so that a wrong byte order, a dropped
+# high byte and an offset slip all produce different output:
+#
+#   manufacturer ID  0xf3c2b1  (reversed 0xb1c2f3, truncated 0x00c2b1)
+#   product ID       0xe5d4    (reversed 0xd4e5,   truncated 0x00d4)
+#   aux firmware     1a 2b 3c 4d  (no two bytes alike, none zero)
+#
+# See the "distinct, non-zero bytes" rule in tests/transport/Bmc.zig.
+
+b7           # Device ID
+59           # Device Revision: bit 7 clear = no Device SDRs, bit 4 reserved,
+             #   revision 9
+c3           # FW rev 1: bit 7 set = device not available, major 0x43 = 67
+45           # FW rev 2 -> "67.45"
+36           # IPMI version, BCD: LSN major 6, MSN minor 3 -> 6.3
+82           # Additional device support: bits 1 and 7
+b1 c2 f3     # Manufacturer ID, LSB first: 0xf3c2b1
+d4 e5        # Product ID, LSB first: 0xe5d4
+1a 2b 3c 4d  # Auxiliary firmware revision information

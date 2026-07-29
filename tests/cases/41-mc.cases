@@ -773,3 +773,9 @@ desc: a single -v is below the threshold for the param/block/set triple
 args: -I dummy -v mc getsysinfo system_name
 transcript: mc_sysinfo.tr
 covers: mc
+
+[mc_info_wide_fields]
+desc: manufacturer/product/aux bytes all distinct and non-zero, so a wrong byte order or a dropped high byte shows
+args: -I dummy mc info
+transcript: mc_devid_wide.tr
+covers: mc
