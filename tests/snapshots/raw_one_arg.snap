@@ -1,0 +1,28 @@
+#!golden 1
+#!case raw_one_arg
+#!section exit
+1
+#!section stdout
+#!section stderr
+Not enough parameters given.
+RAW Commands:  raw <netfn> <cmd> [data]
+
+Network Function Codes:
+
+  VAL\tHEX\tSTRING
+==============================================
+  0\t0x00\tChassis
+  2\t0x02\tBridge
+  4\t0x04\tSensorEvent
+  6\t0x06\tApplication
+  8\t0x08\tFirmware
+  10\t0x0a\tStorage
+  12\t0x0c\tTransport
+
+(can also use raw hex values)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

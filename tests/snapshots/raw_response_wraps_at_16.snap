@@ -1,0 +1,16 @@
+#!golden 1
+#!case raw_response_wraps_at_16
+#!section exit
+0
+#!section stdout
+ 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+ f0 e1 d2 c3
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=long_response ccode=0x00 len=20 data=00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff f0 e1 d2 c3
+bye

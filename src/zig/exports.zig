@@ -49,6 +49,9 @@ comptime {
     if (selected("lanplus-crypt")) {
         _ = @import("crypto/lanplus_crypt.zig");
     }
+    if (selected("raw")) {
+        @import("cmd/raw.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

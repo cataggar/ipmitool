@@ -1,0 +1,16 @@
+#!golden 1
+#!case i2c_ccode_nak_on_write
+#!section exit
+1
+#!section stdout
+#!section stderr
+I2C Master Write-Read command failed: NAK on Write
+Unable to perform I2C Master Write-Read
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=00 a0 04 83
+< rule=nak_on_write ccode=0x83 len=0 data=
+bye

@@ -1,0 +1,17 @@
+#!golden 1
+#!case i2c_binary_expansion
+#!section exit
+0
+#!section stdout
+Read 4 bytes from I2C device A0h
+ 5a a5 0f f0
+01011010 10100101 00001111 11110000\x20
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=00 a0 04
+< rule=read_4 ccode=0x00 len=4 data=5a a5 0f f0
+bye

@@ -1,0 +1,404 @@
+# Depth coverage for lib/ipmi_raw.c: `raw', `i2c' and `spd'.
+#
+# 10-commands.cases already reaches each of the three commands once, for the
+# breadth check that every entry of ipmitool_cmd_list[] has a case. The cases
+# here go the other way: one per branch of ipmi_raw_main(), ipmi_rawi2c_main(),
+# ipmi_rawspd_main() and ipmi_master_write_read(), including the bounds.
+#
+# Bounds get *two* cases wherever the value is observable, one on each side, so
+# that the constant is pinned rather than merely exercised - a case that only
+# feeds a value well inside a limit cannot tell 64 from 65 or 256 from 257.
+
+# ---------------------------------------------------------------------------
+# raw: argument parsing
+# ---------------------------------------------------------------------------
+
+[raw_one_arg]
+desc: raw with a net function but no command - argc == 1 and argv[0] is not "help"
+args: -I dummy raw 0x06
+transcript: raw.tr
+covers: raw
+
+[raw_netfn_by_name]
+desc: net function given by name from ipmi_netfn_vals rather than as a number
+args: -I dummy raw storage 0x24
+transcript: raw.tr
+covers: raw
+
+[raw_netfn_by_name_mixed_case]
+desc: str2val() matches ipmi_netfn_vals case-insensitively
+args: -I dummy raw APPLICATION 0x20
+transcript: raw.tr
+covers: raw
+
+[raw_netfn_chassis_by_name]
+desc: "chassis" is the one named net function whose value is 0, not a miss
+args: -I dummy raw chassis 0x25
+transcript: raw.tr
+covers: raw
+
+[raw_netfn_truncated_to_six_bits]
+desc: netfn is a 6-bit field of struct ipmi_rq, so 0xff reaches the wire as 0x3f
+args: -I dummy raw 0xff 0x01
+transcript: raw.tr
+covers: raw
+
+[raw_netfn_invalid]
+desc: a net function that is neither a name nor a number
+args: -I dummy raw zz 0x01
+transcript: raw.tr
+covers: raw
+
+[raw_netfn_out_of_range]
+desc: a numeric net function above 255, rejected by str2uchar()
+args: -I dummy raw 300 0x01
+transcript: raw.tr
+covers: raw
+
+[raw_cmd_out_of_range]
+desc: a numeric command above 255
+args: -I dummy raw 0x06 256
+transcript: raw.tr
+covers: raw
+
+[raw_data_invalid]
+desc: a data byte that is not a number - the label in the message is "data"
+args: -I dummy raw 0x06 0x22 0x0a zz
+transcript: raw.tr
+covers: raw
+
+[raw_target_lun]
+desc: -l 7 reaches req.msg.lun, which is 2 bits wide, so the wire LUN is 3
+args: -I dummy -l 7 raw 0x06 0x23
+transcript: raw.tr
+covers: raw
+
+[raw_target_channel_masked]
+desc: -t makes -b reach intf->target_channel, which the RAW REQ note masks to 4 bits
+args: -I dummy -v -t 0x20 -b 17 raw 0x06 0x22 0x0a 0x0b 0x0c 0x0d
+transcript: raw.tr
+covers: raw
+
+# ---------------------------------------------------------------------------
+# raw: request payload and response printing
+# ---------------------------------------------------------------------------
+
+[raw_with_data]
+desc: four data bytes; the rule only answers when they arrive in order
+args: -I dummy raw 0x06 0x22 0x0a 0x0b 0x0c 0x0d
+transcript: raw.tr
+covers: raw
+
+[raw_empty_response]
+desc: completion code 0x00 with no data - only the trailing newline is printed
+args: -I dummy raw 0x06 0x21
+transcript: raw.tr
+covers: raw
+
+[raw_response_wraps_at_16]
+desc: a 20-byte response, so the hex dump wraps after 16 columns
+args: -I dummy raw 0x06 0x20
+transcript: raw.tr
+covers: raw
+
+[raw_ccode_one]
+desc: completion code 0x01 is still a failure - the test is against zero, not a range
+args: -I dummy raw 0x06 0x26
+transcript: raw.tr
+covers: raw
+
+[raw_verbose]
+desc: -v adds the RAW REQ/RAW RSP notes and the printbuf() dump on stderr
+args: -I dummy -v raw 0x06 0x22 0x0a 0x0b 0x0c 0x0d
+transcript: raw.tr
+covers: raw
+
+# ---------------------------------------------------------------------------
+# i2c: bus= and chan= parsing
+# ---------------------------------------------------------------------------
+
+[i2c_one_arg]
+desc: i2c with only an address - fewer than two positional arguments left
+args: -I dummy i2c 0xa0
+transcript: i2c.tr
+covers: i2c
+
+[i2c_bus_public]
+desc: bus=public selects bus byte 0
+args: -I dummy i2c bus=public 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_bus_number]
+desc: bus=3 encodes as ((3 & 7) << 1) | 1 = 0x07
+args: -I dummy i2c bus=3 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_bus_number_masked]
+desc: bus=11 keeps only the low three bits, so it also encodes as 0x07
+args: -I dummy i2c bus=11 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_bus_unparsable]
+desc: a bus= value sscanf() cannot read falls back to bus byte 0
+args: -I dummy i2c bus=zz 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_chan]
+desc: chan=2 after bus=1 sets the high nibble: 0x20 | 0x03
+args: -I dummy i2c bus=1 chan=2 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_chan_truncated]
+desc: chan=17 shifts left by 4 into a uint8_t, leaving 0x10 | 0x03
+args: -I dummy i2c bus=1 chan=17 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_bus_only_two_args]
+desc: bus= is read only when more than two arguments follow, so here it is the address
+args: -I dummy i2c bus=1 0xa0
+transcript: i2c.tr
+covers: i2c
+
+[i2c_chan_only_three_args]
+desc: chan= needs more than three arguments, so here it is read as the address
+args: -I dummy i2c bus=1 chan=2 0xa0
+transcript: i2c.tr
+covers: i2c
+
+[i2c_bus_then_help]
+desc: the help check looks at argv[0], not at the first positional argument
+args: -I dummy i2c bus=1 help 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_chan_without_bus]
+desc: chan= is only recognised after bus=, so here it is read as the address
+args: -I dummy i2c chan=2 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+# ---------------------------------------------------------------------------
+# i2c: address, size and data validation
+# ---------------------------------------------------------------------------
+
+[i2c_addr_invalid]
+desc: an i2caddr that is not a number
+args: -I dummy i2c zz 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_addr_zero]
+desc: address 0 is rejected, with the usage text
+args: -I dummy i2c 0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_read_size_invalid]
+desc: a read size that is not a number - the label in the message is "read size"
+args: -I dummy i2c 0xa0 zz
+transcript: i2c.tr
+covers: i2c
+
+[i2c_write_data_invalid]
+desc: a write byte that is not a number - the label is "parameter"
+args: -I dummy i2c 0xa0 4 0x00 zz
+transcript: i2c.tr
+covers: i2c
+
+# ---------------------------------------------------------------------------
+# i2c: transfer size bounds
+# ---------------------------------------------------------------------------
+
+[i2c_read_64]
+desc: 64 bytes is the largest read ipmi_master_write_read() accepts
+args: -I dummy i2c 0xa0 64
+transcript: i2c.tr
+covers: i2c
+
+[i2c_read_65]
+desc: 65 bytes is one past the limit and never reaches the BMC
+args: -I dummy i2c 0xa0 65
+transcript: i2c.tr
+covers: i2c
+
+# ---------------------------------------------------------------------------
+# i2c: response printing
+# ---------------------------------------------------------------------------
+
+[i2c_read_only]
+desc: no write data, so the "Read N bytes" line is printed without -v
+args: -I dummy i2c 0xa0 20
+transcript: i2c.tr
+covers: i2c
+
+[i2c_write_only]
+desc: read size 0, so the "Wrote N bytes" line is printed without -v
+args: -I dummy i2c 0xa0 0 0x12 0x34
+transcript: i2c.tr
+covers: i2c
+
+[i2c_read_and_write_quiet]
+desc: both directions and no -v, so neither summary line is printed
+args: -I dummy i2c 0xa0 4 0x00
+transcript: i2c.tr
+covers: i2c
+
+[i2c_read_and_write_verbose]
+desc: -v prints both summary lines plus the request note and the write dump
+args: -I dummy -v i2c 0xa0 4 0x00
+transcript: i2c.tr
+covers: i2c
+
+[i2c_binary_expansion]
+desc: a 4-byte response also prints the bit pattern of every byte
+args: -I dummy i2c 0xa0 4
+transcript: i2c.tr
+covers: i2c
+
+[i2c_no_binary_expansion]
+desc: a 5-byte response is one past the `data_len <= 4' bound, so hex only
+args: -I dummy i2c 0xa0 5
+transcript: i2c.tr
+covers: i2c
+
+[i2c_short_response]
+desc: the BMC returns fewer bytes than asked for, so nothing is printed
+args: -I dummy i2c 0xa0 8 0x55
+transcript: i2c.tr
+covers: i2c
+
+[i2c_short_response_verbose]
+desc: the same short read under -v, which reports rsp->data_len, not the request
+args: -I dummy -v i2c 0xa0 8 0x55
+transcript: i2c.tr
+covers: i2c
+
+# ---------------------------------------------------------------------------
+# i2c: the completion codes ipmi_master_write_read() names
+# ---------------------------------------------------------------------------
+
+[i2c_ccode_lost_arbitration]
+desc: completion code 0x81
+args: -I dummy i2c 0xa0 4 0x81
+transcript: i2c.tr
+covers: i2c
+
+[i2c_ccode_one]
+desc: completion code 0x01, the smallest non-zero one
+args: -I dummy i2c 0xa0 4 0x01
+transcript: i2c.tr
+covers: i2c
+
+[i2c_ccode_bus_error]
+desc: completion code 0x82
+args: -I dummy i2c 0xa0 4 0x82
+transcript: i2c.tr
+covers: i2c
+
+[i2c_ccode_nak_on_write]
+desc: completion code 0x83
+args: -I dummy i2c 0xa0 4 0x83
+transcript: i2c.tr
+covers: i2c
+
+[i2c_ccode_truncated_read]
+desc: completion code 0x84
+args: -I dummy i2c 0xa0 4 0x84
+transcript: i2c.tr
+covers: i2c
+
+[i2c_ccode_other]
+desc: any other completion code is named by val2str(completion_code_vals)
+args: -I dummy i2c 0xa0 4 0xc0
+transcript: i2c.tr
+covers: i2c
+
+# ---------------------------------------------------------------------------
+# spd
+# ---------------------------------------------------------------------------
+
+[spd_addr_invalid]
+desc: spd with a non-numeric i2caddr
+args: -I dummy spd 0 zz
+transcript: spd.tr
+covers: spd
+
+[spd_channel]
+desc: the optional third argument is the channel, packed into the high nibble
+args: -I dummy spd 0 0xa0 1
+transcript: spd.tr
+covers: spd
+
+[spd_channel_and_bus_masked]
+desc: channel keeps 4 bits and i2cbus 3, so 17/9 encode the same as 1/1
+args: -I dummy spd 9 0xa0 17
+transcript: spd.tr
+covers: spd
+
+[spd_channel_high_nibble]
+desc: channel keeps four bits, not three: 9 encodes as 0x90, where 9 & 7 would give 0x10
+args: -I dummy spd 0 0xa0 9
+transcript: spd.tr
+covers: spd
+
+[spd_short_chunk_keeps_stale]
+desc: a short chunk still copies maxread bytes, so the previous response's tail is reused
+args: -I dummy spd 0 0xa0
+transcript: spd_hole.tr
+covers: spd
+
+[spd_channel_invalid]
+desc: a non-numeric channel
+args: -I dummy spd 0 0xa0 zz
+transcript: spd.tr
+covers: spd
+
+[spd_maxread]
+desc: the optional fourth argument is the read size, which drives the 512-byte loop
+args: -I dummy spd 0 0xa0 0 32
+transcript: spd.tr
+covers: spd
+
+[spd_maxread_invalid]
+desc: a non-numeric maxread
+args: -I dummy spd 0 0xa0 0 zz
+transcript: spd.tr
+covers: spd
+
+# ---------------------------------------------------------------------------
+# Input-size bounds
+#
+# `ipmi_raw_main()' rejects more than sizeof(data) == 256 arguments and
+# `ipmi_rawi2c_main()' more than IPMI_I2C_MASTER_MAX_SIZE == 64 write bytes.
+# Each limit gets a case on both sides so the constant itself is pinned.
+# ---------------------------------------------------------------------------
+
+[raw_argc_256]
+desc: 256 arguments: net function, command and 254 data bytes, all accepted
+args: -I dummy raw 0x06 0x30 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x20 0x21 0x22 0x23 0x24 0x25 0x26 0x27 0x28 0x29 0x2a 0x2b 0x2c 0x2d 0x2e 0x2f 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x3a 0x3b 0x3c 0x3d 0x3e 0x3f 0x40 0x41 0x42 0x43 0x44 0x45 0x46 0x47 0x48 0x49 0x4a 0x4b 0x4c 0x4d 0x4e 0x4f 0x50 0x51 0x52 0x53 0x54 0x55 0x56 0x57 0x58 0x59 0x5a 0x5b 0x5c 0x5d 0x5e 0x5f 0x60 0x61 0x62 0x63 0x64 0x65 0x66 0x67 0x68 0x69 0x6a 0x6b 0x6c 0x6d 0x6e 0x6f 0x70 0x71 0x72 0x73 0x74 0x75 0x76 0x77 0x78 0x79 0x7a 0x7b 0x7c 0x7d 0x7e 0x7f 0x80 0x81 0x82 0x83 0x84 0x85 0x86 0x87 0x88 0x89 0x8a 0x8b 0x8c 0x8d 0x8e 0x8f 0x90 0x91 0x92 0x93 0x94 0x95 0x96 0x97 0x98 0x99 0x9a 0x9b 0x9c 0x9d 0x9e 0x9f 0xa0 0xa1 0xa2 0xa3 0xa4 0xa5 0xa6 0xa7 0xa8 0xa9 0xaa 0xab 0xac 0xad 0xae 0xaf 0xb0 0xb1 0xb2 0xb3 0xb4 0xb5 0xb6 0xb7 0xb8 0xb9 0xba 0xbb 0xbc 0xbd 0xbe 0xbf 0xc0 0xc1 0xc2 0xc3 0xc4 0xc5 0xc6 0xc7 0xc8 0xc9 0xca 0xcb 0xcc 0xcd 0xce 0xcf 0xd0 0xd1 0xd2 0xd3 0xd4 0xd5 0xd6 0xd7 0xd8 0xd9 0xda 0xdb 0xdc 0xdd 0xde 0xdf 0xe0 0xe1 0xe2 0xe3 0xe4 0xe5 0xe6 0xe7 0xe8 0xe9 0xea 0xeb 0xec 0xed 0xee 0xef 0xf0 0xf1 0xf2 0xf3 0xf4 0xf5 0xf6 0xf7 0xf8 0xf9 0xfa 0xfb 0xfc 0xfd 0xfe
+transcript: raw.tr
+covers: raw
+
+[raw_argc_257]
+desc: 257 arguments is one past the limit and nothing is sent
+args: -I dummy raw 0x06 0x30 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x20 0x21 0x22 0x23 0x24 0x25 0x26 0x27 0x28 0x29 0x2a 0x2b 0x2c 0x2d 0x2e 0x2f 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x3a 0x3b 0x3c 0x3d 0x3e 0x3f 0x40 0x41 0x42 0x43 0x44 0x45 0x46 0x47 0x48 0x49 0x4a 0x4b 0x4c 0x4d 0x4e 0x4f 0x50 0x51 0x52 0x53 0x54 0x55 0x56 0x57 0x58 0x59 0x5a 0x5b 0x5c 0x5d 0x5e 0x5f 0x60 0x61 0x62 0x63 0x64 0x65 0x66 0x67 0x68 0x69 0x6a 0x6b 0x6c 0x6d 0x6e 0x6f 0x70 0x71 0x72 0x73 0x74 0x75 0x76 0x77 0x78 0x79 0x7a 0x7b 0x7c 0x7d 0x7e 0x7f 0x80 0x81 0x82 0x83 0x84 0x85 0x86 0x87 0x88 0x89 0x8a 0x8b 0x8c 0x8d 0x8e 0x8f 0x90 0x91 0x92 0x93 0x94 0x95 0x96 0x97 0x98 0x99 0x9a 0x9b 0x9c 0x9d 0x9e 0x9f 0xa0 0xa1 0xa2 0xa3 0xa4 0xa5 0xa6 0xa7 0xa8 0xa9 0xaa 0xab 0xac 0xad 0xae 0xaf 0xb0 0xb1 0xb2 0xb3 0xb4 0xb5 0xb6 0xb7 0xb8 0xb9 0xba 0xbb 0xbc 0xbd 0xbe 0xbf 0xc0 0xc1 0xc2 0xc3 0xc4 0xc5 0xc6 0xc7 0xc8 0xc9 0xca 0xcb 0xcc 0xcd 0xce 0xcf 0xd0 0xd1 0xd2 0xd3 0xd4 0xd5 0xd6 0xd7 0xd8 0xd9 0xda 0xdb 0xdc 0xdd 0xde 0xdf 0xe0 0xe1 0xe2 0xe3 0xe4 0xe5 0xe6 0xe7 0xe8 0xe9 0xea 0xeb 0xec 0xed 0xee 0xef 0xf0 0xf1 0xf2 0xf3 0xf4 0xf5 0xf6 0xf7 0xf8 0xf9 0xfa 0xfb 0xfc 0xfd 0xfe 0xff
+transcript: raw.tr
+covers: raw
+
+[i2c_write_64]
+desc: 64 write bytes is the largest ipmi_rawi2c_main() accepts
+args: -I dummy i2c 0xa0 4 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x20 0x21 0x22 0x23 0x24 0x25 0x26 0x27 0x28 0x29 0x2a 0x2b 0x2c 0x2d 0x2e 0x2f 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x3a 0x3b 0x3c 0x3d 0x3e 0x3f
+transcript: i2c.tr
+covers: i2c
+
+[i2c_write_65]
+desc: 65 write bytes is one past the limit and nothing is sent
+args: -I dummy i2c 0xa0 4 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x20 0x21 0x22 0x23 0x24 0x25 0x26 0x27 0x28 0x29 0x2a 0x2b 0x2c 0x2d 0x2e 0x2f 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x3a 0x3b 0x3c 0x3d 0x3e 0x3f 0x40
+transcript: i2c.tr
+covers: i2c

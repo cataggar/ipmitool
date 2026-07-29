@@ -1,0 +1,16 @@
+#!golden 1
+#!case i2c_ccode_other
+#!section exit
+1
+#!section stdout
+#!section stderr
+I2C Master Write-Read command failed: Node busy
+Unable to perform I2C Master Write-Read
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=00 a0 04 c0
+< rule=node_busy ccode=0xc0 len=0 data=
+bye

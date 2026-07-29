@@ -1,0 +1,68 @@
+#!golden 1
+#!case raw_verbose
+#!section exit
+0
+#!section stdout
+ 5a
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+RAW REQ (channel=0x0 netfn=0x6 lun=0x0 cmd=0x22 data_len=4)
+RAW REQUEST (4 bytes)
+ 0a 0b 0c 0d
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: 6
+msg.cmd: 22
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: 7
+msg.cmd: 22
+msg.seq: 0
+msg.lun: 0
+<<<
+RAW RSP (1 bytes)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x22 target_cmd=0x00 data=0a 0b 0c 0d
+< rule=payload_echo ccode=0x00 len=1 data=5a
+bye

@@ -1,0 +1,15 @@
+#!golden 1
+#!case raw_netfn_by_name
+#!section exit
+0
+#!section stdout
+ 0a
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x24 target_cmd=0x00 data=
+< rule=storage_probe ccode=0x00 len=1 data=0a
+bye
