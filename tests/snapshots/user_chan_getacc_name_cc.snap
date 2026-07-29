@@ -1,0 +1,27 @@
+#!golden 1
+#!case user_chan_getacc_name_cc
+#!section exit
+0
+#!section stdout
+Maximum User IDs     : 4
+Enabled User IDs     : 1
+
+User ID              : 1
+User Name            :\x20
+Fixed Name           : Yes
+Access Available     : call-in / callback
+Link Authentication  : enabled
+IPMI Messaging       : enabled
+Privilege Level      : ADMINISTRATOR
+Enable Status        : enabled
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 01
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=01
+< rule=get_user_name ccode=0xcc len=16 data=62 6f 67 75 73 00 00 00 00 00 00 00 00 00 00 00
+bye

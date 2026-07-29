@@ -37,6 +37,9 @@ comptime {
     if (selected("channel")) {
         @import("cmd/channel.zig").exportSymbols();
     }
+    if (selected("user")) {
+        @import("cmd/user.zig").exportSymbols();
+    }
     if (selected("time")) {
         @import("util/time.zig").exportSymbols();
     }

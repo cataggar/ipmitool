@@ -1,0 +1,662 @@
+# Depth coverage for lib/ipmi_user.c.
+#
+# The breadth suite only reaches `user', `user help', `user list 1' and
+# `user summary 1'.  These cases walk every subcommand, every argument
+# validation branch and every response-shaped error path, plus the four
+# entry points that the `user' command itself never reaches (they are only
+# called from lib/ipmi_lanp.c and lib/ipmi_channel.c).
+
+# --- dispatch -------------------------------------------------------------
+
+[user_bad_subcommand]
+desc: an unknown subcommand names itself and prints the usage
+args: -I dummy user bogus
+transcript: bmc.tr
+covers: user
+
+[user_set_no_kind]
+desc: `set' with neither name nor password falls through to the usage
+args: -I dummy user set bogus 1
+transcript: bmc.tr
+covers: user
+
+[user_set_alone]
+desc: bare `set' has too few arguments for either form
+args: -I dummy user set
+transcript: bmc.tr
+covers: user
+
+[user_set_password_2args]
+desc: `set password' with no user id is one argument short of the password form
+args: -I dummy user set password
+transcript: bmc.tr
+covers: user
+
+[user_set_name_2args]
+desc: `set name' reaches the name handler, which then rejects the arity
+args: -I dummy user set name
+transcript: bmc.tr
+covers: user
+
+# --- summary --------------------------------------------------------------
+
+[user_summary_default_ch]
+desc: summary without a channel asks about channel 0x0E
+args: -I dummy user summary
+transcript: bmc.tr
+covers: user
+
+[user_summary_ch_0]
+desc: summary on channel 0
+args: -I dummy user summary 0
+transcript: bmc.tr
+covers: user
+
+[user_summary_ch_15]
+desc: summary on channel 15
+args: -I dummy user summary 15
+transcript: bmc.tr
+covers: user
+
+[user_summary_bad_ch]
+desc: summary rejects a reserved channel number
+args: -I dummy user summary 12
+transcript: bmc.tr
+covers: user
+
+[user_summary_nan_ch]
+desc: summary rejects a non numeric channel
+args: -I dummy user summary xx
+transcript: bmc.tr
+covers: user
+
+[user_summary_too_many]
+desc: summary takes at most one argument
+args: -I dummy user summary 1 2
+transcript: bmc.tr
+covers: user
+
+[user_summary_csv]
+desc: summary in csv mode prints three comma separated counters
+args: -c -I dummy user summary 1
+transcript: bmc.tr
+covers: user
+
+[user_summary_mask]
+desc: the three summary counters are each masked to six bits
+args: -I dummy user summary 1
+transcript: user_uid_mask.tr
+covers: user
+
+[user_summary_csv_mask]
+desc: csv summary with counters that all differ from each other
+args: -c -I dummy user summary 1
+transcript: user_uid_mask.tr
+covers: user
+
+[user_summary_acc_cc]
+desc: summary reports a completion code from Get User Access
+args: -I dummy user summary 1
+transcript: user_acc_cc.tr
+covers: user
+
+[user_summary_acc_len]
+desc: summary rejects an over long Get User Access reply
+args: -I dummy user summary 1
+transcript: user_acc_len.tr
+covers: user
+
+[user_summary_acc_len3]
+desc: summary rejects a short Get User Access reply
+args: -I dummy user summary 1
+transcript: user_acc_len3.tr
+covers: user
+
+[user_summary_no_bmc]
+desc: summary against a BMC that implements nothing
+args: -I dummy user summary 1
+transcript: default.tr
+covers: user
+
+# --- list -----------------------------------------------------------------
+
+[user_list_default_ch]
+desc: list without a channel asks about channel 0x0E
+args: -I dummy user list
+transcript: bmc.tr
+covers: user
+
+[user_list_ch_14]
+desc: list on channel 14
+args: -I dummy user list 14
+transcript: bmc.tr
+covers: user
+
+[user_list_bad_ch]
+desc: list rejects a reserved channel number
+args: -I dummy user list 13
+transcript: bmc.tr
+covers: user
+
+[user_list_too_many]
+desc: list takes at most one argument
+args: -I dummy user list 1 2
+transcript: bmc.tr
+covers: user
+
+[user_list_five]
+desc: five slots with different access bits, names and privilege levels
+args: -I dummy user list 1
+transcript: user_five.tr
+covers: user
+
+[user_list_five_csv]
+desc: the csv row spells the booleans without the column padding
+args: -c -I dummy user list 1
+transcript: user_five.tr
+covers: user
+
+[user_list_uid_mask]
+desc: max_user_ids 0x81 masks to 1, so exactly one row is printed
+args: -I dummy user list 1
+transcript: user_uid_mask.tr
+covers: user
+
+[user_list_uid_max]
+desc: max_user_ids 63 walks to the inclusive IPMI_UID_MAX bound
+args: -I dummy user list 1
+transcript: user_uid_max.tr
+covers: user
+
+[user_list_name_cc]
+desc: a Get User Name completion code other than 0xCC aborts the walk
+args: -I dummy user list 1
+transcript: user_name_cc.tr
+covers: user
+
+[user_list_name_cc_data]
+desc: 0xCC blanks the name even when the reply carries a payload
+args: -I dummy user list 1
+transcript: user_name_cc_data.tr
+covers: user
+
+[user_list_name_len]
+desc: list rejects a 15 byte Get User Name reply
+args: -I dummy user list 1
+transcript: user_name_len.tr
+covers: user
+
+[user_list_name_len17]
+desc: list rejects a 17 byte Get User Name reply
+args: -I dummy user list 1
+transcript: user_name_len17.tr
+covers: user
+
+[user_list_acc_cc]
+desc: list reports a completion code from Get User Access
+args: -I dummy user list 1
+transcript: user_acc_cc.tr
+covers: user
+
+[user_list_acc_len]
+desc: list rejects an over long Get User Access reply
+args: -I dummy user list 1
+transcript: user_acc_len.tr
+covers: user
+
+[user_list_csv_name_cc]
+desc: the csv walk also tolerates 0xCC from Get User Name
+args: -c -I dummy user list 1
+transcript: user_name_cc_data.tr
+covers: user
+
+# --- priv -----------------------------------------------------------------
+
+[user_priv_ok]
+desc: setting a privilege limit on the current channel
+args: -I dummy user priv 2 4
+transcript: user_ok.tr
+covers: user
+
+[user_priv_ch]
+desc: the optional fourth argument selects the channel
+args: -I dummy user priv 2 4 1
+transcript: user_ok.tr
+covers: user
+
+[user_priv_ch_15]
+desc: channel 15 lands in the low nibble of the first request byte
+args: -I dummy user priv 3 5 15
+transcript: user_ok.tr
+covers: user
+
+[user_priv_no_access]
+desc: privilege limit 0x0F is accepted
+args: -I dummy user priv 2 15 1
+transcript: user_ok.tr
+covers: user
+
+[user_priv_uid_63]
+desc: the maximum user id fits the six bit field
+args: -I dummy user priv 63 1 1
+transcript: user_ok.tr
+covers: user
+
+[user_priv_cc]
+desc: Set User Access failing names the user in the error
+args: -I dummy user priv 2 4 1
+transcript: user_setacc_cc.tr
+covers: user
+
+[user_priv_no_bmc]
+desc: priv against a BMC that rejects the command
+args: -I dummy user priv 2 4 1
+transcript: default.tr
+covers: user
+
+[user_priv_too_few]
+desc: priv needs at least a user id and a privilege level
+args: -I dummy user priv 2
+transcript: bmc.tr
+covers: user
+
+[user_priv_too_many]
+desc: priv takes at most three arguments
+args: -I dummy user priv 2 4 1 9
+transcript: bmc.tr
+covers: user
+
+[user_priv_bad_priv]
+desc: privilege level 6 is out of range
+args: -I dummy user priv 2 6
+transcript: bmc.tr
+covers: user
+
+[user_priv_priv_0]
+desc: privilege level 0 is out of range
+args: -I dummy user priv 2 0
+transcript: bmc.tr
+covers: user
+
+[user_priv_nan_priv]
+desc: a non numeric privilege level is rejected
+args: -I dummy user priv 2 xx
+transcript: bmc.tr
+covers: user
+
+[user_priv_bad_uid]
+desc: user id 0 is below IPMI_UID_MIN
+args: -I dummy user priv 0 4
+transcript: bmc.tr
+covers: user
+
+[user_priv_uid_64]
+desc: user id 64 is above IPMI_UID_MAX
+args: -I dummy user priv 64 4
+transcript: bmc.tr
+covers: user
+
+[user_priv_bad_ch]
+desc: the channel argument is validated before the privilege level
+args: -I dummy user priv 2 4 12
+transcript: bmc.tr
+covers: user
+
+# --- enable / disable -----------------------------------------------------
+
+[user_enable_ok]
+desc: enable sends operation 0x01
+args: -I dummy user enable 2
+transcript: user_ok.tr
+covers: user
+
+[user_disable_ok]
+desc: disable sends operation 0x00
+args: -I dummy user disable 2
+transcript: user_ok.tr
+covers: user
+
+[user_enable_uid_63]
+desc: enable with the largest user id
+args: -I dummy user enable 63
+transcript: user_ok.tr
+covers: user
+
+[user_disable_cc]
+desc: disable against a BMC that rejects Set User Password
+args: -I dummy user disable 2
+transcript: bmc.tr
+covers: user
+
+[user_enable_too_few]
+desc: enable needs a user id
+args: -I dummy user enable
+transcript: bmc.tr
+covers: user
+
+[user_disable_too_many]
+desc: disable takes exactly one argument
+args: -I dummy user disable 2 3
+transcript: bmc.tr
+covers: user
+
+[user_enable_bad_uid]
+desc: enable rejects an out of range user id
+args: -I dummy user enable 64
+transcript: bmc.tr
+covers: user
+
+# --- set name -------------------------------------------------------------
+
+[user_name_ok]
+desc: setting a short user name
+args: -I dummy user set name 2 bob
+transcript: user_ok.tr
+covers: user
+
+[user_name_16]
+desc: a 16 character name exactly fills the request field
+args: -I dummy user set name 2 0123456789abcdef
+transcript: user_ok.tr
+covers: user
+
+[user_name_17]
+desc: a 17 character name is one over the limit
+args: -I dummy user set name 2 0123456789abcdefg
+transcript: user_ok.tr
+covers: user
+
+[user_name_empty]
+desc: an empty name blanks the slot
+args: -I dummy user set name 2 ""
+transcript: user_ok.tr
+covers: user
+
+[user_name_uid_63]
+desc: set name with the largest user id
+args: -I dummy user set name 63 z
+transcript: user_ok.tr
+covers: user
+
+[user_name_cc]
+desc: Set User Name failing decodes the completion code
+args: -I dummy user set name 2 bob
+transcript: user_setname_cc.tr
+covers: user
+
+[user_name_no_bmc]
+desc: set name against a BMC that rejects the command
+args: -I dummy user set name 2 bob
+transcript: default.tr
+covers: user
+
+[user_name_too_few]
+desc: set name needs both a user id and a name
+args: -I dummy user set name 2
+transcript: bmc.tr
+covers: user
+
+[user_name_too_many]
+desc: set name takes exactly two arguments
+args: -I dummy user set name 2 bob extra
+transcript: bmc.tr
+covers: user
+
+[user_name_bad_uid]
+desc: set name rejects an out of range user id
+args: -I dummy user set name 64 bob
+transcript: bmc.tr
+covers: user
+
+# --- set password ---------------------------------------------------------
+
+[user_pw_ok]
+desc: setting a short password defaults to the 16 byte form
+args: -I dummy user set password 2 secret
+transcript: user_ok.tr
+covers: user
+
+[user_pw_16]
+desc: a 16 character password still fits the 16 byte form
+args: -I dummy user set password 2 0123456789abcdef
+transcript: user_ok.tr
+covers: user
+
+[user_pw_17]
+desc: 17 characters promote the request to the 20 byte form
+args: -I dummy user set password 2 0123456789abcdefg
+transcript: user_ok.tr
+covers: user
+
+[user_pw_20]
+desc: a 20 character password exactly fills the 20 byte form
+args: -I dummy user set password 2 0123456789abcdefghij
+transcript: user_ok.tr
+covers: user
+
+[user_pw_21]
+desc: 21 characters exceed even the promoted 20 byte form
+args: -I dummy user set password 2 0123456789abcdefghijk
+transcript: user_ok.tr
+covers: user
+
+[user_pw_explicit_16]
+desc: an explicit length of 16 keeps the short form
+args: -I dummy user set password 2 secret 16
+transcript: user_ok.tr
+covers: user
+
+[user_pw_explicit_20]
+desc: an explicit length of 20 pads a short password to the long form
+args: -I dummy user set password 2 secret 20
+transcript: user_ok.tr
+covers: user
+
+[user_pw_16_over]
+desc: a 17 character password with an explicit 16 is rejected
+args: -I dummy user set password 2 0123456789abcdefg 16
+transcript: user_ok.tr
+covers: user
+
+[user_pw_bad_len]
+desc: an explicit length of 18 is neither 16 nor 20
+args: -I dummy user set password 2 secret 18
+transcript: user_ok.tr
+covers: user
+
+[user_pw_nan_len]
+desc: a non numeric explicit length is rejected
+args: -I dummy user set password 2 secret xx
+transcript: user_ok.tr
+covers: user
+
+[user_pw_empty]
+desc: an empty password clears the slot
+args: -I dummy user set password 2 ""
+transcript: user_ok.tr
+covers: user
+
+[user_pw_uid_63]
+desc: set password with the largest user id
+args: -I dummy user set password 63 pw
+transcript: user_ok.tr
+covers: user
+
+[user_pw_bad_uid]
+desc: set password rejects an out of range user id
+args: -I dummy user set password 64 pw
+transcript: bmc.tr
+covers: user
+
+[user_pw_cc]
+desc: Set User Password failing names the user
+args: -I dummy user set password 2 secret
+transcript: bmc.tr
+covers: user
+
+[user_pw_extra_args]
+desc: arguments past the length are ignored
+args: -I dummy user set password 2 secret 16 extra
+transcript: user_ok.tr
+covers: user
+
+# --- test -----------------------------------------------------------------
+
+[user_test_ok]
+desc: a matching password prints Success
+args: -I dummy user test 2 16 secret
+transcript: user_ok.tr
+covers: user
+
+[user_test_20]
+desc: the 20 byte form sets the high bit of the first request byte
+args: -I dummy user test 2 20 secret
+transcript: user_ok.tr
+covers: user
+
+[user_test_wrong]
+desc: completion code 0x80 means the password is incorrect
+args: -I dummy user test 2 16 secret
+transcript: user_pw_80.tr
+covers: user
+
+[user_test_size]
+desc: completion code 0x81 means the password size is wrong
+args: -I dummy user test 2 16 secret
+transcript: user_pw_81.tr
+covers: user
+
+[user_test_unknown]
+desc: any other completion code is reported as Unknown error
+args: -I dummy user test 2 16 secret
+transcript: user_pw_82.tr
+covers: user
+
+[user_test_no_bmc]
+desc: test against a BMC that rejects the command
+args: -I dummy user test 2 16 secret
+transcript: default.tr
+covers: user
+
+[user_test_bad_len]
+desc: test rejects a length that is neither 16 nor 20
+args: -I dummy user test 2 8 secret
+transcript: bmc.tr
+covers: user
+
+[user_test_nan_len]
+desc: test rejects a non numeric length
+args: -I dummy user test 2 xx secret
+transcript: bmc.tr
+covers: user
+
+[user_test_len_hex]
+desc: the length is parsed base-0, so 0x10 is accepted as 16
+args: -I dummy user test 2 0x10 secret
+transcript: user_ok.tr
+covers: user
+
+[user_test_bad_uid]
+desc: test rejects an out of range user id
+args: -I dummy user test 64 16 secret
+transcript: bmc.tr
+covers: user
+
+[user_test_too_few]
+desc: test needs at least a user id and a length
+args: -I dummy user test 2
+transcript: bmc.tr
+covers: user
+
+[user_test_too_many]
+desc: test takes at most three arguments
+args: -I dummy user test 2 16 secret extra
+transcript: bmc.tr
+covers: user
+
+[user_test_long_pw]
+desc: a password longer than the field is truncated, not rejected
+args: -I dummy user test 2 16 0123456789abcdefghij
+transcript: user_ok.tr
+covers: user
+
+# --- cross module callers -------------------------------------------------
+#
+# _ipmi_set_user_password and _ipmi_set_user_access are also called from
+# lib/ipmi_lanp.c, and _ipmi_get_user_access / _ipmi_get_user_name from
+# lib/ipmi_channel.c.  Those callers pass argument combinations the `user'
+# command never produces.
+
+[user_lan_set_password]
+desc: lan set password calls _ipmi_set_user_password for user 1
+args: -I dummy lan set 1 password sekrit
+transcript: user_lan.tr
+covers: user
+
+[user_lan_set_pw_cc]
+desc: lan set password reports a failing completion code
+args: -I dummy lan set 1 password sekrit
+transcript: user_lan_cc.tr
+covers: user
+
+[user_lan_set_user]
+desc: lan set user grants administrator access to user 1
+args: -I dummy lan set 1 user
+transcript: user_lan.tr
+covers: user
+
+[user_lan_set_user_cc]
+desc: lan set user reports a failing completion code
+args: -I dummy lan set 1 user
+transcript: user_lan_cc.tr
+covers: user
+
+[user_chan_getaccess_uid]
+desc: channel getaccess reads one slot through _ipmi_get_user_access
+args: -I dummy channel getaccess 1 2
+transcript: user_five.tr
+covers: user
+
+[user_chan_getaccess_all]
+desc: channel getaccess walks every slot and reads every name
+args: -I dummy channel getaccess 1
+transcript: user_five.tr
+covers: user
+
+[user_chan_setaccess]
+desc: channel setaccess writes through _ipmi_set_user_access
+args: -I dummy channel setaccess 1 2 privilege=3 callin=on
+transcript: user_ok.tr
+covers: user
+
+[user_chan_getacc_name_cc]
+desc: channel getaccess also tolerates 0xCC from Get User Name
+args: -I dummy channel getaccess 1 1
+transcript: user_name_cc_data.tr
+covers: user
+
+# `set password <uid>' and `test <uid> <len>' with no password argument call
+# getpass(3).  That path is deliberately *not* covered: getpass() opens
+# /dev/tty when one exists, so the result depends on whether the suite is run
+# from a terminal, and it would block waiting for input.  See the port's
+# module comment for how the prompt is transcribed.
+
+# --- discriminators for otherwise indistinguishable bits -------------------
+
+[user_priv_both_bad]
+desc: with both arguments invalid the privilege level is reported first
+args: -I dummy user priv 0 6
+transcript: bmc.tr
+covers: user
+
+[user_set_pw_bad_uid3]
+desc: `set password' with three arguments reaches the password handler
+args: -I dummy user set password xx
+transcript: bmc.tr
+covers: user
+
+[user_chan_setacc_callin]
+desc: callin=off is the only way to set the call-in bit in a write
+args: -I dummy channel setaccess 1 2 callin=off privilege=2
+transcript: user_ok.tr
+covers: user

@@ -1,0 +1,16 @@
+# Get User Name answers 0xCC *and* a payload.  The ccode wins: the name is
+# blanked rather than taken from the data.
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  data 04 41 01 34
+end
+
+respond get_user_name
+  netfn 0x06
+  cmd 0x46
+  ccode 0xcc
+  data 62 6f 67 75 73 00 00 00 00 00 00 00 00 00 00 00
+end

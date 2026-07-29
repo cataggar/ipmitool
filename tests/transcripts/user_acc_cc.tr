@@ -1,0 +1,8 @@
+# Get User Access fails with a completion code rather than a length error.
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  ccode 0xd4
+end

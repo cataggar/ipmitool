@@ -1,0 +1,18 @@
+#!golden 1
+#!case user_lan_set_user_cc
+#!section exit
+1
+#!section stdout
+#!section stderr
+IPMI command failed: Insufficient privilege level
+Set User Access for channel 1 failed
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=get_channel_info ccode=0x00 len=9 data=01 04 01 41 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x43 target_cmd=0x00 data=01 01 04 00
+< rule=set_user_access ccode=0xd4 len=0 data=
+bye

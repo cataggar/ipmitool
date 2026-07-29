@@ -1,0 +1,8 @@
+# Set User Access fails with 0xD4.
+default_ccode 0xc1
+
+respond set_user_access
+  netfn 0x06
+  cmd 0x43
+  ccode 0xd4
+end

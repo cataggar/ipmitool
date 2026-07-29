@@ -1,0 +1,14 @@
+#!golden 1
+#!case user_summary_nan_ch
+#!section exit
+1
+#!section stdout
+#!section stderr
+Given Channel number 'xx' is either invalid or out of range.
+Channel number must be from ranges: <0x0..0xB>, <0xE..0xF>
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -125,6 +125,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/channel.zig",
     },
     .{
+        .name = "user",
+        .replaces = "lib/ipmi_user.c",
+        .implementation = "src/zig/cmd/user.zig",
+    },
+    .{
         .name = "strings",
         .replaces = "lib/ipmi_strings.c",
         .implementation = "src/zig/util/strings.zig",

@@ -1,0 +1,15 @@
+#!golden 1
+#!case user_pw_20
+#!section exit
+0
+#!section stdout
+Set User Password command successful (user 2)
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x47 target_cmd=0x00 data=82 02 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66 67 68 69 6a
+< rule=set_user_password ccode=0x00 len=0 data=
+bye
