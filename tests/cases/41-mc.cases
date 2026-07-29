@@ -733,7 +733,7 @@ args: -I dummy mc watchdog set timeout=abc
 transcript: mc.tr
 covers: mc
 
-[mc_watchdog_set_pretimeout_not_a_number]
+[mc_watchdog_set_pretimeout_not_num]
 desc: the same for pretimeout
 args: -I dummy mc watchdog set pretimeout=abc
 transcript: mc.tr

@@ -179,6 +179,11 @@ it.
 Cases live in `tests/cases/*.cases`. Add a block, run with `--update`, **read
 the produced snapshot** and commit it.
 
+Keep case names to **36 characters or fewer**. The name becomes a scratch
+directory whose `AF_UNIX` socket path must fit in `sockaddr_un.sun_path`, and
+the checkout path on the CI runners is longer than a typical local one - a name
+that works here can fail with `harness error: SocketPathTooLong` only on CI.
+
 ```
 [fru_bad_area_checksum]
 desc: FRU board area with a corrupt checksum - fields still print, checksum reported INVALID
