@@ -1,0 +1,43 @@
+#!golden 1
+#!case sen_reading_units_na
+#!section exit
+0
+#!section stdout
+#!section stderr
+Sensor "DiscU" is a discrete sensor!
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 08 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=78 56 34 12 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 34 12 05 17
+< rule=get_sdr_1234 ccode=0x00 len=25 data=78 56 20 00 11 03 02 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 02 03 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 34 12 1c 17
+< rule=get_sdr_1234 ccode=0x00 len=25 data=78 56 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 04 06 00 00 00 c5 54 65 6d
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 34 12 33 02
+< rule=get_sdr_1234 ccode=0x00 len=4 data=78 56 70 41
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 78 56 00 05
+< rule=get_sdr_5678 ccode=0x00 len=7 data=bc 9a 78 56 51 02 1f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 78 56 05 17
+< rule=get_sdr_5678 ccode=0x00 len=25 data=bc 9a 20 00 22 1d 03 7f 68 04 01 ff 3f ff 3f 3f 3f 00 12 00 00 00 09 0b 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 78 56 1c 08
+< rule=get_sdr_5678 ccode=0x00 len=10 data=bc 9a 00 00 00 c4 46 61 6e 43
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a bc 9a 00 05
+< rule=get_sdr_9abc ccode=0x00 len=7 data=f0 de bc 9a 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a bc 9a 05 17
+< rule=get_sdr_9abc ccode=0x00 len=25 data=f0 de 20 00 33 07 04 7f 68 02 01 ff 3f ff 3f 3f 3f c0 00 00 00 07 e5 09 1a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a bc 9a 1c 17
+< rule=get_sdr_9abc ccode=0x00 len=25 data=f0 de 2b 31 07 28 50 0a ff 00 e1 d2 c3 14 25 36 04 06 00 00 00 c5 44 69 73
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a bc 9a 33 02
+< rule=get_sdr_9abc ccode=0x00 len=4 data=f0 de 63 55
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=33
+< rule=reading_33 ccode=0x00 len=4 data=4c c0 c0 00
+bye

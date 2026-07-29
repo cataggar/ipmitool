@@ -1,0 +1,42 @@
+#!golden 1
+#!case sen_mask_b_lcr_unreadable
+#!section exit
+0
+#!section stdout
+Locating sensor record 'MaskB'...
+Setting sensor "MaskB" Lower Critical threshold to 5.000
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 04 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=7b e2 d1 c3 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d1 c3 05 17
+< rule=get_sdr_c3d1 ccode=0x00 len=25 data=7b e2 20 00 aa 1d 0b 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0d 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d1 c3 1c 17
+< rule=get_sdr_c3d1 ccode=0x00 len=25 data=7b e2 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 03 0c 00 00 00 c5 4d 61 73
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d1 c3 33 02
+< rule=get_sdr_c3d1 ccode=0x00 len=4 data=7b e2 6b 41
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7b e2 00 05
+< rule=get_sdr_e27b ccode=0x00 len=7 data=8d f5 7b e2 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7b e2 05 17
+< rule=get_sdr_e27b ccode=0x00 len=25 data=8d f5 20 00 bb 16 0e 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0d 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7b e2 1c 17
+< rule=get_sdr_e27b ccode=0x00 len=25 data=8d f5 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 03 0c 00 00 00 c5 4d 61 73
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7b e2 33 02
+< rule=get_sdr_e27b ccode=0x00 len=4 data=8d f5 6b 42
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=bb
+< rule=reading_bb ccode=0x00 len=4 data=3b c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=bb
+< rule=thresh_bb ccode=0x00 len=7 data=15 1e 14 0a 50 5a 64
+> netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=bb 02 00 05 00 00 00 00
+< rule=set_thresh ccode=0x00 len=0 data=
+bye

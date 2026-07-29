@@ -1,0 +1,18 @@
+# A BMC that refuses Get SDR Repository Info. ipmi_sdr_start() returns NULL and
+# `sensor list' must report "Unable to open SDR for reading" and exit 1.
+# Every other sensor subcommand goes through ipmi_sdr_find_sdr_byid(), which
+# fails the same way but reports a per-id message instead.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info_fail
+  netfn 0x0a
+  cmd 0x20
+  ccode 0xd3
+end

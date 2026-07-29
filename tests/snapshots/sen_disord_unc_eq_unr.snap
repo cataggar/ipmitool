@@ -1,0 +1,32 @@
+#!golden 1
+#!case sen_disord_unc_eq_unr
+#!section exit
+1
+#!section stdout
+Locating sensor record 'Disord'...
+#!section stderr
+Invalid Threshold data values. Cannot Set Threshold Data.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=ff ff 7e b4 51 01 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7e b4 05 17
+< rule=get_sdr_b47e ccode=0x00 len=25 data=ff ff 20 00 99 0f 0c 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 07 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7e b4 1c 17
+< rule=get_sdr_b47e ccode=0x00 len=25 data=ff ff 00 00 07 32 5a 14 ff 00 63 7c a5 27 1b 0d 05 08 00 00 00 c6 44 69 73
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7e b4 33 03
+< rule=get_sdr_b47e ccode=0x00 len=5 data=ff ff 6f 72 64
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=99
+< rule=reading_99 ccode=0x00 len=4 data=39 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=99
+< rule=thresh_99 ccode=0x00 len=7 data=3f 0d 1b 27 a5 7c 63
+bye

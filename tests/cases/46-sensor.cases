@@ -1,0 +1,1319 @@
+# lib/ipmi_sensor.c: every subcommand, output mode and error path.
+#
+# The 20-parsers.cases file already has two `sensor' cases, but they only walk
+# the happy path of one repository. These cases enumerate the module instead:
+# each dispatch arm of ipmi_sensor_main(), each of the three output modes
+# (plain, -c, -v) crossed with each record shape, every threshold validation
+# branch, and the malformed-input behaviour that a port must reproduce.
+#
+# The fixtures deliberately use distinct, non-zero bytes for every multi-byte
+# quantity (record IDs, the SDR reservation, the Get Sensor Reading Factors
+# M/B fields, the six Get Sensor Thresholds values) so that a wrong offset,
+# a wrong width or a wrong byte order changes the recorded output or the
+# recorded request bytes. See tests/transport/Bmc.zig for the rule.
+
+# --- dispatch --------------------------------------------------------------
+
+[sen_no_args]
+desc: bare `sensor' with no subcommand falls through to list
+args: -I dummy sensor
+transcript: sensor.tr
+covers: sensor
+
+[sen_help_sub]
+desc: `sensor help' prints the one-line command summary
+args: -I dummy sensor help
+transcript: sensor.tr
+covers: sensor
+
+[sen_bad_subcommand]
+desc: unknown sensor subcommand is rejected with exit 1
+args: -I dummy sensor bogus
+transcript: sensor.tr
+covers: sensor
+
+# --- list ------------------------------------------------------------------
+
+[sen_list]
+desc: sensor list across full/compact, threshold/discrete, linear/non-linear
+args: -I dummy sensor list
+transcript: sensor.tr
+covers: sensor
+
+[sen_list_csv]
+desc: sensor list in csv mode
+args: -I dummy -c sensor list
+transcript: sensor.tr
+covers: sensor
+
+[sen_list_verbose]
+desc: sensor list in verbose mode (full per-sensor dumps)
+args: -I dummy -v sensor list
+transcript: sensor.tr
+covers: sensor
+
+[sen_list_no_sdr]
+desc: sensor list when the SDR repository cannot be opened
+args: -I dummy sensor list
+transcript: sensor_nosdr.tr
+covers: sensor
+
+[sen_list_edge]
+desc: sensor list where readings, thresholds and factors all misbehave
+args: -I dummy sensor list
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_list_edge_csv]
+desc: csv sensor list with unreadable sensors and missing thresholds
+args: -I dummy -c sensor list
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_list_edge_verbose]
+desc: verbose sensor list with unreadable sensors and missing thresholds
+args: -I dummy -v sensor list
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_list_trunc]
+desc: sensor list over an over-long record, a reserved type and a good record
+args: -I dummy sensor list
+transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_list_trunc_verbose]
+desc: verbose list where Get Sensor Thresholds returns only three bytes
+args: -I dummy -v sensor list
+transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_list_trunc_csv]
+desc: csv list where Get Sensor Thresholds returns only three bytes
+args: -I dummy -c sensor list
+transcript: sensor_trunc.tr
+covers: sensor
+
+# --- get -------------------------------------------------------------------
+
+[sen_get_no_args]
+desc: `sensor get' with no id prints the usage and fails
+args: -I dummy sensor get
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_help]
+desc: `sensor get help' prints the usage and succeeds
+args: -I dummy sensor get help
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_full_analog]
+desc: sensor get on a full analog threshold sensor
+args: -I dummy sensor get TempA
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_full_analog_csv]
+desc: csv output is not forced verbose by sensor get
+args: -I dummy -c sensor get TempA
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_compact]
+desc: sensor get on a compact threshold sensor (sr->full is NULL)
+args: -I dummy sensor get FanC
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_compact_csv]
+desc: csv sensor get on a compact threshold sensor
+args: -I dummy -c sensor get FanC
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_units_na]
+desc: full threshold sensor whose units say it returns no analog reading
+args: -I dummy sensor get DiscU
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_units_na_csv]
+desc: csv form of the no-analog-units threshold sensor
+args: -I dummy -c sensor get DiscU
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_nonlinear]
+desc: non-linear sensor, reading factors fetched from the BMC
+args: -I dummy sensor get NonLin
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_nonlinear_csv]
+desc: csv form of the non-linear sensor
+args: -I dummy -c sensor get NonLin
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_discrete_full]
+desc: full record with a discrete event/reading type
+args: -I dummy sensor get DiscF
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_discrete_full_csv]
+desc: csv form of the full discrete record
+args: -I dummy -c sensor get DiscF
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_discrete_compact]
+desc: compact record with a discrete event/reading type
+args: -I dummy sensor get DiscC
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_discrete_compact_csv]
+desc: csv form of the compact discrete record
+args: -I dummy -c sensor get DiscC
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_eventonly]
+desc: sensor get on an event-only record takes the print_listentry branch
+args: -I dummy sensor get "PWR Unit"
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_fru_locator]
+desc: sensor get on a FRU device locator record
+args: -I dummy sensor get "FRU Board"
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_missing]
+desc: sensor get on an unknown id
+args: -I dummy sensor get NoSuch
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_multi]
+desc: sensor get with several ids restores the saved verbose level each time
+args: -I dummy sensor get TempA NonLin DiscC
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_multi_partial]
+desc: one bad id among good ones still processes the rest and fails
+args: -I dummy sensor get TempA NoSuch DiscF
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_verbose_flag]
+desc: -v sensor get on a threshold sensor
+args: -I dummy -v sensor get TempA
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_nolin_verbose]
+desc: -v sensor get on the non-linear sensor pins the fetched tolerance
+args: -I dummy -v sensor get NonLin
+transcript: sensor.tr
+covers: sensor
+
+[sen_get_edge_thresh_ccode]
+desc: sensor get where Get Sensor Thresholds returns a completion code
+args: -I dummy sensor get TempA
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_edge_thresh_empty]
+desc: sensor get where Get Sensor Thresholds returns zero bytes
+args: -I dummy sensor get FanC
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_edge_scan_off]
+desc: sensor get where scanning is disabled for the sensor
+args: -I dummy sensor get DiscU
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_edge_factors_fail]
+desc: sensor get where Get Sensor Reading Factors fails
+args: -I dummy sensor get NonLin
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_edge_read_ccode]
+desc: sensor get where Get Sensor Reading returns CBh for a full record
+args: -I dummy sensor get DiscF
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_edge_unavailable]
+desc: sensor get where the reading is flagged unavailable
+args: -I dummy sensor get DiscC
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_edge_scan_csv]
+desc: csv sensor get with scanning disabled
+args: -I dummy -c sensor get DiscU
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_get_trunc_short_thresh]
+desc: sensor get where Get Sensor Thresholds is three bytes short
+args: -I dummy sensor get TempA
+transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_get_trunc_overlong]
+desc: sensor get on the record whose declared length exceeds its data
+args: -I dummy sensor get Long
+transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_get_no_sdr]
+desc: sensor get when the SDR repository cannot be opened
+args: -I dummy sensor get TempA
+transcript: sensor_nosdr.tr
+covers: sensor
+
+# --- reading ---------------------------------------------------------------
+
+[sen_reading_no_args]
+desc: `sensor reading' with no id prints two notices and fails
+args: -I dummy sensor reading
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_help]
+desc: `sensor reading help' prints the same notices and still fails
+args: -I dummy sensor reading help
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_one]
+desc: sensor reading on a full analog sensor
+args: -I dummy sensor reading TempA
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_csv]
+desc: csv sensor reading
+args: -I dummy -c sensor reading TempA
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_nonlinear]
+desc: sensor reading on the non-linear sensor uses the fetched factors
+args: -I dummy sensor reading NonLin
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_multi]
+desc: sensor reading with several ids
+args: -I dummy sensor reading TempA NonLin
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_compact]
+desc: compact sensors have no sr->full and are skipped without a message
+args: -I dummy sensor reading FanC
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_units_na]
+desc: a full sensor with no analog units reports "is a discrete sensor"
+args: -I dummy sensor reading DiscU
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_discrete]
+desc: a full discrete sensor reports "is a discrete sensor"
+args: -I dummy sensor reading DiscF
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_eventonly]
+desc: an event-only record hits the default arm and is skipped silently
+args: -I dummy sensor reading "PWR Unit"
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_missing]
+desc: sensor reading on an unknown id
+args: -I dummy sensor reading NoSuch
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_multi_partial]
+desc: an unknown id among good ones still fails but keeps going
+args: -I dummy sensor reading TempA NoSuch NonLin
+transcript: sensor.tr
+covers: sensor
+
+[sen_reading_scan_off]
+desc: sensor reading when the reading is not valid is skipped silently
+args: -I dummy sensor reading DiscU
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_reading_no_sdr]
+desc: sensor reading when the SDR repository cannot be opened
+args: -I dummy sensor reading TempA
+transcript: sensor_nosdr.tr
+covers: sensor
+
+# --- thresh ----------------------------------------------------------------
+
+[sen_thresh_no_args]
+desc: `sensor thresh' with no arguments prints the usage and succeeds
+args: -I dummy sensor thresh
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_help]
+desc: `sensor thresh help' prints the usage and succeeds
+args: -I dummy sensor thresh help
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_two_args]
+desc: two arguments is still below the argc floor and prints the usage
+args: -I dummy sensor thresh TempA unr
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_upper]
+desc: bulk upper set issues three Set Sensor Thresholds requests
+args: -I dummy sensor thresh TempA upper 160 180 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_upper_short]
+desc: bulk upper set with too few values
+args: -I dummy sensor thresh TempA upper 160 180
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_upper_bad_unc]
+desc: bulk upper set with an unparsable unc value
+args: -I dummy sensor thresh TempA upper x 180 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_upper_bad_ucr]
+desc: bulk upper set with an unparsable ucr value
+args: -I dummy sensor thresh TempA upper 160 y 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_upper_bad_unr]
+desc: bulk upper set with an unparsable unr value
+args: -I dummy sensor thresh TempA upper 160 180 z
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lower]
+desc: bulk lower set issues three Set Sensor Thresholds requests
+args: -I dummy sensor thresh TempA lower 8 24 26
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lower_short]
+desc: bulk lower set with too few values
+args: -I dummy sensor thresh TempA lower 8 24
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lower_bad_lnc]
+desc: bulk lower set with an unparsable lnc value
+args: -I dummy sensor thresh TempA lower p 24 26
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lower_bad_lcr]
+desc: bulk lower set with an unparsable lcr value
+args: -I dummy sensor thresh TempA lower 8 q 26
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lower_bad_lnr]
+desc: bulk lower set with an unparsable lnr value
+args: -I dummy sensor thresh TempA lower 8 24 r
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unr_ok]
+desc: single upper non-recoverable set that passes validation
+args: -I dummy sensor thresh TempA unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unr_bad]
+desc: upper non-recoverable below the current upper critical is rejected
+args: -I dummy sensor thresh TempA unr 100
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_ucr_ok]
+desc: single upper critical set that passes validation
+args: -I dummy sensor thresh TempA ucr 160
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_ucr_bad]
+desc: upper critical at or above the current upper non-recoverable
+args: -I dummy sensor thresh TempA ucr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unc_ok]
+desc: single upper non-critical set that passes validation
+args: -I dummy sensor thresh TempA unc 160
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unc_bad]
+desc: upper non-critical at or below the current lower non-critical
+args: -I dummy sensor thresh TempA unc 20
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnc_ok]
+desc: single lower non-critical set that passes validation
+args: -I dummy sensor thresh TempA lnc 26
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnc_bad]
+desc: lower non-critical at or below the current lower critical
+args: -I dummy sensor thresh TempA lnc 15
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lcr_ok]
+desc: single lower critical set that passes validation
+args: -I dummy sensor thresh TempA lcr 24
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lcr_bad]
+desc: lower critical at or above the current lower non-critical
+args: -I dummy sensor thresh TempA lcr 40
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnr_ok]
+desc: single lower non-recoverable set that passes validation
+args: -I dummy sensor thresh TempA lnr 8
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnr_bad]
+desc: lower non-recoverable at or above the current lower critical
+args: -I dummy sensor thresh TempA lnr 40
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_bad_name]
+desc: an unrecognised threshold name is rejected before the SDR walk
+args: -I dummy sensor thresh TempA bogus 5
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_bad_value]
+desc: an unparsable setting for a single named threshold
+args: -I dummy sensor thresh TempA unr notanumber
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_missing_sdr]
+desc: sensor thresh on an unknown id
+args: -I dummy sensor thresh NoSuch unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_compact]
+desc: sensor thresh on a compact record is rejected by sensor type
+args: -I dummy sensor thresh FanC unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_discrete]
+desc: sensor thresh on a full discrete record is rejected by event type
+args: -I dummy sensor thresh DiscF unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_eventonly]
+desc: sensor thresh on an event-only record is rejected by sensor type
+args: -I dummy sensor thresh "PWR Unit" unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_discrete_units]
+desc: a units-discrete sensor takes the clamping value-to-raw path
+args: -I dummy sensor thresh DiscU unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_clamp_high]
+desc: a units-discrete setting above 255 clamps to FFh in the request
+args: -I dummy sensor thresh DiscU unr 300
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_clamp_low]
+desc: a negative units-discrete setting clamps to 00h in the request
+args: -I dummy -- sensor thresh DiscU lnr -5
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_fraction]
+desc: a fractional setting is printed to three places and rounded to raw
+args: -I dummy sensor thresh TempA unr 201.5
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_nonlinear]
+desc: sensor thresh on the non-linear record uses the SDR's own factors
+args: -I dummy sensor thresh NonLin unr 200
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_read_ccode]
+desc: sensor thresh when Get Sensor Thresholds returns a completion code
+args: -I dummy sensor thresh TempA unr 200
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_thresh_set_fails]
+desc: sensor thresh when Set Sensor Thresholds returns a completion code
+args: -I dummy sensor thresh DiscU unr 200
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_thresh_upper_set_fails]
+desc: the bulk upper path reports each failed set but returns the last one
+args: -I dummy sensor thresh DiscU upper 100 150 200
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_thresh_lower_set_fails]
+desc: the bulk lower path reports each failed set but returns the last one
+args: -I dummy sensor thresh DiscU lower 60 40 20
+transcript: sensor_edge.tr
+covers: sensor
+
+[sen_thresh_no_sdr]
+desc: sensor thresh when the SDR repository cannot be opened
+args: -I dummy sensor thresh TempA unr 200
+transcript: sensor_nosdr.tr
+covers: sensor
+
+[sen_thresh_trunc_short]
+desc: sensor thresh validating against a three-byte thresholds response
+args: -I dummy sensor thresh TempA unr 200
+transcript: sensor_trunc.tr
+covers: sensor
+
+# --- sensors reached over a non-zero LUN and channel -----------------------
+# tests/transcripts/sensor_bridge.tr owns record 0xa39c: owner 2Ch, LUN 1,
+# channel 5.  These cases are what pins `keys.lun` (& 0x03) and `keys.channel`
+# (>> 4 & 0x0f); every other sensor in the suite sits at LUN 0 / channel 0,
+# where a wrong mask or a wrong shift is invisible.
+
+[sen_bridged_list]
+desc: sensor list for a sensor owned by a non-BMC controller on channel 5
+args: -I dummy sensor list
+transcript: sensor_bridge.tr
+covers: sensor
+
+[sen_bridged_list_verbose]
+desc: verbose sensor list over a bridge; the LUN reaches the wire
+args: -I dummy -v sensor list
+transcript: sensor_bridge.tr
+covers: sensor
+
+[sen_bridged_get]
+desc: sensor get over a bridge
+args: -I dummy sensor get BrdgS
+transcript: sensor_bridge.tr
+covers: sensor
+
+[sen_bridged_reading]
+desc: sensor reading over a bridge
+args: -I dummy sensor reading BrdgS
+transcript: sensor_bridge.tr
+covers: sensor
+
+[sen_bridged_thresh_unr]
+desc: single threshold set over a bridge; Set Sensor Thresholds carries LUN 1
+args: -I dummy sensor thresh BrdgS unr 30
+transcript: sensor_bridge.tr
+covers: sensor
+
+[sen_bridged_thresh_upper]
+desc: bulk upper threshold set over a bridge
+args: -I dummy sensor thresh BrdgS upper 18 24 30
+transcript: sensor_bridge.tr
+covers: sensor
+
+[sen_bridged_thresh_clamp]
+desc: lcr equal to a lower-non-recoverable threshold that converted negative
+args: -I dummy sensor thresh BrdgS lcr 0
+transcript: sensor_bridge.tr
+covers: sensor
+
+# --- threshold validation boundaries --------------------------------------
+# TempA reads back lnc 15, lcr 10, lnr 5, unc 75, ucr 85, unr 95 raw; M is 2,
+# so the validator compares against 30, 20, 10, 150, 170 and 190.  The `_ok'
+# and `_bad' cases above sit either side of those numbers, which leaves every
+# `<=' indistinguishable from `<' (and every `>=' from `>').  Each case below
+# asks for a value exactly *equal* to one of the six converted thresholds, so
+# the two candidate comparisons disagree.
+
+[sen_thresh_unr_eq_ucr]
+desc: unr exactly equal to ucr, where <= and < disagree
+args: -I dummy sensor thresh TempA unr 170
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unr_eq_unc]
+desc: unr exactly equal to unc, reached with ucr already excluded
+args: -I dummy sensor thresh TempA unr 150
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_ucr_eq_unr]
+desc: ucr exactly equal to unr, where >= and > disagree
+args: -I dummy sensor thresh TempA ucr 190
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_ucr_eq_unc]
+desc: ucr exactly equal to unc, where <= and < disagree
+args: -I dummy sensor thresh TempA ucr 150
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unc_eq_unr]
+desc: unc exactly equal to unr, where >= and > disagree
+args: -I dummy sensor thresh TempA unc 190
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unc_eq_ucr]
+desc: unc exactly equal to ucr, where >= and > disagree
+args: -I dummy sensor thresh TempA unc 170
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_unc_eq_lnc]
+desc: unc exactly equal to lnc, where <= and < disagree
+args: -I dummy sensor thresh TempA unc 30
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnc_eq_lcr]
+desc: lnc exactly equal to lcr, where <= and < disagree
+args: -I dummy sensor thresh TempA lnc 20
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnc_eq_lnr]
+desc: lnc exactly equal to lnr, where <= and < disagree
+args: -I dummy sensor thresh TempA lnc 10
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnc_eq_unc]
+desc: lnc exactly equal to unc, where >= and > disagree
+args: -I dummy sensor thresh TempA lnc 150
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lcr_eq_lnc]
+desc: lcr exactly equal to lnc, where >= and > disagree
+args: -I dummy sensor thresh TempA lcr 30
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lcr_eq_lnr]
+desc: lcr exactly equal to lnr, where <= and < disagree
+args: -I dummy sensor thresh TempA lcr 10
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnr_eq_lnc]
+desc: lnr exactly equal to lnc, where >= and > disagree
+args: -I dummy sensor thresh TempA lnr 30
+transcript: sensor.tr
+covers: sensor
+
+[sen_thresh_lnr_eq_lcr]
+desc: lnr exactly equal to lcr, where >= and > disagree
+args: -I dummy sensor thresh TempA lnr 20
+transcript: sensor.tr
+covers: sensor
+
+# --- validation against a BMC whose thresholds are out of order -----------
+# tests/transcripts/sensor_disorder.tr reports unc > ucr, unr < ucr, lnr > lcr
+# and lnc < lcr.  Only such a readback can make the second and third clauses of
+# ipmi_sensor_set_threshold()'s validation chain the deciding ones; against a
+# well-ordered BMC the first clause always fires first and the rest are dead.
+
+[sen_disord_unr_eq_unc]
+desc: unr above ucr but exactly equal to unc, so the second clause decides
+args: -I dummy sensor thresh Disord unr 165
+transcript: sensor_disorder.tr
+covers: sensor
+
+[sen_disord_unc_eq_unr]
+desc: unc exactly equal to unr with ucr above both, so the first clause decides
+args: -I dummy sensor thresh Disord unc 99
+transcript: sensor_disorder.tr
+covers: sensor
+
+[sen_disord_lnc_eq_lnr]
+desc: lnc above lcr but exactly equal to lnr, so the second clause decides
+args: -I dummy sensor thresh Disord lnc 39
+transcript: sensor_disorder.tr
+covers: sensor
+
+[sen_disord_lnr_eq_lnc]
+desc: lnr exactly equal to lnc with lcr above both, so the first clause decides
+args: -I dummy sensor thresh Disord lnr 13
+transcript: sensor_disorder.tr
+covers: sensor
+
+[sen_disord_list]
+desc: sensor list against a BMC whose thresholds are out of order
+args: -I dummy sensor list
+transcript: sensor_disorder.tr
+covers: sensor
+
+[sen_disord_get]
+desc: sensor get against a BMC whose thresholds are out of order
+args: -I dummy sensor get Disord
+transcript: sensor_disorder.tr
+covers: sensor
+
+# --- validation against partial readable-threshold masks -------------------
+# tests/transcripts/sensor_mask.tr reports mask 2Ah for MaskA and its
+# complement 15h for MaskB, with the same six threshold values (lnc 30, lcr 20,
+# lnr 10, unc 80, ucr 90, unr 100).  Each requested value is chosen so that the
+# answer flips if any single `data[0] & bit' guard, or any mask inside one of
+# those guards, is changed: a guard that is meant to be clear is asked for a
+# value that the enabled clause would reject, and vice versa.
+
+[sen_mask_a_unr_valid]
+desc: unr above unc where ucr is not readable, so the ucr clause cannot fire
+args: -I dummy sensor thresh MaskA unr 85
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_unr_invalid]
+desc: unr below unc where only the unc clause is live
+args: -I dummy sensor thresh MaskA unr 70
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_ucr_unreadable]
+desc: ucr not readable at all, so no validation happens
+args: -I dummy sensor thresh MaskA ucr 50
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_unc_invalid]
+desc: unc at or above a readable unr
+args: -I dummy sensor thresh MaskA unc 105
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_unc_valid]
+desc: unc above ucr but ucr is not readable, so only the unr clause is live
+args: -I dummy sensor thresh MaskA unc 95
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_lnc_unreadable]
+desc: lnc not readable, so a value below lcr is accepted
+args: -I dummy sensor thresh MaskA lnc 5
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_lcr_no_clauses]
+desc: lcr readable but neither lnc nor lnr is, so nothing can reject it
+args: -I dummy sensor thresh MaskA lcr 35
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_a_lnr_unreadable]
+desc: lnr not readable, so a value above lcr is accepted
+args: -I dummy sensor thresh MaskA lnr 15
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_unr_unreadable]
+desc: unr not readable, so a value below ucr is accepted
+args: -I dummy sensor thresh MaskB unr 55
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_ucr_no_clauses]
+desc: ucr readable but neither unr nor unc is, so nothing can reject it
+args: -I dummy sensor thresh MaskB ucr 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_unc_unreadable]
+desc: unc not readable, so a value below lnc is accepted
+args: -I dummy sensor thresh MaskB unc 15
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_lnc_invalid]
+desc: lnc at or below a readable lnr, the only live clause
+args: -I dummy sensor thresh MaskB lnc 10
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_lnc_valid]
+desc: lnc below lcr but lcr is not readable, so only the lnr clause is live
+args: -I dummy sensor thresh MaskB lnc 15
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_lcr_unreadable]
+desc: lcr not readable, so a value at or below lnr is accepted
+args: -I dummy sensor thresh MaskB lcr 5
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_lnr_invalid]
+desc: lnr at or above a readable lnc
+args: -I dummy sensor thresh MaskB lnr 30
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_b_lnr_valid]
+desc: lnr above lcr but lcr is not readable, so only the lnc clause is live
+args: -I dummy sensor thresh MaskB lnr 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_list]
+desc: sensor list where only some thresholds are readable
+args: -I dummy sensor list
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_get_verbose]
+desc: verbose sensor get where only some thresholds are readable
+args: -I dummy -v sensor get MaskA MaskB
+transcript: sensor_mask.tr
+covers: sensor
+
+# MaskC's 0Bh has lnc set with lnr clear and unc set with unr clear, which no
+# complementary pair of masks can express.  Each case below asks for a value
+# that the *other* bit of the pair would judge differently.
+
+[sen_mask_c_lnr_unreadable]
+desc: lnr not readable while lnc is, so nothing rejects a value above lcr
+args: -I dummy sensor thresh MaskC lnr 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_c_unr_unreadable]
+desc: unr not readable while unc is, so nothing rejects a value below unc
+args: -I dummy sensor thresh MaskC unr 75
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_c_lnc_invalid]
+desc: lnc at or below a readable lcr
+args: -I dummy sensor thresh MaskC lnc 15
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_c_unc_invalid]
+desc: unc at or below a readable lnc
+args: -I dummy sensor thresh MaskC unc 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_c_ucr_unreadable]
+desc: ucr not readable while lcr is, so nothing rejects the value
+args: -I dummy sensor thresh MaskC ucr 15
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_c_lcr_invalid]
+desc: lcr at or above a readable lnc
+args: -I dummy sensor thresh MaskC lcr 35
+transcript: sensor_mask.tr
+covers: sensor
+
+# MaskD's 0Dh is the only mask in the suite where upper non-critical differs
+# from lower critical and lower non-recoverable differs from upper critical.
+
+[sen_mask_d_unc_invalid]
+desc: unc at or below a readable lnc while lcr is unreadable
+args: -I dummy sensor thresh MaskD unc 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_d_lcr_unreadable]
+desc: lcr unreadable while unc is readable
+args: -I dummy sensor thresh MaskD lcr 35
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_d_lnr_invalid]
+desc: lnr at or above a readable lnc while ucr is unreadable
+args: -I dummy sensor thresh MaskD lnr 35
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_d_ucr_unreadable]
+desc: ucr unreadable while lnr is readable
+args: -I dummy sensor thresh MaskD ucr 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_d_unr_unreadable]
+desc: unr unreadable while unc is readable
+args: -I dummy sensor thresh MaskD unr 25
+transcript: sensor_mask.tr
+covers: sensor
+
+[sen_mask_d_lnc_invalid]
+desc: lnc at or below a readable lnr while lcr is unreadable
+args: -I dummy sensor thresh MaskD lnc 5
+transcript: sensor_mask.tr
+covers: sensor
+
+# --- one-clause-at-a-time validation ---------------------------------------
+# tests/transcripts/sensor_clause.tr reports readable-threshold masks with only
+# a branch guard and (for the Clx* records) one clause bit set, so exactly one
+# clause of ipmi_sensor_set_threshold()'s validation chain can decide the
+# answer.  Each clause gets two settings: one exactly on its boundary and one a
+# single degree past it, which is what separates the clause's val[] index from
+# the other five thresholds in both directions.  30/20/10/80/90/100 are the
+# converted lnc/lcr/lnr/unc/ucr/unr.
+
+[sen_cls30_unr_eq_ucr]
+desc: unr set to the readable ucr: rejected by the only live clause
+args: -I dummy sensor thresh Clx30 unr 90
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls30_unr_over_ucr]
+desc: unr one degree above ucr: accepted
+args: -I dummy sensor thresh Clx30 unr 91
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls30_ucr_eq_unr]
+desc: ucr set to the readable unr: rejected by the only live clause
+args: -I dummy sensor thresh Clx30 ucr 100
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls30_ucr_under_unr]
+desc: ucr one degree below unr: accepted
+args: -I dummy sensor thresh Clx30 ucr 99
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls30_unr_over_all]
+desc: unr above every threshold with unc masked off
+args: -I dummy sensor thresh Clx30 unr 105
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls28_unr_eq_unc]
+desc: unr set to the readable unc with ucr masked off
+args: -I dummy sensor thresh Clx28 unr 80
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls28_unr_over_unc]
+desc: unr one degree above unc: accepted
+args: -I dummy sensor thresh Clx28 unr 81
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls28_unr_between]
+desc: unr between unc and ucr: accepted only because ucr is masked off
+args: -I dummy sensor thresh Clx28 unr 85
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls28_unc_eq_unr]
+desc: unc set to the readable unr with ucr and lnc masked off
+args: -I dummy sensor thresh Clx28 unc 100
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls28_unc_under_unr]
+desc: unc one degree below unr: accepted
+args: -I dummy sensor thresh Clx28 unc 99
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls28_unc_over_ucr]
+desc: unc above the masked-off ucr: accepted
+args: -I dummy sensor thresh Clx28 unc 95
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls18_ucr_eq_unc]
+desc: ucr set to the readable unc with unr masked off
+args: -I dummy sensor thresh Clx18 ucr 80
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls18_ucr_over_unc]
+desc: ucr one degree above unc: accepted
+args: -I dummy sensor thresh Clx18 ucr 81
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls18_ucr_over_unr]
+desc: ucr above the masked-off unr: accepted
+args: -I dummy sensor thresh Clx18 ucr 105
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls18_unc_eq_ucr]
+desc: unc set to the readable ucr with unr and lnc masked off
+args: -I dummy sensor thresh Clx18 unc 90
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls18_unc_under_ucr]
+desc: unc one degree below ucr: accepted
+args: -I dummy sensor thresh Clx18 unc 89
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls18_unc_under_lnc]
+desc: unc below the masked-off lnc: accepted
+args: -I dummy sensor thresh Clx18 unc 25
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls09_unc_eq_lnc]
+desc: unc set to the readable lnc with unr and ucr masked off
+args: -I dummy sensor thresh Clx09 unc 30
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls09_unc_over_lnc]
+desc: unc one degree above lnc: accepted
+args: -I dummy sensor thresh Clx09 unc 31
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls09_unc_over_unr]
+desc: unc above the masked-off unr: accepted
+args: -I dummy sensor thresh Clx09 unc 105
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls09_lnc_eq_unc]
+desc: lnc set to the readable unc with lcr and lnr masked off
+args: -I dummy sensor thresh Clx09 lnc 80
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls09_lnc_under_unc]
+desc: lnc one degree below unc: accepted
+args: -I dummy sensor thresh Clx09 lnc 79
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls09_lnc_under_lnr]
+desc: lnc below the masked-off lnr: accepted
+args: -I dummy sensor thresh Clx09 lnc 5
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls03_lnc_eq_lcr]
+desc: lnc set to the readable lcr with lnr and unc masked off
+args: -I dummy sensor thresh Clx03 lnc 20
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls03_lnc_over_lcr]
+desc: lnc one degree above lcr: accepted
+args: -I dummy sensor thresh Clx03 lnc 21
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls03_lnc_over_unc]
+desc: lnc above the masked-off unc: accepted
+args: -I dummy sensor thresh Clx03 lnc 85
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls03_lcr_eq_lnc]
+desc: lcr set to the readable lnc with lnr masked off
+args: -I dummy sensor thresh Clx03 lcr 30
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls03_lcr_under_lnc]
+desc: lcr one degree below lnc: accepted
+args: -I dummy sensor thresh Clx03 lcr 29
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls03_lcr_under_lnr]
+desc: lcr below the masked-off lnr: accepted
+args: -I dummy sensor thresh Clx03 lcr 5
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls05_lnc_eq_lnr]
+desc: lnc set to the readable lnr with lcr and unc masked off
+args: -I dummy sensor thresh Clx05 lnc 10
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls05_lnc_over_lnr]
+desc: lnc one degree above lnr: accepted
+args: -I dummy sensor thresh Clx05 lnc 11
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls05_lnc_under_lcr]
+desc: lnc below the masked-off lcr: accepted
+args: -I dummy sensor thresh Clx05 lnc 15
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls05_lnr_eq_lnc]
+desc: lnr set to the readable lnc with lcr masked off
+args: -I dummy sensor thresh Clx05 lnr 30
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls05_lnr_under_lnc]
+desc: lnr one degree below lnc: accepted
+args: -I dummy sensor thresh Clx05 lnr 29
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls05_lnr_over_lcr]
+desc: lnr above the masked-off lcr: accepted
+args: -I dummy sensor thresh Clx05 lnr 25
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls06_lcr_eq_lnr]
+desc: lcr set to the readable lnr with lnc masked off
+args: -I dummy sensor thresh Clx06 lcr 10
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls06_lcr_over_lnr]
+desc: lcr one degree above lnr: accepted
+args: -I dummy sensor thresh Clx06 lcr 11
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls06_lcr_over_lnc]
+desc: lcr above the masked-off lnc: accepted
+args: -I dummy sensor thresh Clx06 lcr 35
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls06_lnr_eq_lcr]
+desc: lnr set to the readable lcr with lnc masked off
+args: -I dummy sensor thresh Clx06 lnr 20
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls06_lnr_under_lcr]
+desc: lnr one degree below lcr: accepted
+args: -I dummy sensor thresh Clx06 lnr 19
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_cls06_lnr_over_lnc]
+desc: lnr above the masked-off lnc: accepted
+args: -I dummy sensor thresh Clx06 lnr 35
+transcript: sensor_clause.tr
+covers: sensor
+
+# Only the branch guard is readable in the Clg* records, so no clause can fire
+# and every setting below is accepted.  Each one is chosen so that redirecting
+# a clause's mask to the single bit that *is* set would make that clause fire.
+
+[sen_clg20_unr_under_ucr]
+desc: unr below ucr and unc, both masked off
+args: -I dummy sensor thresh Clg20 unr 75
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg10_ucr_over_unr]
+desc: ucr above the masked-off unr
+args: -I dummy sensor thresh Clg10 ucr 105
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg10_ucr_under_unc]
+desc: ucr below the masked-off unc
+args: -I dummy sensor thresh Clg10 ucr 75
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg08_unc_over_unr]
+desc: unc above the masked-off unr and ucr
+args: -I dummy sensor thresh Clg08 unc 105
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg08_unc_under_lnc]
+desc: unc below the masked-off lnc
+args: -I dummy sensor thresh Clg08 unc 25
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg04_lnr_over_lnc]
+desc: lnr above the masked-off lnc and lcr
+args: -I dummy sensor thresh Clg04 lnr 35
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg02_lcr_over_lnc]
+desc: lcr above the masked-off lnc
+args: -I dummy sensor thresh Clg02 lcr 35
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg02_lcr_under_lnr]
+desc: lcr below the masked-off lnr
+args: -I dummy sensor thresh Clg02 lcr 5
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg01_lnc_under_lcr]
+desc: lnc below the masked-off lcr and lnr
+args: -I dummy sensor thresh Clg01 lnc 5
+transcript: sensor_clause.tr
+covers: sensor
+
+[sen_clg01_lnc_over_unc]
+desc: lnc above the masked-off unc
+args: -I dummy sensor thresh Clg01 lnc 85
+transcript: sensor_clause.tr
+covers: sensor

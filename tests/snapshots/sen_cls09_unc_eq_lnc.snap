@@ -1,0 +1,56 @@
+#!golden 1
+#!case sen_cls09_unc_eq_lnc
+#!section exit
+1
+#!section stdout
+Locating sensor record 'Clx09'...
+#!section stderr
+Invalid Threshold data values. Cannot Set Threshold Data.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 0d 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=b5 34 a3 12 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 05 17
+< rule=get_sdr_12a3 ccode=0x00 len=25 data=b5 34 20 00 a1 11 21 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 1c 17
+< rule=get_sdr_12a3 ccode=0x00 len=25 data=b5 34 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 33 02
+< rule=get_sdr_12a3 ccode=0x00 len=4 data=b5 34 33 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 00 05
+< rule=get_sdr_34b5 ccode=0x00 len=7 data=c7 56 b5 34 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 05 17
+< rule=get_sdr_34b5 ccode=0x00 len=25 data=c7 56 20 00 b2 12 22 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 1c 17
+< rule=get_sdr_34b5 ccode=0x00 len=25 data=c7 56 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 33 02
+< rule=get_sdr_34b5 ccode=0x00 len=4 data=c7 56 32 38
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 00 05
+< rule=get_sdr_56c7 ccode=0x00 len=7 data=d9 78 c7 56 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 05 17
+< rule=get_sdr_56c7 ccode=0x00 len=25 data=d9 78 20 00 c3 13 23 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 1c 17
+< rule=get_sdr_56c7 ccode=0x00 len=25 data=d9 78 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 33 02
+< rule=get_sdr_56c7 ccode=0x00 len=4 data=d9 78 31 38
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 00 05
+< rule=get_sdr_78d9 ccode=0x00 len=7 data=eb 9a d9 78 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 05 17
+< rule=get_sdr_78d9 ccode=0x00 len=25 data=eb 9a 20 00 d4 14 24 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 1c 17
+< rule=get_sdr_78d9 ccode=0x00 len=25 data=eb 9a 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 33 02
+< rule=get_sdr_78d9 ccode=0x00 len=4 data=eb 9a 30 39
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=d4
+< rule=reading_d4 ccode=0x00 len=4 data=2a c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=d4
+< rule=thresh_d4 ccode=0x00 len=7 data=09 1e 14 0a 50 5a 64
+bye

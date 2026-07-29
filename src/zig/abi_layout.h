@@ -30,6 +30,7 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_channel.h>
 
@@ -118,6 +119,85 @@ enum ipmitool_abi_layout {
 		offsetof(struct sdr_record_common_sensor, sensor.type),
 	ABI_OFFSETOF_sdr_common__event_type =
 		offsetof(struct sdr_record_common_sensor, event_type),
+	/*
+	 * `lib/ipmi_sensor.c` additionally reads the entity id/instance pair and
+	 * the Units 1 byte.  `entity.instance:7` and `unit.analog:2` are
+	 * bitfields, so both are named through the addressable field next to
+	 * them: the instance byte follows `entity.id`, and the units byte
+	 * precedes `unit.type.base`.
+	 */
+	ABI_OFFSETOF_sdr_common__entity__id =
+		offsetof(struct sdr_record_common_sensor, entity.id),
+	ABI_OFFSETOF_sdr_common__entity__instance =
+		offsetof(struct sdr_record_common_sensor, entity.id) + 1,
+	ABI_OFFSETOF_sdr_common__unit =
+		offsetof(struct sdr_record_common_sensor, unit.type.base) - 1,
+	ABI_OFFSETOF_sdr_common__unit__type__base =
+		offsetof(struct sdr_record_common_sensor, unit.type.base),
+
+	/*
+	 * struct sdr_record_full_sensor / struct sdr_record_compact_sensor -
+	 * opaque, because both embed struct sdr_record_common_sensor.  Only the
+	 * fields `lib/ipmi_sensor.c` touches are listed: the reading factors it
+	 * overwrites from a Get Sensor Reading Factors response, the hysteresis
+	 * pair it forwards to ipmi_sdr_print_sensor_hysteresis(), and the ID
+	 * string it prints.
+	 */
+	ABI_SIZEOF_sdr_record_full_sensor = sizeof(struct sdr_record_full_sensor),
+	ABI_SIZEOF_sdr_full__mtol =
+		sizeof(((struct sdr_record_full_sensor *)0)->mtol),
+	ABI_SIZEOF_sdr_full__bacc =
+		sizeof(((struct sdr_record_full_sensor *)0)->bacc),
+	ABI_OFFSETOF_sdr_full__mtol = offsetof(struct sdr_record_full_sensor, mtol),
+	ABI_OFFSETOF_sdr_full__bacc = offsetof(struct sdr_record_full_sensor, bacc),
+	ABI_OFFSETOF_sdr_full__hysteresis__positive =
+		offsetof(struct sdr_record_full_sensor, threshold.hysteresis.positive),
+	ABI_OFFSETOF_sdr_full__hysteresis__negative =
+		offsetof(struct sdr_record_full_sensor, threshold.hysteresis.negative),
+	ABI_OFFSETOF_sdr_full__id_string =
+		offsetof(struct sdr_record_full_sensor, id_string),
+	ABI_OFFSETOF_sdr_compact__hysteresis__positive =
+		offsetof(struct sdr_record_compact_sensor,
+			 threshold.hysteresis.positive),
+	ABI_OFFSETOF_sdr_compact__hysteresis__negative =
+		offsetof(struct sdr_record_compact_sensor,
+			 threshold.hysteresis.negative),
+
+	/*
+	 * struct sdr_get_rs - not opaque, and its five fields happen to sit at
+	 * the same offsets packed and unpacked, but translate-c still drops the
+	 * ATTRIBUTE_PACKING and so gets the size wrong.  `lib/ipmi_sensor.c`
+	 * only reads `type` out of it; the assertion keeps that honest.
+	 */
+	ABI_SIZEOF_sdr_get_rs = sizeof(struct sdr_get_rs),
+	ABI_OFFSETOF_sdr_get_rs__next = offsetof(struct sdr_get_rs, next),
+	ABI_OFFSETOF_sdr_get_rs__id = offsetof(struct sdr_get_rs, id),
+	ABI_OFFSETOF_sdr_get_rs__version = offsetof(struct sdr_get_rs, version),
+	ABI_OFFSETOF_sdr_get_rs__type = offsetof(struct sdr_get_rs, type),
+	ABI_OFFSETOF_sdr_get_rs__length = offsetof(struct sdr_get_rs, length),
+
+	/*
+	 * struct sensor_set_thresh_rq - the eight byte Set Sensor Thresholds
+	 * request body.  No bitfields, but it *is* inside a `#pragma pack'
+	 * region, so the mirror needs checking like every other packed type.
+	 */
+	ABI_SIZEOF_sensor_set_thresh_rq = sizeof(struct sensor_set_thresh_rq),
+	ABI_OFFSETOF_sensor_set_thresh_rq__sensor_num =
+		offsetof(struct sensor_set_thresh_rq, sensor_num),
+	ABI_OFFSETOF_sensor_set_thresh_rq__set_mask =
+		offsetof(struct sensor_set_thresh_rq, set_mask),
+	ABI_OFFSETOF_sensor_set_thresh_rq__lower_non_crit =
+		offsetof(struct sensor_set_thresh_rq, lower_non_crit),
+	ABI_OFFSETOF_sensor_set_thresh_rq__lower_crit =
+		offsetof(struct sensor_set_thresh_rq, lower_crit),
+	ABI_OFFSETOF_sensor_set_thresh_rq__lower_non_recov =
+		offsetof(struct sensor_set_thresh_rq, lower_non_recov),
+	ABI_OFFSETOF_sensor_set_thresh_rq__upper_non_crit =
+		offsetof(struct sensor_set_thresh_rq, upper_non_crit),
+	ABI_OFFSETOF_sensor_set_thresh_rq__upper_crit =
+		offsetof(struct sensor_set_thresh_rq, upper_crit),
+	ABI_OFFSETOF_sensor_set_thresh_rq__upper_non_recov =
+		offsetof(struct sensor_set_thresh_rq, upper_non_recov),
 
 	/*
 	 * struct sdr_record_list - not opaque, but `translate-c` drops the

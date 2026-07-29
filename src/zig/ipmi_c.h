@@ -44,6 +44,7 @@
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
@@ -88,9 +89,17 @@
  * it appears in `find_set_wdt_string()`'s signature, so an incomplete type is
  * enough.
  *
- * `lib/ipmi_chassis.c` defines the last two without a prototype; nothing else
+ * `lib/ipmi_chassis.c` defines the next two without a prototype; nothing else
  * in the tree calls them, but they are global symbols and the Zig replacement
  * has to export them under the same names with the same signatures.
+ *
+ * `lib/ipmi_sensor.c` does the same for its two usage printers: both have
+ * external linkage, both are forward declared at the top of the `.c` and
+ * nowhere else.  The C declarations use K&R empty parameter lists, which
+ * `translate-c` turns into *variadic* function types; the declarations here
+ * spell `void` instead so that `assertCallSignature()` compares against the
+ * non-variadic type the Zig replacement actually exports.  Neither function
+ * takes an argument, so the two agree at the ABI level.
  */
 void ipmi_raw_help(void);
 int ipmi_spd_print(uint8_t *spd_data, int len);
@@ -98,3 +107,5 @@ struct wdt_string_s;
 int find_set_wdt_string(const struct wdt_string_s *w[], const char *s);
 int ipmi_chassis_status(struct ipmi_intf *intf);
 void ipmi_chassis_set_bootflag_help(void);
+void print_sensor_get_usage(void);
+void print_sensor_thresh_usage(void);

@@ -1,0 +1,357 @@
+# A BMC whose Get Sensor Thresholds responses report readable-threshold masks
+# chosen to isolate one clause of ipmi_sensor_set_threshold()'s validation
+# chain at a time.
+#
+# Each branch of that chain is `if (data[0] & guard) && (clause1 || clause2 ||
+# clause3)`, where every clause is itself `(data[0] & bit) && setting <op>
+# val[i]`.  Against a BMC that reports all six thresholds readable the first
+# true clause always decides, which leaves the later clauses' masks and val[]
+# indices unpinned.
+#
+# The seven Clx* records set exactly two bits -- a guard and one clause -- so
+# that clause alone decides.  The six Clg* records set only a guard bit, so no
+# clause can fire at all and any clause mask redirected to a bit that *is* set
+# changes the answer.
+#
+# All thirteen records use M=1, B=0 and zero exponents, so the converted
+# thresholds are the raw bytes:
+#
+#   lnc 1Eh = 30   lcr 14h = 20   lnr 0Ah = 10
+#   unc 50h = 80   ucr 5Ah = 90   unr 64h = 100
+#
+#   0x12a3  mask 30h (unr | ucr)                 "Clx30"  sensor A1h
+#   0x34b5  mask 28h (unr | unc)                 "Clx28"  sensor B2h
+#   0x56c7  mask 18h (ucr | unc)                 "Clx18"  sensor C3h
+#   0x78d9  mask 09h (unc | lnc)                 "Clx09"  sensor D4h
+#   0x9aeb  mask 03h (lcr | lnc)                 "Clx03"  sensor E5h
+#   0xbcfd  mask 05h (lnr | lnc)                 "Clx05"  sensor F6h
+#   0xde1f  mask 06h (lnr | lcr)                 "Clx06"  sensor 97h
+#   0x2b4c  mask 20h (unr)                       "Clg20"  sensor 88h
+#   0x4d6e  mask 10h (ucr)                       "Clg10"  sensor 79h
+#   0x6f81  mask 08h (unc)                       "Clg08"  sensor 6Ah
+#   0x83a5  mask 04h (lnr)                       "Clg04"  sensor 5Bh
+#   0xa7c9  mask 02h (lcr)                       "Clg02"  sensor 4Ch
+#   0xcbed  mask 01h (lnc)                       "Clg01"  sensor 3Dh
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # SDR version 51h, 13 records, 0xffff free bytes, reserve supported
+  data 51 0d 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data b5 34
+  partial 4 1 5
+  blob @sensor/clause_clx30.hex
+end
+respond get_sdr_12a3
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a a3 12
+  data b5 34
+  partial 4 1 5
+  blob @sensor/clause_clx30.hex
+end
+respond get_sdr_34b5
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a b5 34
+  data c7 56
+  partial 4 1 5
+  blob @sensor/clause_clx28.hex
+end
+respond get_sdr_56c7
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a c7 56
+  data d9 78
+  partial 4 1 5
+  blob @sensor/clause_clx18.hex
+end
+respond get_sdr_78d9
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a d9 78
+  data eb 9a
+  partial 4 1 5
+  blob @sensor/clause_clx09.hex
+end
+respond get_sdr_9aeb
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a eb 9a
+  data fd bc
+  partial 4 1 5
+  blob @sensor/clause_clx03.hex
+end
+respond get_sdr_bcfd
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a fd bc
+  data 1f de
+  partial 4 1 5
+  blob @sensor/clause_clx05.hex
+end
+respond get_sdr_de1f
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 1f de
+  data 4c 2b
+  partial 4 1 5
+  blob @sensor/clause_clx06.hex
+end
+respond get_sdr_2b4c
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 4c 2b
+  data 6e 4d
+  partial 4 1 5
+  blob @sensor/clause_clg20.hex
+end
+respond get_sdr_4d6e
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 6e 4d
+  data 81 6f
+  partial 4 1 5
+  blob @sensor/clause_clg10.hex
+end
+respond get_sdr_6f81
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 81 6f
+  data a5 83
+  partial 4 1 5
+  blob @sensor/clause_clg08.hex
+end
+respond get_sdr_83a5
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a a5 83
+  data c9 a7
+  partial 4 1 5
+  blob @sensor/clause_clg04.hex
+end
+respond get_sdr_a7c9
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a c9 a7
+  data ed cb
+  partial 4 1 5
+  blob @sensor/clause_clg02.hex
+end
+respond get_sdr_cbed
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a ed cb
+  # 0xffff is SDR_RECORD_ID_LAST: end of repository
+  data ff ff
+  partial 4 1 5
+  blob @sensor/clause_clg01.hex
+end
+
+respond reading_a1
+  netfn 0x04
+  cmd 0x2d
+  match a1
+  data 21 c0 c0 00
+end
+respond reading_b2
+  netfn 0x04
+  cmd 0x2d
+  match b2
+  data 24 c0 c0 00
+end
+respond reading_c3
+  netfn 0x04
+  cmd 0x2d
+  match c3
+  data 27 c0 c0 00
+end
+respond reading_d4
+  netfn 0x04
+  cmd 0x2d
+  match d4
+  data 2a c0 c0 00
+end
+respond reading_e5
+  netfn 0x04
+  cmd 0x2d
+  match e5
+  data 2d c0 c0 00
+end
+respond reading_f6
+  netfn 0x04
+  cmd 0x2d
+  match f6
+  data 30 c0 c0 00
+end
+respond reading_97
+  netfn 0x04
+  cmd 0x2d
+  match 97
+  data 33 c0 c0 00
+end
+respond reading_88
+  netfn 0x04
+  cmd 0x2d
+  match 88
+  data 36 c0 c0 00
+end
+respond reading_79
+  netfn 0x04
+  cmd 0x2d
+  match 79
+  data 39 c0 c0 00
+end
+respond reading_6a
+  netfn 0x04
+  cmd 0x2d
+  match 6a
+  data 3c c0 c0 00
+end
+respond reading_5b
+  netfn 0x04
+  cmd 0x2d
+  match 5b
+  data 3f c0 c0 00
+end
+respond reading_4c
+  netfn 0x04
+  cmd 0x2d
+  match 4c
+  data 42 c0 c0 00
+end
+respond reading_3d
+  netfn 0x04
+  cmd 0x2d
+  match 3d
+  data 45 c0 c0 00
+end
+
+respond thresh_a1
+  netfn 0x04
+  cmd 0x27
+  match a1
+  # readable mask 30h = unr | ucr
+  data 30 1e 14 0a 50 5a 64
+end
+respond thresh_b2
+  netfn 0x04
+  cmd 0x27
+  match b2
+  # readable mask 28h = unr | unc
+  data 28 1e 14 0a 50 5a 64
+end
+respond thresh_c3
+  netfn 0x04
+  cmd 0x27
+  match c3
+  # readable mask 18h = ucr | unc
+  data 18 1e 14 0a 50 5a 64
+end
+respond thresh_d4
+  netfn 0x04
+  cmd 0x27
+  match d4
+  # readable mask 09h = unc | lnc
+  data 09 1e 14 0a 50 5a 64
+end
+respond thresh_e5
+  netfn 0x04
+  cmd 0x27
+  match e5
+  # readable mask 03h = lcr | lnc
+  data 03 1e 14 0a 50 5a 64
+end
+respond thresh_f6
+  netfn 0x04
+  cmd 0x27
+  match f6
+  # readable mask 05h = lnr | lnc
+  data 05 1e 14 0a 50 5a 64
+end
+respond thresh_97
+  netfn 0x04
+  cmd 0x27
+  match 97
+  # readable mask 06h = lnr | lcr
+  data 06 1e 14 0a 50 5a 64
+end
+respond thresh_88
+  netfn 0x04
+  cmd 0x27
+  match 88
+  # readable mask 20h = unr
+  data 20 1e 14 0a 50 5a 64
+end
+respond thresh_79
+  netfn 0x04
+  cmd 0x27
+  match 79
+  # readable mask 10h = ucr
+  data 10 1e 14 0a 50 5a 64
+end
+respond thresh_6a
+  netfn 0x04
+  cmd 0x27
+  match 6a
+  # readable mask 08h = unc
+  data 08 1e 14 0a 50 5a 64
+end
+respond thresh_5b
+  netfn 0x04
+  cmd 0x27
+  match 5b
+  # readable mask 04h = lnr
+  data 04 1e 14 0a 50 5a 64
+end
+respond thresh_4c
+  netfn 0x04
+  cmd 0x27
+  match 4c
+  # readable mask 02h = lcr
+  data 02 1e 14 0a 50 5a 64
+end
+respond thresh_3d
+  netfn 0x04
+  cmd 0x27
+  match 3d
+  # readable mask 01h = lnc
+  data 01 1e 14 0a 50 5a 64
+end
+
+respond hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 07 0d
+end
+
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
+
+respond set_thresh
+  netfn 0x04
+  cmd 0x26
+end

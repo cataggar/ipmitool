@@ -1,0 +1,87 @@
+# A BMC with a single SDR record whose sensor lives behind a bridge: owner ID
+# 2Ch, LUN 1, channel 5.  Everything else in tests/transcripts/sensor.tr sits on
+# the BMC itself at LUN 0 / channel 0, which leaves the LUN and channel fields
+# of struct sdr_record_common_sensor::keys unpinned.
+#
+#   0xa39c  full, threshold, analog, owner 2Ch, LUN 1, channel 5   "BrdgS"
+#
+# The LUN reaches the wire twice -- Get Sensor Factors is not requested for a
+# linear sensor, but Set Sensor Thresholds is -- so `lun=0x01` in the recorded
+# request bytes is what pins `keys.lun`, and the channel reaches
+# ipmi_sdr_get_sensor_thresholds() whose own request carries the same LUN.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # SDR version 51h, 1 record, 0xffff free bytes, reserve supported
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  # 0xffff is SDR_RECORD_ID_LAST: end of repository
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_bridged.hex
+end
+respond get_sdr_a39c
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 9c a3
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_bridged.hex
+end
+
+respond reading_77
+  netfn 0x04
+  cmd 0x2d
+  match 77
+  # raw 0x1a = 26; M=3 => 78 Volts
+  data 1a c0 c0 00
+end
+
+respond thresh_77
+  netfn 0x04
+  cmd 0x27
+  match 77
+  # six distinct non-zero raw values in a valid ordering.  With M=3, B=-14 and
+  # R exponent -1 they convert to lnr -0.5 (clamped to 0), lcr 1.9, lnc 3.7,
+  # unc 12.7, ucr 16.9, unr 21.7.  The clamped one is strictly between -1 and 0
+  # so it pins the `val[i] < 0' guard rather than merely exercising it.
+  # lnc 11, lcr 0b, lnr 03, unc 2f, ucr 3d, unr 4d
+  data 3f 11 0b 03 2f 3d 4d
+end
+
+respond hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 07 0d
+end
+
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
+
+respond set_thresh
+  netfn 0x04
+  cmd 0x26
+end

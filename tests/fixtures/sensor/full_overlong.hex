@@ -1,0 +1,55 @@
+# A Full Sensor Record whose *declared* length (40h = 64) is larger than the
+# number of body bytes the BMC actually has (2Fh = 47).
+#
+# lib/ipmi_sdr.c:ipmi_sdr_get_record() asks for `header->length' bytes, and
+# then memcpy()s exactly that many out of the response regardless of how many
+# bytes the response actually carried, so the tail of the record is filled from
+# whatever the transport buffer held before. This case exists to pin that
+# behaviour: the declared length appears verbatim in the Get SDR request bytes,
+# which the golden snapshot records.
+
+65 43        # [1:2]  Record ID = 0x4365
+51           # [3]    SDR version 1.5
+01           # [4]    Record type 01h = Full Sensor Record
+40           # [5]    Record length = 64 bytes claimed; only 47 follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+88           # [8]    Sensor number 88h
+03           # [9]    Entity ID 3 = Processor
+09           # [10]   Entity instance 9
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+01           # [13]   Sensor type 01h = Temperature
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask
+ff 3f        # [17:18] Deassertion event mask
+3f 3f        # [19:20] Settable / readable threshold mask
+00           # [21]   Units 1
+01           # [22]   Units 2: degrees C
+00           # [23]   Units 3
+00           # [24]   Linearization
+02           # [25]   M LS
+03           # [26]   M MS/tolerance
+00           # [27]   B LS
+00           # [28]   B MS/accuracy
+00           # [29]   Accuracy/exp/direction
+00           # [30]   R exponent | B exponent
+07           # [31]   Analog flags
+28           # [32]   Nominal reading
+50           # [33]   Normal maximum
+0a           # [34]   Normal minimum
+ff           # [35]   Sensor maximum
+00           # [36]   Sensor minimum
+5f           # [37]   Upper non-recoverable
+55           # [38]   Upper critical
+4b           # [39]   Upper non-critical
+05           # [40]   Lower non-recoverable
+0a           # [41]   Lower critical
+0f           # [42]   Lower non-critical
+04           # [43]   Positive-going hysteresis
+06           # [44]   Negative-going hysteresis
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c4           # [48]   ID string type/length: 8-bit ASCII, 4 characters
+4c 6f 6e 67  # [49:52] "Long"

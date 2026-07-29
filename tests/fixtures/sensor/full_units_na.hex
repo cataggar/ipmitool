@@ -1,0 +1,51 @@
+# SDR Type 01h - Full Sensor Record whose Units 1 analog data format is 3
+# ("does not return an analog reading").  UNITS_ARE_DISCRETE() is therefore
+# true even though the event/reading type is 01h (threshold), so the threshold
+# dump helpers must print raw hex readings and a raw hex tolerance instead of
+# converted values.
+
+bc 9a        # [1:2]  Record ID = 0x9abc
+51           # [3]    SDR version 1.5
+01           # [4]    Record type 01h = Full Sensor Record
+30           # [5]    Record length = 48 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+33           # [8]    Sensor number 33h
+07           # [9]    Entity ID 7 = System Board
+04           # [10]   Entity instance 4
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+02           # [13]   Sensor type 02h = Voltage
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask
+c0           # [21]   Units 1: analog format 3 = no analog reading
+00           # [22]   Units 2: base unit 0 = unspecified
+00           # [23]   Units 3
+00           # [24]   Linearization: linear
+07           # [25]   M = 7 (LS 8 bits) - unused, but must not leak into output
+e5           # [26]   M MS bits = 11b, tolerance = 25h (pins & 0x3f: raw byte is e5)
+09           # [27]   B = 9 (LS 8 bits)
+1a           # [28]   B MS 2 bits | accuracy LS
+2b           # [29]   Accuracy MS | accuracy exp | direction
+31           # [30]   R exponent 3 | B exponent 1
+07           # [31]   Analog flags
+28           # [32]   Nominal reading
+50           # [33]   Normal maximum
+0a           # [34]   Normal minimum
+ff           # [35]   Sensor maximum reading
+00           # [36]   Sensor minimum reading
+e1           # [37]   Upper non-recoverable
+d2           # [38]   Upper critical
+c3           # [39]   Upper non-critical
+14           # [40]   Lower non-recoverable
+25           # [41]   Lower critical
+36           # [42]   Lower non-critical
+04           # [43]   Positive-going threshold hysteresis
+06           # [44]   Negative-going threshold hysteresis
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c5           # [48]   ID string type/length: 8-bit ASCII, 5 characters
+44 69 73 63 55   # [49:53] "DiscU"
