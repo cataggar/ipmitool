@@ -1,0 +1,122 @@
+# A BMC with an I2C device at 8-bit address A0h, used to exercise
+# ipmi_rawi2c_main() and ipmi_master_write_read() in lib/ipmi_raw.c.
+#
+# Master Write-Read (06h/52h) carries `bus, slave address, bytes to read,
+# write data...', so every rule below keys on that prefix: the first byte pins
+# the bus=/chan= encoding, the third pins the requested read length, and the
+# first write byte selects which completion code comes back.
+#
+# Rules are tried in file order, so the completion-code rules come before the
+# read-length rules whose match prefix they extend.
+
+default_ccode 0xc1
+
+# --- the four completion codes ipmi_master_write_read() names explicitly ---
+respond lost_arbitration
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04 81
+  ccode 0x81
+end
+
+respond bus_error
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04 82
+  ccode 0x82
+end
+
+respond nak_on_write
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04 83
+  ccode 0x83
+end
+
+respond truncated_read
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04 84
+  ccode 0x84
+end
+
+# Anything else non-zero falls through to val2str(completion_code_vals).
+respond node_busy
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04 c0
+  ccode 0xc0
+end
+
+# Completion code 0x01, the smallest non-zero one: only an input where
+# `ccode != 0' and `ccode > 1' disagree pins the test against zero.
+respond ccode_one
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04 01
+  ccode 0x01
+  data 77
+end
+
+# --- read lengths ---------------------------------------------------------
+
+# Fewer bytes than were asked for: ipmi_rawi2c_main() returns -1 without
+# printing the buffer.
+respond short_read
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 08 55
+  data aa bb cc
+end
+
+# Write only, nothing to read.
+respond write_only
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 00
+  data
+end
+
+# Exactly four bytes: the binary expansion is printed as well as the hex.
+respond read_4
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 04
+  data 5a a5 0f f0
+end
+
+# Five bytes: one past the `data_len <= 4' bound, so no binary line.
+respond read_5
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 05
+  data 5a a5 0f f0 3c
+end
+
+# Twenty bytes: two hex rows, so the 16-column wrap is exercised.
+respond read_20
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 14
+  data 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+  data f0 e1 d2 c3
+end
+
+# 64 bytes, the largest read ipmi_master_write_read() accepts.
+respond read_64
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 40
+  data 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f
+  data 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f
+  data 60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f
+  data 70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f
+end
+
+# Any other bus byte: two bytes back, so a wrong bus=/chan= encoding still
+# produces output and shows up in the request log rather than as a bare error.
+respond other_bus
+  netfn 0x06
+  cmd 0x52
+  data de ad
+end

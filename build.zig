@@ -160,6 +160,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/lanplus/lanplus_crypt.c",
         .implementation = "src/zig/crypto/lanplus_crypt.zig",
     },
+    .{
+        .name = "raw",
+        .replaces = "lib/ipmi_raw.c",
+        .implementation = "src/zig/cmd/raw.zig",
+    },
 };
 
 /// Root of the Zig source tree.

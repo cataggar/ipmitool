@@ -1,0 +1,70 @@
+#!golden 1
+#!case i2c_read_and_write_verbose
+#!section exit
+0
+#!section stdout
+Wrote 1 bytes to I2C device A0h
+Read 4 bytes from I2C device A0h
+ 5a a5 0f f0
+01011010 10100101 00001111 11110000\x20
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+RAW I2C REQ (i2caddr=a0 readbytes=4 writebytes=1)
+WRITE DATA (1 bytes)
+ 00
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: 6
+msg.cmd: 52
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 7
+msg.cmd: 52
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=00 a0 04 00
+< rule=read_4 ccode=0x00 len=4 data=5a a5 0f f0
+bye

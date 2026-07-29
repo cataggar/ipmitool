@@ -1,0 +1,80 @@
+# A BMC for exercising `ipmi_raw_main()' rather than any particular IPMI
+# command.
+#
+# Every rule keys on the exact request `raw' is supposed to have built, so a
+# wrong net function, a lost target LUN, a reordered or truncated data payload
+# all fall through to `default_ccode' and change both the printed output and
+# the exit status. The response lengths are chosen to cover the printing
+# branches at the end of ipmi_raw_main(): zero bytes, one byte, and more than
+# one 16-column row.
+
+default_ccode 0xc1
+
+# 20 bytes: more than one row, so the `(i % 16) == 0 && i != 0' line wrap is
+# exercised and an off-by-one in it shows up in stdout.
+respond long_response
+  netfn 0x06
+  cmd 0x20
+  data 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+  data f0 e1 d2 c3
+end
+
+# Completion code 0x00 with no data at all: ipmi_raw_main() still prints the
+# trailing newline and exits 0.
+respond empty_response
+  netfn 0x06
+  cmd 0x21
+  data
+end
+
+# Only answers when the four data bytes arrive in order, which pins the
+# request payload and `req.msg.data_len'.
+respond payload_echo
+  netfn 0x06
+  cmd 0x22
+  match 0a 0b 0c 0d
+  data 5a
+end
+
+# `-l 7 raw 0x06 0x23': `lun' is a 2-bit field of struct ipmi_rq, so 7 reaches
+# the wire as 3. A rule that also matches on the LUN pins both the width of
+# the field and that ipmi_raw_main() reads intf->target_lun at all.
+respond lun_truncated
+  netfn 0x06
+  cmd 0x23
+  lun 0x03
+  data 03
+end
+
+# `raw storage 0x24': net function looked up by name in ipmi_netfn_vals.
+respond storage_probe
+  netfn 0x0a
+  cmd 0x24
+  data 0a
+end
+
+# `raw chassis 0x25': the one named net function whose value is 0, so a port
+# that treats 0 as "not found" answers 0xc1 here instead.
+respond chassis_probe
+  netfn 0x00
+  cmd 0x25
+  data 00
+end
+
+# `raw 0xff 0x01': `netfn' is a 6-bit field of struct ipmi_rq, so 0xff reaches
+# the wire as 0x3f.
+respond netfn_truncated
+  netfn 0x3f
+  cmd 0x01
+  data 3f
+end
+
+# Completion code 0x01, the smallest non-zero one: `rsp->ccode' is tested
+# against zero, not against the range of codes a real BMC uses, and only an
+# input where the two disagree can tell those apart.
+respond ccode_one
+  netfn 0x06
+  cmd 0x26
+  ccode 0x01
+  data 77
+end

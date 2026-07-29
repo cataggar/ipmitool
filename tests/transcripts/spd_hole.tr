@@ -1,0 +1,26 @@
+# A BMC whose SPD EEPROM answers the read at offset 64 with four bytes instead
+# of the 64 that were asked for, and answers every other offset in full.
+#
+# The first rule wins because the harness tries them in order and this one also
+# matches the request data, `bus, address, bytes to read, offset'.
+#
+# `ipmi_rawspd_main()' copies `maxread' bytes regardless of rsp->data_len, so
+# spd_data[68:127] ends up holding bytes 4:63 of the *previous* response - see
+# tests/fixtures/spd/ddr3_stale.hex, which is arranged so that the difference
+# reaches ipmi_spd_print()'s output.
+
+default_ccode 0xc1
+
+respond short_chunk_at_offset_64
+  netfn 0x06
+  cmd 0x52
+  match 01 a0 40 40
+  data 5a 5b 5c 5d
+end
+
+respond master_write_read
+  netfn 0x06
+  cmd 0x52
+  partial 3 1 2
+  blob @spd/ddr3_stale.hex
+end

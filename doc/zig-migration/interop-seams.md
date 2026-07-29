@@ -94,6 +94,15 @@ type that has no mirror assertion.
 
 Exposing another header is one `#include` in `src/zig/ipmi_c.h`.
 
+Not every C symbol has a header. `lib/ipmi_raw.c` defines `ipmi_raw_help()` and
+`lib/dimm_spd.c` defines `ipmi_spd_print()`, both with external linkage and
+neither declared in `include/ipmitool/`. Because `extern fn` is not allowed,
+`ipmi_c.h` carries a short block of such prototypes at the bottom, each copied
+from the definition it describes so that a change to either becomes a C compile
+error in the defining translation unit rather than a silent ABI mismatch. Add to
+that block only when no header declares the symbol, and delete the entry when
+the defining `.c` is ported.
+
 ### C calling Zig: `export` with the original signature
 
 A ported module defines the symbols the C used to define, with identical C ABI
@@ -103,11 +112,19 @@ unchanged and unaware — this is a pure link-time substitution.
 ```zig
 fn active(intf: ?*Intf, oemtype: ?[*:0]const u8) callconv(.c) c_int { ... }
 
-comptime {
+pub fn exportSymbols() void {
     abi.assertCallSignature(@TypeOf(active), @TypeOf(c.ipmi_oem_active));
     @export(&active, .{ .name = "ipmi_oem_active", .linkage = .strong });
 }
 ```
+
+`src/zig/exports.zig` calls `exportSymbols()` from a `comptime` block guarded by
+`-Dzig-modules=<name>`. Put the assertion *inside* that function rather than in
+a file-scope `comptime` block: naming a C declaration emits a reference to it,
+and a file-scope reference is analysed even when the module is not selected,
+which the self-hosted x86_64 backend reports as `undefined symbol: ... note:
+referenced by root.o:.debug_info` on `test (ubuntu-latest)` only. See
+doc/zig-migration/varargs-trampoline.md.
 
 `abi.assertCallSignature` compares the calling convention, the variadic flag,
 the argument count and the size/alignment of every argument and of the result

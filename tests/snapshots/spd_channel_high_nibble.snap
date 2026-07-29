@@ -1,0 +1,43 @@
+#!golden 1
+#!case spd_channel_high_nibble
+#!section exit
+0
+#!section stdout
+ Memory Type           : DDR3 SDRAM
+ SDRAM Capacity        : 2048 MB
+ Memory Banks          : 4 (16 Banks)
+ Primary Bus Width     : 64 bits
+ SDRAM Device Width    : 32 bits
+ Number of Ranks       : 2
+ Memory size           : 1024 MB
+ 1.5 V Nominal Op      : Yes
+ 1.35 V Nominal Op     : No
+ 1.2X V Nominal Op     : Yes
+ Error Detect/Cor      : 8 bits
+ Manufacturer          : Micron Technology
+ Manufacture Date      : year 15 week 23
+ Serial Number         : deadbeef
+ Part Number           : 18KSF25672AZ-1G4D1
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 00
+< rule=master_write_read ccode=0x00 len=64 data=92 11 0b 02 13 11 02 0b 0b 11 01 08 0a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 40
+< rule=master_write_read ccode=0x00 len=64 data=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 80 2c 01 15 23 de ad be ef 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 80
+< rule=master_write_read ccode=0x00 len=64 data=31 38 4b 53 46 32 35 36 37 32 41 5a 2d 31 47 34 44 31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 c0
+< rule=master_write_read ccode=0x00 len=64 data=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 00
+< rule=master_write_read ccode=0x00 len=64 data=92 11 0b 02 13 11 02 0b 0b 11 01 08 0a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 40
+< rule=master_write_read ccode=0x00 len=64 data=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 80 2c 01 15 23 de ad be ef 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 80
+< rule=master_write_read ccode=0x00 len=64 data=31 38 4b 53 46 32 35 36 37 32 41 5a 2d 31 47 34 44 31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=91 a0 40 c0
+< rule=master_write_read ccode=0x00 len=64 data=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+bye

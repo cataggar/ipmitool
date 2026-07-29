@@ -1,0 +1,15 @@
+#!golden 1
+#!case raw_netfn_truncated_to_six_bits
+#!section exit
+0
+#!section stdout
+ 3f
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x3f lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=netfn_truncated ccode=0x00 len=1 data=3f
+bye

@@ -1,0 +1,38 @@
+# A DDR3 SPD image laid out so that a short chunk read is *observable*.
+#
+# `ipmi_rawspd_main()' copies `maxread' bytes out of every response no matter
+# how many the BMC actually returned, so a short response leaves the tail of
+# the *previous* one in place.  With the default 64-byte chunk, byte k of the
+# response for offset 0 lands at spd_data[k] and, when the read at offset 64 is
+# short, byte k of that same stale buffer lands again at spd_data[64+k].
+#
+# So the manufacturer/date/serial block lives here at [53:61] rather than at
+# [117:125], and reaches [117:125] only through that second, stale copy.  A
+# port that copied `rsp->data_len' bytes instead would leave [117:125] zero and
+# print a different manufacturer, date and serial number.  Used by
+# spd_short_chunk_keeps_stale with tests/transcripts/spd_hole.tr.
+
+92           # [  0] bytes used 176, SPD device size 256
+11           # [  1] SPD revision 1.1
+0b           # [  2] memory type 0Bh = DDR3 SDRAM
+02           # [  3] module type 02h = UDIMM
+13           # [  4] 8 banks, 4 Gbit density -> SDRAM capacity 2048 MB
+11           # [  5] row/column addressing
+02           # [  6] module nominal voltage: 1.5 V yes, 1.35 V no
+0b           # [  7] 2 ranks, SDRAM device width 8 bits
+0b           # [  8] primary bus width 64 bits, 8 bits of ECC
+11           # [  9]
+01           # [ 10]
+08           # [ 11]
+0a           # [ 12]
+@pad 40 0x00   # [ 13: 52] unused by ipmi_spd_print()
+80           # [ 53] -> [117] module manufacturer JEDEC ID, 0 continuation bytes
+2c           # [ 54] -> [118] JEDEC bank 1 code 2Ch = Micron Technology
+01           # [ 55] -> [119] module manufacturing location
+15           # [ 56] -> [120] manufacturing year 15
+23           # [ 57] -> [121] manufacturing week 23
+de ad be ef  # [ 58: 61] -> [122:125] serial number deadbeef
+@pad 66 0x00   # [ 62:127] never reaches ipmi_spd_print(): the offset 64 read is short
+# [128:145] part number, 18 ASCII characters: "18KSF25672AZ-1G4D1"
+31 38 4b 53 46 32 35 36 37 32 41 5a 2d 31 47 34 44 31
+@pad 110 0x00   # [146:255] unused by ipmi_spd_print()
