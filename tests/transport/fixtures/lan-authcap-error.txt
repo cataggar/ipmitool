@@ -1,0 +1,25 @@
+# case  lan/authcap-error
+# desc  session setup aborts on a Get Channel Auth Cap completion code
+# args  ipmitool -I lan -H 127.0.0.1 -p ${port} -U  -P  -N 1 -R 1 mc info
+001 --> 12 asf.ping
+  raw 06 00 ff 06 00 00 11 be 80 00 00 00
+  asf iana=000011be type=80 tag=00 len=00
+002 <-- 28 asf.pong
+  raw 06 00 ff 06 00 00 11 be 40 00 00 10 00 00 11 be
+  raw 00 00 00 00 81 00 00 00 00 00 00 00
+003 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 04 38 0e 04 31
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=01 lun=0 cmd=38 csum2=31:ok
+  dat 0e 04
+004 <-- 22 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 08 81 1c
+  raw 63 20 04 38 d4 d0
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=01 lun=0 cmd=38 csum2=d0:ok
+  ccc d4
+  dat -
+exit 1
+out -
+err |Error: Unable to establish LAN session
+err |Error: Unable to establish IPMI v1.5 / RMCP session
