@@ -1,0 +1,17 @@
+#!golden 1
+#!case mc_guid_ipmi_on_time_fixture
+#!section exit
+0
+#!section stdout
+System GUID   : 2808c000-3243-11d9-30a1-0100efbeadde
+GUID Version  : Time-based
+Timestamp     : 11/09/04 11:33:20 UTC
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x37 target_cmd=0x00 data=
+< rule=get_system_guid ccode=0x00 len=16 data=de ad be ef 00 01 a1 30 d9 11 43 32 00 c0 08 28
+bye

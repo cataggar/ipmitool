@@ -1,0 +1,15 @@
+# The complement of mc.tr's global enable mask. Bit 4 is set as well, which
+# has no entry in mc_enables_bf[] and so must not appear in the output.
+
+default_ccode 0xc1
+
+respond get_bmc_global_enables
+  netfn 0x06
+  cmd 0x2f
+  data f0
+end
+
+respond set_bmc_global_enables
+  netfn 0x06
+  cmd 0x2e
+end

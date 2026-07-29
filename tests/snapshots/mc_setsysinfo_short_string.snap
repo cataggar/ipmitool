@@ -1,0 +1,14 @@
+#!golden 1
+#!case mc_setsysinfo_short_string
+#!section exit
+0
+#!section stdout
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x58 target_cmd=0x00 data=02 00 00 03 61 62 63 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_system_info ccode=0x00 len=0 data=
+bye

@@ -1,0 +1,9 @@
+# Get Device ID answered with one byte more than struct ipm_devid_rsp.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id_long.hex
+end

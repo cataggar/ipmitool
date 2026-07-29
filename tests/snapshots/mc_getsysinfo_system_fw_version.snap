@@ -1,0 +1,21 @@
+#!golden 1
+#!case mc_getsysinfo_system_fw_version
+#!section exit
+0
+#!section stdout
+BIOS-1.2.3-abcdefghijklmnopqrstuvwxyz012345678!
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 01 00 00
+< rule=get_fw_version_set0 ccode=0x00 len=18 data=11 00 00 2f 42 49 4f 53 2d 31 2e 32 2e 33 2d 61 62 63
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 01 01 00
+< rule=get_fw_version_set1 ccode=0x00 len=18 data=11 01 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 70 71 72 73
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 01 02 00
+< rule=get_fw_version_set2 ccode=0x00 len=18 data=11 02 74 75 76 77 78 79 7a 30 31 32 33 34 35 36 37 38
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 01 03 00
+< rule=get_fw_version_set3 ccode=0x00 len=18 data=11 03 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+bye

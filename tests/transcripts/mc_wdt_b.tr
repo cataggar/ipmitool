@@ -1,0 +1,14 @@
+# The bitwise complement of mc_wdt_a.tr's expiration flags, plus the reserved
+# timer-use and pre-timeout-interrupt table entries.
+
+default_ccode 0xc1
+
+respond get_watchdog_timer
+  netfn 0x06
+  cmd 0x25
+  # use 0x07: nolog=0, running=0, use=7 (Reserved)
+  # intr_action 0x4b: intr=4 (Reserved), action=3 (Power Cycle)
+  # pre-timeout 255s; expiration flags 0x5a (bits 1,3,4,6)
+  # initial countdown 1 (0.1s), present countdown 0 (0.0s)
+  data 07 4b ff 5a 01 00 00 00
+end

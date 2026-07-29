@@ -1,0 +1,26 @@
+#!golden 1
+#!case mc_getsysinfo_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+usage:
+  getsysinfo <argument>
+    Retrieves system info from BMC for given argument
+  setsysinfo <argument> <string>
+    Stores system info string for given argument to BMC
+
+  Valid arguments are:
+    system_fw_version   System firmware (e.g. BIOS) version
+    primary_os_name     Primary operating system name
+    os_name             Operating system name
+    system_name         System Name of server(vendor dependent)
+    delloem_os_version  Running version of operating system
+    delloem_url         URL of BMC webserver
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

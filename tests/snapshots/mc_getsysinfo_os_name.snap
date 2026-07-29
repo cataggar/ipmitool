@@ -1,0 +1,21 @@
+#!golden 1
+#!case mc_getsysinfo_os_name
+#!section exit
+0
+#!section stdout
+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 04 00 00
+< rule=get_os_name_set0 ccode=0x00 len=18 data=11 00 01 0a 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 04 01 00
+< rule=get_os_name_set1 ccode=0x00 len=18 data=11 01 6f 70 71 72 73 74 75 76 77 78 79 7a 41 42 43 44
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 04 02 00
+< rule=get_os_name_set2 ccode=0x00 len=18 data=11 02 45 46 47 48 49 4a 4b 4c 4d 4e 4f 50 51 52 53 54
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 04 03 00
+< rule=get_os_name_set3 ccode=0x00 len=18 data=11 03 55 56 57 58 00 00 00 00 00 00 00 00 00 00 00 00
+bye

@@ -1,0 +1,27 @@
+#!golden 1
+#!case mc_info_no_aux
+#!section exit
+0
+#!section stdout
+Device ID                 : 127
+Device Revision           : 15
+Firmware Revision         : 1.99
+IPMI Version              : 1.5
+Manufacturer ID           : 343
+Manufacturer Name         : Intel Corporation
+Product ID                : 40 (0x0028)
+Product Name              : S5000PAL
+Device Available          : no
+Provides Device SDRs      : no
+Additional Device Support :
+    Sensor Device
+    Bridge
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=11 data=7f 0f 81 99 51 41 57 01 00 28 00
+bye

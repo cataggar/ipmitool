@@ -1,0 +1,15 @@
+#!golden 1
+#!case mc_watchdog_reset_uninitialised
+#!section exit
+1
+#!section stdout
+#!section stderr
+Reset Watchdog Timer command failed: Attempt to reset uninitialized watchdog
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reset_watchdog_timer ccode=0x80 len=0 data=
+bye

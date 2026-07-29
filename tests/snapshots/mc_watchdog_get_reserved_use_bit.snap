@@ -1,0 +1,23 @@
+#!golden 1
+#!case mc_watchdog_get_reserved_use_bit
+#!section exit
+0
+#!section stdout
+Watchdog Timer Use:     OEM (0x0d)
+Watchdog Timer Is:      Stopped
+Watchdog Timer Logging: On
+Watchdog Timer Action:  Power Cycle (0x8b)
+Pre-timeout interrupt:  None
+Pre-timeout interval:   0 seconds
+Timer Expiration Flags: None (0x00)
+Initial Countdown:      600.0 sec
+Present Countdown:      600.0 sec
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x25 target_cmd=0x00 data=
+< rule=get_watchdog_timer ccode=0x00 len=8 data=0d 8b 00 00 70 17 70 17
+bye

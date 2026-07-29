@@ -1,0 +1,15 @@
+# Watchdog timer state chosen so that every decoded field differs from the
+# mc.tr defaults: stopped, logging off, BIOS FRB2 use, messaging pre-timeout
+# interrupt, power down action, and initial != present countdown.
+
+default_ccode 0xc1
+
+respond get_watchdog_timer
+  netfn 0x06
+  cmd 0x25
+  # use 0x81: nolog=1, running=0, use=1 (BIOS FRB2)
+  # intr_action 0x32: intr=3 (Messaging), action=2 (Power Down)
+  # pre-timeout 30s; expiration flags 0xa5 (bits 0,2,5,7)
+  # initial countdown 2000 (200.0s), present countdown 100 (10.0s)
+  data 81 32 1e a5 d0 07 64 00
+end

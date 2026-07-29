@@ -1,0 +1,73 @@
+#!golden 1
+#!case mc_watchdog_set_verbose
+#!section exit
+0
+#!section stdout
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+Sending Set Watchdog command [C5 23 07 10 DE 03]:
+  - nolog      = 1
+  - dontstop   = 1
+  - use        = 0x05
+  - intr       = 0x02
+  - action     = 0x03
+  - pretimeout = 7
+  - clear      = 0x10
+  - timeout    = 990
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 6
+msg.cmd: 24
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 0
+msg.netfn: 7
+msg.cmd: 24
+msg.seq: 0
+msg.lun: 0
+<<<
+Watchdog Timer was successfully configured
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x24 target_cmd=0x00 data=c5 23 07 10 de 03
+< rule=set_watchdog_timer ccode=0x00 len=0 data=
+bye

@@ -1,0 +1,775 @@
+# Depth coverage for lib/ipmi_mc.c: the `mc' / `bmc' command tree.
+#
+# 30-commands.cases reaches `mc' once per breadth check. The cases here go one
+# level deeper: every branch of ipmi_mc_main(), ipmi_mc_reset(),
+# ipmi_mc_get_deviceid(), ipmi_mc_print_guid()/ipmi_parse_guid(),
+# ipmi_mc_get_enables(), ipmi_mc_set_enables(), ipmi_mc_get_selftest(),
+# ipmi_mc_get_watchdog(), parse_set_wdt_options(), ipmi_mc_set_watchdog(),
+# ipmi_mc_shutoff_watchdog(), ipmi_mc_rst_watchdog() and ipmi_sysinfo_main().
+#
+# Wherever a length, count or bit mask is observable the fixtures are chosen so
+# that the plausible alternatives *disagree*: the block count of a system info
+# read, the exact request payload of `watchdog set' and `setenables', the
+# expiration-flag bit numbering and the `data_len == sizeof(*devid)' test all
+# have a case that changes if the constant changes.
+
+# ---------------------------------------------------------------------------
+# ipmi_mc_main() dispatch
+# ---------------------------------------------------------------------------
+
+[mc_unknown_command]
+desc: an unrecognised first argument prints the mc usage and fails
+args: -I dummy mc bogus
+transcript: mc.tr
+covers: mc
+
+[bmc_unknown_command]
+desc: the `bmc' alias reaches the same handler and the same message
+args: -I dummy bmc bogus
+transcript: mc.tr
+covers: bmc
+
+# ---------------------------------------------------------------------------
+# mc reset
+# ---------------------------------------------------------------------------
+
+[mc_reset_no_args]
+desc: mc reset without warm/cold prints the reset usage
+args: -I dummy mc reset
+transcript: mc.tr
+covers: mc
+
+[mc_reset_help]
+desc: mc reset help prints the reset usage and succeeds
+args: -I dummy mc reset help
+transcript: mc.tr
+covers: mc
+
+[mc_reset_bogus]
+desc: mc reset with an unknown mode names argv[0] in the error
+args: -I dummy mc reset bogus
+transcript: mc.tr
+covers: mc
+
+[bmc_reset_bogus]
+desc: the same through the bmc alias, so argv[0] really is printed
+args: -I dummy bmc reset bogus
+transcript: mc.tr
+covers: bmc
+
+[mc_reset_cold]
+desc: cold reset sends 06/02 and reports "cold"
+args: -I dummy mc reset cold
+transcript: mc.tr
+covers: mc
+
+[mc_reset_warm]
+desc: warm reset sends 06/03 and reports "warm"
+args: -I dummy mc reset warm
+transcript: mc.tr
+covers: mc
+
+[mc_reset_cold_ccode]
+desc: a completion code on cold reset is still an error
+args: -I dummy mc reset cold
+transcript: mc_ccode.tr
+covers: mc
+
+[mc_reset_warm_ccode]
+desc: a completion code on warm reset is an error
+args: -I dummy mc reset warm
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc info
+# ---------------------------------------------------------------------------
+
+[mc_info_no_aux]
+desc: a Get Device ID response shorter than struct ipm_devid_rsp has no aux revision
+args: -I dummy mc info
+transcript: mc_devid_short.tr
+covers: mc
+
+[mc_info_long_no_aux]
+desc: a response one byte too long also has no aux revision - the test is "==", not ">="
+args: -I dummy mc info
+transcript: mc_devid_long.tr
+covers: mc
+
+[mc_info_ccode]
+desc: Get Device ID rejected by the BMC
+args: -I dummy mc info
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc guid - explicit encodings
+# ---------------------------------------------------------------------------
+
+[mc_guid_ipmi]
+desc: guid ipmi forces the IPMI (little-endian) field order
+args: -I dummy mc guid ipmi
+transcript: mc.tr
+covers: mc
+
+[mc_guid_rfc]
+desc: guid rfc forces RFC4122 network byte order; this GUID has version 6 there
+args: -I dummy mc guid rfc
+transcript: mc.tr
+covers: mc
+
+[mc_guid_smbios]
+desc: guid smbios mixes little-endian time fields with a network-order node
+args: -I dummy mc guid smbios
+transcript: mc.tr
+covers: mc
+
+[mc_guid_dump]
+desc: guid dump prints the raw bytes and reports an unknown version
+args: -I dummy mc guid dump
+transcript: mc.tr
+covers: mc
+
+[mc_guid_auto_explicit]
+desc: guid auto is the default and prints the detected encoding
+args: -I dummy mc guid auto
+transcript: mc.tr
+covers: mc
+
+[mc_guid_rfc4122_spelling]
+desc: the usage advertises rfc4122 but only "rfc" is accepted, so this falls back to auto
+args: -I dummy mc guid rfc4122
+transcript: mc.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc guid - automatic detection
+# ---------------------------------------------------------------------------
+
+[mc_guid_auto_ipmi_timestamp]
+desc: detection stops at IPMI because its version is time-based and its time is valid
+args: -I dummy mc guid
+transcript: mc_guid_ipmi_time.tr
+covers: mc
+
+[mc_guid_auto_rfc]
+desc: only the RFC4122 view has a valid version nibble
+args: -I dummy mc guid
+transcript: mc_guid_rfc.tr
+covers: mc
+
+[mc_guid_auto_smbios]
+desc: only the SMBIOS view has a valid version nibble
+args: -I dummy mc guid
+transcript: mc_guid_smbios.tr
+covers: mc
+
+[mc_guid_auto_dump]
+desc: no encoding has a valid version nibble, so fall back to a hex dump
+args: -I dummy mc guid
+transcript: mc_guid_dump.tr
+covers: mc
+
+[mc_guid_ipmi_on_time_fixture]
+desc: the same data forced to IPMI prints the timestamp line
+args: -I dummy mc guid ipmi
+transcript: mc_guid_ipmi_time.tr
+covers: mc
+
+[mc_guid_smbios_on_time_fixture]
+desc: the same data forced to SMBIOS decodes to a different GUID and version
+args: -I dummy mc guid smbios
+transcript: mc_guid_ipmi_time.tr
+covers: mc
+
+[mc_guid_rfc_on_rfc_fixture]
+desc: an explicitly requested RFC4122 GUID with a random (v4) version
+args: -I dummy mc guid rfc
+transcript: mc_guid_rfc.tr
+covers: mc
+
+[mc_guid_short_response]
+desc: a Get System GUID response that is not 16 bytes long is rejected
+args: -I dummy mc guid
+transcript: mc_guid_short.tr
+covers: mc
+
+[mc_guid_ccode]
+desc: Get System GUID rejected by the BMC
+args: -I dummy mc guid
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc getenables
+# ---------------------------------------------------------------------------
+
+[mc_getenables_alt]
+desc: the complementary enable mask, which also shows that bit 4 has no entry
+args: -I dummy mc getenables
+transcript: mc_enables_alt.tr
+covers: mc
+
+[mc_getenables_ccode]
+desc: Get BMC Global Enables rejected by the BMC
+args: -I dummy mc getenables
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc setenables
+# ---------------------------------------------------------------------------
+
+[mc_setenables_no_args]
+desc: setenables with no options prints the mc usage and fails
+args: -I dummy mc setenables
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_help]
+desc: setenables help prints the mc usage and succeeds
+args: -I dummy mc setenables help
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_on]
+desc: enabling a flag that is off sends Set BMC Global Enables with the new mask
+args: -I dummy mc setenables oem0 on
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_off]
+desc: disabling a flag that is on sends Set BMC Global Enables with the new mask
+args: -I dummy mc setenables system_event_log off
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_two_options]
+desc: two options in one command, both applied to the same mask
+args: -I dummy mc setenables recv_msg_intr off event_msg off
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_all_on]
+desc: every flag enabled, which pins all seven mask constants at once
+args: -I dummy mc setenables recv_msg_intr on event_msg_intr on event_msg on system_event_log on oem0 on oem1 on oem2 on
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_all_off]
+desc: every flag disabled, the complement of mc_setenables_all_on
+args: -I dummy mc setenables recv_msg_intr off event_msg_intr off event_msg off system_event_log off oem0 off oem1 off oem2 off
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_equals_form]
+desc: the documented option=value form never matches, so nothing changes (upstream bug)
+args: -I dummy mc setenables oem0=on
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_unknown_name]
+desc: an option name that is in no table entry is silently ignored
+args: -I dummy mc setenables bogus on
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_bad_value]
+desc: a known name followed by something other than on/off is reported
+args: -I dummy mc setenables oem0 maybe
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_get_ccode]
+desc: the initial Get BMC Global Enables fails
+args: -I dummy mc setenables oem0 on
+transcript: mc_ccode.tr
+covers: mc
+
+[mc_setenables_set_ccode]
+desc: the Set BMC Global Enables fails after a successful get
+args: -I dummy mc setenables oem0 on
+transcript: mc_enables_setfail.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc selftest
+# ---------------------------------------------------------------------------
+
+[mc_selftest_not_implemented]
+desc: self test result 0x56
+args: -I dummy mc selftest
+transcript: mc_st_notimpl.tr
+covers: mc
+
+[mc_selftest_corrupt_odd_bits]
+desc: device corrupted with the odd-numbered failure bits set (0x55)
+args: -I dummy mc selftest
+transcript: mc_st_corrupt_odd.tr
+covers: mc
+
+[mc_selftest_corrupt_even_bits]
+desc: device corrupted with the complementary failure bits set (0xaa)
+args: -I dummy mc selftest
+transcript: mc_st_corrupt_even.tr
+covers: mc
+
+[mc_selftest_fatal]
+desc: self test result 0x58, fatal hardware error
+args: -I dummy mc selftest
+transcript: mc_st_fatal.tr
+covers: mc
+
+[mc_selftest_reserved]
+desc: self test result 0xff, the reserved code (note: no trailing newline)
+args: -I dummy mc selftest
+transcript: mc_st_reserved.tr
+covers: mc
+
+[mc_selftest_device_specific]
+desc: a device specific self test code falls through to the last branch
+args: -I dummy mc selftest
+transcript: mc_st_other.tr
+covers: mc
+
+[mc_selftest_ccode]
+desc: Get Self Test Results rejected by the BMC
+args: -I dummy mc selftest
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc watchdog get / off / reset
+# ---------------------------------------------------------------------------
+
+[mc_watchdog_no_args]
+desc: mc watchdog with no subcommand prints the watchdog usage
+args: -I dummy mc watchdog
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_help]
+desc: mc watchdog help prints the watchdog usage and succeeds
+args: -I dummy mc watchdog help
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_bogus]
+desc: an unknown watchdog subcommand names argv[0] in the error
+args: -I dummy mc watchdog bogus
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_get_stopped]
+desc: stopped timer, logging off, BIOS FRB2 use, messaging interrupt, power down
+args: -I dummy mc watchdog get
+transcript: mc_wdt_a.tr
+covers: mc
+
+[mc_watchdog_get_reserved]
+desc: the reserved timer-use and interrupt table entries, complementary flag bits
+args: -I dummy mc watchdog get
+transcript: mc_wdt_b.tr
+covers: mc
+
+[mc_watchdog_get_ccode]
+desc: Get Watchdog Timer rejected by the BMC
+args: -I dummy mc watchdog get
+transcript: mc_ccode.tr
+covers: mc
+
+[mc_watchdog_off]
+desc: watchdog off sends the fixed five minute SMS/OS shutoff payload
+args: -I dummy mc watchdog off
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_off_ccode]
+desc: the shutoff command rejected by the BMC
+args: -I dummy mc watchdog off
+transcript: mc_ccode.tr
+covers: mc
+
+[mc_watchdog_reset]
+desc: watchdog reset sends 06/22
+args: -I dummy mc watchdog reset
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_reset_uninitialised]
+desc: completion code 0x80 gets its own message instead of the generic one
+args: -I dummy mc watchdog reset
+transcript: mc_wdt_uninit.tr
+covers: mc
+
+[mc_watchdog_reset_ccode]
+desc: any other completion code uses the generic string
+args: -I dummy mc watchdog reset
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc watchdog set
+# ---------------------------------------------------------------------------
+
+[mc_watchdog_set_no_options]
+desc: watchdog set requires at least one option
+args: -I dummy mc watchdog set
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_help]
+desc: watchdog set help prints the usage and sends nothing but the defaults
+args: -I dummy mc watchdog set help
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout]
+desc: timeout is converted from seconds to 100ms intervals in the request
+args: -I dummy mc watchdog set timeout=30
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_min]
+desc: the lowest accepted timeout
+args: -I dummy mc watchdog set timeout=1
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_zero]
+desc: one below the lowest accepted timeout
+args: -I dummy mc watchdog set timeout=0
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_max]
+desc: the highest accepted timeout
+args: -I dummy mc watchdog set timeout=6553
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_over]
+desc: one above the highest accepted timeout
+args: -I dummy mc watchdog set timeout=6554
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_min]
+desc: the lowest accepted pre-timeout
+args: -I dummy mc watchdog set pretimeout=1
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_zero]
+desc: one below the lowest accepted pre-timeout
+args: -I dummy mc watchdog set pretimeout=0
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_max]
+desc: the highest accepted pre-timeout
+args: -I dummy mc watchdog set pretimeout=255
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_over]
+desc: one above the highest accepted pre-timeout
+args: -I dummy mc watchdog set pretimeout=256
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_every_option]
+desc: every option at once, which pins each shift and mask in the request payload
+args: -I dummy mc watchdog set use=sms action=reset int=msg timeout=100 pretimeout=20 clear=frb2 clear=oem nolog dontstop
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_first_letter_only]
+desc: options are dispatched on their first letter alone
+args: -I dummy mc watchdog set t=5 p=1 u=post a=cycle i=nmi n d
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_use_none]
+desc: the "none" entries of each table map to zero
+args: -I dummy mc watchdog set use=none int=none action=none
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_use_oem]
+desc: the last named entry of the timer use table
+args: -I dummy mc watchdog set use=oem
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_int_smi]
+desc: pre-timeout interrupt SMI, which lands in the high nibble of byte 1
+args: -I dummy mc watchdog set int=smi
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_action_poweroff]
+desc: action power down, which lands in the low nibble of byte 1
+args: -I dummy mc watchdog set action=poweroff
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_clear_multiple]
+desc: clear can be repeated and the bits accumulate
+args: -I dummy mc watchdog set clear=post clear=osload clear=sms
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_clear_none]
+desc: clear=none sets bit 0 of the clear mask
+args: -I dummy mc watchdog set clear=none
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_invalid_option]
+desc: an unknown option is reported but does not stop the command being sent
+args: -I dummy mc watchdog set zzz=1
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_verbose]
+desc: -v prints the assembled payload and every decoded field
+args: -I dummy -v mc watchdog set use=oem action=cycle int=nmi timeout=99 pretimeout=7 clear=sms nolog dontstop
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_ccode]
+desc: Set Watchdog Timer rejected by the BMC
+args: -I dummy mc watchdog set timeout=30
+transcript: mc_ccode.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc getsysinfo / setsysinfo
+# ---------------------------------------------------------------------------
+
+[mc_getsysinfo_no_args]
+desc: getsysinfo without a parameter name prints the sysinfo usage
+args: -I dummy mc getsysinfo
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_help]
+desc: getsysinfo help prints the long form of the sysinfo usage
+args: -I dummy mc getsysinfo help
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_help]
+desc: setsysinfo help prints the same long usage
+args: -I dummy mc setsysinfo help
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_no_args]
+desc: setsysinfo without a parameter name
+args: -I dummy mc setsysinfo
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_no_value]
+desc: setsysinfo with a parameter but no string
+args: -I dummy mc setsysinfo system_name
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_unknown_parameter]
+desc: an unknown parameter name names argv[0] in the error
+args: -I dummy mc getsysinfo bogus
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_system_name]
+desc: ASCII encoding, declared length 15 -> exactly two blocks are read
+args: -I dummy mc getsysinfo system_name
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_system_fw_version]
+desc: ASCII encoding, declared length 47 -> exactly four blocks are read
+args: -I dummy mc getsysinfo system_fw_version
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_os_name]
+desc: a non-ASCII encoding keeps the default block count of four
+args: -I dummy mc getsysinfo os_name
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_delloem_url]
+desc: delloem_url starts from a block count of two, not four
+args: -I dummy mc getsysinfo delloem_url
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_primary_os_name]
+desc: a parameter the BMC does not implement
+args: -I dummy mc getsysinfo primary_os_name
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_delloem_os_version]
+desc: the remaining parameter name accepted by sysinfo_param()
+args: -I dummy mc getsysinfo delloem_os_version
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_getsysinfo_unsupported]
+desc: completion code 0x80 is reported as "parameter not supported"
+args: -I dummy mc getsysinfo system_name
+transcript: mc_sysinfo_unsupported.tr
+covers: mc
+
+[mc_getsysinfo_verbose]
+desc: two -v flags print the param/block/set triple before the request
+args: -I dummy -v -v mc getsysinfo system_name
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_short_string]
+desc: a string that fits in the first block sends exactly one request
+args: -I dummy mc setsysinfo system_name abc
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_exactly_one_block]
+desc: 14 characters exactly fill the first block, so still one request
+args: -I dummy mc setsysinfo system_name abcdefghijklmn
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_two_blocks]
+desc: 15 characters spill into a second block
+args: -I dummy mc setsysinfo system_name abcdefghijklmno
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_clamped_url]
+desc: delloem_url clamps the declared length to 2*16-2, above the real string length
+args: -I dummy mc setsysinfo delloem_url abcdefghijklmno
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_clamped_name]
+desc: 47 characters trip the clamp for a four block parameter
+args: -I dummy mc setsysinfo system_name abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJK
+transcript: mc_sysinfo.tr
+covers: mc
+
+[mc_setsysinfo_unsupported]
+desc: Set System Info rejected with 0x80
+args: -I dummy mc setsysinfo system_name abc
+transcript: mc_sysinfo_unsupported.tr
+covers: mc
+
+[mc_setsysinfo_ccode]
+desc: Set System Info rejected with another completion code
+args: -I dummy mc setsysinfo system_name abc
+transcript: mc_ccode.tr
+covers: mc
+
+[mc_setsysinfo_multi_block_ccode]
+desc: a failure in the second block stops the loop and names the set number
+args: -I dummy mc setsysinfo system_name abcdefghijklmno
+transcript: mc_setsysinfo_set1_fails.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# mc watchdog set: the upstream NULL dereferences (see the PR body and the
+# issue it links). find_set_wdt_string() walks past the last named entry into
+# a table row whose `set' member is NULL and hands that to strcmp(), and the
+# numeric options hand strtol() the NULL that strchr() returned. Both abort
+# the process, so the "is not valid" and "out of range" diagnostics below them
+# are unreachable for these inputs. The cases pin the crash so that the port
+# cannot quietly turn it into an error message.
+# ---------------------------------------------------------------------------
+
+[mc_watchdog_set_use_invalid]
+desc: an unknown timer use name walks into the NULL `set' of a reserved row
+args: -I dummy mc watchdog set use=zzz
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_int_invalid]
+desc: the same for the pre-timeout interrupt table
+args: -I dummy mc watchdog set int=zzz
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_action_invalid]
+desc: the same for the action table
+args: -I dummy mc watchdog set action=zzz
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_clear_invalid]
+desc: clear uses the timer use table too
+args: -I dummy mc watchdog set clear=zzz
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_no_value]
+desc: without an '=' strchr() returns NULL and strtol() dereferences it
+args: -I dummy mc watchdog set timeout
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_no_value]
+desc: the same for pretimeout
+args: -I dummy mc watchdog set pretimeout
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_not_a_number]
+desc: strtol() returns 0 for a non-numeric value, which is out of range
+args: -I dummy mc watchdog set timeout=abc
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_not_a_number]
+desc: the same for pretimeout
+args: -I dummy mc watchdog set pretimeout=abc
+transcript: mc.tr
+covers: mc
+
+# ---------------------------------------------------------------------------
+# Cases added after the mutation battery, each pinning one constant that the
+# first 112 left indistinguishable from a plausible neighbour.
+# ---------------------------------------------------------------------------
+
+[mc_info_reserved_revision]
+desc: the reserved bit 4 of Device Revision is masked off, bit 7 is not
+args: -I dummy mc info
+transcript: mc_devid_rsvd.tr
+covers: mc
+
+[mc_guid_auto_future_timestamp]
+desc: autodetect rejects a version 1 GUID dated in the future and keeps looking
+args: -I dummy mc guid
+transcript: mc_guid_future.tr
+covers: mc
+
+[mc_watchdog_get_reserved_use_bit]
+desc: bit 3 of the timer use byte is masked off before indexing wdt_use[]
+args: -I dummy mc watchdog get
+transcript: mc_wdt_rsvd_bit.tr
+covers: mc
+
+[mc_getsysinfo_length_fourteen]
+desc: a declared length of 14 is exactly one block, not two
+args: -I dummy mc getsysinfo system_name
+transcript: mc_sysinfo_len14.tr
+covers: mc
+
+[mc_getsysinfo_verbose_once]
+desc: a single -v is below the threshold for the param/block/set triple
+args: -I dummy -v mc getsysinfo system_name
+transcript: mc_sysinfo.tr
+covers: mc

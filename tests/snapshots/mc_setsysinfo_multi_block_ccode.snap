@@ -1,0 +1,17 @@
+#!golden 1
+#!case mc_setsysinfo_multi_block_ccode
+#!section exit
+0
+#!section stdout
+#!section stderr
+setsysinfo command failed: Parameter out of range
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x58 target_cmd=0x00 data=02 00 00 0f 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e
+< rule=set_system_info_block0 ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x58 target_cmd=0x00 data=02 01 6f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_system_info_rest ccode=0xc9 len=0 data=
+bye

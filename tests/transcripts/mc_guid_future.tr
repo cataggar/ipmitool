@@ -1,0 +1,10 @@
+# Get System GUID answered with mc/guid_future_rfc.hex: a version 1 RFC4122
+# reading dated in the future next to a version 1 IPMI reading dated 2020.
+
+default_ccode 0xc1
+
+respond get_system_guid
+  netfn 0x06
+  cmd 0x37
+  data @mc/guid_future_rfc.hex
+end

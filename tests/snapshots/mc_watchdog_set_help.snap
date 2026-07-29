@@ -1,0 +1,39 @@
+#!golden 1
+#!case mc_watchdog_set_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+Watchdog Timer was successfully configured
+usage: watchdog <command>:
+
+   set <option[=value]> [<option[=value]> ...]
+     Set Watchdog settings
+     Options: (* = mandatory)
+       timeout=<1-6553>                    - [0] Initial countdown value, sec
+       pretimeout=<1-255>                  - [0] Pre-timeout interval, sec
+       int=<smi|nmi|msg>                   - [-] Pre-timeout interrupt type
+       use=<frb2|post|osload|sms|oem>      - [-] Timer use
+       clear=<frb2|post|osload|sms|oem>    - [-] Clear timer use expiration
+                                                 flag, can be specified
+                                                 multiple times
+       action=<reset|poweroff|cycle|none>  - [none] Timer action
+       nolog                               - [-] Don't log the timer use
+       dontstop                            - [-] Don't stop the timer
+                                                 while applying settings
+
+   get
+     Get Current settings
+
+   reset
+     Restart Watchdog timer based on the most recent settings
+
+  \x20
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x24 target_cmd=0x00 data=00 00 00 00 00 00
+< rule=set_watchdog_timer ccode=0x00 len=0 data=
+bye

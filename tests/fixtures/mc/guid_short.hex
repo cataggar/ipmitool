@@ -1,0 +1,4 @@
+# A truncated Get System GUID response: _ipmi_mc_get_guid() rejects anything
+# whose length is not exactly 16 bytes.
+
+00 11 22 33 44 55 66 a7 88 19 aa bb

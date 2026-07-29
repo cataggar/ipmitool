@@ -1,0 +1,27 @@
+#!golden 1
+#!case mc_watchdog_get_stopped
+#!section exit
+0
+#!section stdout
+Watchdog Timer Use:     BIOS FRB2 (0x81)
+Watchdog Timer Is:      Stopped
+Watchdog Timer Logging: Off
+Watchdog Timer Action:  Power Down (0x32)
+Pre-timeout interrupt:  Messaging
+Pre-timeout interval:   30 seconds
+Timer Expiration Flags: (0xa5)
+                        * Reserved
+                        * BIOS/POST
+                        * OEM
+                        * Reserved
+Initial Countdown:      200.0 sec
+Present Countdown:      10.0 sec
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x25 target_cmd=0x00 data=
+< rule=get_watchdog_timer ccode=0x00 len=8 data=81 32 1e a5 d0 07 64 00
+bye

@@ -1,0 +1,15 @@
+#!golden 1
+#!case mc_guid_short_response
+#!section exit
+1
+#!section stdout
+#!section stderr
+Unexpected data length received.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x37 target_cmd=0x00 data=
+< rule=get_system_guid ccode=0x00 len=12 data=00 11 22 33 44 55 66 a7 88 19 aa bb
+bye

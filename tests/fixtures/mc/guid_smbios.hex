@@ -1,0 +1,7 @@
+# A GUID that only decodes to a valid version nibble under SMBIOS.
+#
+#   RFC4122 version nibble: 9 (invalid)
+#   IPMI    version nibble: 7 (invalid)
+#   SMBIOS  version nibble: 2 (DCE security)  <- detected
+
+11 22 33 44 55 66 91 27 aa 70 bb cc dd ee ff 00

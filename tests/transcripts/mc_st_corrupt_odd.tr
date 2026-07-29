@@ -1,0 +1,9 @@
+# Get Self Test Results with code 0x57 / test byte 0x55.
+
+default_ccode 0xc1
+
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  data 57 55
+end

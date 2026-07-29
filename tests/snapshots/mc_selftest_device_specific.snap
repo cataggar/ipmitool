@@ -1,0 +1,16 @@
+#!golden 1
+#!case mc_selftest_device_specific
+#!section exit
+0
+#!section stdout
+Selftest     : device specific (A5h)
+Failure code : 3Ch
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x04 target_cmd=0x00 data=
+< rule=get_self_test_results ccode=0x00 len=2 data=a5 3c
+bye

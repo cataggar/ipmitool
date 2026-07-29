@@ -1,0 +1,16 @@
+#!golden 1
+#!case mc_guid_smbios_on_time_fixture
+#!section exit
+0
+#!section stdout
+System GUID   : efbeadde-0100-30a1-d911-433200c00828
+GUID Version  : Name-based using MD5
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x37 target_cmd=0x00 data=
+< rule=get_system_guid ccode=0x00 len=16 data=de ad be ef 00 01 a1 30 d9 11 43 32 00 c0 08 28
+bye

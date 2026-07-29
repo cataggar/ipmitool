@@ -1,0 +1,65 @@
+# A BMC that answers the whole "mc"/"bmc" command set: device ID, GUID, self
+# test, global enables, watchdog and the cold/warm reset commands.
+#
+# Anything not listed here answers 0xc1 "Invalid command".
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond cold_reset
+  netfn 0x06
+  cmd 0x02
+end
+
+respond warm_reset
+  netfn 0x06
+  cmd 0x03
+end
+
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  # 0x55 = self test passed
+  data 55 00
+end
+
+respond reset_watchdog_timer
+  netfn 0x06
+  cmd 0x22
+end
+
+respond set_watchdog_timer
+  netfn 0x06
+  cmd 0x24
+end
+
+respond get_watchdog_timer
+  netfn 0x06
+  cmd 0x25
+  # timer use SMS/OS + running, log on; action hard reset, no pre-timeout
+  # interrupt; pre-timeout 0; no expiration flags; 60.0s initial and present
+  data 44 01 00 00 58 02 58 02
+end
+
+respond set_bmc_global_enables
+  netfn 0x06
+  cmd 0x2e
+end
+
+respond get_bmc_global_enables
+  netfn 0x06
+  cmd 0x2f
+  # receive message queue interrupt + event message buffer + SEL enabled
+  data 0f
+end
+
+respond get_system_guid
+  netfn 0x06
+  cmd 0x37
+  data @mc/guid.hex
+end

@@ -1,0 +1,9 @@
+# Get System GUID answered with mc/guid_rfc.hex.
+
+default_ccode 0xc1
+
+respond get_system_guid
+  netfn 0x06
+  cmd 0x37
+  data @mc/guid_rfc.hex
+end
