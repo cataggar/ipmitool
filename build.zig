@@ -210,6 +210,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/dummy/dummy.c",
         .implementation = "src/zig/intf/dummy.zig",
     },
+    .{
+        .name = "open",
+        .replaces = "src/plugins/open/open.c",
+        .implementation = "src/zig/intf/open.zig",
+    },
 };
 
 /// Root of the Zig source tree.

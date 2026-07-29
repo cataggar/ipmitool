@@ -28,6 +28,15 @@ export var verbose: c_int = 0;
 /// What `ipmi_oem_active` should answer.  Tests set this around a call.
 pub var active_oem: []const u8 = "";
 
+/// What the last `printbuf()` was handed.  The real one writes to stderr,
+/// which `zig build test` treats as a failure, so it is recorded instead --
+/// otherwise the buffer, length and title at every call site are unpinned and
+/// a mutation of any of them survives.
+pub var printbuf_calls: usize = 0;
+pub var printbuf_len: c_int = -1;
+pub var printbuf_desc: [*c]const u8 = null;
+pub var printbuf_data: [64]u8 = @splat(0);
+
 comptime {
     @export(&printbuf, .{ .name = "printbuf", .linkage = .strong });
     @export(&lprintf, .{ .name = "lprintf", .linkage = .strong });
@@ -36,9 +45,14 @@ comptime {
 }
 
 fn printbuf(buf: [*c]const u8, len: c_int, desc: [*c]const u8) callconv(.c) void {
-    _ = buf;
-    _ = len;
-    _ = desc;
+    printbuf_calls += 1;
+    printbuf_len = len;
+    printbuf_desc = desc;
+    printbuf_data = @splat(0);
+    if (buf != null and len > 0) {
+        const n = @min(@as(usize, @intCast(len)), printbuf_data.len);
+        @memcpy(printbuf_data[0..n], buf[0..n]);
+    }
 }
 
 /// Variadic, and deliberately never reads its arguments: `@cVaStart` is a
@@ -49,12 +63,23 @@ fn lprintf(level: c_int, format: [*c]const u8, ...) callconv(.c) void {
     _ = format;
 }
 
-/// Only reached from `verbose > 3` logging, which the stub `verbose` disables.
+/// A stand-in for `buf2str()`.  It is not byte-compatible with the C one --
+/// it never truncates and always uses lower case -- but it does render its
+/// arguments, so a caller that passes the wrong buffer or length shows up in
+/// captured `verbose` output instead of vanishing into an empty string.
 fn buf2str(buf: [*c]const u8, len: c_int) callconv(.c) [*c]const u8 {
-    _ = buf;
-    _ = len;
-    return "";
+    const hex = "0123456789abcdef";
+    var n: usize = 0;
+    if (buf != null and len > 0) n = @min(@as(usize, @intCast(len)), (buf2str_buf.len - 1) / 2);
+    for (0..n) |i| {
+        buf2str_buf[i * 2] = hex[buf[i] >> 4];
+        buf2str_buf[i * 2 + 1] = hex[buf[i] & 0x0f];
+    }
+    buf2str_buf[n * 2] = 0;
+    return &buf2str_buf;
 }
+
+var buf2str_buf: [1025]u8 = @splat(0);
 
 fn ipmiOemActive(intf: ?*anyopaque, name: [*c]const u8) callconv(.c) c_int {
     _ = intf;
