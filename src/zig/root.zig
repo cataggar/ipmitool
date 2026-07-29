@@ -37,6 +37,7 @@ pub const util = struct {
     pub const bswap = @import("util/bswap.zig");
     pub const helper = @import("util/helper.zig");
     pub const log = @import("util/log.zig");
+    pub const strings = @import("util/strings.zig");
 };
 
 test {
@@ -51,4 +52,6 @@ test {
     _ = util.bswap;
     _ = util.helper;
     _ = util.log;
+    _ = util.strings;
+    _ = util.strings.tables;
 }

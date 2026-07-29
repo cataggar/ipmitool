@@ -114,6 +114,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "lib/ipmi_oem.c",
         .implementation = "src/zig/cmd/oem.zig",
     },
+    .{
+        .name = "strings",
+        .replaces = "lib/ipmi_strings.c",
+        .implementation = "src/zig/util/strings.zig",
+    },
 };
 
 /// Root of the Zig source tree.
