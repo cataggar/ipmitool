@@ -35,7 +35,7 @@
 //!   `lib/ipmi_sdr.c`'s; this module only drives them.  So is every `printf`
 //!   format: the threshold printer takes its format string as a parameter and
 //!   passes it to libc unchanged, exactly as the C does.
-//! * **Upstream defects are reproduced deliberately.**  See issue #41:
+//! * **Upstream defects are reproduced deliberately.**  See issue #42:
 //!   - `ipmi_sensor_get_sensor_reading_factors()` copies six bytes out of the
 //!     response without checking `rsp->data_len`, so a short Get Sensor
 //!     Reading Factors reply silently seeds the reading factors from whatever
@@ -227,7 +227,7 @@ fn csvOutput() bool {
 ///
 /// The response layout is byte-for-byte the SDR's own, so the C copies it in
 /// with two `memcpy()`s and this port does the same.  Neither checks
-/// `rsp->data_len` first - see issue #41.
+/// `rsp->data_len` first - see issue #42.
 fn getSensorReadingFactors(
     intf: ?*Intf,
     sensor: ?*FullSensor,
@@ -962,7 +962,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
 
     if (all_upper) {
         // The C assigns to `ret` three times, so only the third result is
-        // returned; see issue #41.
+        // returned; see issue #42.
         for ([3]u8{
             upper_non_crit_specified,
             upper_crit_specified,
@@ -1012,7 +1012,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         //
         // The result of this first request is discarded immediately - the C
         // overwrites `rsp` on the very next line.  The request still goes on
-        // the wire; see issue #41.
+        // the wire; see issue #42.
         _ = c.ipmi_sdr_get_sensor_reading_ipmb(cIntf(intf), num, owner, lun, channel);
         const rsp: ?*Response = @ptrCast(c.ipmi_sdr_get_sensor_thresholds(
             cIntf(intf),
@@ -1027,7 +1027,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         }
         const data = &rsp.?.data;
         // No `data_len' check: a short response is validated against whatever
-        // the transport buffer held before.  See issue #41.
+        // the transport buffer held before.  See issue #42.
         for (1..7) |i| {
             val[i] = c.sdr_convert_sensor_reading(full, data[i]);
             if (val[i] < 0) val[i] = 0;
