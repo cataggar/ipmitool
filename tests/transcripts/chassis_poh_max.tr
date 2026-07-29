@@ -1,0 +1,13 @@
+# One minute per count and a counter whose four bytes are all distinct and
+# non-zero, 0x12345680, so the little-endian read of data[1..4] is pinned: any
+# other byte order or a three-byte read changes every printed field.  The
+# counter is a multiple of 128, so the whole computation is exact in float and
+# the expected output does not depend on the compiler's floating point
+# contraction.
+default_ccode 0xc1
+
+respond get_poh_counter
+  netfn 0x00
+  cmd 0x0f
+  data 01 80 56 34 12
+end

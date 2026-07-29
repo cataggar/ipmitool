@@ -1,0 +1,20 @@
+# Every one of the 256 Boot Initiator Mailbox blocks answers successfully, so
+# the "read all blocks" loop runs to its upper bound instead of being stopped
+# early by an out-of-range completion code.  This is what pins the loop bound
+# at block 255: a build that stopped at 254 would emit one request fewer.
+default_ccode 0xc1
+
+respond bootparam_7_block0
+  netfn 0x00
+  cmd 0x09
+  match 07 00
+  # IANA PEN 343 (Intel) little endian, then a single data byte
+  data 01 07 00 57 01 00 41
+end
+
+respond bootparam_7_blockn
+  netfn 0x00
+  cmd 0x09
+  match 07
+  data 01 07 01 42
+end

@@ -1,0 +1,18 @@
+#!golden 1
+#!case chassis_bootparam_get_0_complete
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 0 is valid/unlocked
+Boot parameter data: 00
+ Set In Progress : set complete
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=00 00 00
+< rule=bootparam_0_set_complete ccode=0x00 len=3 data=01 00 00
+bye

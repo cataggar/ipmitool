@@ -1,0 +1,25 @@
+#!golden 1
+#!case chassis_bootparam_get_5_cons_on
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 5 is valid/unlocked
+Boot parameter data: 00000200a5
+ Boot Flags :
+   - Boot Flag Invalid
+   - Options apply to only next boot
+   - BIOS PC Compatible (legacy) boot\x20
+   - Boot Device Selector : No override
+   - BIOS verbosity : System Default
+   - Console Redirection control : Request console redirection be enabled
+   - BIOS Mux Control Override : BIOS uses recommended setting of the mux at the end of POST
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=05 13 00
+< rule=bootparam_5_console_enable ccode=0x00 len=7 data=01 05 00 00 02 00 a5
+bye

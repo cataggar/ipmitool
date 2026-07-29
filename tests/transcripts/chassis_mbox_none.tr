@@ -1,0 +1,9 @@
+# The Boot Initiator Mailbox parameter is unsupported, so even block 0 fails.
+default_ccode 0xc1
+
+respond bootparam_7_unsupported
+  netfn 0x00
+  cmd 0x09
+  match 07
+  ccode 0x80
+end

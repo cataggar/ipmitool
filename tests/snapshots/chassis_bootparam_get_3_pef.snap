@@ -1,0 +1,19 @@
+#!golden 1
+#!case chassis_bootparam_get_3_pef
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 3 is valid/unlocked
+Boot parameter data: 10
+ BMC boot flag valid bit clearing :
+     - Don't clear valid bit on reset/power cycle cause by PEF
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=03 02 00
+< rule=bootparam_3_pef_only ccode=0x00 len=3 data=01 03 10
+bye

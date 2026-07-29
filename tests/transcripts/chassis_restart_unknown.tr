@@ -1,0 +1,8 @@
+# Get System Restart Cause 0x0c, one past the end of the table.
+default_ccode 0xc1
+
+respond get_restart_cause
+  netfn 0x00
+  cmd 0x07
+  data 0c 00
+end

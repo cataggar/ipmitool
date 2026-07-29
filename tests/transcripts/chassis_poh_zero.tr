@@ -1,0 +1,10 @@
+# Zero minutes per count and a non-zero counter: the product is zero, so
+# every field is zero, but the counter bytes are distinct so a decoder that
+# ignored mins_per_count would print something else.
+default_ccode 0xc1
+
+respond get_poh_counter
+  netfn 0x00
+  cmd 0x0f
+  data 00 78 56 34 12
+end

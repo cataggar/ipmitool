@@ -1,0 +1,9 @@
+# Get POH Counter with 60 minutes per count, which suppresses the minutes
+# field: 1000 counts = 60000 minutes = 41 days, 16 hours.
+default_ccode 0xc1
+
+respond get_poh_counter
+  netfn 0x00
+  cmd 0x0f
+  data 3c e8 03 00 00
+end

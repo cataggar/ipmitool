@@ -1,0 +1,15 @@
+#!golden 1
+#!case chassis_power_ccode
+#!section exit
+1
+#!section stdout
+#!section stderr
+Set Chassis Power Control to Cycle failed: Command not supported in present state
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x02 target_cmd=0x00 data=02
+< rule=default ccode=0xd5 len=0 data=
+bye

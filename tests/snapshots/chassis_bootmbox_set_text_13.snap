@@ -1,0 +1,24 @@
+#!golden 1
+#!case chassis_bootmbox_set_text_13
+#!section exit
+0
+#!section stdout
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 01
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=07 00 57 01 00 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=07 01 00
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 02
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=04 03 03
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 00
+< rule=set_boot_options ccode=0x00 len=0 data=
+bye

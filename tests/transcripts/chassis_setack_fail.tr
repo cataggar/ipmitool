@@ -1,0 +1,25 @@
+# Set System Boot Options parameter 4 (boot info acknowledge) is read-only.
+# ipmi_chassis_set_bootdev() tests `rc < 0` against a completion code, so a
+# positive code does not stop it; ipmi_chassis_set_bootvalid() tests `rc` and
+# does stop.
+default_ccode 0xc1
+
+respond set_info_ack_readonly
+  netfn 0x00
+  cmd 0x08
+  match 04
+  ccode 0x82
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond bootparam_3
+  netfn 0x00
+  cmd 0x09
+  match 03
+  data 01 03 1b
+end

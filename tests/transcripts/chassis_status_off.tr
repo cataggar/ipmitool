@@ -1,0 +1,9 @@
+# Power off, restore policy 2 (always-on), single last power event
+# (command), single fault bit.
+default_ccode 0xc1
+
+respond get_chassis_status
+  netfn 0x00
+  cmd 0x01
+  data 40 10 08 00
+end

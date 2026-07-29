@@ -1,0 +1,20 @@
+# 59 minutes per count (just below the 60 that suppresses the minutes field)
+# and a counter large enough that the product needs 37 bits.  The decoder does
+# the arithmetic in `float`, so the product is rounded to 24 bits of mantissa
+# before the day/hour/minute split: it prints 57419264 days, 0 hours,
+# 0 minutes, where exact integer or `double` arithmetic would print
+# 57419262 days, 7 hours, 56 minutes.
+#
+# The value is chosen so that `days * 1440` is itself exactly representable as
+# a float, which makes the result independent of whether the compiler contracts
+# `minutes -= (float)days * 1440` into a fused multiply-add.  Do not replace it
+# with a rounder-looking counter without re-checking that property: with
+# 0xffffffff counts of 255 minutes, for instance, an FMA prints 512 hours and
+# separate multiply/subtract prints 0.
+default_ccode 0xc1
+
+respond get_poh_counter
+  netfn 0x00
+  cmd 0x0f
+  data 3b 14 f6 87 53
+end

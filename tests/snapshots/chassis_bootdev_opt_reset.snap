@@ -1,0 +1,32 @@
+#!golden 1
+#!case chassis_bootdev_opt_reset
+#!section exit
+1
+#!section stdout
+#!section stderr
+Invalid option: reset
+Legal options settings are:
+  help                  : print this message
+  valid                 : Boot flags valid
+  persistent            : Changes are persistent for all future boots
+  efiboot               : Extensible Firmware Interface Boot (EFI)
+  clear-cmos            : CMOS clear
+  lockkbd               : Lock Keyboard
+  screenblank           : Screen Blank
+  lockoutreset          : Lock out Reset buttons
+  lockout_power         : Lock out (power off/sleep request) via Power Button
+  verbose=default       : Request quiet BIOS display
+  verbose=no            : Request quiet BIOS display
+  verbose=yes           : Request verbose BIOS display
+  force_pet             : Force progress event traps
+  upw_bypass            : User password bypass
+  lockout_sleep         : Lock out the Sleep button
+  cons_redirect=default : Console redirection occurs per BIOS configuration setting
+  cons_redirect=skip    : Suppress (skip) console redirection if enabled
+  cons_redirect=enable  : Request console redirection be enabled
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

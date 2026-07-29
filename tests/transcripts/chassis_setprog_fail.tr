@@ -1,0 +1,24 @@
+# Set System Boot Options parameter 0 (set in progress) is rejected.  The
+# caller latches that in a static flag and stops trying for the rest of the
+# process, so the commit-write and set-complete requests never go out.
+default_ccode 0xc1
+
+respond set_in_progress_rejected
+  netfn 0x00
+  cmd 0x08
+  match 00
+  ccode 0x81
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond bootparam_3
+  netfn 0x00
+  cmd 0x09
+  match 03
+  data 01 03 1b
+end

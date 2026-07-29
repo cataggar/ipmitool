@@ -1,0 +1,99 @@
+#!golden 1
+#!case chassis_identify_negative
+#!section exit
+1
+#!section stdout
+#!section stderr
+<WORK>/bin/ipmitool: invalid option -- '1'
+ipmitool version <VERSION>
+
+usage: ipmitool [options...] <command>
+
+       -h             This help
+       -V             Show version information
+       -v             Verbose (can use multiple times)
+       -c             Display output in comma separated format
+       -d N           Specify a /dev/ipmiN device to use (default=0)
+       -I intf        Interface to use
+       -H hostname    Remote host name for LAN interface
+       -p port        Remote RMCP port [default=623]
+       -U username    Remote session username
+       -f file        Read remote session password from file
+       -z size        Change Size of Communication Channel (OEM)
+       -S sdr         Use local file for remote SDR cache
+       -D tty:b[:s]   Specify the serial device, baud rate to use
+                      and, optionally, specify that interface is the system one
+       -4             Use only IPv4
+       -6             Use only IPv6
+       -a             Prompt for remote password
+       -Y             Prompt for the Kg key for IPMIv2 authentication
+       -e char        Set SOL escape character
+       -C ciphersuite Cipher suite to be used by lanplus interface
+       -k key         Use Kg key for IPMIv2 authentication
+       -y hex_key     Use hexadecimal-encoded Kg key for IPMIv2 authentication
+       -L level       Remote session privilege level [default=ADMINISTRATOR]
+                      Append a '+' to use name/privilege lookup in RAKP1
+       -A authtype    Force use of auth type NONE, PASSWORD, MD2, MD5 or OEM
+       -P password    Remote session password
+       -E             Read password from IPMI_PASSWORD environment variable
+       -K             Read kgkey from IPMI_KGKEY environment variable
+       -m address     Set local IPMB address
+       -b channel     Set destination channel for bridged request
+       -t address     Bridge request to remote target address
+       -B channel     Set transit channel for bridged request (dual bridge)
+       -T address     Set transit address for bridge request (dual bridge)
+       -l lun         Set destination lun for raw commands
+       -o oemtype     Setup for OEM (use 'list' to see available OEM types)
+       -O seloem      Use file for OEM SEL event descriptions
+       -N seconds     Specify timeout for lan [default=2] / lanplus [default=1] interface
+       -R retry       Set the number of retries for lan/lanplus interface [default=4]
+       -Z             Display all dates in UTC
+
+Interfaces:
+\topen          Linux OpenIPMI Interface [default]
+\timb           Intel IMB Interface\x20
+\tlan           IPMI v1.5 LAN Interface\x20
+\tlanplus       IPMI v2.0 RMCP+ LAN Interface\x20
+\tserial-terminal  Serial Interface, Terminal Mode\x20
+\tserial-basic  Serial Interface, Basic Mode\x20
+\tdummy         Linux DummyIPMI Interface\x20
+
+Commands:
+\traw           Send a RAW IPMI request and print response
+\ti2c           Send an I2C Master Write-Read command and print response
+\tspd           Print SPD info from remote I2C device
+\tlan           Configure LAN Channels
+\tchassis       Get chassis status and set power state
+\tpower         Shortcut to chassis power commands
+\tevent         Send pre-defined events to MC
+\tmc            Management Controller status and global enables
+\tsdr           Print Sensor Data Repository entries and readings
+\tsensor        Print detailed sensor information
+\tfru           Print built-in FRU and scan SDR for FRU locators
+\tgendev        Read/Write Device associated with Generic Device locators sdr
+\tsel           Print System Event Log (SEL)
+\tpef           Configure Platform Event Filtering (PEF)
+\tsol           Configure and connect IPMIv2.0 Serial-over-LAN
+\ttsol          Configure and connect with Tyan IPMIv1.5 Serial-over-LAN
+\tisol          Configure IPMIv1.5 Serial-over-LAN
+\tuser          Configure Management Controller users
+\tchannel       Configure Management Controller channels
+\tsession       Print session information
+\tdcmi          Data Center Management Interface
+\tnm            Node Manager Interface
+\tsunoem        OEM Commands for Sun servers
+\tkontronoem    OEM Commands for Kontron devices
+\tpicmg         Run a PICMG/ATCA extended cmd
+\tfwum          Update IPMC using Kontron OEM Firmware Update Manager
+\tfirewall      Configure Firmware Firewall
+\tdelloem       OEM Commands for Dell systems
+\tshell         Launch interactive IPMI shell
+\texec          Run list of commands from file
+\tset           Set runtime variable for shell and exec
+\thpm           Update HPM components using PICMG HPM.1 file
+\tekanalyzer    run FRU-Ekeying analyzer using FRU files
+\time           Update Intel Manageability Engine Firmware
+\tvita          Run a VITA 46.11 extended cmd
+\tlan6          Configure IPv6 LAN Channels
+
+#!section requests

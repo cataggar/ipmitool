@@ -1,0 +1,24 @@
+#!golden 1
+#!case chassis_bootmbox_get_binary_text
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 7 is valid/unlocked
+Boot parameter data: 000f2700000102030405060708090a0b0c
+ IANA PEN       : 9999 [Unknown (0x270F)]
+ Block   0 Data : ''
+ Block   1 Data : 'ab'
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 00 00
+< rule=bootparam_7_block0 ccode=0x00 len=19 data=01 07 00 0f 27 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 01 00
+< rule=bootparam_7_block1 ccode=0x00 len=19 data=01 07 01 61 62 00 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 02 00
+< rule=bootparam_7_out_of_range ccode=0xc9 len=0 data=
+bye

@@ -1,0 +1,11 @@
+# Get Chassis Status with every decoded bit set: power on, overload,
+# interlock, main power fault, power control fault, restore policy 3
+# (reserved), every last-power-event bit, every intrusion/lockout/fault bit,
+# and a front panel byte with every bit set.
+default_ccode 0xc1
+
+respond get_chassis_status
+  netfn 0x00
+  cmd 0x01
+  data 7f 1f 0f ff
+end

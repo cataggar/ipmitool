@@ -1,0 +1,16 @@
+# Get System Boot Options parameter 3 fails, so the boot valid flag cannot be
+# read back before it is modified.
+default_ccode 0xc1
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond bootparam_3_unsupported
+  netfn 0x00
+  cmd 0x09
+  match 03
+  ccode 0x80
+end

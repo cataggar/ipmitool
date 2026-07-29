@@ -1,0 +1,27 @@
+# Boot Initiator Mailbox whose block 0 payload is not printable ASCII and
+# whose IANA PEN is not in the registry fixture, and a block 1 that ends with
+# a NUL in the middle so text mode and hex mode disagree about the length.
+default_ccode 0xc1
+
+respond bootparam_7_block0
+  netfn 0x00
+  cmd 0x09
+  match 07 00
+  # IANA PEN 9999, then 13 bytes 00..0c
+  data 01 07 00 0f 27 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c
+end
+
+respond bootparam_7_block1
+  netfn 0x00
+  cmd 0x09
+  match 07 01
+  # "ab" then a NUL then 13 more non-zero bytes
+  data 01 07 01 61 62 00 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd
+end
+
+respond bootparam_7_out_of_range
+  netfn 0x00
+  cmd 0x09
+  match 07
+  ccode 0xc9
+end

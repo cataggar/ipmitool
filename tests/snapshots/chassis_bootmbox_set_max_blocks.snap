@@ -1,0 +1,17 @@
+#!golden 1
+#!case chassis_bootmbox_set_max_blocks
+#!section exit
+0
+#!section stdout
+#!section stderr
+Set Chassis Boot Parameter 7 failed: Command not supported in present state
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 01
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=07 00 57 01 00 78 78 78 78 78 78 78 78 78 78 78 78 78
+< rule=default ccode=0xd5 len=0 data=
+bye

@@ -1,0 +1,22 @@
+# Set System Boot Options parameter 5 (boot flags) is unsupported.
+default_ccode 0xc1
+
+respond set_boot_flags_unsupported
+  netfn 0x00
+  cmd 0x08
+  match 05
+  ccode 0x80
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond bootparam_3
+  netfn 0x00
+  cmd 0x09
+  match 03
+  data 01 03 1b
+end

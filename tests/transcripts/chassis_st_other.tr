@@ -1,0 +1,8 @@
+# Get Self Test Results: a device-specific code, printed as a pair.
+default_ccode 0xc1
+
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  data 3c 9e
+end

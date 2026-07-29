@@ -1,0 +1,8 @@
+# Get Self Test Results: 0x56, self test function not implemented.
+default_ccode 0xc1
+
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  data 56 00
+end

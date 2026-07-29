@@ -1,0 +1,406 @@
+# A BMC that implements the whole Chassis netfn plus Get Self Test Results,
+# used by tests/cases/42-chassis.cases.
+#
+# Get System Boot Options (00h/09h) is answered per parameter, and for the
+# parameters with many decode branches per *set selector* as well: the second
+# request byte is the set selector, which `chassis bootparam get <param> <sel>`
+# puts there, so one transcript can serve every branch of the decoder.
+#
+# Anything not listed here answers 0xc1 "Invalid command".
+
+default_ccode 0xc1
+
+# --- chassis --------------------------------------------------------------
+respond get_chassis_status
+  netfn 0x00
+  cmd 0x01
+  # power on, restore policy always-on, last event AC failed,
+  # front panel: sleep/diag/reset/power disable all allowed, none disabled
+  data 61 10 40 5f
+end
+
+respond chassis_control
+  netfn 0x00
+  cmd 0x02
+  data
+end
+
+respond chassis_identify
+  netfn 0x00
+  cmd 0x04
+  data
+end
+
+respond set_power_restore_policy
+  netfn 0x00
+  cmd 0x06
+  # supported policies bitmask: always-off (bit 0), previous (bit 1),
+  # always-on (bit 2)
+  data 07
+end
+
+respond get_restart_cause
+  netfn 0x00
+  cmd 0x07
+  # 0x1 = chassis power control command; the high nibble must be masked off
+  data f1 00
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond get_poh_counter
+  netfn 0x00
+  cmd 0x0f
+  # 1 minute per count, 123456 counts -> 85 days, 17 hours, 36 minutes
+  data 01 40 e2 01 00
+end
+
+# --- Get System Boot Options (00h/09h) ------------------------------------
+# Rules are tried in file order, so the set-selector-specific rules for a
+# parameter must come before that parameter's catch-all rule.
+
+# Parameter 0, set in progress: the two low bits, all four values.
+respond bootparam_0_set_complete
+  netfn 0x00
+  cmd 0x09
+  match 00 00
+  data 01 00 00
+end
+respond bootparam_0_set_in_progress
+  netfn 0x00
+  cmd 0x09
+  match 00 01
+  data 01 00 01
+end
+respond bootparam_0_commit_write
+  netfn 0x00
+  cmd 0x09
+  match 00 02
+  data 01 00 02
+end
+respond bootparam_0_reserved
+  netfn 0x00
+  cmd 0x09
+  match 00 03
+  # 0xfc in the data proves only the low two bits are decoded
+  data 01 00 fc
+end
+
+# Parameter 1, service partition selector.
+respond bootparam_1_unspecified
+  netfn 0x00
+  cmd 0x09
+  match 01 00
+  data 01 01 00
+end
+respond bootparam_1_selected
+  netfn 0x00
+  cmd 0x09
+  match 01 01
+  data 01 01 2a
+end
+
+# Parameter 2, service partition scan.
+respond bootparam_2_none
+  netfn 0x00
+  cmd 0x09
+  match 02 00
+  # 0xfc proves the decoder only looks at the low two bits
+  data 01 02 fc
+end
+respond bootparam_2_request_scan
+  netfn 0x00
+  cmd 0x09
+  match 02 01
+  data 01 02 01
+end
+respond bootparam_2_discovered
+  netfn 0x00
+  cmd 0x09
+  match 02 02
+  data 01 02 02
+end
+respond bootparam_2_both
+  netfn 0x00
+  cmd 0x09
+  match 02 03
+  data 01 02 03
+end
+
+# Parameter 3, BMC boot flag valid bit clearing.  Set selector 0 is also what
+# ipmi_chassis_get_bootvalid() reads back before writing the flag, so its
+# value has bits both inside and outside the masks `options=` manipulates.
+respond bootparam_3_mixed
+  netfn 0x00
+  cmd 0x09
+  match 03 00
+  data 01 03 1b
+end
+respond bootparam_3_all
+  netfn 0x00
+  cmd 0x09
+  match 03 01
+  data 01 03 1f
+end
+respond bootparam_3_pef_only
+  netfn 0x00
+  cmd 0x09
+  match 03 02
+  data 01 03 10
+end
+respond bootparam_3_power_only
+  netfn 0x00
+  cmd 0x09
+  match 03 03
+  data 01 03 01
+end
+respond bootparam_3_none
+  netfn 0x00
+  cmd 0x09
+  match 03 04
+  # 0xe0 proves only the low five bits are decoded
+  data 01 03 e0
+end
+
+# Parameter 4, boot info acknowledge.  The decoder reads data[3], the second
+# parameter byte, not the first - the first byte differs here to pin that.
+respond bootparam_4_none
+  netfn 0x00
+  cmd 0x09
+  match 04 00
+  data 01 04 1f e0
+end
+respond bootparam_4_all
+  netfn 0x00
+  cmd 0x09
+  match 04 01
+  data 01 04 00 1f
+end
+respond bootparam_4_bios_only
+  netfn 0x00
+  cmd 0x09
+  match 04 02
+  data 01 04 00 01
+end
+respond bootparam_4_oem_only
+  netfn 0x00
+  cmd 0x09
+  match 04 03
+  data 01 04 00 10
+end
+
+# Parameter 5, boot flags.  Five parameter data bytes; the fifth is 0xa5
+# everywhere because nothing decodes it, so a decoder that read one byte too
+# far would show it.
+respond bootparam_5_pxe
+  netfn 0x00
+  cmd 0x09
+  match 05 00
+  data 01 05 80 04 00 00 a5
+end
+respond bootparam_5_persistent_none
+  netfn 0x00
+  cmd 0x09
+  match 05 01
+  data 01 05 c0 00 00 00 a5
+end
+respond bootparam_5_efi_disk
+  netfn 0x00
+  cmd 0x09
+  match 05 02
+  data 01 05 20 08 00 00 a5
+end
+respond bootparam_5_safe
+  netfn 0x00
+  cmd 0x09
+  match 05 03
+  data 01 05 00 0c 00 00 a5
+end
+respond bootparam_5_diag
+  netfn 0x00
+  cmd 0x09
+  match 05 04
+  data 01 05 00 10 00 00 a5
+end
+respond bootparam_5_cdrom
+  netfn 0x00
+  cmd 0x09
+  match 05 05
+  data 01 05 00 14 00 00 a5
+end
+respond bootparam_5_setup
+  netfn 0x00
+  cmd 0x09
+  match 05 06
+  data 01 05 00 18 00 00 a5
+end
+respond bootparam_5_remote_fdd
+  netfn 0x00
+  cmd 0x09
+  match 05 07
+  data 01 05 00 1c 00 00 a5
+end
+respond bootparam_5_remote_cdrom
+  netfn 0x00
+  cmd 0x09
+  match 05 08
+  data 01 05 00 20 00 00 a5
+end
+respond bootparam_5_remote_primary
+  netfn 0x00
+  cmd 0x09
+  match 05 09
+  data 01 05 00 24 00 00 a5
+end
+respond bootparam_5_bootdev_ten
+  netfn 0x00
+  cmd 0x09
+  match 05 0a
+  # device selector 10 is not in the table -> "Flag error"
+  data 01 05 00 28 00 00 a5
+end
+respond bootparam_5_remote_hdd
+  netfn 0x00
+  cmd 0x09
+  match 05 0b
+  data 01 05 00 2c 00 00 a5
+end
+respond bootparam_5_floppy
+  netfn 0x00
+  cmd 0x09
+  match 05 0c
+  data 01 05 00 3c 00 00 a5
+end
+respond bootparam_5_byte2_flags
+  netfn 0x00
+  cmd 0x09
+  match 05 0d
+  # CMOS clear + lock keyboard + screen blank + reset lockout
+  data 01 05 00 c3 00 00 a5
+end
+respond bootparam_5_verbosity_quiet
+  netfn 0x00
+  cmd 0x09
+  match 05 0e
+  # power lockout + quiet display
+  data 01 05 00 00 a0 00 a5
+end
+respond bootparam_5_verbosity_verbose
+  netfn 0x00
+  cmd 0x09
+  match 05 0f
+  data 01 05 00 00 40 00 a5
+end
+respond bootparam_5_verbosity_reserved
+  netfn 0x00
+  cmd 0x09
+  match 05 10
+  data 01 05 00 00 60 00 a5
+end
+respond bootparam_5_byte3_flags
+  netfn 0x00
+  cmd 0x09
+  match 05 11
+  # event traps + password bypass + sleep lockout, console default
+  data 01 05 00 00 1c 00 a5
+end
+respond bootparam_5_console_skip
+  netfn 0x00
+  cmd 0x09
+  match 05 12
+  data 01 05 00 00 01 00 a5
+end
+respond bootparam_5_console_enable
+  netfn 0x00
+  cmd 0x09
+  match 05 13
+  data 01 05 00 00 02 00 a5
+end
+respond bootparam_5_console_reserved
+  netfn 0x00
+  cmd 0x09
+  match 05 14
+  data 01 05 00 00 03 00 a5
+end
+respond bootparam_5_shared_mode
+  netfn 0x00
+  cmd 0x09
+  match 05 15
+  data 01 05 00 00 00 08 a5
+end
+respond bootparam_5_mux_bmc
+  netfn 0x00
+  cmd 0x09
+  match 05 16
+  data 01 05 00 00 00 01 a5
+end
+respond bootparam_5_mux_system
+  netfn 0x00
+  cmd 0x09
+  match 05 17
+  data 01 05 00 00 00 02 a5
+end
+respond bootparam_5_mux_reserved
+  netfn 0x00
+  cmd 0x09
+  match 05 18
+  data 01 05 00 00 00 03 a5
+end
+respond bootparam_5_locked
+  netfn 0x00
+  cmd 0x09
+  match 05 19
+  # parameter selector byte with bit 7 set: "invalid/locked"
+  data 01 85 80 04 00 00 a5
+end
+
+# Parameter 6, boot initiator info.
+respond bootparam_6
+  netfn 0x00
+  cmd 0x09
+  match 06
+  # channel 1, session id 0x12345678, timestamp 1577836800 (2020-01-01 UTC)
+  data 01 06 71 78 56 34 12 00 e1 0b 5e
+end
+
+# Parameter 7, boot initiator mailbox.  Block 0 carries a three byte IANA PEN
+# followed by 13 data bytes; later blocks carry 16 data bytes.
+respond bootparam_7_block0
+  netfn 0x00
+  cmd 0x09
+  match 07 00
+  # IANA PEN 343 (Intel) little endian, then "ipmitool root" ASCII
+  data 01 07 00 57 01 00 69 70 6d 69 74 6f 6f 6c 20 72 6f 6f 74
+end
+respond bootparam_7_block1
+  netfn 0x00
+  cmd 0x09
+  match 07 01
+  # "=/dev/sda2 ro\0\0" - 16 bytes
+  data 01 07 01 3d 2f 64 65 76 2f 73 64 61 32 20 72 6f 00 00 00
+end
+respond bootparam_7_out_of_range
+  netfn 0x00
+  cmd 0x09
+  match 07
+  ccode 0xc9
+end
+
+# Any other parameter is unsupported.
+respond bootparam_unsupported
+  netfn 0x00
+  cmd 0x09
+  ccode 0x80
+end
+
+# --- app ------------------------------------------------------------------
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  # 0x55 = self test passed
+  data 55 00
+end

@@ -170,6 +170,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "lib/ipmi_mc.c",
         .implementation = "src/zig/cmd/mc.zig",
     },
+    .{
+        .name = "chassis",
+        .replaces = "lib/ipmi_chassis.c",
+        .implementation = "src/zig/cmd/chassis.zig",
+    },
 };
 
 /// Root of the Zig source tree.

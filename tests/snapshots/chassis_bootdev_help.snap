@@ -1,0 +1,23 @@
+#!golden 1
+#!case chassis_bootdev_help
+#!section exit
+1
+#!section stdout
+#!section stderr
+bootdev <device> [clear-cmos=yes|no]
+bootdev <device> [options=help,...]
+  none     : Do not change boot device order
+  pxe      : Force PXE boot
+  disk     : Force boot from default Hard-drive
+  safe     : Force boot from default Hard-drive, request Safe Mode
+  diag     : Force boot from Diagnostic Partition
+  cdrom    : Force boot from CD/DVD
+  bios     : Force boot into BIOS Setup
+  floppy   : Force boot from Floppy/primary removable media
+  remotecd : Force boot from remote CD/DVD
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

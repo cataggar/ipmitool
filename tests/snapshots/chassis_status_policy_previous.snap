@@ -1,0 +1,26 @@
+#!golden 1
+#!case chassis_status_policy_previous
+#!section exit
+0
+#!section stdout
+System Power         : off
+Power Overload       : false
+Power Interlock      : inactive
+Main Power Fault     : false
+Power Control Fault  : false
+Power Restore Policy : previous
+Last Power Event     :\x20
+Chassis Intrusion    : inactive
+Front-Panel Lockout  : inactive
+Drive Fault          : false
+Cooling/Fan Fault    : false
+Front Panel Control  : none
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_chassis_status ccode=0x00 len=4 data=20 00 00 00
+bye
