@@ -7,6 +7,9 @@ zig-out/
 # `zig build test` the scratch root lives in .zig-cache instead.
 .golden-work/
 
+# scratch output of tools/dump_strings.sh and tools/diff_cli.sh
+build/
+
 # autotools build (kept as a cross-check during the Zig migration)
 .deps
 .dirstamp

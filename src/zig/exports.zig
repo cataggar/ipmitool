@@ -17,6 +17,12 @@ comptime {
     if (selected("oem")) {
         _ = @import("cmd/oem.zig");
     }
+    if (selected("strings")) {
+        // Two files: the lookup tables, and the IANA PEN registry loader that
+        // only `exports.zig` may pull in because it calls back into `log.c`.
+        _ = @import("util/strings.zig");
+        _ = @import("util/strings_registry.zig");
+    }
 }
 
 fn selected(comptime name: []const u8) bool {
