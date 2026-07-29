@@ -1,0 +1,104 @@
+# Malformed / adversarial SDR repository.
+#
+#   0x4365 "Long"  a Full Sensor Record whose declared length (40h) exceeds the
+#                  47 body bytes the BMC actually has. lib/ipmi_sdr.c asks for
+#                  64 bytes, the BMC returns 47, and the memcpy in
+#                  ipmi_sdr_get_record() copies 64 anyway. The declared length
+#                  is visible in the recorded Get SDR request bytes.
+#   0x8c9b         a record with reserved record type 0Ch, which `sensor list'
+#                  must read, free and silently skip.
+#   0x1234 "TempA" a healthy record placed last, so the walk is proven to
+#                  continue past both oddities.
+#
+# Get Sensor Thresholds answers with only three bytes. lib/ipmi_sensor.c reads
+# rsp->data[1..6] unconditionally, so the upper three thresholds are printed
+# from bytes the response never carried. The dummy plugin keeps its
+# `struct ipmi_rs' in a function-local static that it never clears, so those
+# bytes are the tail of the *previous* response and the result is completely
+# deterministic -- which is exactly what makes this over-read snapshotable.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 03 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data 9b 8c
+  partial 4 1 5
+  blob @sensor/full_overlong.hex
+end
+respond get_sdr_4365
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 65 43
+  data 9b 8c
+  partial 4 1 5
+  blob @sensor/full_overlong.hex
+end
+respond get_sdr_8c9b
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 9b 8c
+  data 34 12
+  partial 4 1 5
+  blob @sensor/reserved_type.hex
+end
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 34 12
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_analog.hex
+end
+
+respond reading_88
+  netfn 0x04
+  cmd 0x2d
+  match 88
+  data 30 c0 c0 00
+end
+respond reading_11
+  netfn 0x04
+  cmd 0x2d
+  match 11
+  data 30 c0 c0 00
+end
+
+respond thresh_short
+  netfn 0x04
+  cmd 0x27
+  # readable mask plus only the two lowest thresholds; data[4], data[5] and
+  # data[6] are past the end of the response
+  data 3f 0f 0a
+end
+
+respond hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 07 0d
+end
+
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

@@ -1,0 +1,32 @@
+# SDR Type 02h - Compact Sensor Record with a discrete event/reading type.
+# sensor_reading.full is NULL *and* the sensor is discrete, which is the
+# second distinct arm of ipmi_sensor_print_fc_discrete().
+
+87 65        # [1:2]  Record ID = 0x6587
+51           # [3]    SDR version 1.5
+02           # [4]    Record type 02h = Compact Sensor Record
+20           # [5]    Record length = 32 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+66           # [8]    Sensor number 66h
+15           # [9]    Entity ID 21 = Add-in Card
+87           # [10]   Entity instance 7, logical bit set (pins & 0x7f)
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+21           # [13]   Sensor type 21h = Slot/Connector
+6f           # [14]   Event/reading type 6Fh = sensor-specific discrete
+ff 3f        # [15:16] Assertion event mask
+ff 3f        # [17:18] Deassertion event mask
+3f 3f        # [19:20] Discrete reading mask
+00           # [21]   Units 1
+00           # [22]   Units 2
+00           # [23]   Units 3
+00           # [24]   Sensor record sharing 1
+00           # [25]   Sensor record sharing 2
+00           # [26]   Positive-going threshold hysteresis
+00           # [27]   Negative-going threshold hysteresis
+00 00 00     # [28:30] Reserved
+00           # [31]   OEM
+c5           # [32]   ID string type/length: 8-bit ASCII, 5 characters
+44 69 73 63 43   # [33:37] "DiscC"

@@ -1,0 +1,49 @@
+# SDR Type 01h - Full Sensor Record with a *discrete* event/reading type (6Fh).
+# IS_THRESHOLD_SENSOR() is false, so `sensor list` routes this record to
+# ipmi_sensor_print_fc_discrete() even though sensor_reading.full is non-NULL.
+
+43 21        # [1:2]  Record ID = 0x2143
+51           # [3]    SDR version 1.5
+01           # [4]    Record type 01h = Full Sensor Record
+30           # [5]    Record length = 48 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+55           # [8]    Sensor number 55h
+07           # [9]    Entity ID 7 = System Board
+06           # [10]   Entity instance 6
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+07           # [13]   Sensor type 07h = Processor
+6f           # [14]   Event/reading type 6Fh = sensor-specific discrete
+ff 3f        # [15:16] Assertion event mask
+ff 3f        # [17:18] Deassertion event mask
+3f 3f        # [19:20] Discrete reading mask
+00           # [21]   Units 1: analog format 0
+00           # [22]   Units 2: base unit 0 = unspecified
+00           # [23]   Units 3
+00           # [24]   Linearization
+00           # [25]   M LS
+00           # [26]   M MS/tolerance
+00           # [27]   B LS
+00           # [28]   B MS/accuracy LS
+00           # [29]   Accuracy MS/exp/direction
+00           # [30]   R exponent | B exponent
+00           # [31]   Analog flags
+00           # [32]   Nominal reading
+00           # [33]   Normal maximum
+00           # [34]   Normal minimum
+00           # [35]   Sensor maximum reading
+00           # [36]   Sensor minimum reading
+00           # [37]   Upper non-recoverable
+00           # [38]   Upper critical
+00           # [39]   Upper non-critical
+00           # [40]   Lower non-recoverable
+00           # [41]   Lower critical
+00           # [42]   Lower non-critical
+00           # [43]   Positive-going threshold hysteresis
+00           # [44]   Negative-going threshold hysteresis
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c5           # [48]   ID string type/length: 8-bit ASCII, 5 characters
+44 69 73 63 46   # [49:53] "DiscF"

@@ -326,6 +326,7 @@ Current parser fixtures:
 | directory              | fixtures                                                               |
 | ---------------------- | ---------------------------------------------------------------------- |
 | `fixtures/sdr/`        | full sensor, compact sensor, event-only, FRU device locator records     |
+| `fixtures/sensor/`     | full and compact threshold/discrete sensor SDRs, plus non-linear, discrete-units, bridged, reserved record type, overlong record length, and readable-threshold-mask variants |
 | `fixtures/fru/`        | common header, chassis/board/product/multirecord areas, plus bad checksum, bad common header, truncated and out-of-range-offset variants |
 | `fixtures/sel/`        | threshold event, discrete event, OEM timestamped, OEM non-timestamped, short entry |
 | `fixtures/spd/`        | JEDEC DDR3 SPD image and a short-read variant                          |

@@ -1,0 +1,249 @@
+#!golden 1
+#!case sen_bridged_list_verbose
+#!section exit
+0
+#!section stdout
+Sensor ID              : BrdgS (0x77)
+ Entity ID             : 10.9
+ Sensor Type (Threshold)  : Voltage
+ Sensor Reading        : 6.400 (+/- 1.350) Volts
+ Status                : ok
+ Lower Non-Recoverable : -0.500
+ Lower Critical        : 1.900
+ Lower Non-Critical    : 3.700
+ Upper Non-Critical    : 12.700
+ Upper Critical        : 16.900
+ Upper Non-Recoverable : 21.700
+ Positive Hysteresis   : 3.300
+ Negative Hysteresis   : 4.200
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 20
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 20
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 22
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: b
+msg.cmd: 22
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 1
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 1
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 27
+msg.target_cmd: 0
+msg.lun: 1
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 5
+msg.cmd: 27
+msg.seq: 0
+msg.lun: 1
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 1
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 1
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 1
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 1
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=ff ff 9c a3 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 9c a3 05 17
+< rule=get_sdr_a39c ccode=0x00 len=25 data=ff ff 2c 5d 77 0a 09 7f 68 02 01 ff 3f ff 3f 3f 3f 00 04 00 00 03 09 f2 c0
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 9c a3 1c 17
+< rule=get_sdr_a39c ccode=0x00 len=25 data=ff ff 00 f0 07 1e 46 0c ff 00 64 5a 50 0a 14 1e 0b 0e 00 00 00 c5 42 72 64
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 9c a3 33 02
+< rule=get_sdr_a39c ccode=0x00 len=4 data=ff ff 67 53
+> netfn=0x04 lun=0x01 cmd=0x2d target_cmd=0x00 data=77
+< rule=reading_77 ccode=0x00 len=4 data=1a c0 c0 00
+> netfn=0x04 lun=0x01 cmd=0x27 target_cmd=0x00 data=77
+< rule=thresh_77 ccode=0x00 len=7 data=3f 11 0b 03 2f 3d 4d
+> netfn=0x04 lun=0x01 cmd=0x2b target_cmd=0x00 data=77
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x01 cmd=0x29 target_cmd=0x00 data=77
+< rule=event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+bye

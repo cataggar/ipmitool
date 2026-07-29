@@ -1,0 +1,10 @@
+# An SDR record with a *reserved* record type (0Ch). lib/ipmi_sensor.c's
+# `sensor list' switch has no arm for it, so the record must be read, freed and
+# silently skipped -- the walk must not stop and must not print anything.
+
+9b 8c        # [1:2]  Record ID = 0x8c9b
+51           # [3]    SDR version 1.5
+0c           # [4]    Record type 0Ch = reserved / unknown to ipmitool
+08           # [5]    Record length = 8 bytes follow
+
+de ad be ef 12 34 56 78   # [6:13] opaque payload

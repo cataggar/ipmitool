@@ -1,0 +1,58 @@
+# SDR Type 01h - Full Sensor Record with linearization 70h (non-linear).
+#
+# lib/ipmi_sdr.c only calls ipmi_sensor_get_sensor_reading_factors() when
+# linearization is in 70h..7Fh, so this record is the sole route into that
+# function.  The M/tolerance and B/accuracy/exponent bytes stored *here* are
+# deliberately different from the ones the Get Sensor Reading Factors response
+# supplies in tests/transcripts/sensor.tr, so that a wrong memcpy offset or a
+# short memcpy leaves recognisable SDR bytes behind in the converted reading.
+
+f0 de        # [1:2]  Record ID = 0xdef0
+51           # [3]    SDR version 1.5
+01           # [4]    Record type 01h = Full Sensor Record
+31           # [5]    Record length = 49 bytes follow
+
+20           # [6]    Sensor owner ID
+3e           # [7]    Sensor owner LUN 2, FRU owner LUN 3, channel 3 -- pins
+             #        req.msg.lun of the Get Sensor Reading Factors request, which
+             #        no other record reaches.  The FRU owner LUN bits are set so
+             #        that the sensor owner LUN's `& 3' is distinguishable from a
+             #        `& 7' or a `& 0xf'.
+44           # [8]    Sensor number 44h
+07           # [9]    Entity ID 7 = System Board
+05           # [10]   Entity instance 5
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+02           # [13]   Sensor type 02h = Voltage
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask
+00           # [21]   Units 1: analog format 0 (unsigned)
+04           # [22]   Units 2: base unit 04h = Volts
+00           # [23]   Units 3
+70           # [24]   Linearization 70h = non-linear, factors must be fetched
+11           # [25]   M LS = 11h  (overridden by Get Sensor Reading Factors)
+12           # [26]   M MS/tolerance = 12h (tolerance 18)
+13           # [27]   B LS = 13h
+14           # [28]   B MS/accuracy LS = 14h
+15           # [29]   Accuracy MS/exp/direction = 15h
+16           # [30]   R exponent 1 | B exponent 6
+07           # [31]   Analog flags
+28           # [32]   Nominal reading
+50           # [33]   Normal maximum
+0a           # [34]   Normal minimum
+ff           # [35]   Sensor maximum reading
+00           # [36]   Sensor minimum reading
+8f           # [37]   Upper non-recoverable
+7e           # [38]   Upper critical
+6d           # [39]   Upper non-critical
+1c           # [40]   Lower non-recoverable
+2b           # [41]   Lower critical
+3a           # [42]   Lower non-critical
+04           # [43]   Positive-going threshold hysteresis
+06           # [44]   Negative-going threshold hysteresis
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c6           # [48]   ID string type/length: 8-bit ASCII, 6 characters
+4e 6f 6e 4c 69 6e   # [49:54] "NonLin"

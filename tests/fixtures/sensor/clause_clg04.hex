@@ -1,0 +1,57 @@
+# SDR Type 01h - Full Sensor Record for tests/transcripts/sensor_clause.tr.
+#
+# Readable-threshold mask returned by the BMC: 04h (lnr).
+# Exactly one bit is set: the guard bit of a branch, with every clause inside
+# it masked off.  Validation can therefore never reject, so any clause whose
+# mask is changed to a bit that *is* set becomes visible immediately.
+#
+# M is 1, B is 0 and both exponents are 0, so a converted threshold equals its
+# raw byte.  Record ID, sensor number and entity all use distinct non-zero
+# bytes, per the rule in tests/transport/Bmc.zig.
+
+a5 83        # [1:2]  Record ID = 0x83a5
+51           # [3]    SDR version 1.5 (51h)
+01           # [4]    Record type 01h = Full Sensor Record
+30           # [5]    Record length = 48 bytes follow
+
+20           # [6]    Sensor owner ID (BMC)
+00           # [7]    Owner LUN 0, channel 0
+5b           # [8]    Sensor number 5Bh
+1b           # [9]    Entity ID
+2b           # [10]   Entity instance
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities: thresholds readable+settable
+01           # [13]   Sensor type 01h = Temperature
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask in the SDR; only the
+             #        mask the BMC returns at run time matters here
+00           # [21]   Units 1: analog format 0 (unsigned)
+01           # [22]   Units 2: base unit 01h = degrees C
+00           # [23]   Units 3: no modifier unit
+00           # [24]   Linearization: linear
+01           # [25]   M = 1 (LS 8 bits)
+0b           # [26]   M MS 2 bits = 0, tolerance = 11
+00           # [27]   B = 0 (LS 8 bits)
+00           # [28]   B MS 2 bits | accuracy LS 6 bits
+00           # [29]   Accuracy MS | accuracy exp | sensor direction
+00           # [30]   R exponent | B exponent (both 0)
+07           # [31]   Analog flags: nominal, normal max and normal min specified
+32           # [32]   Nominal reading = 50
+5a           # [33]   Normal maximum = 90
+14           # [34]   Normal minimum = 20
+ff           # [35]   Sensor maximum reading = 255
+00           # [36]   Sensor minimum reading = 0
+64           # [37]   Upper non-recoverable = 100
+5a           # [38]   Upper critical = 90
+50           # [39]   Upper non-critical = 80
+0a           # [40]   Lower non-recoverable = 10
+14           # [41]   Lower critical = 20
+1e           # [42]   Lower non-critical = 30
+09           # [43]   Positive-going threshold hysteresis
+0e           # [44]   Negative-going threshold hysteresis (differs from positive)
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c5           # [48]   ID string type/length: 8-bit ASCII, 5 characters
+43 6c 67 30 34   # [49:53] "Clg04"

@@ -1,0 +1,235 @@
+# A BMC whose SDR repository exercises every record shape lib/ipmi_sensor.c
+# treats differently:
+#
+#   0x1234  full,    threshold, analog reading         "TempA"   sensor 0x11
+#   0x5678  compact, threshold (sr->full == NULL)      "FanC"    sensor 0x22
+#   0x9abc  full,    threshold, UNITS_ARE_DISCRETE     "DiscU"   sensor 0x33
+#   0xdef0  full,    threshold, non-linear (70h)       "NonLin"  sensor 0x44
+#   0x2143  full,    discrete event/reading type       "DiscF"   sensor 0x55
+#   0x6587  compact, discrete event/reading type       "DiscC"   sensor 0x66
+#   0x0003  event-only                                 "PWR Unit"
+#   0x0004  FRU device locator                         "FRU Board"
+#
+# Every multi-byte quantity here uses distinct, non-zero bytes so that a wrong
+# byte order or a short read is visible in the request bytes or the output --
+# see the rule documented in tests/transport/Bmc.zig:
+#
+#   * the reservation ID is 0x5aa5, not 0x0001, so the two reservation bytes
+#     of every Get SDR request differ from each other;
+#   * every record ID has two differing non-zero bytes;
+#   * every sensor number is distinct;
+#   * the Get Sensor Thresholds responses use six distinct non-zero values so
+#     an off-by-one in the threshold indexing changes the printed text.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # SDR version 51h, 8 records, 0xffff free bytes, reserve supported
+  data 51 08 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  # Reservation ID 0x5aa5: LSB a5, MSB 5a. A reservation of 01 00 would leave
+  # the byte order of the reservation field in the Get SDR request unpinned.
+  data a5 5a
+end
+
+# --- record 0x1234: full sensor, analog threshold ("TempA") ----------------
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sensor/full_analog.hex
+end
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sensor/full_analog.hex
+end
+
+# --- record 0x5678: compact sensor, threshold ("FanC") ---------------------
+respond get_sdr_5678
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 78 56
+  data bc 9a
+  partial 4 1 5
+  blob @sensor/compact_thresh.hex
+end
+
+# --- record 0x9abc: full sensor, units say "no analog reading" ("DiscU") ---
+respond get_sdr_9abc
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a bc 9a
+  data f0 de
+  partial 4 1 5
+  blob @sensor/full_units_na.hex
+end
+
+# --- record 0xdef0: full sensor, non-linear ("NonLin") ---------------------
+respond get_sdr_def0
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a f0 de
+  data 43 21
+  partial 4 1 5
+  blob @sensor/full_nonlinear.hex
+end
+
+# --- record 0x2143: full sensor, discrete ("DiscF") ------------------------
+respond get_sdr_2143
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 43 21
+  data 87 65
+  partial 4 1 5
+  blob @sensor/full_discrete.hex
+end
+
+# --- record 0x6587: compact sensor, discrete ("DiscC") ---------------------
+respond get_sdr_6587
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 87 65
+  data 03 00
+  partial 4 1 5
+  blob @sensor/compact_discrete.hex
+end
+
+# --- record 0x0003: event-only ("PWR Unit") --------------------------------
+respond get_sdr_0003
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 03 00
+  data 04 00
+  partial 4 1 5
+  blob @sdr/eventonly_pwr.hex
+end
+
+# --- record 0x0004: FRU device locator ("FRU Board") -----------------------
+respond get_sdr_0004
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 04 00
+  # 0xffff is SDR_RECORD_ID_LAST: end of repository
+  data ff ff
+  partial 4 1 5
+  blob @sdr/fru_locator.hex
+end
+
+# --- sensor readings (netfn 04h, cmd 2Dh; request data is the sensor #) ----
+respond reading_11
+  netfn 0x04
+  cmd 0x2d
+  match 11
+  # raw 0x30 = 48; M=2 => 96 degrees C. Scanning and event messages enabled.
+  data 30 c0 c0 00
+end
+respond reading_22
+  netfn 0x04
+  cmd 0x2d
+  match 22
+  data 7b c0 c0 00
+end
+respond reading_33
+  netfn 0x04
+  cmd 0x2d
+  match 33
+  data 4c c0 c0 00
+end
+respond reading_44
+  netfn 0x04
+  cmd 0x2d
+  match 44
+  data 30 c0 c0 00
+end
+respond reading_55
+  netfn 0x04
+  cmd 0x2d
+  match 55
+  # discrete: data2 = 0x0a selects two distinct, non-adjacent state bits
+  data 00 c0 0a 00
+end
+respond reading_66
+  netfn 0x04
+  cmd 0x2d
+  match 66
+  data 00 c0 05 00
+end
+
+# --- Get Sensor Reading Factors (netfn 04h, cmd 23h) -----------------------
+# Reached only for the non-linear record 0xdef0. The six factor bytes are all
+# distinct, all non-zero, and all different from the bytes the SDR itself
+# carries, so a wrong memcpy offset or a short memcpy is visible in both the
+# converted reading and the printed tolerance.
+respond sensor_factors
+  netfn 0x04
+  cmd 0x23
+  # next reading, M LS, M MS/tol, B LS, B MS/acc, acc/exp, Rexp/Bexp
+  data 55 04 3d 07 3a 1b 21
+end
+
+# --- Get Sensor Thresholds (netfn 04h, cmd 27h) ----------------------------
+respond thresh_11
+  netfn 0x04
+  cmd 0x27
+  match 11
+  # all six readable; values agree with the SDR record
+  data 3f 0f 0a 05 4b 55 5f
+end
+respond thresh_22
+  netfn 0x04
+  cmd 0x27
+  match 22
+  # six distinct non-zero values: lnc 1f, lcr 2e, lnr 3d, unc 4c, ucr 5b, unr 6a
+  data 3f 1f 2e 3d 4c 5b 6a
+end
+respond thresh_33
+  netfn 0x04
+  cmd 0x27
+  match 33
+  data 3f 36 25 14 c3 d2 e1
+end
+respond thresh_44
+  netfn 0x04
+  cmd 0x27
+  match 44
+  data 3f 3a 2b 1c 6d 7e 8f
+end
+
+# --- Get Sensor Hysteresis (netfn 04h, cmd 24h) ----------------------------
+respond hysteresis
+  netfn 0x04
+  cmd 0x24
+  # positive 07, negative 0d: differing non-zero bytes pin the two offsets
+  data 07 0d
+end
+
+# --- Get Sensor Event Enable (netfn 04h, cmd 29h) --------------------------
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
+
+# --- Set Sensor Thresholds (netfn 04h, cmd 26h) ----------------------------
+respond set_thresh
+  netfn 0x04
+  cmd 0x26
+end

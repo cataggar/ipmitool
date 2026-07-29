@@ -1,0 +1,159 @@
+# A BMC that reports *partial* readable-threshold masks in byte 0 of its Get
+# Sensor Thresholds response.
+#
+#   0xc3d1  full, threshold, analog, readable mask 2Ah   "MaskA"  sensor AAh
+#   0xe27b  full, threshold, analog, readable mask 15h   "MaskB"  sensor BBh
+#   0xf58d  full, threshold, analog, readable mask 0Bh   "MaskC"  sensor CCh
+#   0x6e1a  full, threshold, analog, readable mask 0Dh   "MaskD"  sensor DDh
+#
+# 2Ah and 15h are complements, so across those two records each of the six
+# threshold bits is seen once set and once clear.  They agree on parity though,
+# so 0Bh is there to break it: it has lnc set with lnr clear, and unc set with
+# unr clear, which no complementary pair can do.  0Dh finishes the job: it is
+# the only mask here in which unc differs from lcr and lnr differs from ucr.
+# Between 3Fh, 2Ah, 15h, 0Bh and 0Dh all fifteen pairs of threshold bits are
+# separated, so no guard can be swapped for another bit unnoticed.  Every other transcript in the
+# suite returns 3Fh, which makes each `data[0] & bit' guard in
+# ipmi_sensor_set_threshold() indistinguishable from a constant 1 and each mask
+# inside those guards indistinguishable from any other set bit.
+#
+# Both records use M=1, B=0 and zero exponents, so a converted threshold equals
+# its raw byte:
+#
+#   lnc 1Eh = 30   lcr 14h = 20   lnr 0Ah = 10
+#   unc 50h = 80   ucr 5Ah = 90   unr 64h = 100
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # SDR version 51h, 4 records, 0xffff free bytes, reserve supported
+  data 51 04 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data 7b e2
+  partial 4 1 5
+  blob @sensor/full_mask_a.hex
+end
+respond get_sdr_c3d1
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a d1 c3
+  data 7b e2
+  partial 4 1 5
+  blob @sensor/full_mask_a.hex
+end
+respond get_sdr_e27b
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 7b e2
+  data 8d f5
+  partial 4 1 5
+  blob @sensor/full_mask_b.hex
+end
+respond get_sdr_f58d
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 8d f5
+  data 1a 6e
+  partial 4 1 5
+  blob @sensor/full_mask_c.hex
+end
+respond get_sdr_6e1a
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 1a 6e
+  # 0xffff is SDR_RECORD_ID_LAST: end of repository
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_mask_d.hex
+end
+
+respond reading_aa
+  netfn 0x04
+  cmd 0x2d
+  match aa
+  # raw 0x2d = 45; M=1 => 45 degrees C
+  data 2d c0 c0 00
+end
+respond reading_bb
+  netfn 0x04
+  cmd 0x2d
+  match bb
+  data 3b c0 c0 00
+end
+respond reading_cc
+  netfn 0x04
+  cmd 0x2d
+  match cc
+  data 47 c0 c0 00
+end
+respond reading_dd
+  netfn 0x04
+  cmd 0x2d
+  match dd
+  data 53 c0 c0 00
+end
+
+respond thresh_aa
+  netfn 0x04
+  cmd 0x27
+  match aa
+  # readable mask 2Ah = lcr | unc | unr
+  data 2a 1e 14 0a 50 5a 64
+end
+respond thresh_bb
+  netfn 0x04
+  cmd 0x27
+  match bb
+  # readable mask 15h = lnc | lnr | ucr
+  data 15 1e 14 0a 50 5a 64
+end
+respond thresh_cc
+  netfn 0x04
+  cmd 0x27
+  match cc
+  # readable mask 0Bh = lnc | lcr | unc
+  data 0b 1e 14 0a 50 5a 64
+end
+respond thresh_dd
+  netfn 0x04
+  cmd 0x27
+  match dd
+  # readable mask 0Dh = lnc | lnr | unc
+  data 0d 1e 14 0a 50 5a 64
+end
+
+respond hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 07 0d
+end
+
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
+
+respond set_thresh
+  netfn 0x04
+  cmd 0x26
+end

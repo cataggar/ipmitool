@@ -1,0 +1,71 @@
+# SDR Type 01h - Full Sensor Record owned by a *non-BMC* controller reached
+# over a *non-zero* channel, at a *non-zero* LUN.
+#
+# Every other record in tests/transcripts/sensor.tr has owner ID 20h, LUN 0 and
+# channel 0, which leaves three things unpinned:
+#
+#   * `keys.lun`      = byte [7] bits 1:0 -> req.msg.lun of Get Sensor Factors
+#                       and of Set Sensor Thresholds;
+#   * `keys.channel`  = byte [7] bits 7:4 -> the channel argument of
+#                       ipmi_sdr_get_sensor_thresholds();
+#   * BRIDGE_TO_SENSOR(), which only fires when the owner/channel pair differs
+#     from intf->target_addr / intf->target_channel.
+#
+# Byte [7] is 5Dh = 0101 1101b: channel 5, FRU owner LUN 3, sensor owner LUN 1.
+# Three different non-zero fields, so a wrong mask or a wrong shift changes the
+# logged request.  In particular the FRU owner LUN bits are set, which is what
+# separates the sensor owner LUN's `& 3' from a `& 7' or a `& 0xf'; a keys byte
+# of 51h would leave all three indistinguishable.  See the "distinct, non-zero
+# bytes" rule in tests/transport/Bmc.zig.
+
+9c a3        # [1:2]  Record ID = 0xa39c
+51           # [3]    SDR version 1.5 (51h)
+01           # [4]    Record type 01h = Full Sensor Record
+30           # [5]    Record length = 48 bytes follow
+
+2c           # [6]    Sensor owner ID 2Ch (not the BMC's 20h)
+5d           # [7]    Sensor owner LUN 1, FRU owner LUN 3, channel 5
+77           # [8]    Sensor number 77h
+0a           # [9]    Entity ID 10 = Power Supply
+09           # [10]   Entity instance 9
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities: thresholds readable+settable
+02           # [13]   Sensor type 02h = Voltage
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask (all six thresholds)
+00           # [21]   Units 1: analog format 0 (unsigned)
+04           # [22]   Units 2: base unit 04h = Volts
+00           # [23]   Units 3: no modifier unit
+00           # [24]   Linearization: linear
+03           # [25]   M = 3 (LS 8 bits)
+09           # [26]   M MS 2 bits = 0, tolerance = 9
+f2           # [27]   B = -14 (LS 8 bits of the 10-bit two's complement 3F2h).
+             #        A negative B is what lets a small raw threshold convert to
+             #        a negative value, which is the only way to reach the
+             #        `if (val[i] < 0) val[i] = 0` clamp in the validator.
+c0           # [28]   B MS 2 bits = 11b | accuracy LS 6 bits = 0
+00           # [29]   Accuracy MS | accuracy exp | sensor direction
+f0           # [30]   R exponent = -1, B exponent = 0.  Dividing by ten puts the
+             #        lower non-recoverable threshold at -0.5 rather than -11,
+             #        i.e. strictly between -1 and 0, so `val[i] < 0' and
+             #        `val[i] < -1' disagree.
+07           # [31]   Analog flags: nominal, normal max and normal min specified
+1e           # [32]   Nominal reading = 30
+46           # [33]   Normal maximum = 70
+0c           # [34]   Normal minimum = 12
+ff           # [35]   Sensor maximum reading = 255
+00           # [36]   Sensor minimum reading = 0
+64           # [37]   Upper non-recoverable = 100
+5a           # [38]   Upper critical = 90
+50           # [39]   Upper non-critical = 80
+0a           # [40]   Lower non-recoverable = 10
+14           # [41]   Lower critical = 20
+1e           # [42]   Lower non-critical = 30
+0b           # [43]   Positive-going threshold hysteresis
+0e           # [44]   Negative-going threshold hysteresis (differs from positive)
+00 00        # [45:46] Reserved
+00           # [47]   OEM
+c5           # [48]   ID string type/length: 8-bit ASCII, 5 characters
+42 72 64 67 53   # [49:53] "BrdgS"

@@ -1,0 +1,34 @@
+# SDR Type 02h - Compact Sensor Record with a threshold event/reading type.
+#
+# Compact records have no analog conversion factors, so sensor_reading.full is
+# NULL for them.  That drives the "sr->full == NULL" arms of the threshold
+# dump helpers in lib/ipmi_sensor.c.
+
+78 56        # [1:2]  Record ID = 0x5678
+51           # [3]    SDR version 1.5
+02           # [4]    Record type 02h = Compact Sensor Record
+1f           # [5]    Record length = 31 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+22           # [8]    Sensor number 22h
+1d           # [9]    Entity ID 29 = Fan Device
+03           # [10]   Entity instance 3
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+04           # [13]   Sensor type 04h = Fan
+01           # [14]   Event/reading type 01h = threshold
+ff 3f        # [15:16] Assertion event mask / lower threshold reading mask
+ff 3f        # [17:18] Deassertion event mask / upper threshold reading mask
+3f 3f        # [19:20] Settable / readable threshold mask
+00           # [21]   Units 1: analog format 0 (unsigned)
+12           # [22]   Units 2: base unit 12h = RPM
+00           # [23]   Units 3
+00           # [24]   Sensor record sharing 1
+00           # [25]   Sensor record sharing 2
+09           # [26]   Positive-going threshold hysteresis
+0b           # [27]   Negative-going threshold hysteresis (differs from positive)
+00 00 00     # [28:30] Reserved
+00           # [31]   OEM
+c4           # [32]   ID string type/length: 8-bit ASCII, 4 characters
+46 61 6e 43  # [33:36] "FanC"

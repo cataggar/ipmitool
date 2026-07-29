@@ -1,0 +1,180 @@
+# The same SDR repository as sensor.tr, but with the BMC returning the awkward
+# answers that lib/ipmi_sensor.c has to cope with:
+#
+#   sensor 0x11 "TempA"   Get Sensor Thresholds -> completion code D4h
+#                         (thresh_available == 0, rsp->ccode set)
+#   sensor 0x22 "FanC"    Get Sensor Thresholds -> success, zero-length data
+#                         (thresh_available == 0, !rsp->data_len)
+#   sensor 0x33 "DiscU"   Get Sensor Reading    -> scanning disabled
+#   sensor 0x44 "NonLin"  Get Sensor Factors    -> completion code D5h
+#                         (sr->s_reading_valid cleared by lib/ipmi_sdr.c)
+#   sensor 0x55 "DiscF"   Get Sensor Reading    -> completion code CBh, which
+#                         lib/ipmi_sdr.c special-cases for full records
+#   sensor 0x66 "DiscC"   Get Sensor Reading    -> reading unavailable flag
+#
+# Set Sensor Thresholds also fails with D5h so the "Error setting threshold"
+# path is reachable.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 08 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sensor/full_analog.hex
+end
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sensor/full_analog.hex
+end
+respond get_sdr_5678
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 78 56
+  data bc 9a
+  partial 4 1 5
+  blob @sensor/compact_thresh.hex
+end
+respond get_sdr_9abc
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a bc 9a
+  data f0 de
+  partial 4 1 5
+  blob @sensor/full_units_na.hex
+end
+respond get_sdr_def0
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a f0 de
+  data 43 21
+  partial 4 1 5
+  blob @sensor/full_nonlinear.hex
+end
+respond get_sdr_2143
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 43 21
+  data 87 65
+  partial 4 1 5
+  blob @sensor/full_discrete.hex
+end
+respond get_sdr_6587
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 87 65
+  data ff ff
+  partial 4 1 5
+  blob @sensor/compact_discrete.hex
+end
+
+# --- readings --------------------------------------------------------------
+respond reading_11
+  netfn 0x04
+  cmd 0x2d
+  match 11
+  data 30 c0 c0 00
+end
+respond reading_22
+  netfn 0x04
+  cmd 0x2d
+  match 22
+  data 7b c0 c0 00
+end
+respond reading_33
+  netfn 0x04
+  cmd 0x2d
+  match 33
+  # bit 6 clear => IS_SCANNING_DISABLED() is true
+  data 4c 80 c0 00
+end
+respond reading_44
+  netfn 0x04
+  cmd 0x2d
+  match 44
+  data 30 c0 c0 00
+end
+respond reading_55
+  netfn 0x04
+  cmd 0x2d
+  match 55
+  # CBh "requested sensor, data or record not present"; lib/ipmi_sdr.c
+  # suppresses its debug message for full records only
+  ccode 0xcb
+end
+respond reading_66
+  netfn 0x04
+  cmd 0x2d
+  match 66
+  # bit 5 set => IS_READING_UNAVAILABLE() is true, scanning still enabled
+  data 00 e0 05 00
+end
+
+# --- Get Sensor Reading Factors fails --------------------------------------
+respond sensor_factors_fail
+  netfn 0x04
+  cmd 0x23
+  ccode 0xd5
+end
+
+# --- Get Sensor Thresholds -------------------------------------------------
+respond thresh_11_fail
+  netfn 0x04
+  cmd 0x27
+  match 11
+  ccode 0xd4
+end
+respond thresh_22_empty
+  netfn 0x04
+  cmd 0x27
+  match 22
+  # success, but no data at all: !rsp->data_len also clears thresh_available
+end
+respond thresh_other
+  netfn 0x04
+  cmd 0x27
+  data 3f 36 25 14 c3 d2 e1
+end
+
+respond hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 07 0d
+end
+
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
+
+# --- Set Sensor Thresholds fails -------------------------------------------
+respond set_thresh_fail
+  netfn 0x04
+  cmd 0x26
+  ccode 0xd5
+end

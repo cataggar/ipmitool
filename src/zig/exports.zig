@@ -67,6 +67,9 @@ comptime {
     if (selected("event")) {
         @import("cmd/event.zig").exportSymbols();
     }
+    if (selected("sensor")) {
+        @import("cmd/sensor.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

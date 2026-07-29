@@ -1,0 +1,82 @@
+#!golden 1
+#!case sen_cls06_lcr_over_lnr
+#!section exit
+0
+#!section stdout
+Locating sensor record 'Clx06'...
+Setting sensor "Clx06" Lower Critical threshold to 11.000
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 0d 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=b5 34 a3 12 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 05 17
+< rule=get_sdr_12a3 ccode=0x00 len=25 data=b5 34 20 00 a1 11 21 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 1c 17
+< rule=get_sdr_12a3 ccode=0x00 len=25 data=b5 34 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 33 02
+< rule=get_sdr_12a3 ccode=0x00 len=4 data=b5 34 33 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 00 05
+< rule=get_sdr_34b5 ccode=0x00 len=7 data=c7 56 b5 34 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 05 17
+< rule=get_sdr_34b5 ccode=0x00 len=25 data=c7 56 20 00 b2 12 22 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 1c 17
+< rule=get_sdr_34b5 ccode=0x00 len=25 data=c7 56 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a b5 34 33 02
+< rule=get_sdr_34b5 ccode=0x00 len=4 data=c7 56 32 38
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 00 05
+< rule=get_sdr_56c7 ccode=0x00 len=7 data=d9 78 c7 56 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 05 17
+< rule=get_sdr_56c7 ccode=0x00 len=25 data=d9 78 20 00 c3 13 23 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 1c 17
+< rule=get_sdr_56c7 ccode=0x00 len=25 data=d9 78 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 33 02
+< rule=get_sdr_56c7 ccode=0x00 len=4 data=d9 78 31 38
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 00 05
+< rule=get_sdr_78d9 ccode=0x00 len=7 data=eb 9a d9 78 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 05 17
+< rule=get_sdr_78d9 ccode=0x00 len=25 data=eb 9a 20 00 d4 14 24 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 1c 17
+< rule=get_sdr_78d9 ccode=0x00 len=25 data=eb 9a 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a d9 78 33 02
+< rule=get_sdr_78d9 ccode=0x00 len=4 data=eb 9a 30 39
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a eb 9a 00 05
+< rule=get_sdr_9aeb ccode=0x00 len=7 data=fd bc eb 9a 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a eb 9a 05 17
+< rule=get_sdr_9aeb ccode=0x00 len=25 data=fd bc 20 00 e5 15 25 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a eb 9a 1c 17
+< rule=get_sdr_9aeb ccode=0x00 len=25 data=fd bc 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a eb 9a 33 02
+< rule=get_sdr_9aeb ccode=0x00 len=4 data=fd bc 30 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a fd bc 00 05
+< rule=get_sdr_bcfd ccode=0x00 len=7 data=1f de fd bc 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a fd bc 05 17
+< rule=get_sdr_bcfd ccode=0x00 len=25 data=1f de 20 00 f6 16 26 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a fd bc 1c 17
+< rule=get_sdr_bcfd ccode=0x00 len=25 data=1f de 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a fd bc 33 02
+< rule=get_sdr_bcfd ccode=0x00 len=4 data=1f de 30 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 1f de 00 05
+< rule=get_sdr_de1f ccode=0x00 len=7 data=4c 2b 1f de 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 1f de 05 17
+< rule=get_sdr_de1f ccode=0x00 len=25 data=4c 2b 20 00 97 17 27 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 0b 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 1f de 1c 17
+< rule=get_sdr_de1f ccode=0x00 len=25 data=4c 2b 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 1f de 33 02
+< rule=get_sdr_de1f ccode=0x00 len=4 data=4c 2b 30 36
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=97
+< rule=reading_97 ccode=0x00 len=4 data=33 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=97
+< rule=thresh_97 ccode=0x00 len=7 data=06 1e 14 0a 50 5a 64
+> netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=97 02 00 0b 00 00 00 00
+< rule=set_thresh ccode=0x00 len=0 data=
+bye
