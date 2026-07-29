@@ -202,7 +202,20 @@ pub fn ipmiTimestampTime(stamp: u32) callconv(.c) [*c]u8 {
 // ---------------------------------------------------------------------------
 
 /// Called at comptime from `src/zig/exports.zig` when `time` is selected.
+///
+/// The ABI assertions live here rather than at file scope so that they are
+/// only analysed when the module is actually selected - see the note in
+/// doc/zig-migration/varargs-trampoline.md.
 pub fn exportSymbols() void {
+    abi.assertCallSignature(@TypeOf(ipmiLocaltime2utc), @TypeOf(c.ipmi_localtime2utc));
+    abi.assertCallSignature(@TypeOf(ipmiStrftime), @TypeOf(c.ipmi_strftime));
+    abi.assertCallSignature(@TypeOf(ipmiAsctimeR), @TypeOf(c.ipmi_asctime_r));
+    abi.assertCallSignature(@TypeOf(ipmiTimestampFmt), @TypeOf(c.ipmi_timestamp_fmt));
+    abi.assertCallSignature(@TypeOf(ipmiTimestampString), @TypeOf(c.ipmi_timestamp_string));
+    abi.assertCallSignature(@TypeOf(ipmiTimestampNumeric), @TypeOf(c.ipmi_timestamp_numeric));
+    abi.assertCallSignature(@TypeOf(ipmiTimestampDate), @TypeOf(c.ipmi_timestamp_date));
+    abi.assertCallSignature(@TypeOf(ipmiTimestampTime), @TypeOf(c.ipmi_timestamp_time));
+
     @export(&time_in_utc, .{ .name = "time_in_utc", .linkage = .strong });
     @export(&ipmiLocaltime2utc, .{ .name = "ipmi_localtime2utc", .linkage = .strong });
     @export(&ipmiStrftime, .{ .name = "ipmi_strftime", .linkage = .strong });
@@ -215,15 +228,6 @@ pub fn exportSymbols() void {
 }
 
 comptime {
-    abi.assertCallSignature(@TypeOf(ipmiLocaltime2utc), @TypeOf(c.ipmi_localtime2utc));
-    abi.assertCallSignature(@TypeOf(ipmiStrftime), @TypeOf(c.ipmi_strftime));
-    abi.assertCallSignature(@TypeOf(ipmiAsctimeR), @TypeOf(c.ipmi_asctime_r));
-    abi.assertCallSignature(@TypeOf(ipmiTimestampFmt), @TypeOf(c.ipmi_timestamp_fmt));
-    abi.assertCallSignature(@TypeOf(ipmiTimestampString), @TypeOf(c.ipmi_timestamp_string));
-    abi.assertCallSignature(@TypeOf(ipmiTimestampNumeric), @TypeOf(c.ipmi_timestamp_numeric));
-    abi.assertCallSignature(@TypeOf(ipmiTimestampDate), @TypeOf(c.ipmi_timestamp_date));
-    abi.assertCallSignature(@TypeOf(ipmiTimestampTime), @TypeOf(c.ipmi_timestamp_time));
-
     if (@sizeOf(DateBuf) != asctime_sz) @compileError("ipmi_datebuf_t size drift");
     if (c.IPMI_ASCTIME_SZ != asctime_sz) @compileError("IPMI_ASCTIME_SZ drift");
     if (c.SECONDS_A_DAY != seconds_a_day) @compileError("SECONDS_A_DAY drift");

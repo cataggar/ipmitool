@@ -1012,46 +1012,11 @@ pub fn isSet(value: anytype, bit: anytype) bool {
 // ---------------------------------------------------------------------------
 
 /// Called at comptime from `src/zig/exports.zig` when `helper` is selected.
+///
+/// The ABI assertions live here rather than at file scope so that they are
+/// only analysed when the module is actually selected - see the note in
+/// doc/zig-migration/varargs-trampoline.md.
 pub fn exportSymbols() void {
-    @export(&buf2long, .{ .name = "buf2long", .linkage = .strong });
-    @export(&buf2short, .{ .name = "buf2short", .linkage = .strong });
-    @export(&buf2strExtended, .{ .name = "buf2str_extended", .linkage = .strong });
-    @export(&buf2str, .{ .name = "buf2str", .linkage = .strong });
-    @export(&ipmiParseHex, .{ .name = "ipmi_parse_hex", .linkage = .strong });
-    @export(&printbuf, .{ .name = "printbuf", .linkage = .strong });
-    @export(&arrayByteswap, .{ .name = "array_byteswap", .linkage = .strong });
-    @export(&arrayNtoh, .{ .name = "array_ntoh", .linkage = .strong });
-    @export(&arrayLetoh, .{ .name = "array_letoh", .linkage = .strong });
-    @export(&str2mac, .{ .name = "str2mac", .linkage = .strong });
-    @export(&mac2str, .{ .name = "mac2str", .linkage = .strong });
-    @export(&specificVal2str, .{ .name = "specific_val2str", .linkage = .strong });
-    @export(&val2str, .{ .name = "val2str", .linkage = .strong });
-    @export(&oemval2str, .{ .name = "oemval2str", .linkage = .strong });
-    @export(&str2val32, .{ .name = "str2val32", .linkage = .strong });
-    @export(&printValstr, .{ .name = "print_valstr", .linkage = .strong });
-    @export(&printValstr2col, .{ .name = "print_valstr_2col", .linkage = .strong });
-    @export(&str2double, .{ .name = "str2double", .linkage = .strong });
-    @export(&str2long, .{ .name = "str2long", .linkage = .strong });
-    @export(&str2ulong, .{ .name = "str2ulong", .linkage = .strong });
-    @export(&str2int, .{ .name = "str2int", .linkage = .strong });
-    @export(&str2uint, .{ .name = "str2uint", .linkage = .strong });
-    @export(&str2short, .{ .name = "str2short", .linkage = .strong });
-    @export(&str2ushort, .{ .name = "str2ushort", .linkage = .strong });
-    @export(&str2char, .{ .name = "str2char", .linkage = .strong });
-    @export(&str2uchar, .{ .name = "str2uchar", .linkage = .strong });
-    @export(&ipmiCsum, .{ .name = "ipmi_csum", .linkage = .strong });
-    @export(&ipmiOpenFile, .{ .name = "ipmi_open_file", .linkage = .strong });
-    @export(&ipmiStartDaemon, .{ .name = "ipmi_start_daemon", .linkage = .strong });
-    @export(&evalCcode, .{ .name = "eval_ccode", .linkage = .strong });
-    @export(&isFruId, .{ .name = "is_fru_id", .linkage = .strong });
-    @export(&isIpmiChannelNum, .{ .name = "is_ipmi_channel_num", .linkage = .strong });
-    @export(&isIpmiUserId, .{ .name = "is_ipmi_user_id", .linkage = .strong });
-    @export(&isIpmiUserPrivLimit, .{ .name = "is_ipmi_user_priv_limit", .linkage = .strong });
-    @export(&ipmiGetOemId, .{ .name = "ipmi_get_oem_id", .linkage = .strong });
-    @export(&args2buf, .{ .name = "args2buf", .linkage = .strong });
-}
-
-comptime {
     @setEvalBranchQuota(100_000);
     abi.assertCallSignature(@TypeOf(buf2long), @TypeOf(c.buf2long));
     abi.assertCallSignature(@TypeOf(buf2short), @TypeOf(c.buf2short));
@@ -1089,6 +1054,43 @@ comptime {
     abi.assertCallSignature(@TypeOf(isIpmiUserPrivLimit), @TypeOf(c.is_ipmi_user_priv_limit));
     abi.assertCallSignature(@TypeOf(ipmiGetOemId), @TypeOf(c.ipmi_get_oem_id));
     abi.assertCallSignature(@TypeOf(args2buf), @TypeOf(c.args2buf));
+
+    @export(&buf2long, .{ .name = "buf2long", .linkage = .strong });
+    @export(&buf2short, .{ .name = "buf2short", .linkage = .strong });
+    @export(&buf2strExtended, .{ .name = "buf2str_extended", .linkage = .strong });
+    @export(&buf2str, .{ .name = "buf2str", .linkage = .strong });
+    @export(&ipmiParseHex, .{ .name = "ipmi_parse_hex", .linkage = .strong });
+    @export(&printbuf, .{ .name = "printbuf", .linkage = .strong });
+    @export(&arrayByteswap, .{ .name = "array_byteswap", .linkage = .strong });
+    @export(&arrayNtoh, .{ .name = "array_ntoh", .linkage = .strong });
+    @export(&arrayLetoh, .{ .name = "array_letoh", .linkage = .strong });
+    @export(&str2mac, .{ .name = "str2mac", .linkage = .strong });
+    @export(&mac2str, .{ .name = "mac2str", .linkage = .strong });
+    @export(&specificVal2str, .{ .name = "specific_val2str", .linkage = .strong });
+    @export(&val2str, .{ .name = "val2str", .linkage = .strong });
+    @export(&oemval2str, .{ .name = "oemval2str", .linkage = .strong });
+    @export(&str2val32, .{ .name = "str2val32", .linkage = .strong });
+    @export(&printValstr, .{ .name = "print_valstr", .linkage = .strong });
+    @export(&printValstr2col, .{ .name = "print_valstr_2col", .linkage = .strong });
+    @export(&str2double, .{ .name = "str2double", .linkage = .strong });
+    @export(&str2long, .{ .name = "str2long", .linkage = .strong });
+    @export(&str2ulong, .{ .name = "str2ulong", .linkage = .strong });
+    @export(&str2int, .{ .name = "str2int", .linkage = .strong });
+    @export(&str2uint, .{ .name = "str2uint", .linkage = .strong });
+    @export(&str2short, .{ .name = "str2short", .linkage = .strong });
+    @export(&str2ushort, .{ .name = "str2ushort", .linkage = .strong });
+    @export(&str2char, .{ .name = "str2char", .linkage = .strong });
+    @export(&str2uchar, .{ .name = "str2uchar", .linkage = .strong });
+    @export(&ipmiCsum, .{ .name = "ipmi_csum", .linkage = .strong });
+    @export(&ipmiOpenFile, .{ .name = "ipmi_open_file", .linkage = .strong });
+    @export(&ipmiStartDaemon, .{ .name = "ipmi_start_daemon", .linkage = .strong });
+    @export(&evalCcode, .{ .name = "eval_ccode", .linkage = .strong });
+    @export(&isFruId, .{ .name = "is_fru_id", .linkage = .strong });
+    @export(&isIpmiChannelNum, .{ .name = "is_ipmi_channel_num", .linkage = .strong });
+    @export(&isIpmiUserId, .{ .name = "is_ipmi_user_id", .linkage = .strong });
+    @export(&isIpmiUserPrivLimit, .{ .name = "is_ipmi_user_priv_limit", .linkage = .strong });
+    @export(&ipmiGetOemId, .{ .name = "ipmi_get_oem_id", .linkage = .strong });
+    @export(&args2buf, .{ .name = "args2buf", .linkage = .strong });
 }
 
 // ---------------------------------------------------------------------------

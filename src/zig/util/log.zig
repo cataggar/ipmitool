@@ -206,18 +206,20 @@ fn logLevelSetAbi(verbose: c_int) callconv(.c) void {
 }
 
 /// Called at comptime from `src/zig/exports.zig` when `log` is selected.
+///
+/// The ABI assertions live here rather than at file scope so that they are
+/// only analysed when the module is actually selected - see the note in
+/// doc/zig-migration/varargs-trampoline.md.
 pub fn exportSymbols() void {
+    abi.assertCallSignature(@TypeOf(logInitAbi), @TypeOf(c.log_init));
+    abi.assertCallSignature(@TypeOf(logHaltAbi), @TypeOf(c.log_halt));
+    abi.assertCallSignature(@TypeOf(logLevelSetAbi), @TypeOf(c.log_level_set));
+
     @export(&logInitAbi, .{ .name = "log_init", .linkage = .strong });
     @export(&logHaltAbi, .{ .name = "log_halt", .linkage = .strong });
     @export(&logLevelSetAbi, .{ .name = "log_level_set", .linkage = .strong });
     @export(&lvprintf, .{ .name = "ipmitool_zig_lvprintf", .linkage = .strong });
     @export(&lvperror, .{ .name = "ipmitool_zig_lvperror", .linkage = .strong });
-}
-
-comptime {
-    abi.assertCallSignature(@TypeOf(logInitAbi), @TypeOf(c.log_init));
-    abi.assertCallSignature(@TypeOf(logHaltAbi), @TypeOf(c.log_halt));
-    abi.assertCallSignature(@TypeOf(logLevelSetAbi), @TypeOf(c.log_level_set));
 }
 
 test "level aliases match log.h" {

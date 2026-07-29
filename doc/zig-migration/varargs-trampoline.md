@@ -116,6 +116,30 @@ CI architectures.  Add a module to the `zig_modules` table and the coverage
 comes for free - including its `c_shims`, which `addSwappedTool` compiles the
 same way the main build does.
 
+## Keep `assertCallSignature` out of file scope
+
+`abi.assertCallSignature(@TypeOf(ported), @TypeOf(c.original))` names the C
+declaration, and naming it is enough to make the compiler emit a reference to
+it.  In a file-scope `comptime` block that happens unconditionally, including
+in the `abi_tests` binary, which links `src/zig/root.zig` against libc and
+nothing else.
+
+That is invisible with the LLVM backend, which drops unused extern
+declarations, and a hard link failure with the self-hosted x86_64 backend that
+Zig 0.16 uses for a native Debug build on `ubuntu-latest`:
+
+```
+error: undefined symbol: str2short
+    note: referenced by root.o:.debug_info
+```
+
+So the assertions go inside `exportSymbols()`, next to the `@export` calls they
+describe - the same shape `src/zig/cmd/oem.zig` already has.  Then they are
+only analysed when the module is selected, at which point the symbol they name
+is the one the module itself exports.  Nothing is lost: `zig build test` links
+`ipmitool-zig` with every module selected on both CI architectures, so every
+assertion still runs on every PR.
+
 ## Formatting and locale-sensitive parsing stay in libc
 
 Output parity is the acceptance criterion for the whole migration, so the ports
