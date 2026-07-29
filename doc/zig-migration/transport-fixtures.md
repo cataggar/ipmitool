@@ -195,9 +195,35 @@ MD5 authcodes on every v1.5 packet *other than* Activate Session are fully
 deterministic and are pinned byte for byte, which puts `ipmi_auth_md5` under
 test on the wire.
 
+### The same rule applies to the model BMC's own constants
+
+A fixture cannot pin a field the tool copies back onto the wire unless the
+value in that field makes the candidate serialisations *disagree*.  Every
+constant in `Bmc.zig` that the tool has to re-emit or re-parse therefore uses
+**four distinct non-zero bytes** (sixteen for the 16-byte blobs).
+
+The rule was learned the hard way.  `inbound_seq` was originally
+`0x00000101`, whose top two bytes are zero, so `(s->in_seq >> 16)` and
+`(s->in_seq >> 24)` produced the same byte and the v1.5 session sequence
+number's byte order was not pinned at the high end at all — mutation M11 below
+survived.  With `inbound_seq = 0x51627384` it fails 12 cases.
+
+Both halves of the rule matter:
+
+- **distinct** kills shift-amount and byte-order mutations, because every
+  candidate byte differs from every other;
+- **non-zero** kills short-write and truncation mutations, because the C
+  assembles packets in a zeroed buffer, so a byte that is never written is
+  indistinguishable from a byte that is written as zero.
+
+The audited constants and the reasoning for each are in the doc comments in
+`Bmc.zig`; the two protocol-mandated exceptions are `asf_rmcp_iana`
+(`0x000011be`, fixed by the ASF spec) and the fixed IPMI addresses
+`IPMI_BMC_SLAVE_ADDR`/`IPMI_REMOTE_SWID`, which are single bytes.
+
 ## Coverage
 
-25 cases, `tests/transport/cases.zig`.
+27 cases, `tests/transport/cases.zig`.
 
 | area | cases |
 | --- | --- |
@@ -205,10 +231,12 @@ test on the wire.
 | RMCP header assembly, ASF presence ping/pong | every `lan` case; `lan/none-ping-retry`, `lan/oem-supermicro` |
 | IPMI v1.5 session activation (0x38 / 0x39 / 0x3a / 0x3b / 0x3c) | `lan/none-mc-info`, `lan/md5-mc-info` |
 | v1.5 authtype NONE / MD5 / OEM authcode generation | `lan/none-mc-info`, `lan/md5-mc-info`, `lan/oem-supermicro` |
-| v1.5 session sequence numbering, little-endian | all `lan` cases (M3, M7) |
+| v1.5 session sequence numbering, little-endian, all four bytes | all `lan` cases (M3, M7, M11) |
 | `rq_seq` allocation and retransmission reuse | `lan/none-retry` (M6) |
 | message-length byte computation | `lan/md5-raw-zeros` (M5) |
+| response length parsing on receive | all `lan` cases (M15) |
 | netfn/lun packing for a non-App netfn | `lan/md5-chassis-status` |
+| the LUN reaching the wire in the low two bits of the netfn byte | `lan/md5-raw-lun` (M12) |
 | retry limit, exactly | `lan/none-timeout`, `lanplus/cipher3-timeout` (M4) |
 | retry then success | `lan/none-retry`, `lan/none-ping-retry`, `lanplus/cipher3-retry` |
 | session-setup error paths | `lan/authcap-error`, `lan/activate-error` |
@@ -219,7 +247,8 @@ test on the wire.
 | HMAC-SHA1-96 and HMAC-SHA256-128 integrity, pad byte and next-header | `lanplus/cipher3-mc-info`, `lanplus/cipher17-mc-info` (M9) |
 | AES-CBC-128 confidentiality and its padding rule | `lanplus/cipher3-mc-info`, `lanplus/cipher3-raw-pad` |
 | two-key (Kg) login | `lanplus/cipher3-kg` |
-| RMCP+ payload-size field | `lanplus/cipher1-raw-long` (M8) |
+| RMCP+ payload-size field, low byte | `lanplus/cipher1-raw-long` (M8) |
+| RMCP+ payload-size field, **high** byte, sent and received | `lanplus/cipher1-raw-big` (M13, M14) |
 | RMCP+ privilege lookup bit | all `lanplus` cases (M10) |
 | RMCP+ failure paths | `lanplus/open-session-error`, `lanplus/rakp2-error`, `lanplus/rakp2-bad-authcode` |
 | `ipmi_intf` registry lookup failure | `intf/unknown` |
@@ -263,26 +292,36 @@ a future port PR still has to argue about separately.
 - **Timing.**  The retry cases pin the *number* of retransmissions, not the
   interval between them.  A mutation that only changed the backoff would not
   be caught.
+- **Response payload *interpretation*.**  The harness pins the bytes that cross
+  the wire and the process's stdout/stderr; what a command module makes of a
+  response body is the golden suite's job.  A `Get Device ID` reply whose
+  manufacturer id has a zero high byte, for example, does not pin that
+  `ipmi_mc.c` reads three bytes rather than two — that is out of scope here.
 - **Bridging beyond two levels.**  The model BMC unwraps at most two nested
   `Send Message` wrappers, which is what `-t` and `-T`/`-B` produce.
 
 ## Mutation battery
 
 Each row is one mutation applied to the C source, rebuilt, run.  Baseline is
-`25 passed, 0 failed`.
+`27 passed, 0 failed`.
 
 | # | file | mutation | transport result |
 | --- | --- | --- | --- |
-| M1 | `lib/helper.c` | `ipmi_csum` returns `1 - sum` instead of `-sum` | **1 passed, 24 failed** |
-| M2 | `lan.c` | second checksum range starts one byte early (`cs = len` → `cs = len - 1`) | 12 passed, **13 failed** |
-| M3 | `lan.c` | session sequence advances by two (`s->in_seq++` → `+= 2`) | 14 passed, **11 failed** |
-| M4 | `lan.c` | `IPMI_LAN_RETRY` 4 → 3 | 23 passed, **2 failed** |
-| M5 | `lan.c` | message length byte `data_len + 7` → `+ 6` | 12 passed, **13 failed** |
-| M6 | `lan.c` | `curr_seq` never advances | 12 passed, **13 failed** |
-| M7 | `lan.c` | v1.5 session sequence written big-endian | 14 passed, **11 failed** |
-| M8 | `lanplus.c` | RMCP+ payload-size field one byte short | 14 passed, **11 failed** |
-| M9 | `lanplus.c` | RMCP+ integrity pad byte `0xFF` → `0x00` | 19 passed, **6 failed** |
-| M10 | `lanplus.c` | RAKP 1 drops the privilege lookup bit | 15 passed, **10 failed** |
+| M1 | `lib/helper.c` | `ipmi_csum` returns `1 - sum` instead of `-sum` | **1 passed, 26 failed** |
+| M2 | `lan.c` | second checksum range starts one byte early (`cs = len` → `cs = len - 1`) | 13 passed, **14 failed** |
+| M3 | `lan.c` | session sequence advances by two (`s->in_seq++` → `+= 2`) | 15 passed, **12 failed** |
+| M4 | `lan.c` | `IPMI_LAN_RETRY` 4 → 3 | 25 passed, **2 failed** |
+| M5 | `lan.c` | message length byte `data_len + 7` → `+ 6` | 13 passed, **14 failed** |
+| M6 | `lan.c` | `curr_seq` never advances | 13 passed, **14 failed** |
+| M7 | `lan.c` | v1.5 session sequence written big-endian | 15 passed, **12 failed** |
+| M8 | `lanplus.c` | RMCP+ payload-size field one byte short | 15 passed, **12 failed** |
+| M9 | `lanplus.c` | RMCP+ integrity pad byte `0xFF` → `0x00` | 21 passed, **6 failed** |
+| M10 | `lanplus.c` | RAKP 1 drops the privilege lookup bit | 16 passed, **11 failed** |
+| M11 | `lan.c` | v1.5 session sequence top byte uses `>> 16` instead of `>> 24` | 15 passed, **12 failed** |
+| M12 | `lan.c` | LUN dropped from the netfn/lun byte | 26 passed, **1 failed** |
+| M13 | `lanplus.c` | RMCP+ payload-size high byte never written | 26 passed, **1 failed** |
+| M14 | `lanplus.c` | RMCP+ payload-size high byte ignored on receive | 26 passed, **1 failed** |
+| M15 | `lan.c` | response `data_len` over-trimmed by one on receive | 13 passed, **14 failed** |
 
 M1 is the case from #26.  With it applied:
 
@@ -302,7 +341,7 @@ FAIL lan/none-mc-info
         !!! header checksum wrong: expected c8
         !!! data checksum wrong: expected 31
 ...
-transport fixtures: 1 passed, 24 failed, 0 skipped
+transport fixtures: 1 passed, 26 failed, 0 skipped
 ```
 
 The one survivor is `intf/unknown`, which fails to load an interface and
@@ -314,7 +353,21 @@ raising the limit still passes.  `lan/none-timeout` and
 `lanplus/cipher3-timeout` use a BMC that never answers one particular
 netfn/cmd, so the transcript contains every retransmission the tool makes and
 the count is pinned exactly in both directions.  Those cases deliberately do
-not pass `-R`, so the compiled-in `IPMI_LAN_RETRY` is what is under test.
+**not** pass `-R`, so the compiled-in `IPMI_LAN_RETRY` is what is under test.
+
+M11 is the mutation that motivated the constant audit above.  Against the
+original `inbound_seq = 0x00000101` it survived; against `0x51627384` it fails
+12 cases.
+
+### Documented equivalent mutants
+
+These survive and are **not** defects.  They are recorded so a future reviewer
+does not read them as a gap.
+
+| mutation | why it is equivalent |
+| --- | --- |
+| `lan.c`: `req->msg.lun & 3` → `& 7` | `struct ipmi_rq.msg.lun` is declared `uint8_t lun:2` (`include/ipmitool/ipmi.h:74`), so the field cannot hold a value above 3 and the two masks agree for every reachable input.  `-l 7` *is* accepted by `str2uchar` and reaches `intf->target_lun`, but `ipmi_raw` truncates it the moment it assigns into the bitfield.  No CLI input can separate the two masks; the mask is dead code.  `lan/md5-raw-lun` still earns its place — it is the only case that catches M12, dropping the LUN from the byte entirely. |
+| growing an `ipmi_csum` range by one byte | see the section above: the extra byte is the not-yet-written checksum slot in a zeroed buffer, so the sum is unchanged.  Shrinking the range *is* caught (M2). |
 
 ## Running it
 
@@ -354,7 +407,9 @@ checksum to Zig is expected to:
    regenerated file, but a *behaviour* change (an extra probe command, a
    different sequence seed) will regenerate cleanly and must be argued for.
 3. Add cases for anything the port introduces that no existing case reaches,
-   and say in the PR body which mutation would have caught it.
+   and say in the PR body which mutation would have caught it.  If the new
+   case involves a constant the tool has to re-emit, apply the four-distinct-
+   non-zero-bytes rule to it.
 4. Re-run at least M1 from the battery above against the ported code and paste
    the result, to show the new implementation is still under the harness and
    has not accidentally been routed around it.

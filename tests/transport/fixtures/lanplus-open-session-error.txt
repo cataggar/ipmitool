@@ -21,7 +21,7 @@
   osr tag=00 privlvl=00 sidm=a0a2a3a4 auth=01 integ=01 conf=01
 004 <-- 52 ipmi.v2 open-session-rs
   raw 06 00 ff 07 06 11 00 00 00 00 00 00 00 00 24 00
-  raw 00 01 04 00 a4 a3 a2 a0 44 33 00 02 00 00 00 08
+  raw 00 01 04 00 a4 a3 a2 a0 8d 7c 6b 5a 00 00 00 08
   raw 01 00 00 00 01 00 00 08 01 00 00 00 02 00 00 08
   raw 01 00 00 00
 exit 1

@@ -1,6 +1,6 @@
-# case  lan/md5-raw-zeros
-# desc  v1.5 raw command with embedded NULs, pinning the length byte
-# args  ipmitool -I lan -H 127.0.0.1 -p ${port} -U opuser -P op-password raw 0x2e 0x92 0xa5 0x00 0x00 0x00 0x00 0x5a
+# case  lan/md5-raw-lun
+# desc  -l 7 puts a non-zero LUN in the low two bits of the netfn byte
+# args  ipmitool -I lan -H 127.0.0.1 -p ${port} -U opuser -P op-password -l 7 raw 0x2e 0x96 0x3c 0xa5 0xc3
 001 --> 12 asf.ping
   raw 06 00 ff 06 00 00 11 be 80 00 00 00
   asf iana=000011be type=80 tag=00 len=00
@@ -122,20 +122,20 @@
   rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=08 lun=0 cmd=00 csum2=ff:ok
   ccc c1
   dat -
-019 --> 43 ipmi.v15 rq
-  raw 06 00 ff 07 02 89 73 62 51 0d 0c 0b 0a 1c 51 19
-  raw 6f 9e 78 bc 58 ce f8 ad 25 f6 31 6d e3 0d 20 b8
-  raw 28 81 24 92 a5 00 00 00 00 5a ca
-  ssn authtype=02 seq=51627389 id=0a0b0c0d msglen=0d authcode=16
-  req rsaddr=20 netfn=2e lun=0 csum1=28:ok rqaddr=81 rqseq=09 lun=0 cmd=92 csum2=ca:ok
-  dat a5 00 00 00 00 5a
-020 <-- 41 ipmi.v15 rs
+019 --> 40 ipmi.v15 rq
+  raw 06 00 ff 07 02 89 73 62 51 0d 0c 0b 0a 7f a3 2a
+  raw d4 61 b4 d5 e4 f2 d0 80 ee f3 87 94 a2 0a 20 bb
+  raw 25 81 24 96 3c a5 c3 21
+  ssn authtype=02 seq=51627389 id=0a0b0c0d msglen=0a authcode=16
+  req rsaddr=20 netfn=2e lun=3 csum1=25:ok rqaddr=81 rqseq=09 lun=0 cmd=96 csum2=21:ok
+  dat 3c a5 c3
+020 <-- 40 ipmi.v15 rs
   raw 06 00 ff 07 02 42 2c 1b 0a 0d 0c 0b 0a 00 00 00
-  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 81 bc
-  raw c3 20 24 92 00 00 7f 00 ab
-  rsp rqaddr=81 netfn=2f lun=0 csum1=c3:ok rsaddr=20 rqseq=09 lun=0 cmd=92 csum2=ab:ok
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 0a 81 bc
+  raw c3 20 27 96 00 5c a3 24
+  rsp rqaddr=81 netfn=2f lun=0 csum1=c3:ok rsaddr=20 rqseq=09 lun=3 cmd=96 csum2=24:ok
   ccc 00
-  dat 00 7f 00
+  dat 5c a3
 021 --> 41 ipmi.v15 rq
   raw 06 00 ff 07 02 8a 73 62 51 0d 0c 0b 0a 3f a2 25
   raw a1 4d 4d d1 5f 30 8b b0 df 8b 26 a4 6d 0b 20 18
@@ -151,5 +151,5 @@
   ccc 00
   dat -
 exit 0
-out | 00 7f 00
+out | 5c a3
 err -

@@ -98,32 +98,44 @@ pub const Personality = struct {
     /// v2.0-supported bit, which is what makes `lanplus` proceed.
     v20: bool = true,
 
+    /// Session ids and sequence numbers the tool has to serialise back onto
+    /// the wire are chosen with **four distinct non-zero bytes**.  A value like
+    /// `0x00000101` would leave `>> 16` and `>> 24` indistinguishable and a
+    /// short write invisible, i.e. the field's byte order and width would not
+    /// be pinned at all (the lesson-1 failure mode, see
+    /// doc/zig-migration/transport-fixtures.md).
     temp_session_id: u32 = 0x11223344,
     session_id: u32 = 0x0a0b0c0d,
     /// The "initial inbound sequence number" the BMC hands out; it becomes the
     /// session sequence number in every subsequent request the tool sends.
-    inbound_seq: u32 = 0x00000101,
+    inbound_seq: u32 = 0x51627384,
     challenge: [16]u8 = .{
         0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
         0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf,
     },
 
-    /// SIDc.  Deliberately *not* byte symmetric, so an endianness slip in the
-    /// session id changes the bytes.
-    bmc_id: u32 = 0x02003344,
+    /// SIDc.  Four distinct non-zero bytes: the tool copies this into RAKP 1,
+    /// RAKP 3 and the header of every RMCP+ packet it sends afterwards.
+    bmc_id: u32 = 0x5a6b7c8d,
     /// Rc.
     bmc_rand: [16]u8 = .{
         0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7,
         0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf,
     },
-    /// GUIDc.
+    /// GUIDc.  Sixteen distinct non-zero bytes.  A textbook GUID would repeat
+    /// bytes between its halves, which would let a mis-ordered or
+    /// mixed-endian copy alias onto the correct one inside the RAKP 2 hash
+    /// input.
     bmc_guid: [16]u8 = .{
-        0x67, 0x45, 0x23, 0x01, 0xab, 0x89, 0xef, 0xcd,
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+        0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7,
+        0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf,
     },
     /// The BMC's own session sequence number for the packets it sends once the
-    /// session is up.
-    outbound_seq_start: u32 = 0x00000001,
+    /// session is up.  Four distinct non-zero bytes for the same reason as
+    /// `inbound_seq`, even though today's C tool neither validates nor echoes
+    /// it: it is part of the RMCP+ integrity-code input, and a port that
+    /// starts tracking it must be pinned from the first fixture.
+    outbound_seq_start: u32 = 0x0a1b2c3d,
 
     /// 1-based indices of received datagrams the BMC silently drops instead of
     /// answering.  This is how retry behaviour is put under test without any

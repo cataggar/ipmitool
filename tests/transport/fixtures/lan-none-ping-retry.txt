@@ -43,92 +43,92 @@
   dat ce cf ?? ?? ?? ??
 007 <-- 32 ipmi.v15 rs
   raw 06 00 ff 07 00 00 00 00 00 44 33 22 11 12 81 1c
-  raw 63 20 0c 3a 00 00 0d 0c 0b 0a 01 01 00 00 04 66
-  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=03 lun=0 cmd=3a csum2=66:ok
+  raw 63 20 0c 3a 00 00 0d 0c 0b 0a 84 73 62 51 04 be
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=03 lun=0 cmd=3a csum2=be:ok
   ccc 00
-  dat 00 0d 0c 0b 0a 01 01 00 00 04
+  dat 00 0d 0c 0b 0a 84 73 62 51 04
 008 --> 22 ipmi.v15 rq
-  raw 06 00 ff 07 00 01 01 00 00 0d 0c 0b 0a 08 20 18
+  raw 06 00 ff 07 00 84 73 62 51 0d 0c 0b 0a 08 20 18
   raw c8 81 10 3b 04 30
-  ssn authtype=00 seq=00000101 id=0a0b0c0d msglen=08
+  ssn authtype=00 seq=51627384 id=0a0b0c0d msglen=08
   req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=04 lun=0 cmd=3b csum2=30:ok
   dat 04
 009 <-- 23 ipmi.v15 rs
-  raw 06 00 ff 07 00 01 00 00 00 0d 0c 0b 0a 09 81 1c
+  raw 06 00 ff 07 00 3d 2c 1b 0a 0d 0c 0b 0a 09 81 1c
   raw 63 20 10 3b 00 04 91
   rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=04 lun=0 cmd=3b csum2=91:ok
   ccc 00
   dat 04
 010 --> 23 ipmi.v15 rq
-  raw 06 00 ff 07 00 02 01 00 00 0d 0c 0b 0a 09 20 b0
+  raw 06 00 ff 07 00 85 73 62 51 0d 0c 0b 0a 09 20 b0
   raw 30 81 14 3e 00 02 2b
-  ssn authtype=00 seq=00000102 id=0a0b0c0d msglen=09
+  ssn authtype=00 seq=51627385 id=0a0b0c0d msglen=09
   req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=05 lun=0 cmd=3e csum2=2b:ok
   dat 00 02
 011 <-- 22 ipmi.v15 rs
-  raw 06 00 ff 07 00 02 00 00 00 0d 0c 0b 0a 08 81 b4
+  raw 06 00 ff 07 00 3e 2c 1b 0a 0d 0c 0b 0a 08 81 b4
   raw cb 20 14 3e c1 cd
   rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=05 lun=0 cmd=3e csum2=cd:ok
   ccc c1
   dat -
 012 --> 21 ipmi.v15 rq
-  raw 06 00 ff 07 00 03 01 00 00 0d 0c 0b 0a 07 20 18
+  raw 06 00 ff 07 00 86 73 62 51 0d 0c 0b 0a 07 20 18
   raw c8 81 18 01 66
-  ssn authtype=00 seq=00000103 id=0a0b0c0d msglen=07
+  ssn authtype=00 seq=51627386 id=0a0b0c0d msglen=07
   req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=06 lun=0 cmd=01 csum2=66:ok
   dat -
 013 <-- 37 ipmi.v15 rs
-  raw 06 00 ff 07 00 03 00 00 00 0d 0c 0b 0a 17 81 1c
+  raw 06 00 ff 07 00 3f 2c 1b 0a 0d 0c 0b 0a 17 81 1c
   raw 63 20 18 01 00 20 81 02 34 02 bf 57 01 00 11 22
   raw 00 00 00 00 a4
   rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=06 lun=0 cmd=01 csum2=a4:ok
   ccc 00
   dat 20 81 02 34 02 bf 57 01 00 11 22 00 00 00 00
 014 --> 22 ipmi.v15 rq
-  raw 06 00 ff 07 00 04 01 00 00 0d 0c 0b 0a 08 20 b0
+  raw 06 00 ff 07 00 87 73 62 51 0d 0c 0b 0a 08 20 b0
   raw 30 81 1c 00 00 63
-  ssn authtype=00 seq=00000104 id=0a0b0c0d msglen=08
+  ssn authtype=00 seq=51627387 id=0a0b0c0d msglen=08
   req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=07 lun=0 cmd=00 csum2=63:ok
   dat 00
 015 <-- 22 ipmi.v15 rs
-  raw 06 00 ff 07 00 04 00 00 00 0d 0c 0b 0a 08 81 b4
+  raw 06 00 ff 07 00 40 2c 1b 0a 0d 0c 0b 0a 08 81 b4
   raw cb 20 1c 00 c1 03
   rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=07 lun=0 cmd=00 csum2=03:ok
   ccc c1
   dat -
 016 --> 22 ipmi.v15 rq
-  raw 06 00 ff 07 00 05 01 00 00 0d 0c 0b 0a 08 20 b0
+  raw 06 00 ff 07 00 88 73 62 51 0d 0c 0b 0a 08 20 b0
   raw 30 81 20 00 03 5c
-  ssn authtype=00 seq=00000105 id=0a0b0c0d msglen=08
+  ssn authtype=00 seq=51627388 id=0a0b0c0d msglen=08
   req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=08 lun=0 cmd=00 csum2=5c:ok
   dat 03
 017 <-- 22 ipmi.v15 rs
-  raw 06 00 ff 07 00 05 00 00 00 0d 0c 0b 0a 08 81 b4
+  raw 06 00 ff 07 00 41 2c 1b 0a 0d 0c 0b 0a 08 81 b4
   raw cb 20 20 00 c1 ff
   rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=08 lun=0 cmd=00 csum2=ff:ok
   ccc c1
   dat -
 018 --> 21 ipmi.v15 rq
-  raw 06 00 ff 07 00 06 01 00 00 0d 0c 0b 0a 07 20 18
+  raw 06 00 ff 07 00 89 73 62 51 0d 0c 0b 0a 07 20 18
   raw c8 81 24 01 5a
-  ssn authtype=00 seq=00000106 id=0a0b0c0d msglen=07
+  ssn authtype=00 seq=51627389 id=0a0b0c0d msglen=07
   req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=09 lun=0 cmd=01 csum2=5a:ok
   dat -
 019 <-- 37 ipmi.v15 rs
-  raw 06 00 ff 07 00 06 00 00 00 0d 0c 0b 0a 17 81 1c
+  raw 06 00 ff 07 00 42 2c 1b 0a 0d 0c 0b 0a 17 81 1c
   raw 63 20 24 01 00 20 81 02 34 02 bf 57 01 00 11 22
   raw 00 00 00 00 98
   rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=09 lun=0 cmd=01 csum2=98:ok
   ccc 00
   dat 20 81 02 34 02 bf 57 01 00 11 22 00 00 00 00
 020 --> 25 ipmi.v15 rq
-  raw 06 00 ff 07 00 07 01 00 00 0d 0c 0b 0a 0b 20 18
+  raw 06 00 ff 07 00 8a 73 62 51 0d 0c 0b 0a 0b 20 18
   raw c8 81 28 3c 0d 0c 0b 0a ed
-  ssn authtype=00 seq=00000107 id=0a0b0c0d msglen=0b
+  ssn authtype=00 seq=5162738a id=0a0b0c0d msglen=0b
   req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=0a lun=0 cmd=3c csum2=ed:ok
   dat 0d 0c 0b 0a
 021 <-- 22 ipmi.v15 rs
-  raw 06 00 ff 07 00 07 00 00 00 0d 0c 0b 0a 08 81 1c
+  raw 06 00 ff 07 00 43 2c 1b 0a 0d 0c 0b 0a 08 81 1c
   raw 63 20 28 3c 00 7c
   rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=0a lun=0 cmd=3c csum2=7c:ok
   ccc 00

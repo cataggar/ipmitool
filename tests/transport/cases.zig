@@ -21,6 +21,12 @@
 //! Interior zero bytes *are* used on purpose in `lan/raw-zeros`, because a
 //! length field that is computed rather than derived from a scan is only
 //! pinned by a payload that contains embedded NULs.
+//!
+//! The same rule governs the model BMC's own constants — session ids, session
+//! sequence numbers, the challenge, SIDc, Rc and GUIDc all use distinct
+//! non-zero bytes, because the tool copies them back onto the wire and a
+//! zero byte would make a shift-amount or short-write mutation invisible.
+//! See the `Personality` doc comments in `Bmc.zig`.
 
 const std = @import("std");
 const Bmc = @import("Bmc.zig");
@@ -68,6 +74,44 @@ const chassis_status: Bmc.Canned = .{
 };
 
 const canned: []const Bmc.Canned = &.{ device_id, chassis_status };
+
+/// The RMCP+ payload size is a little endian u16 at offset 0x0e.  Every other
+/// case has a payload shorter than 256 bytes, so its high byte is always zero
+/// and a transport that wrote — or read — only the low byte would be
+/// indistinguishable from a correct one.  `lanplus/cipher1-raw-big` makes the
+/// payload longer than 255 bytes in *both* directions so the high byte is
+/// non-zero going out and coming back.
+///
+/// 250 request data bytes give a 257 byte message (7 + 250) and 249 response
+/// data bytes give a 257 byte message (8 + 249).  Cipher suite 1 has no
+/// confidentiality, so the fixture shows the bytes in the clear.
+const big_request_data: [250]u8 = blk: {
+    var d: [250]u8 = undefined;
+    for (&d, 0..) |*x, i| x.* = @intCast(1 + (i * 7) % 255);
+    break :blk d;
+};
+
+const big_response_data: [249]u8 = blk: {
+    var d: [249]u8 = undefined;
+    for (&d, 0..) |*x, i| x.* = @intCast(1 + (i * 11) % 255);
+    break :blk d;
+};
+
+const big_args: [15 + big_request_data.len][]const u8 = blk: {
+    @setEvalBranchQuota(100_000);
+    const head = [_][]const u8{
+        "-I",  "lanplus", "-H",   "127.0.0.1", "-p", "${port}",
+        "-U",  user,      "-P",   pass,        "-C", "1",
+        "raw", "0x2e",    "0x97",
+    };
+    var a: [15 + big_request_data.len][]const u8 = undefined;
+    for (head, 0..) |h, i| a[i] = h;
+    for (big_request_data, 0..) |v, i| {
+        a[head.len + i] = std.fmt.comptimePrint("0x{x:0>2}", .{v});
+    }
+    const frozen = a;
+    break :blk frozen;
+};
 
 pub const all: []const Case = &.{
     // -- ipmi_intf registry -------------------------------------------------
@@ -126,6 +170,20 @@ pub const all: []const Case = &.{
             .username = user,
             .password = pass,
             .extra = &.{.{ .netfn = 0x2e, .cmd = 0x92, .data = &.{ 0x00, 0x7f, 0x00 } }},
+        },
+    },
+    .{
+        .name = "lan/md5-raw-lun",
+        .desc = "-l 7 puts a non-zero LUN in the low two bits of the netfn byte",
+        .args = &.{
+            "-I",  "lan",  "-H",   "127.0.0.1", "-p",   "${port}",
+            "-U",  user,   "-P",   pass,        "-l",   "7",
+            "raw", "0x2e", "0x96", "0x3c",      "0xa5", "0xc3",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x96, .data = &.{ 0x5c, 0xa3 } }},
         },
     },
     .{
@@ -311,6 +369,16 @@ pub const all: []const Case = &.{
             .username = user,
             .password = pass,
             .extra = &.{.{ .netfn = 0x2e, .cmd = 0x94, .data = &.{ 0xc0, 0xff, 0xee } }},
+        },
+    },
+    .{
+        .name = "lanplus/cipher1-raw-big",
+        .desc = "a payload over 255 bytes each way, pinning the u16 payload size",
+        .args = &big_args,
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x2e, .cmd = 0x97, .data = &big_response_data }},
         },
     },
     .{
