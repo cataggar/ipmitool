@@ -60,7 +60,6 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/hpm2.h>
 #include <ipmitool/bswap.h>
-#include <openssl/rand.h>
 
 #include "lanplus.h"
 #include "lanplus_crypt.h"

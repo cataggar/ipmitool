@@ -41,4 +41,16 @@
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
 
+/*
+ * Plugin-private headers.  These are not under `include/`, so they are reached
+ * relative to this file rather than through the include path; adding
+ * `src/plugins/*` to the bridge's `-I` list would make the two `asf.h` /
+ * `rmcp.h` pairs ambiguous.
+ */
+#include "../plugins/lan/md5.h"
+#include "../plugins/lan/auth.h"
+#include "../plugins/lanplus/lanplus.h"
+#include "../plugins/lanplus/lanplus_crypt.h"
+#include "../plugins/lanplus/lanplus_crypt_impl.h"
+
 #include "abi_layout.h"

@@ -140,11 +140,57 @@ const zig_modules = [_]ZigModule{
         .replaces = "lib/ipmi_time.c",
         .implementation = "src/zig/util/time.zig",
     },
+    .{
+        .name = "md5",
+        .replaces = "src/plugins/lan/md5.c",
+        .implementation = "src/zig/crypto/md5.zig",
+    },
+    .{
+        .name = "auth",
+        .replaces = "src/plugins/lan/auth.c",
+        .implementation = "src/zig/crypto/auth.zig",
+    },
+    .{
+        .name = "lanplus-crypt-impl",
+        .replaces = "src/plugins/lanplus/lanplus_crypt_impl.c",
+        .implementation = "src/zig/crypto/lanplus_crypt_impl.zig",
+    },
+    .{
+        .name = "lanplus-crypt",
+        .replaces = "src/plugins/lanplus/lanplus_crypt.c",
+        .implementation = "src/zig/crypto/lanplus_crypt.zig",
+    },
 };
 
 /// Root of the Zig source tree.
 const zig_root = "src/zig";
 
+// ---------------------------------------------------------------------------
+// libcrypto inventory (issue #9)
+//
+// OpenSSL is the last external dependency the migration removes.  Keeping the
+// two lists below next to `zig_modules` means the link line and the parity
+// fixtures both follow automatically as the ports land.
+// ---------------------------------------------------------------------------
+
+/// C translation units that call into libcrypto.  `-lcrypto` goes on the link
+/// line only while at least one of them is still being compiled, so selecting
+/// the Zig replacements drops the dependency by itself.
+const libcrypto_c_sources = [_][]const u8{
+    // EVP_aes_128_cbc, HMAC, RAND_bytes, RAND_load_file.
+    "src/plugins/lanplus/lanplus_crypt_impl.c",
+    // MD5_Init/Update/Final, but only when HAVE_CRYPTO_MD5 is defined.
+    "src/plugins/lan/auth.c",
+};
+
+/// Everything `tests/crypto/gen_vectors.c` links to dump the parity fixtures:
+/// the libcrypto users plus the two pure-C files layered on top of them.
+const crypto_vector_sources = [_][]const u8{
+    "src/plugins/lan/md5.c",
+    "src/plugins/lan/auth.c",
+    "src/plugins/lanplus/lanplus_crypt_impl.c",
+    "src/plugins/lanplus/lanplus_crypt.c",
+};
 /// Umbrella header translated into the `ipmi_c` module.
 const zig_bridge_header = zig_root ++ "/ipmi_c.h";
 
@@ -406,9 +452,14 @@ pub fn build(b: *std.Build) void {
         "Override the version string baked into the binaries",
     ) orelse detectVersion(b);
 
-    // lanplus is the only component that hard-requires libcrypto.
+    // lanplus is the only component that hard-requires AES and the keyed
+    // hashes.  It used to get them exclusively from libcrypto; selecting the
+    // Zig crypto ports is now an equally good answer, so `-Dopenssl=false` only
+    // disables it while the C implementation is still in the build.
     const lanplus_index = pluginIndex("lanplus");
-    if (enabled[lanplus_index] and !openssl) {
+    const lanplus_crypt_in_zig =
+        replacedByZig("src/plugins/lanplus/lanplus_crypt_impl.c", zig_selection);
+    if (enabled[lanplus_index] and !openssl and !lanplus_crypt_in_zig) {
         std.debug.print(
             "warning: -Dintf-lanplus requires libcrypto; disabling it because -Dopenssl=false\n",
             .{},
@@ -623,7 +674,6 @@ pub fn build(b: *std.Build) void {
     var system_libs: std.ArrayList([]const u8) = .empty;
     // lib/Makefile.am: libipmitool_la_LIBADD = -lm
     if (!is_windows) system_libs.append(b.allocator, "m") catch @panic("OOM");
-    if (openssl) system_libs.append(b.allocator, "crypto") catch @panic("OOM");
     if (ipmishell) {
         for (readline_libs) |lib| system_libs.append(b.allocator, lib) catch @panic("OOM");
     }
@@ -634,7 +684,13 @@ pub fn build(b: *std.Build) void {
             system_libs.append(b.allocator, lib) catch @panic("OOM");
         }
     }
-    const libs = system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+    const base_libs = system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+
+    // `-lcrypto` is added last and only if something still calls into it, so a
+    // build with the crypto ports selected links no OpenSSL at all.
+    const libs = withLibcrypto(b, base_libs, openssl, internal_md5, zig_selection);
+    // The swapped binary the golden suite builds has every module selected.
+    const swapped_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &all_selected);
 
     // -- executables ---------------------------------------------------------
 
@@ -741,6 +797,23 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| run_evd.addArgs(args);
     b.step("run-ipmievd", "Run ipmievd with the given arguments").dependOn(&run_evd.step);
 
+    // -- `zig build gen-crypto-vectors` --------------------------------------
+    //
+    // Re-derives `tests/crypto/vectors/` from the OpenSSL-backed C crypto
+    // sources (issue #9).  It is the only thing left in the tree that needs
+    // libcrypto once the ports below are selected, it writes into the source
+    // tree, and it is therefore deliberately outside `zig build` and
+    // `zig build test`.  See doc/zig-migration/crypto.md.
+
+    addCryptoVectorGenerator(b, .{
+        .target = target,
+        .optimize = optimize,
+        .sanitize_c = sanitize_c,
+        .config_h = config_h,
+        .default_intf = default_intf,
+        .flags = flags,
+    });
+
     // -- `zig build test` ----------------------------------------------------
     //
     // Smoke tests, the Zig/C ABI parity assertions, and the golden CLI suite.
@@ -758,6 +831,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     abi_mod.addImport("ipmi_c", bridge_mod);
+    addCryptoVectors(b, abi_mod);
     const abi_tests = b.addTest(.{ .root_module = abi_mod });
     test_step.dependOn(&b.addRunArtifact(abi_tests).step);
 
@@ -847,7 +921,7 @@ pub fn build(b: *std.Build) void {
             .flags = flags,
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
-            .system_libs = libs,
+            .system_libs = swapped_libs,
         });
         golden_step.dependOn(&addGolden(b, golden_exe, swapped).step);
     }
@@ -883,6 +957,84 @@ fn addGolden(
     if (b.args) |args| run.addArgs(args);
     run.expectExitCode(0);
     return run;
+}
+
+const VectorGeneratorOptions = struct {
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    sanitize_c: bool,
+    config_h: *std.Build.Step.ConfigHeader,
+    default_intf: []const u8,
+    flags: []const []const u8,
+};
+
+/// `zig build gen-crypto-vectors`: rebuild the crypto parity fixtures.
+///
+/// Links `tests/crypto/gen_vectors.c` against the *original* OpenSSL-backed
+/// crypto translation units and dumps every input/output pair the Zig ports
+/// have to reproduce into `tests/crypto/vectors/`.  The fixtures are committed;
+/// this step only exists so they can be re-derived from the C.
+///
+/// It is not reachable from `zig build` or `zig build test` on purpose: it is
+/// the last consumer of libcrypto in the tree, and CI must not need OpenSSL to
+/// build or test ipmitool once the ports are selected.
+fn addCryptoVectorGenerator(b: *std.Build, options: VectorGeneratorOptions) void {
+    const mod = b.createModule(.{
+        .target = options.target,
+        .optimize = options.optimize,
+        .link_libc = true,
+        .sanitize_c = if (options.sanitize_c) .full else .off,
+    });
+    configure(b, mod, options.config_h, options.default_intf);
+    mod.addCSourceFiles(.{
+        .root = b.path("tests/crypto"),
+        .files = &.{"gen_vectors.c"},
+        // The generator deliberately shadows a handful of ipmitool symbols and
+        // is not part of the product, so the pedantic warning set is dropped.
+        .flags = &.{"-std=gnu11"},
+        .language = .c,
+    });
+    for (crypto_vector_sources) |source| {
+        const slash = std.mem.lastIndexOfScalar(u8, source, '/').?;
+        mod.addCSourceFiles(.{
+            .root = b.path(source[0..slash]),
+            .files = &.{source[slash + 1 ..]},
+            .flags = options.flags,
+            .language = .c,
+        });
+    }
+    mod.linkSystemLibrary("crypto", .{});
+
+    const exe = b.addExecutable(.{ .name = "gen-crypto-vectors", .root_module = mod });
+    const run = b.addRunArtifact(exe);
+    run.addArg(b.pathFromRoot("tests/crypto/vectors"));
+    // Some distributions ship an openssl.cnf that activates a provider without
+    // MD5 (Azure Linux routes libcrypto through SymCrypt, which refuses
+    // HMAC-MD5).  An empty config selects OpenSSL's own default provider, so
+    // the fixtures are the same wherever they are regenerated.
+    run.setEnvironmentVariable("OPENSSL_CONF", "/dev/null");
+    run.has_side_effects = true;
+    b.step(
+        "gen-crypto-vectors",
+        "Regenerate tests/crypto/vectors from the OpenSSL-backed C sources",
+    ).dependOn(&run.step);
+}
+
+/// Fixture files the crypto parity tests `@embedFile`.
+///
+/// They live under `tests/` next to the generator that produced them rather
+/// than under `src/`, so they are exposed as named imports instead of by a
+/// relative path out of the module root.
+const crypto_vector_fixtures = [_][]const u8{
+    "md5", "auth", "hmac", "aes_cbc", "payload", "rakp",
+};
+
+fn addCryptoVectors(b: *std.Build, mod: *std.Build.Module) void {
+    for (crypto_vector_fixtures) |name| {
+        mod.addAnonymousImport(b.fmt("crypto_vectors_{s}", .{name}), .{
+            .root_source_file = b.path(b.fmt("tests/crypto/vectors/{s}.txt", .{name})),
+        });
+    }
 }
 
 const SwappedOptions = struct {
@@ -1027,6 +1179,40 @@ fn addSources(
 /// True when `path` is a C translation unit a selected Zig module replaces.
 /// Keeping the `.c` out of the compile is what makes the swap a link-time
 /// substitution instead of a duplicate-symbol error.
+/// A selection with every registered module enabled, i.e. what the golden
+/// suite's second binary and `zig build test` use.
+const all_selected: [zig_modules.len]bool = @splat(true);
+
+/// Append `crypto` to `base` when a C translation unit still needs it.
+///
+/// This is the whole libcrypto removal: the flag follows the source inventory
+/// instead of the `-Dopenssl` switch, so the dependency disappears exactly when
+/// the last C caller is replaced rather than when someone remembers to edit the
+/// link line.
+fn withLibcrypto(
+    b: *std.Build,
+    base: []const []const u8,
+    openssl: bool,
+    internal_md5: bool,
+    zig_selection: []const bool,
+) []const []const u8 {
+    if (!openssl) return base;
+
+    var needed = false;
+    for (libcrypto_c_sources) |source| {
+        // auth.c only reaches libcrypto for MD5, and `-Dinternal-md5` sends it
+        // to the bundled implementation instead.
+        if (internal_md5 and std.mem.eql(u8, source, "src/plugins/lan/auth.c")) continue;
+        if (!replacedByZig(source, zig_selection)) needed = true;
+    }
+    if (!needed) return base;
+
+    var libs: std.ArrayList([]const u8) = .empty;
+    libs.appendSlice(b.allocator, base) catch @panic("OOM");
+    libs.append(b.allocator, "crypto") catch @panic("OOM");
+    return libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+}
+
 fn replacedByZig(path: []const u8, zig_selection: []const bool) bool {
     for (zig_modules, 0..) |module, i| {
         if (zig_selection[i] and std.mem.eql(u8, module.replaces, path)) return true;

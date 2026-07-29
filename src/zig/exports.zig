@@ -37,6 +37,18 @@ comptime {
     if (selected("time")) {
         @import("util/time.zig").exportSymbols();
     }
+    if (selected("md5")) {
+        _ = @import("crypto/md5.zig");
+    }
+    if (selected("auth")) {
+        _ = @import("crypto/auth.zig");
+    }
+    if (selected("lanplus-crypt-impl")) {
+        _ = @import("crypto/lanplus_crypt_impl.zig");
+    }
+    if (selected("lanplus-crypt")) {
+        _ = @import("crypto/lanplus_crypt.zig");
+    }
 }
 
 fn selected(comptime name: []const u8) bool {
