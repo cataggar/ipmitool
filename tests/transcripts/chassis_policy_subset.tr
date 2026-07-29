@@ -1,0 +1,10 @@
+# Get/Set Power Restore Policy reporting only always-off (bit 0) and
+# always-on (bit 2) as supported.  A subset rather than all three, so the
+# individual bit numbers are pinned rather than just the printing order.
+default_ccode 0xc1
+
+respond set_power_restore_policy
+  netfn 0x00
+  cmd 0x06
+  data 05
+end

@@ -1,0 +1,32 @@
+#!golden 1
+#!case chassis_bootparam_help
+#!section exit
+1
+#!section stdout
+#!section stderr
+bootparam get <param #>
+bootparam set bootflag <device> [options=...]
+ Legal devices are:
+  none           : No override
+  force_pxe      : Force PXE boot
+  force_disk     : Force boot from default Hard-drive
+  force_safe     : Force boot from default Hard-drive, request Safe Mode
+  force_diag     : Force boot from Diagnostic Partition
+  force_cdrom    : Force boot from CD/DVD
+  force_bios     : Force boot into BIOS Setup
+  force_remotecd : Force boot from remote CD/DVD
+ Legal options are:
+  help    : print this message
+  PEF     : Clear valid bit on reset/power cycle cause by PEF
+  timeout : Automatically clear boot flag valid bit on timeout
+  watchdog: Clear valid bit on reset/power cycle cause by watchdog
+  reset   : Clear valid bit on push button reset/soft reset
+  power   : Clear valid bit on power up via power push button or wake event
+ Any Option may be prepended with no- to invert sense of operation
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

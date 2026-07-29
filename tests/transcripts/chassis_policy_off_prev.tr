@@ -1,0 +1,11 @@
+# Get Power Restore Policy reporting always-off (bit 0) and previous (bit 1)
+# but *not* always-on (bit 2).  Together with chassis_policy_subset.tr, which
+# reports bits 0 and 2, every one of the three bit positions is distinguished
+# from the others.
+default_ccode 0xc1
+
+respond set_power_restore_policy
+  netfn 0x00
+  cmd 0x06
+  data 03
+end

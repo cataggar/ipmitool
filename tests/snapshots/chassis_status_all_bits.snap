@@ -1,0 +1,33 @@
+#!golden 1
+#!case chassis_status_all_bits
+#!section exit
+0
+#!section stdout
+System Power         : on
+Power Overload       : true
+Power Interlock      : active
+Main Power Fault     : true
+Power Control Fault  : true
+Power Restore Policy : unknown
+Last Power Event     : ac-failed overload interlock fault command
+Chassis Intrusion    : active
+Front-Panel Lockout  : active
+Drive Fault          : true
+Cooling/Fan Fault    : true
+Sleep Button Disable : allowed
+Diag Button Disable  : allowed
+Reset Button Disable : allowed
+Power Button Disable : allowed
+Sleep Button Disabled: true
+Diag Button Disabled : true
+Reset Button Disabled: true
+Power Button Disabled: true
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_chassis_status ccode=0x00 len=4 data=7f 1f 0f ff
+bye

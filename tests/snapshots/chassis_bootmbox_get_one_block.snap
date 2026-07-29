@@ -1,0 +1,21 @@
+#!golden 1
+#!case chassis_bootmbox_get_one_block
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 7 is valid/unlocked
+Boot parameter data: 0057010069706d69746f6f6c20726f6f74
+ IANA PEN       : 343 [Intel Corporation]
+ Block   0 Data : 69706d69746f6f6c20726f6f74
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 00 00
+< rule=bootparam_7_block0 ccode=0x00 len=19 data=01 07 00 57 01 00 69 70 6d 69 74 6f 6f 6c 20 72 6f 6f 74
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 01 00
+< rule=bootparam_7_out_of_range ccode=0xc9 len=0 data=
+bye

@@ -1,0 +1,83 @@
+#!golden 1
+#!case chassis_bootparam_get_verbose3
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 5 is valid/unlocked
+Boot parameter data: 80040000a5
+ Boot Flags :
+   - Boot Flag Valid
+   - Options apply to only next boot
+   - BIOS PC Compatible (legacy) boot\x20
+   - Boot Device Selector : Force PXE
+   - BIOS verbosity : System Default
+   - Console Redirection control : Console redirection occurs per BIOS configuration setting (default)
+   - BIOS Mux Control Override : BIOS uses recommended setting of the mux at the end of POST
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 0
+msg.cmd: 9
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 1
+msg.cmd: 9
+msg.seq: 0
+msg.lun: 0
+<<<
+Boot Option (7 bytes)
+ 01 05 80 04 00 00 a5
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=05 00 00
+< rule=bootparam_5_pxe ccode=0x00 len=7 data=01 05 80 04 00 00 a5
+bye

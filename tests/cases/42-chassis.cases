@@ -1,0 +1,1556 @@
+# Depth coverage for lib/ipmi_chassis.c - the `chassis` command tree and the
+# `power` shortcut.
+#
+# 30-commands.cases already exercises `chassis status`, `chassis power status`,
+# `chassis policy list`, `chassis bootparam get 5` and `chassis selftest`
+# against tests/transcripts/bmc.tr, and 10-commands.cases covers the bare and
+# `help` invocations.  What follows walks every subcommand, every argument
+# parsing branch, every decode branch of Get Chassis Status / Get Self Test
+# Results / Get POH Counter / Get System Restart Cause / all eight Get System
+# Boot Options parameters, and every error path.
+#
+# Where a value could plausibly be produced by more than one implementation -
+# a completion code, a bit position, a byte offset, a boot device selector -
+# the transcripts use values that disagree between the candidates rather than
+# values that happen to coincide.
+
+# --- top level dispatch ---------------------------------------------------
+
+[chassis_invalid_subcommand]
+desc: an unrecognized chassis subcommand
+args: -I dummy chassis bogus
+covers: chassis
+
+# --- chassis status -------------------------------------------------------
+
+[chassis_status_all_bits]
+desc: Get Chassis Status with every decoded bit set and restore policy 3
+args: -I dummy chassis status
+transcript: chassis_status_full.tr
+covers: chassis
+
+[chassis_status_no_optional]
+desc: Get Chassis Status without the optional front panel byte
+args: -I dummy chassis status
+transcript: chassis_status_short.tr
+covers: chassis
+
+[chassis_status_policy_previous]
+desc: restore policy 1 and a front panel byte of zero
+args: -I dummy chassis status
+transcript: chassis_status_prev.tr
+covers: chassis
+
+[chassis_status_power_off]
+desc: power off, restore policy 2, one last-power-event bit, one fault bit
+args: -I dummy chassis status
+transcript: chassis_status_off.tr
+covers: chassis
+
+[chassis_status_ccode]
+desc: Get Chassis Status rejected by the BMC
+args: -I dummy chassis status
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- chassis selftest -----------------------------------------------------
+
+[chassis_selftest_not_impl]
+desc: Get Self Test Results 0x56, function not implemented
+args: -I dummy chassis selftest
+transcript: chassis_st_notimpl.tr
+covers: chassis
+
+[chassis_selftest_corrupted]
+desc: Get Self Test Results 0x57 with all eight device bits set
+args: -I dummy chassis selftest
+transcript: chassis_st_corrupt.tr
+covers: chassis
+
+[chassis_selftest_corrupt_odd]
+desc: Get Self Test Results 0x57 with bits 0, 2, 4 and 6 set
+args: -I dummy chassis selftest
+transcript: chassis_st_corrupt_odd.tr
+covers: chassis
+
+[chassis_selftest_corrupt_even]
+desc: Get Self Test Results 0x57 with bits 1, 3, 5 and 7 set
+args: -I dummy chassis selftest
+transcript: chassis_st_corrupt_even.tr
+covers: chassis
+
+[chassis_selftest_fatal]
+desc: Get Self Test Results 0x58, fatal hardware error
+args: -I dummy chassis selftest
+transcript: chassis_st_fatal.tr
+covers: chassis
+
+[chassis_selftest_device_specific]
+desc: Get Self Test Results with a device-specific code pair
+args: -I dummy chassis selftest
+transcript: chassis_st_other.tr
+covers: chassis
+
+[chassis_selftest_ccode]
+desc: Get Self Test Results rejected by the BMC
+args: -I dummy chassis selftest
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- chassis power --------------------------------------------------------
+
+[chassis_power_no_args]
+desc: `chassis power` with no state, which succeeds after printing the list
+args: -I dummy chassis power
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_help]
+desc: `chassis power help`
+args: -I dummy chassis power help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_status_on]
+desc: `chassis power status` against a powered-on chassis
+args: -I dummy chassis power status
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_status_off]
+desc: `chassis power status` against a powered-off chassis
+args: -I dummy chassis power status
+transcript: chassis_status_off.tr
+covers: chassis
+
+[chassis_power_status_ccode]
+desc: Get Chassis Status rejected while reading the power state
+args: -I dummy chassis power status
+transcript: chassis_ccode.tr
+covers: chassis
+
+[chassis_power_on]
+desc: Chassis Control power up
+args: -I dummy chassis power on
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_up]
+desc: the `up` alias for power on
+args: -I dummy chassis power up
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_off]
+desc: Chassis Control power down
+args: -I dummy chassis power off
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_down]
+desc: the `down` alias for power off
+args: -I dummy chassis power down
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_cycle]
+desc: Chassis Control power cycle
+args: -I dummy chassis power cycle
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_reset]
+desc: Chassis Control hard reset
+args: -I dummy chassis power reset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_diag]
+desc: Chassis Control pulse diagnostic interrupt
+args: -I dummy chassis power diag
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_soft]
+desc: Chassis Control ACPI soft shutdown
+args: -I dummy chassis power soft
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_acpi]
+desc: the `acpi` alias for soft shutdown
+args: -I dummy chassis power acpi
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_invalid]
+desc: an unrecognized chassis power state
+args: -I dummy chassis power bogus
+transcript: chassis.tr
+covers: chassis
+
+[chassis_power_ccode]
+desc: Chassis Control rejected; the error names the control byte
+args: -I dummy chassis power cycle
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- the top level `power` alias -----------------------------------------
+
+[power_on]
+desc: `power on` reaches the same Chassis Control command
+args: -I dummy power on
+transcript: chassis.tr
+covers: power
+
+[power_up]
+desc: `power up`
+args: -I dummy power up
+transcript: chassis.tr
+covers: power
+
+[power_off]
+desc: `power off`
+args: -I dummy power off
+transcript: chassis.tr
+covers: power
+
+[power_down]
+desc: `power down`
+args: -I dummy power down
+transcript: chassis.tr
+covers: power
+
+[power_cycle]
+desc: `power cycle`
+args: -I dummy power cycle
+transcript: chassis.tr
+covers: power
+
+[power_reset]
+desc: `power reset`
+args: -I dummy power reset
+transcript: chassis.tr
+covers: power
+
+[power_diag]
+desc: `power diag`
+args: -I dummy power diag
+transcript: chassis.tr
+covers: power
+
+[power_soft]
+desc: `power soft`
+args: -I dummy power soft
+transcript: chassis.tr
+covers: power
+
+[power_acpi]
+desc: `power acpi`
+args: -I dummy power acpi
+transcript: chassis.tr
+covers: power
+
+[power_invalid]
+desc: an unrecognized power state; unlike `chassis power` this returns -1
+args: -I dummy power bogus
+transcript: chassis.tr
+covers: power
+
+[power_status_off]
+desc: `power status` against a powered-off chassis
+args: -I dummy power status
+transcript: chassis_status_off.tr
+covers: power
+
+# --- chassis identify -----------------------------------------------------
+
+[chassis_identify_default]
+desc: `chassis identify` with no interval sends no data bytes at all
+args: -I dummy chassis identify
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_help]
+desc: `chassis identify help` sends no command
+args: -I dummy chassis identify help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_force]
+desc: `chassis identify force` sends two data bytes
+args: -I dummy chassis identify force
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_off]
+desc: an interval of zero turns identify off and sends one data byte
+args: -I dummy chassis identify 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_interval]
+desc: an explicit interval
+args: -I dummy chassis identify 30
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_max]
+desc: the largest interval that fits in the single data byte
+args: -I dummy chassis identify 255
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_not_a_number]
+desc: a non-numeric interval
+args: -I dummy chassis identify abc
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_too_big]
+desc: an interval that does not fit in a byte
+args: -I dummy chassis identify 256
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_negative]
+desc: a negative interval
+args: -I dummy chassis identify -1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_identify_ccode]
+desc: Chassis Identify rejected without force, so no warning is printed
+args: -I dummy chassis identify 30
+transcript: chassis_ccode.tr
+covers: chassis
+
+[chassis_identify_force_ccode]
+desc: Chassis Identify rejected with force, which adds a warning
+args: -I dummy chassis identify force
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- chassis poh ----------------------------------------------------------
+
+[chassis_poh]
+desc: Get POH Counter, one minute per count
+args: -I dummy chassis poh
+transcript: chassis.tr
+covers: chassis
+
+[chassis_poh_hours_only]
+desc: 60 minutes per count suppresses the minutes field
+args: -I dummy chassis poh
+transcript: chassis_poh_hours.tr
+covers: chassis
+
+[chassis_poh_float_rounding]
+desc: a 37-bit product, so the float arithmetic loses days and zeroes hours
+args: -I dummy chassis poh
+transcript: chassis_poh_precision.tr
+covers: chassis
+
+[chassis_poh_count_le]
+desc: a counter with four distinct non-zero bytes, pinning the little-endian read
+args: -I dummy chassis poh
+transcript: chassis_poh_max.tr
+covers: chassis
+
+[chassis_poh_zero_per_count]
+desc: zero minutes per count with a non-zero counter
+args: -I dummy chassis poh
+transcript: chassis_poh_zero.tr
+covers: chassis
+
+[chassis_poh_ccode]
+desc: Get POH Counter rejected by the BMC
+args: -I dummy chassis poh
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- chassis restart_cause ------------------------------------------------
+
+[chassis_restart_cause]
+desc: Get System Restart Cause; the high nibble must be masked off
+args: -I dummy chassis restart_cause
+transcript: chassis.tr
+covers: chassis
+
+[chassis_restart_cause_rtc]
+desc: restart cause 0x0b, the last table entry
+args: -I dummy chassis restart_cause
+transcript: chassis_restart_rtc.tr
+covers: chassis
+
+[chassis_restart_cause_unknown]
+desc: restart cause 0x0c, one past the end of the table
+args: -I dummy chassis restart_cause
+transcript: chassis_restart_unknown.tr
+covers: chassis
+
+[chassis_restart_cause_ccode]
+desc: Get System Restart Cause rejected by the BMC
+args: -I dummy chassis restart_cause
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- chassis policy -------------------------------------------------------
+
+[chassis_policy_no_args]
+desc: `chassis policy` with no state
+args: -I dummy chassis policy
+transcript: chassis.tr
+covers: chassis
+
+[chassis_policy_help]
+desc: `chassis policy help`
+args: -I dummy chassis policy help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_policy_list_subset]
+desc: only two of the three policies supported, which pins the bit numbers
+args: -I dummy chassis policy list
+transcript: chassis_policy_subset.tr
+covers: chassis
+
+[chassis_policy_always_on]
+desc: set the restore policy to always-on
+args: -I dummy chassis policy always-on
+transcript: chassis.tr
+covers: chassis
+
+[chassis_policy_previous]
+desc: set the restore policy to previous
+args: -I dummy chassis policy previous
+transcript: chassis.tr
+covers: chassis
+
+[chassis_policy_always_off]
+desc: set the restore policy to always-off
+args: -I dummy chassis policy always-off
+transcript: chassis.tr
+covers: chassis
+
+[chassis_policy_invalid]
+desc: an unrecognized restore policy
+args: -I dummy chassis policy bogus
+transcript: chassis.tr
+covers: chassis
+
+[chassis_policy_ccode]
+desc: Set Power Restore Policy rejected by the BMC
+args: -I dummy chassis policy always-on
+transcript: chassis_ccode.tr
+covers: chassis
+
+# --- chassis bootparam get ------------------------------------------------
+
+[chassis_bootparam_no_args]
+desc: `chassis bootparam` with no subcommand prints both help blocks
+args: -I dummy chassis bootparam
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_help]
+desc: `chassis bootparam help`
+args: -I dummy chassis bootparam help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_no_param]
+desc: `chassis bootparam get` without a parameter number falls into help
+args: -I dummy chassis bootparam get
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_unknown_subcmd]
+desc: a bootparam subcommand that is neither get nor set
+args: -I dummy chassis bootparam frobnicate 5
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_bad_param]
+desc: a non-numeric boot parameter number
+args: -I dummy chassis bootparam get abc
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_bad_selector]
+desc: a non-numeric set selector; the message misreports the parameter number
+args: -I dummy chassis bootparam get 5 xyz
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_high_bit_param]
+desc: parameter 133 is masked to 5 before the request goes out
+args: -I dummy chassis bootparam get 133
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_0_complete]
+desc: parameter 0, set complete
+args: -I dummy chassis bootparam get 0 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_0_progress]
+desc: parameter 0, set in progress
+args: -I dummy chassis bootparam get 0 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_0_commit]
+desc: parameter 0, commit write
+args: -I dummy chassis bootparam get 0 2
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_0_reserved]
+desc: parameter 0, reserved value, with the upper bits set as well
+args: -I dummy chassis bootparam get 0 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_1_unspec]
+desc: parameter 1, service partition unspecified
+args: -I dummy chassis bootparam get 1 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_1_selected]
+desc: parameter 1, an explicit service partition
+args: -I dummy chassis bootparam get 1 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_2_none]
+desc: parameter 2 with no scan flag set and the upper bits set
+args: -I dummy chassis bootparam get 2 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_2_request]
+desc: parameter 2, request BIOS to scan
+args: -I dummy chassis bootparam get 2 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_2_found]
+desc: parameter 2, service partition discovered
+args: -I dummy chassis bootparam get 2 2
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_2_both]
+desc: parameter 2 with both scan flags
+args: -I dummy chassis bootparam get 2 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_3_mixed]
+desc: parameter 3 with three of the five clearing flags
+args: -I dummy chassis bootparam get 3 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_3_none]
+desc: parameter 3 with no clearing flag set and the reserved bits set
+args: -I dummy chassis bootparam get 3 4
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_3_all]
+desc: parameter 3 with all five clearing flags
+args: -I dummy chassis bootparam get 3 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_3_pef]
+desc: parameter 3, the PEF flag alone
+args: -I dummy chassis bootparam get 3 2
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_3_power]
+desc: parameter 3, the power-up flag alone
+args: -I dummy chassis bootparam get 3 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_4_none]
+desc: parameter 4 decodes the second data byte, not the first
+args: -I dummy chassis bootparam get 4 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_4_all]
+desc: parameter 4 with all five acknowledge flags
+args: -I dummy chassis bootparam get 4 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_4_bios]
+desc: parameter 4, the BIOS/POST flag alone
+args: -I dummy chassis bootparam get 4 2
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_4_oem]
+desc: parameter 4, the OEM flag alone
+args: -I dummy chassis bootparam get 4 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_pxe]
+desc: parameter 5, valid + next boot only + legacy + force PXE
+args: -I dummy chassis bootparam get 5 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_persist]
+desc: parameter 5, persistent, no boot device override
+args: -I dummy chassis bootparam get 5 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_efi_disk]
+desc: parameter 5, invalid flags, EFI boot, force hard drive
+args: -I dummy chassis bootparam get 5 2
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_safe]
+desc: parameter 5, force hard drive in safe mode
+args: -I dummy chassis bootparam get 5 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_diag]
+desc: parameter 5, force diagnostic partition
+args: -I dummy chassis bootparam get 5 4
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_cdrom]
+desc: parameter 5, force CD/DVD
+args: -I dummy chassis bootparam get 5 5
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_setup]
+desc: parameter 5, force BIOS setup
+args: -I dummy chassis bootparam get 5 6
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_rmt_fdd]
+desc: parameter 5, force remote floppy
+args: -I dummy chassis bootparam get 5 7
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_rmt_cdrom]
+desc: parameter 5, force remote CD/DVD
+args: -I dummy chassis bootparam get 5 8
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_rmt_media]
+desc: parameter 5, force primary remote media
+args: -I dummy chassis bootparam get 5 9
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_dev_ten]
+desc: parameter 5, boot device selector 10, which has no table entry
+args: -I dummy chassis bootparam get 5 10
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_rmt_hdd]
+desc: parameter 5, force remote hard drive
+args: -I dummy chassis bootparam get 5 11
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_floppy]
+desc: parameter 5, force floppy
+args: -I dummy chassis bootparam get 5 12
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_byte2]
+desc: parameter 5, CMOS clear, keyboard lock, screen blank, reset lockout
+args: -I dummy chassis bootparam get 5 13
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_quiet]
+desc: parameter 5, power button lockout and quiet BIOS display
+args: -I dummy chassis bootparam get 5 14
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_verbose]
+desc: parameter 5, verbose BIOS display
+args: -I dummy chassis bootparam get 5 15
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_verb_rsvd]
+desc: parameter 5, reserved BIOS verbosity value
+args: -I dummy chassis bootparam get 5 16
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_byte3]
+desc: parameter 5, event traps, password bypass and sleep button lockout
+args: -I dummy chassis bootparam get 5 17
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_cons_skip]
+desc: parameter 5, suppress console redirection
+args: -I dummy chassis bootparam get 5 18
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_cons_on]
+desc: parameter 5, request console redirection
+args: -I dummy chassis bootparam get 5 19
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_cons_rsvd]
+desc: parameter 5, reserved console redirection value
+args: -I dummy chassis bootparam get 5 20
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_shared]
+desc: parameter 5, BIOS shared mode override
+args: -I dummy chassis bootparam get 5 21
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_mux_bmc]
+desc: parameter 5, force the mux to the BMC
+args: -I dummy chassis bootparam get 5 22
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_mux_sys]
+desc: parameter 5, force the mux to the system
+args: -I dummy chassis bootparam get 5 23
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_mux_rsvd]
+desc: parameter 5, reserved mux control value
+args: -I dummy chassis bootparam get 5 24
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_5_locked]
+desc: parameter 5 reported as invalid/locked, which also picks the decoder
+args: -I dummy chassis bootparam get 5 25
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_6]
+desc: parameter 6, boot initiator info with a session id and timestamp
+args: -I dummy chassis bootparam get 6
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_7]
+desc: parameter 7 through the generic bootparam path, block 0
+args: -I dummy chassis bootparam get 7
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_7_block1]
+desc: parameter 7 block 1, which has no IANA PEN prefix
+args: -I dummy chassis bootparam get 7 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_unsupported]
+desc: a boot parameter the BMC does not implement
+args: -I dummy chassis bootparam get 8
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_get_ccode]
+desc: Get System Boot Options rejected with a generic completion code
+args: -I dummy chassis bootparam get 5
+transcript: chassis_ccode.tr
+covers: chassis
+
+[chassis_bootparam_get_verbose3]
+desc: -v -v -v dumps the raw boot option response before decoding it
+args: -I dummy -v -v -v chassis bootparam get 5
+transcript: chassis.tr
+covers: chassis
+
+# --- chassis bootparam set ------------------------------------------------
+
+[chassis_bootparam_set_help]
+desc: `chassis bootparam set help`
+args: -I dummy chassis bootparam set help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_no_device]
+desc: `bootparam set bootflag` without a device falls into help
+args: -I dummy chassis bootparam set bootflag
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_not_bootflag]
+desc: `bootparam set` with something other than bootflag falls into help
+args: -I dummy chassis bootparam set frob force_pxe
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_bootflag]
+desc: `bootparam set bootflag force_pxe`, the full five request sequence
+args: -I dummy chassis bootparam set bootflag force_pxe
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_bad_device]
+desc: `bootparam set bootflag` with an unknown device
+args: -I dummy chassis bootparam set bootflag frobnicate
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_clear]
+desc: options= clearing two valid-bit-clearing conditions
+args: -I dummy chassis bootparam set bootflag force_pxe options=PEF,timeout
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_no]
+desc: the no- prefix sets rather than clears
+args: -I dummy chassis bootparam set bootflag force_pxe options=no-watchdog,no-reset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_power]
+desc: the last option in the table, on its own
+args: -I dummy chassis bootparam set bootflag force_pxe options=power
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_help]
+desc: options=help lists the legal options and leaves both masks zero
+args: -I dummy chassis bootparam set bootflag force_pxe options=help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_bad]
+desc: an unknown option name
+args: -I dummy chassis bootparam set bootflag force_pxe options=frob
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_bad_no]
+desc: an unknown option with the no- prefix, which is restored for the message
+args: -I dummy chassis bootparam set bootflag force_pxe options=no-frob
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_no_kw]
+desc: a fifth argument that is not an options= keyword
+args: -I dummy chassis bootparam set bootflag force_pxe frobnicate
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_six_args]
+desc: a sixth argument stops the options from being parsed at all
+args: -I dummy chassis bootparam set bootflag force_pxe options=PEF extra
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_prog_fail]
+desc: set-in-progress rejected, which suppresses the later progress requests
+args: -I dummy chassis bootparam set bootflag force_pxe
+transcript: chassis_setprog_fail.tr
+covers: chassis
+
+[chassis_bootparam_set_ack_fail]
+desc: a positive completion code from the acknowledge clear does not abort
+args: -I dummy chassis bootparam set bootflag force_pxe
+transcript: chassis_setack_fail.tr
+covers: chassis
+
+[chassis_bootparam_set_flags_fail]
+desc: the boot flags write is rejected, so no confirmation is printed
+args: -I dummy chassis bootparam set bootflag force_pxe
+transcript: chassis_setflags_fail.tr
+covers: chassis
+
+[chassis_bootparam_set_ack_fail_opt]
+desc: with options= the same code does abort, before the valid flag is read
+args: -I dummy chassis bootparam set bootflag force_pxe options=PEF
+transcript: chassis_setack_fail.tr
+covers: chassis
+
+[chassis_bootparam_set_valid_getfail]
+desc: the boot valid flag cannot be read back
+args: -I dummy chassis bootparam set bootflag force_pxe options=PEF
+transcript: chassis_bootvalid_fail.tr
+covers: chassis
+
+[chassis_bootparam_set_valid_setfail]
+desc: the boot valid flag is read but cannot be written
+args: -I dummy chassis bootparam set bootflag force_pxe options=PEF
+transcript: chassis_setvalid_fail.tr
+covers: chassis
+
+# --- chassis bootdev ------------------------------------------------------
+
+[chassis_bootdev_no_args]
+desc: `chassis bootdev` with no device
+args: -I dummy chassis bootdev
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_help]
+desc: `chassis bootdev help`
+args: -I dummy chassis bootdev help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_none]
+desc: bootdev none
+args: -I dummy chassis bootdev none
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_pxe]
+desc: bootdev pxe
+args: -I dummy chassis bootdev pxe
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_pxe]
+desc: the force_pxe alias
+args: -I dummy chassis bootdev force_pxe
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_disk]
+desc: bootdev disk
+args: -I dummy chassis bootdev disk
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_disk]
+desc: the force_disk alias
+args: -I dummy chassis bootdev force_disk
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_safe]
+desc: bootdev safe
+args: -I dummy chassis bootdev safe
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_diag]
+desc: bootdev diag
+args: -I dummy chassis bootdev diag
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_cdrom]
+desc: bootdev cdrom
+args: -I dummy chassis bootdev cdrom
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_remotecd]
+desc: bootdev remotecd
+args: -I dummy chassis bootdev remotecd
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_floppy]
+desc: bootdev floppy
+args: -I dummy chassis bootdev floppy
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_bios]
+desc: bootdev bios
+args: -I dummy chassis bootdev bios
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_bios]
+desc: the force_bios alias
+args: -I dummy chassis bootdev force_bios
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_invalid]
+desc: an unrecognized boot device
+args: -I dummy chassis bootdev frobnicate
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_clear_cmos_yes]
+desc: clear-cmos=yes is a shorthand for options=clear-cmos
+args: -I dummy chassis bootdev pxe clear-cmos=yes
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_clear_cmos_no]
+desc: clear-cmos=no is not recognized at all, so no flags are used
+args: -I dummy chassis bootdev pxe clear-cmos=no
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_third_arg_junk]
+desc: an unrecognized third argument is ignored
+args: -I dummy chassis bootdev pxe frobnicate
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_help]
+desc: options=help lists the legal settings and sends nothing
+args: -I dummy chassis bootdev pxe options=help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bad]
+desc: an unrecognized option setting
+args: -I dummy chassis bootdev pxe options=frobnicate
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_valid]
+desc: the valid option alone
+args: -I dummy chassis bootdev pxe options=valid
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_persistent]
+desc: the persistent option alone
+args: -I dummy chassis bootdev pxe options=persistent
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_efiboot]
+desc: the efiboot option alone
+args: -I dummy chassis bootdev pxe options=efiboot
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_clear_cmos]
+desc: the clear-cmos option alone
+args: -I dummy chassis bootdev pxe options=clear-cmos
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_lockkbd]
+desc: the lockkbd option alone
+args: -I dummy chassis bootdev pxe options=lockkbd
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_screenblank]
+desc: the screenblank option alone
+args: -I dummy chassis bootdev pxe options=screenblank
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_lockoutreset]
+desc: the lockoutreset option alone
+args: -I dummy chassis bootdev pxe options=lockoutreset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_lockout_power]
+desc: the lockout_power option alone
+args: -I dummy chassis bootdev pxe options=lockout_power
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_verbose_no]
+desc: verbose=no requests a quiet display
+args: -I dummy chassis bootdev pxe options=verbose=no
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_verbose_yes]
+desc: verbose=yes requests a verbose display
+args: -I dummy chassis bootdev pxe options=verbose=yes
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_verbose_dflt]
+desc: verbose=default clears the verbosity field
+args: -I dummy chassis bootdev pxe options=verbose=yes,verbose=default
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_force_pet]
+desc: the force_pet option alone
+args: -I dummy chassis bootdev pxe options=force_pet
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_upw_bypass]
+desc: the upw_bypass option alone
+args: -I dummy chassis bootdev pxe options=upw_bypass
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_lockout_sleep]
+desc: the lockout_sleep option alone
+args: -I dummy chassis bootdev pxe options=lockout_sleep
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_cons_skip]
+desc: cons_redirect=skip
+args: -I dummy chassis bootdev pxe options=cons_redirect=skip
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_cons_enable]
+desc: cons_redirect=enable
+args: -I dummy chassis bootdev pxe options=cons_redirect=enable
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_cons_dflt]
+desc: cons_redirect=default clears the console redirection field
+args: -I dummy chassis bootdev pxe options=cons_redirect=enable,cons_redirect=default
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_safe]
+desc: the force_safe alias
+args: -I dummy chassis bootdev force_safe
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_diag]
+desc: the force_diag alias
+args: -I dummy chassis bootdev force_diag
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_cdrom]
+desc: the force_cdrom alias
+args: -I dummy chassis bootdev force_cdrom
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_remotecd]
+desc: the force_remotecd alias
+args: -I dummy chassis bootdev force_remotecd
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_force_floppy]
+desc: the force_floppy alias
+args: -I dummy chassis bootdev force_floppy
+transcript: chassis.tr
+covers: chassis
+
+# Each option clears its own mask before OR-ing its value in.  With a single
+# option the flags byte is still zero, so the clear is invisible; these pairs
+# set another bit in the same byte first, which makes every mask observable.
+
+[chassis_bootdev_opt_verb_no_yes]
+desc: verbose=yes must clear the quiet bits verbose=no set
+args: -I dummy chassis bootdev pxe options=verbose=no,verbose=yes
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_verb_yes_no]
+desc: verbose=no must clear the verbose bits verbose=yes set
+args: -I dummy chassis bootdev pxe options=verbose=yes,verbose=no
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_cons_skip_en]
+desc: cons_redirect=enable must clear the skip bits
+args: -I dummy chassis bootdev pxe options=cons_redirect=skip,cons_redirect=enable
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_cons_en_skip]
+desc: cons_redirect=skip must clear the enable bits
+args: -I dummy chassis bootdev pxe options=cons_redirect=enable,cons_redirect=skip
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf1_valid_last]
+desc: byte 1 options with valid applied last
+args: -I dummy chassis bootdev pxe options=persistent,efiboot,valid
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf1_persist_last]
+desc: byte 1 options with persistent applied last
+args: -I dummy chassis bootdev pxe options=valid,efiboot,persistent
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf1_efi_last]
+desc: byte 1 options with efiboot applied last
+args: -I dummy chassis bootdev pxe options=valid,persistent,efiboot
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf2_cmos_last]
+desc: byte 2 options with clear-cmos applied last
+args: -I dummy chassis bootdev pxe options=lockkbd,screenblank,lockoutreset,clear-cmos
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf2_kbd_last]
+desc: byte 2 options with lockkbd applied last
+args: -I dummy chassis bootdev pxe options=clear-cmos,screenblank,lockoutreset,lockkbd
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf2_blank_last]
+desc: byte 2 options with screenblank applied last
+args: -I dummy chassis bootdev pxe options=clear-cmos,lockkbd,lockoutreset,screenblank
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf2_reset_last]
+desc: byte 2 options with lockoutreset applied last
+args: -I dummy chassis bootdev pxe options=clear-cmos,lockkbd,screenblank,lockoutreset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf3_power_last]
+desc: byte 3 options with lockout_power applied last
+args: -I dummy chassis bootdev pxe options=force_pet,upw_bypass,lockout_sleep,lockout_power
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf3_pet_last]
+desc: byte 3 options with force_pet applied last
+args: -I dummy chassis bootdev pxe options=lockout_power,upw_bypass,lockout_sleep,force_pet
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf3_upw_last]
+desc: byte 3 options with upw_bypass applied last
+args: -I dummy chassis bootdev pxe options=lockout_power,force_pet,lockout_sleep,upw_bypass
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf3_sleep_last]
+desc: byte 3 options with lockout_sleep applied last
+args: -I dummy chassis bootdev pxe options=lockout_power,force_pet,upw_bypass,lockout_sleep
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bf3_vdflt_last]
+desc: byte 3 options with verbose=default applied last over a set field
+args: -I dummy chassis bootdev pxe options=lockout_power,verbose=no,verbose=default
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_many]
+desc: several options at once, each contributing a different bit
+args: -I dummy chassis bootdev disk options=valid,persistent,efiboot,lockkbd,force_pet,cons_redirect=skip
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_bad_and_good]
+desc: one bad option among good ones still aborts the whole command
+args: -I dummy chassis bootdev pxe options=valid,frob,persistent
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_prog_fail]
+desc: bootdev when set-in-progress is rejected
+args: -I dummy chassis bootdev pxe
+transcript: chassis_setprog_fail.tr
+covers: chassis
+
+[chassis_bootdev_flags_fail]
+desc: bootdev when the boot flags write is rejected
+args: -I dummy chassis bootdev pxe
+transcript: chassis_setflags_fail.tr
+covers: chassis
+
+# --- chassis bootmbox -----------------------------------------------------
+
+[chassis_bootmbox_no_args]
+desc: `chassis bootmbox` prints help and returns 0xff, which is not negative
+args: -I dummy chassis bootmbox
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_help]
+desc: `chassis bootmbox help`
+args: -I dummy chassis bootmbox help
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_unknown_subcmd]
+desc: a bootmbox subcommand that is neither get nor set is silently ignored
+args: -I dummy chassis bootmbox frobnicate
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_all]
+desc: read every block until the BMC reports the parameter out of range
+args: -I dummy chassis bootmbox get
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_all_text]
+desc: read every block in text mode
+args: -I dummy chassis bootmbox get text
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_block0]
+desc: read block 0 on its own, which prints the selector
+args: -I dummy chassis bootmbox get block 0
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_block1]
+desc: read block 1 on its own; no IANA PEN prefix
+args: -I dummy chassis bootmbox get block 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_text_block1]
+desc: text mode and an explicit block
+args: -I dummy chassis bootmbox get text block 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_block_no_arg]
+desc: `block` without a number falls into help
+args: -I dummy chassis bootmbox get block
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_bad_block]
+desc: a non-numeric block number
+args: -I dummy chassis bootmbox get block xyz
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_block_256]
+desc: block 256 fits in the int16 parse but is truncated to 0 in the request
+args: -I dummy chassis bootmbox get block 256
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_block_neg]
+desc: a negative block means "all blocks", the same as not saying block at all
+args: -I dummy chassis bootmbox get block -1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_one_block]
+desc: a mailbox that is only one block long
+args: -I dummy chassis bootmbox get
+transcript: chassis_mbox_one.tr
+covers: chassis
+
+[chassis_bootmbox_get_binary]
+desc: a mailbox with binary data and an IANA PEN that is not in the registry
+args: -I dummy chassis bootmbox get
+transcript: chassis_mbox_binary.tr
+covers: chassis
+
+[chassis_bootmbox_get_binary_text]
+desc: the same mailbox in text mode, where an embedded NUL truncates a block
+args: -I dummy chassis bootmbox get text
+transcript: chassis_mbox_binary.tr
+covers: chassis
+
+[chassis_bootmbox_get_unsupported]
+desc: the mailbox parameter is not supported at all, so block 0 fails
+args: -I dummy chassis bootmbox get
+transcript: chassis_mbox_none.tr
+covers: chassis
+
+[chassis_bootmbox_get_block0_fail]
+desc: a single-block read of an unsupported mailbox
+args: -I dummy chassis bootmbox get block 0
+transcript: chassis_mbox_none.tr
+covers: chassis
+
+[chassis_bootmbox_set_no_iana]
+desc: `bootmbox set` with no arguments at all
+args: -I dummy chassis bootmbox set
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_iana]
+desc: a non-numeric IANA PEN
+args: -I dummy chassis bootmbox set frob 1
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_no_data]
+desc: an IANA PEN with no data behind it
+args: -I dummy chassis bootmbox set 343
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bytes]
+desc: three data bytes, which fit in block 0 behind the IANA PEN
+args: -I dummy chassis bootmbox set 343 1 2 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_block0_full]
+desc: exactly thirteen data bytes, filling block 0 with no second block
+args: -I dummy chassis bootmbox set 343 1 2 3 4 5 6 7 8 9 10 11 12 13
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_two_blocks]
+desc: fourteen data bytes, which spill one byte into block 1
+args: -I dummy chassis bootmbox set 343 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_byte]
+desc: a bad byte value is reported but does not stop the write
+args: -I dummy chassis bootmbox set 343 1 zz 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_explicit_block]
+desc: an explicit block number writes one block and drops the IANA PEN
+args: -I dummy chassis bootmbox set block 1 343 1 2 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_block0_expl]
+desc: an explicit block 0 still carries the IANA PEN
+args: -I dummy chassis bootmbox set block 0 343 1 2 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_text]
+desc: text mode, a short string that fits in block 0 with its terminator
+args: -I dummy chassis bootmbox set text 343 hello
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_text_13]
+desc: text mode, a thirteen character string, whose terminator spills over
+args: -I dummy chassis bootmbox set text 343 abcdefghijklm
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_text_long]
+desc: text mode, a string that needs three blocks
+args: -I dummy chassis bootmbox set text 343 abcdefghijklmnopqrstuvwxyz0123456789
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_text_verbose]
+desc: -v exposes the block-by-block progress messages
+args: -I dummy -v chassis bootmbox set text 343 abcdefghijklm
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_end_of_mbox]
+desc: the second block write is out of range
+args: -I dummy chassis bootmbox set 343 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+transcript: chassis_mbox_write_end.tr
+covers: chassis
+
+[chassis_bootmbox_set_first_fails]
+desc: the very first block write is rejected
+args: -I dummy chassis bootmbox set 343 1 2 3
+transcript: chassis_ccode.tr
+covers: chassis
+
+[chassis_bootmbox_set_too_big]
+desc: a payload one byte past the 4093 the 256 block mailbox can hold
+args: -I dummy chassis bootmbox set text 343 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_commit_fail]
+desc: a failed commit-write must not suppress the set-complete request
+args: -I dummy chassis bootparam set bootflag force_pxe
+transcript: chassis_commit_fail.tr
+covers: chassis
+
+[chassis_bootdev_commit_fail]
+desc: bootdev with a failed commit-write still sends set-complete
+args: -I dummy chassis bootdev pxe
+transcript: chassis_commit_fail.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_reset]
+desc: the reset option on its own, distinct from power
+args: -I dummy chassis bootparam set bootflag force_pxe options=reset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootparam_set_opt_noXpwr]
+desc: no- must match three characters, not two
+args: -I dummy chassis bootparam set bootflag force_pxe options=noXpower
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_reset]
+desc: bootdev options=reset alone
+args: -I dummy chassis bootdev pxe options=reset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootdev_opt_noXreset]
+desc: bootdev no- prefix must be three characters
+args: -I dummy chassis bootdev pxe options=noXreset
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_max_blocks]
+desc: a payload of exactly 4093 bytes fills all 256 blocks
+args: -I dummy chassis bootmbox set text 343 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+transcript: chassis_ccode.tr
+covers: chassis
+
+[chassis_bootmbox_set_13_verbose]
+desc: 13 data bytes fit block 0 exactly; verbose shows the block count
+args: -I dummy -v chassis bootmbox set 343 1 2 3 4 5 6 7 8 9 10 11 12 13
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_get_all_256]
+desc: every block answers, so the read loop runs to its block 255 bound
+args: -I dummy chassis bootmbox get
+transcript: chassis_mbox_all256.tr
+covers: chassis
+
+[chassis_bootmbox_get_block_255]
+desc: the highest block number, which needs all three digits
+args: -I dummy chassis bootmbox get block 255
+transcript: chassis_mbox_one.tr
+covers: chassis
+
+[chassis_policy_list_off_prev]
+desc: only always-off and previous supported, pinning the always-on bit
+args: -I dummy chassis policy list
+transcript: chassis_policy_off_prev.tr
+covers: chassis

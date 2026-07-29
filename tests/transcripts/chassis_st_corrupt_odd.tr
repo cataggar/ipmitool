@@ -1,0 +1,10 @@
+# Get Self Test Results: 0x57 with bits 0, 2, 4 and 6 set.  Paired with
+# chassis_st_corrupt_even.tr this pins the bit-to-string mapping, which a
+# response with all bits set cannot.
+default_ccode 0xc1
+
+respond get_self_test_results
+  netfn 0x06
+  cmd 0x04
+  data 57 55
+end

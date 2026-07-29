@@ -1,0 +1,18 @@
+# Boot Initiator Mailbox with a single block: block 0 answers, block 1 is out
+# of range, which ends the "read every block" loop without an error.
+default_ccode 0xc1
+
+respond bootparam_7_block0
+  netfn 0x00
+  cmd 0x09
+  match 07 00
+  # IANA PEN 343 (Intel) little endian, then "ipmitool root" ASCII
+  data 01 07 00 57 01 00 69 70 6d 69 74 6f 6f 6c 20 72 6f 6f 74
+end
+
+respond bootparam_7_out_of_range
+  netfn 0x00
+  cmd 0x09
+  match 07
+  ccode 0xc9
+end

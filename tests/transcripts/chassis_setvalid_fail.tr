@@ -1,0 +1,23 @@
+# Set System Boot Options parameter 3 is read-only; the read back of the
+# current value succeeds first.
+default_ccode 0xc1
+
+respond set_flag_valid_readonly
+  netfn 0x00
+  cmd 0x08
+  match 03
+  ccode 0x82
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond bootparam_3
+  netfn 0x00
+  cmd 0x09
+  match 03
+  data 01 03 1b
+end

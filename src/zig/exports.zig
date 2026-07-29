@@ -55,6 +55,9 @@ comptime {
     if (selected("mc")) {
         @import("cmd/mc.zig").exportSymbols();
     }
+    if (selected("chassis")) {
+        @import("cmd/chassis.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

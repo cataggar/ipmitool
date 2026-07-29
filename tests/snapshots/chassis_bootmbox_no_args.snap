@@ -1,0 +1,30 @@
+#!golden 1
+#!case chassis_bootmbox_no_args
+#!section exit
+0
+#!section stdout
+#!section stderr
+bootmbox get [text] [block <block>]
+  Read the entire Boot Initiator Mailbox or the specified <block>.
+  If 'text' option is specified, the data is output as plain text, otherwise
+  hex dump mode is used.
+
+bootmbox set text [block <block>] <IANA_PEN> "<data_string>"
+bootmbox set [block <block>] <IANA_PEN> <data_byte> [<data_byte> ...]
+  Write the specified <block> or the entire Boot Initiator Mailbox.
+  It is required to specify a decimal IANA Enterprise Number recognized
+  by the boot initiator on the target system. Refer to your target system
+  manufacturer for details. The rest of the arguments are either separate
+  data byte values separated by spaces, or a single text string argument.
+
+  When single block write is requested, the total length of <data> may not
+  exceed 13 bytes for block 0, or 16 bytes otherwise.
+
+bootmbox help
+  Show this help.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

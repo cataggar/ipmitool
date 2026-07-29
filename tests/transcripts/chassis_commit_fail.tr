@@ -1,0 +1,26 @@
+# The set-in-progress write (parameter 0, value 01) succeeds but the
+# commit-write (value 02) is rejected.  The C code only latches its static
+# "stop using set-in-progress" flag when the *SET_IN_PROGRESS* write fails, so
+# the set-complete (value 00) request must still go out after the failed
+# commit.  A build that latched on any failed progress write would omit it.
+default_ccode 0x00
+
+respond commit_write_rejected
+  netfn 0x00
+  cmd 0x08
+  match 00 02
+  ccode 0x81
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end
+
+respond bootparam_3
+  netfn 0x00
+  cmd 0x09
+  match 03
+  data 01 03 1b
+end

@@ -1,0 +1,23 @@
+# Writing the Boot Initiator Mailbox: block 0 is accepted, block 1 is out of
+# range.
+default_ccode 0xc1
+
+respond set_mbox_block0
+  netfn 0x00
+  cmd 0x08
+  match 07 00
+  data
+end
+
+respond set_mbox_out_of_range
+  netfn 0x00
+  cmd 0x08
+  match 07
+  ccode 0xc9
+end
+
+respond set_boot_options
+  netfn 0x00
+  cmd 0x08
+  data
+end

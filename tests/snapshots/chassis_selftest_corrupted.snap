@@ -1,0 +1,23 @@
+#!golden 1
+#!case chassis_selftest_corrupted
+#!section exit
+0
+#!section stdout
+Self Test Results    : device error
+                       [firmware corrupted]
+                       [boot block corrupted]
+                       [FRU Internal Use Area corrupted]
+                       [SDR Repository empty]
+                       [IPMB not responding]
+                       [cannot access BMC FRU]
+                       [cannot access SDR Repository]
+                       [cannot access SEL Device]
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x04 target_cmd=0x00 data=
+< rule=get_self_test_results ccode=0x00 len=2 data=57 ff
+bye

@@ -1,0 +1,8 @@
+# Restore policy 1 (previous), front panel byte zero -> "none".
+default_ccode 0xc1
+
+respond get_chassis_status
+  netfn 0x00
+  cmd 0x01
+  data 20 00 00 00
+end

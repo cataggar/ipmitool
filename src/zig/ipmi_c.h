@@ -33,6 +33,7 @@
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_cc.h>
+#include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
@@ -81,8 +82,14 @@
  * `struct wdt_string_s` is defined inside `lib/ipmi_mc.c`; only a pointer to
  * it appears in `find_set_wdt_string()`'s signature, so an incomplete type is
  * enough.
+ *
+ * `lib/ipmi_chassis.c` defines the last two without a prototype; nothing else
+ * in the tree calls them, but they are global symbols and the Zig replacement
+ * has to export them under the same names with the same signatures.
  */
 void ipmi_raw_help(void);
 int ipmi_spd_print(uint8_t *spd_data, int len);
 struct wdt_string_s;
 int find_set_wdt_string(const struct wdt_string_s *w[], const char *s);
+int ipmi_chassis_status(struct ipmi_intf *intf);
+void ipmi_chassis_set_bootflag_help(void);

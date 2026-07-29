@@ -1,0 +1,23 @@
+#!golden 1
+#!case chassis_bootdev_opt_bf2_reset_last
+#!section exit
+0
+#!section stdout
+Set Boot Device to pxe
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 01
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=04 01 01
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=05 80 c7 00 00 00
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 02
+< rule=set_boot_options ccode=0x00 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x08 target_cmd=0x00 data=00 00
+< rule=set_boot_options ccode=0x00 len=0 data=
+bye

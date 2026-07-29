@@ -1,0 +1,3 @@
+# Every chassis command fails with 0xd5 "Command not supported in present
+# state", which is not the default 0xc1 so the error text is distinguishable.
+default_ccode 0xd5

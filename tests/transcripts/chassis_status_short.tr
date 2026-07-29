@@ -1,0 +1,9 @@
+# Get Chassis Status without the optional fourth byte, and with every decoded
+# bit clear: restore policy 0 (always-off), no last power event.
+default_ccode 0xc1
+
+respond get_chassis_status
+  netfn 0x00
+  cmd 0x01
+  data 00 00 00
+end

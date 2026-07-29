@@ -1,0 +1,784 @@
+#!golden 1
+#!case chassis_bootmbox_get_all_256
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 7 is valid/unlocked
+Boot parameter data: 0057010041
+ IANA PEN       : 343 [Intel Corporation]
+ Block   0 Data : 41
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+ Block   1 Data : 42
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 00 00
+< rule=bootparam_7_block0 ccode=0x00 len=7 data=01 07 00 57 01 00 41
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 01 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 02 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 03 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 04 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 05 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 06 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 07 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 08 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 09 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 0a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 0b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 0c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 0d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 0e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 0f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 10 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 11 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 12 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 13 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 14 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 15 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 16 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 17 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 18 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 19 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 1a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 1b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 1c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 1d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 1e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 1f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 20 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 21 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 22 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 23 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 24 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 25 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 26 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 27 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 28 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 29 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 2a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 2b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 2c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 2d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 2e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 2f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 30 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 31 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 32 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 33 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 34 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 35 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 36 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 37 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 38 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 39 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 3a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 3b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 3c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 3d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 3e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 3f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 40 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 41 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 42 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 43 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 44 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 45 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 46 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 47 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 48 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 49 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 4a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 4b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 4c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 4d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 4e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 4f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 50 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 51 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 52 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 53 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 54 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 55 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 56 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 57 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 58 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 59 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 5a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 5b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 5c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 5d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 5e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 5f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 60 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 61 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 62 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 63 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 64 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 65 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 66 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 67 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 68 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 69 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 6a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 6b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 6c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 6d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 6e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 6f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 70 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 71 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 72 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 73 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 74 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 75 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 76 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 77 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 78 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 79 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 7a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 7b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 7c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 7d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 7e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 7f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 80 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 81 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 82 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 83 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 84 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 85 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 86 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 87 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 88 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 89 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 8a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 8b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 8c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 8d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 8e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 8f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 90 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 91 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 92 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 93 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 94 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 95 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 96 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 97 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 98 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 99 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 9a 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 9b 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 9c 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 9d 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 9e 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 9f 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a0 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a1 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a2 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a3 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a4 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a5 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a6 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a7 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a8 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 a9 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 aa 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ab 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ac 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ad 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ae 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 af 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b0 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b1 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b2 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b3 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b4 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b5 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b6 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b7 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b8 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 b9 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ba 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 bb 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 bc 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 bd 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 be 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 bf 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c0 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c1 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c2 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c3 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c4 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c5 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c6 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c7 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c8 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 c9 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ca 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 cb 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 cc 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 cd 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ce 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 cf 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d0 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d1 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d2 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d3 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d4 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d5 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d6 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d7 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d8 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 d9 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 da 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 db 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 dc 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 dd 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 de 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 df 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e0 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e1 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e2 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e3 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e4 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e5 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e6 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e7 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e8 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 e9 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ea 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 eb 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ec 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ed 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ee 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ef 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f0 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f1 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f2 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f3 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f4 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f5 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f6 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f7 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f8 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 f9 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 fa 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 fb 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 fc 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 fd 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 fe 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=07 ff 00
+< rule=bootparam_7_blockn ccode=0x00 len=4 data=01 07 01 42
+bye

@@ -1,0 +1,21 @@
+#!golden 1
+#!case chassis_bootparam_get_6
+#!section exit
+0
+#!section stdout
+Boot parameter version: 1
+Boot parameter 6 is valid/unlocked
+Boot parameter data: 717856341200e10b5e
+ Boot Initiator Info :
+    Channel Number : 1
+    Session Id     : 12345678h
+    Timestamp      : 01/01/20 00:00:00 UTC
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x00 lun=0x00 cmd=0x09 target_cmd=0x00 data=06 00 00
+< rule=bootparam_6 ccode=0x00 len=11 data=01 06 71 78 56 34 12 00 e1 0b 5e
+bye
