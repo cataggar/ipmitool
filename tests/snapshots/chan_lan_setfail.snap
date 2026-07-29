@@ -1,0 +1,20 @@
+#!golden 1
+#!case chan_lan_setfail
+#!section exit
+1
+#!section stdout
+#!section stderr
+IPMI command failed: Insufficient privilege level
+Unable to Set Channel Access(non-volatile) for channel 1
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=get_channel_info ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x41 target_cmd=0x00 data=01 40
+< rule=get_channel_access_nonvolatile ccode=0x00 len=2 data=39 03
+> netfn=0x06 lun=0x00 cmd=0x40 target_cmd=0x00 data=01 7a 44
+< rule=set_channel_access_fail ccode=0xd4 len=0 data=
+bye

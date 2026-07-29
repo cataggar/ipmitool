@@ -1,0 +1,28 @@
+# Channel 7 uses medium 06h "Other LAN", which `ipmi_get_channel_info()' also
+# treats as a LAN channel, and single-session support.  Access mode 0 and 3
+# exercise the two switch arms channel_lan.tr does not.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  # channel 7, medium 06h other LAN, protocol 09h IPMB-1.0, single-session
+  # with 1 active session, vendor IANA 7154
+  data 07 06 09 41 f2 1b 00 00 00
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 07 80
+  # access mode 0 = disabled, privilege limit 1 = CALLBACK
+  data 00 01
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 07 40
+  # access mode 3 = shared, privilege limit 15 = NO ACCESS
+  data 03 0f
+end

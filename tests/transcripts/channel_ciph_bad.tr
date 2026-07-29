@@ -1,0 +1,12 @@
+# A record that starts with neither C0h nor C1h.  parse_cipher_suite() logs
+# "Bad start of record byte in cipher suite data" at LOG_INFO and returns a
+# size of 0, which stops the parse.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  data c0 00 00 00 00
+  data aa 09 01 01 01
+end

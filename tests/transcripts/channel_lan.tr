@@ -1,0 +1,78 @@
+# A BMC whose channel 1 is an 802.3 LAN channel, with *different* volatile and
+# non-volatile channel access settings.
+#
+# Get Channel Access (06h/41h) carries the volatile/non-volatile selector in
+# request byte 1 - 0x80 for volatile, 0x40 for non-volatile - so the two rules
+# below `match' on it.  `channel info' prints both blocks, and a port that sent
+# the wrong selector, or sent the same one twice, would print the same block
+# twice.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  # channel 1, medium 04h 802.3 LAN, protocol 01h IPMB-1.0, session support
+  # 80h multi-session with 4 active sessions, vendor IANA 7154, aux 0
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 01 80
+  # alerting disabled (0x20), per-message auth enabled, user level auth
+  # enabled, access mode 2 = always available, privilege limit 4 = ADMIN
+  data 22 04
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 01 40
+  # alerting enabled, per-message auth disabled (0x10), user level auth
+  # disabled (0x08), access mode 1 = pre-boot only, privilege limit 3
+  data 19 03
+end
+
+respond set_channel_access
+  netfn 0x06
+  cmd 0x40
+end
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  # byte 0: channel 1
+  # byte 1: 0x95 = v2.0 data available (0x80) + auth types 15h
+  #                (none | MD2 | straight password)
+  # byte 2: 0x16 = kg non-zero, user level auth disabled, non-null user names
+  # byte 3: 0x03 = supports both IPMI v1.5 and v2.0
+  # bytes 4-6: OEM IANA, byte 7: OEM aux
+  data 01 95 16 03 00 00 00 00
+end
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  # max user ids 4, 1 enabled user id, 1 fixed name, channel access:
+  # link auth + ipmi messaging enabled, privilege limit ADMINISTRATOR
+  data 04 41 01 34
+end
+
+respond get_user_name
+  netfn 0x06
+  cmd 0x46
+  data 61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond set_user_access
+  netfn 0x06
+  cmd 0x43
+end

@@ -31,6 +31,7 @@
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_channel.h>
 
 enum ipmitool_abi_layout {
 	/* struct ipmi_rq - opaque: `msg.netfn:6` / `msg.lun:2` are bitfields. */
@@ -138,4 +139,33 @@ enum ipmitool_abi_layout {
 		offsetof(struct sdr_record_list, next),
 	ABI_OFFSETOF_sdr_record_list__record =
 		offsetof(struct sdr_record_list, record),
+	/* struct get_channel_auth_cap_rsp - opaque: bytes 1-3 are all bitfields.
+	 * Only three offsets are addressable; the bitfield bytes are pinned by
+	 * the fields on either side of them.
+	 */
+	ABI_SIZEOF_get_channel_auth_cap_rsp =
+		sizeof(struct get_channel_auth_cap_rsp),
+	ABI_ALIGNOF_get_channel_auth_cap_rsp =
+		_Alignof(struct get_channel_auth_cap_rsp),
+	ABI_OFFSETOF_get_channel_auth_cap_rsp__channel_number =
+		offsetof(struct get_channel_auth_cap_rsp, channel_number),
+	ABI_OFFSETOF_get_channel_auth_cap_rsp__oem_id =
+		offsetof(struct get_channel_auth_cap_rsp, oem_id),
+	ABI_OFFSETOF_get_channel_auth_cap_rsp__oem_aux_data =
+		offsetof(struct get_channel_auth_cap_rsp, oem_aux_data),
+
+	/* The two cipher suite records are inside a `#pragma pack' region, which
+	 * translate-c silently ignores.  Both happen to be all-uint8_t so the
+	 * packed and unpacked layouts agree, but the port reads them byte by byte
+	 * and only needs their sizes, which the parser compares against the
+	 * remaining data length.
+	 */
+	ABI_SIZEOF_std_cipher_suite_record =
+		sizeof(struct std_cipher_suite_record_t),
+	ABI_SIZEOF_oem_cipher_suite_record =
+		sizeof(struct oem_cipher_suite_record_t),
+	ABI_OFFSETOF_oem_cipher_suite_record__iana =
+		offsetof(struct oem_cipher_suite_record_t, iana),
+	ABI_OFFSETOF_oem_cipher_suite_record__auth_alg =
+		offsetof(struct oem_cipher_suite_record_t, auth_alg),
 };

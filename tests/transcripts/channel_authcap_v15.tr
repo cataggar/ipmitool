@@ -1,0 +1,12 @@
+# Get Channel Authentication Capabilities from a BMC that reports no IPMI v2.0
+# data (bit 7 of byte 1 clear), so the KG-status and v1.5/v2.0-support lines
+# are omitted.  Auth types 06h = MD5 | MD2, no OEM bit.
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  # byte 2: 0x00 - per-message auth enabled, user level auth enabled,
+  #         no non-null user names, no null user names, anonymous login off
+  data 02 06 00 00 00 00 00 00
+end

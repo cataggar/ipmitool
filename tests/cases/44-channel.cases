@@ -1,0 +1,664 @@
+# `ipmitool channel' - lib/ipmi_channel.c.
+#
+# The pre-existing suite reached `channel', `channel help', `channel info 1',
+# `channel authcap 1 4' and `channel getaccess 1 1'.  These cases add the rest:
+# every subcommand, every argument-count and validation branch, both Channel
+# Access blocks, all four session-support values, the cipher suite parser
+# including its OEM and malformed records, and the user access walk.
+
+[chan_bad_subcommand]
+desc: an unknown subcommand prints the usage and fails
+args: -I dummy channel frobnicate
+covers: channel
+
+[chan_help_case]
+desc: the help keyword is matched with strcmp, so HELP is not it
+args: -I dummy channel HELP
+covers: channel
+
+[chan_authcap_v15]
+desc: a BMC with no IPMI v2.0 data omits three of the lines
+args: -I dummy channel authcap 2 4
+transcript: channel_authcap_v15.tr
+covers: channel
+
+[chan_authcap_all]
+desc: every optional line present, including the OEM IANA
+args: -I dummy channel authcap 14 4
+transcript: channel_authcap_all.tr
+covers: channel
+
+[chan_authcap_retry]
+desc: the v2.0 request is rejected and retried without bit 7
+args: -I dummy channel authcap 1 4
+transcript: channel_authcap_retry.tr
+covers: channel
+
+[chan_authcap_fail]
+desc: both attempts fail
+args: -I dummy channel authcap 1 4
+transcript: channel_authcap_fail.tr
+covers: channel
+
+[chan_authcap_too_few]
+desc: authcap needs exactly two arguments
+args: -I dummy channel authcap 1
+covers: channel
+
+[chan_authcap_too_many]
+desc: authcap rejects a third argument
+args: -I dummy channel authcap 1 4 5
+covers: channel
+
+[chan_authcap_bad_channel]
+desc: a channel number of 12 is reserved
+args: -I dummy channel authcap 12 4
+covers: channel
+
+[chan_authcap_nan_channel]
+desc: a non-numeric channel
+args: -I dummy channel authcap xx 4
+covers: channel
+
+[chan_authcap_bad_priv]
+desc: privilege 9 is out of range
+args: -I dummy channel authcap 1 9
+covers: channel
+
+[chan_authcap_priv_15]
+desc: privilege 15 is the one value above 5 that is legal
+args: -I dummy channel authcap 1 15
+transcript: channel_authcap_v15.tr
+covers: channel
+
+[chan_authcap_priv_0]
+desc: privilege 0 is rejected
+args: -I dummy channel authcap 1 0
+covers: channel
+
+[chan_authcap_ch_0]
+desc: channel 0 is the primary IPMB
+args: -I dummy channel authcap 0 1
+transcript: channel_authcap_v15.tr
+covers: channel
+
+[chan_authcap_ch_15]
+desc: channel 15 is the system interface
+args: -I dummy channel authcap 15 2
+transcript: channel_authcap_v15.tr
+covers: channel
+
+[chan_getacc_uid]
+desc: one user on one channel
+args: -I dummy channel getaccess 1 2
+transcript: channel_lan.tr
+covers: channel
+
+[chan_getacc_all]
+desc: no user ID walks every user slot the BMC reports
+args: -I dummy channel getaccess 1
+transcript: channel_users3.tr
+covers: channel
+
+[chan_getacc_no_args]
+desc: getaccess needs a channel
+args: -I dummy channel getaccess
+covers: channel
+
+[chan_getacc_too_many]
+desc: getaccess rejects a fourth argument
+args: -I dummy channel getaccess 1 2 3
+covers: channel
+
+[chan_getacc_bad_channel]
+desc: channel 13 is reserved
+args: -I dummy channel getaccess 13 1
+covers: channel
+
+[chan_getacc_bad_uid]
+desc: user ID 99 is out of range
+args: -I dummy channel getaccess 1 99
+covers: channel
+
+[chan_getacc_uid_0]
+desc: user ID 0 is rejected by is_ipmi_user_id
+args: -I dummy channel getaccess 1 0
+covers: channel
+
+[chan_getacc_uacc_fail]
+desc: Get User Access fails
+args: -I dummy channel getaccess 1 1
+transcript: channel_uacc_cc.tr
+covers: channel
+
+[chan_getacc_uname_fail]
+desc: Get User Name fails with a code other than CCh
+args: -I dummy channel getaccess 1 1
+transcript: channel_uname_cc.tr
+covers: channel
+
+[chan_setacc_none]
+desc: setaccess with no options at all is "not enough parameters"
+args: -I dummy channel setaccess 1 2
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_callin_on]
+desc: callin=on clears the callin_callback bit
+args: -I dummy channel setaccess 1 2 callin=on
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_callin_off]
+desc: callin=off sets it, because the option is inverted
+args: -I dummy channel setaccess 1 2 callin=off
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_callin_disable]
+desc: disable is a synonym for off
+args: -I dummy channel setaccess 1 2 callin=disable
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_callin_no]
+desc: no is a synonym for off
+args: -I dummy channel setaccess 1 2 callin=no
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_callin_junk]
+desc: any other value is treated as on
+args: -I dummy channel setaccess 1 2 callin=frob
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_callin_empty]
+desc: an empty value is treated as on
+args: -I dummy channel setaccess 1 2 callin=
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_link_off]
+desc: link=off clears the link auth bit
+args: -I dummy channel setaccess 1 2 link=off
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_link_on]
+desc: link=on sets it
+args: -I dummy channel setaccess 1 2 link=on
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_ipmi_off]
+desc: ipmi=off clears the IPMI messaging bit
+args: -I dummy channel setaccess 1 2 ipmi=off
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_ipmi_enable]
+desc: enable is a synonym for on
+args: -I dummy channel setaccess 1 2 ipmi=enable
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_priv_name]
+desc: a privilege level named rather than numbered
+args: -I dummy channel setaccess 1 2 privilege=OPERATOR
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_priv_num]
+desc: a numeric privilege level
+args: -I dummy channel setaccess 1 2 privilege=3
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_priv_255]
+desc: 255 is UINT8_MAX, the sentinel str2val returns
+args: -I dummy channel setaccess 1 2 privilege=255
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_priv_junk]
+desc: an unparsable privilege level
+args: -I dummy channel setaccess 1 2 privilege=zzz
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_all_opts]
+desc: all four options at once, in reverse order
+args: -I dummy channel setaccess 1 2 privilege=5 ipmi=off link=off callin=off
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_repeat_opt]
+desc: the same option twice: the last one wins
+args: -I dummy channel setaccess 1 2 ipmi=off ipmi=on
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_bad_opt]
+desc: an option that matches no prefix
+args: -I dummy channel setaccess 1 2 frob=1
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_bare_opt]
+desc: a bare word is not an option either
+args: -I dummy channel setaccess 1 2 callin
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_prefix_only]
+desc: the option match is a prefix of the *option*, so callinx= is not one
+args: -I dummy channel setaccess 1 2 callinx=on
+transcript: channel_setacc.tr
+covers: channel
+
+[chan_setacc_help]
+desc: setaccess help prints the channel usage and succeeds
+args: -I dummy channel setaccess help
+covers: channel
+
+[chan_setacc_too_few]
+desc: setaccess needs at least a channel and a user
+args: -I dummy channel setaccess 1
+covers: channel
+
+[chan_setacc_bad_channel]
+desc: a reserved channel number
+args: -I dummy channel setaccess 12 2
+covers: channel
+
+[chan_setacc_bad_uid]
+desc: a user ID past the maximum
+args: -I dummy channel setaccess 1 99
+covers: channel
+
+[chan_setacc_get_fail]
+desc: the Get User Access that seeds the update fails
+args: -I dummy channel setaccess 1 2 link=on
+transcript: channel_uacc_cc.tr
+covers: channel
+
+[chan_setacc_set_fail]
+desc: the Set User Access fails
+args: -I dummy channel setaccess 1 2 link=on
+transcript: channel_setacc_cc.tr
+covers: channel
+
+[chan_info_default]
+desc: no channel number means 0xE, the current channel
+args: -I dummy channel info
+transcript: channel_lan.tr
+covers: channel
+
+[chan_info_lan]
+desc: a LAN channel prints both access blocks
+args: -I dummy channel info 1
+transcript: channel_lan.tr
+covers: channel
+
+[chan_info_serial]
+desc: a serial channel stops after the header
+args: -I dummy channel info 3
+transcript: channel_serial.tr
+covers: channel
+
+[chan_info_lan_other]
+desc: medium 06h is also treated as LAN
+args: -I dummy channel info 7
+transcript: channel_lanother.tr
+covers: channel
+
+[chan_info_sess_based]
+desc: session support C0h and an unknown medium
+args: -I dummy channel info 15
+transcript: channel_sessbased.tr
+covers: channel
+
+[chan_info_mode_5]
+desc: an access mode past the four the switch names
+args: -I dummy channel info 1
+transcript: channel_mode5.tr
+covers: channel
+
+[chan_info_bad_len]
+desc: Get Channel Info returns the wrong number of bytes
+args: -I dummy channel info 1
+transcript: channel_info_badlen.tr
+covers: channel
+
+[chan_info_ccode]
+desc: Get Channel Info fails with a completion code
+args: -I dummy channel info 1
+transcript: channel_info_cc.tr
+covers: channel
+
+[chan_info_acc_bad_len]
+desc: Get Channel Access returns the wrong length
+args: -I dummy channel info 1
+transcript: channel_acc_badlen.tr
+covers: channel
+
+[chan_info_acc_nv_fail]
+desc: the non-volatile Get Channel Access fails
+args: -I dummy channel info 1
+transcript: channel_acc_nv_cc.tr
+covers: channel
+
+[chan_info_too_many]
+desc: info rejects a second argument
+args: -I dummy channel info 1 2
+covers: channel
+
+[chan_info_bad_channel]
+desc: a reserved channel number
+args: -I dummy channel info 13
+covers: channel
+
+[chan_ciph_std]
+desc: three standard cipher suite records
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_std.tr
+covers: channel
+
+[chan_ciph_sol]
+desc: the sol payload type sets request byte 1 to 1
+args: -I dummy channel getciphers sol
+transcript: channel_ciph_std.tr
+covers: channel
+
+[chan_ciph_channel]
+desc: an explicit channel number
+args: -I dummy channel getciphers ipmi 1
+transcript: channel_ciph_std.tr
+covers: channel
+
+[chan_ciph_oem]
+desc: an OEM record carries a three byte IANA
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_oem.tr
+covers: channel
+
+[chan_ciph_multi]
+desc: a record straddling two responses
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_multi.tr
+covers: channel
+
+[chan_ciph_many]
+desc: thirteen records are reported and twelve are printed
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_many.tr
+covers: channel
+
+[chan_ciph_empty]
+desc: no cipher suite data at all
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_empty.tr
+covers: channel
+
+[chan_ciph_trunc]
+desc: a record cut short, reported at LOG_INFO
+args: -v -I dummy channel getciphers ipmi
+transcript: channel_ciph_trunc.tr
+covers: channel
+
+[chan_ciph_bad_start]
+desc: a bad start-of-record byte, reported at LOG_INFO
+args: -v -I dummy channel getciphers ipmi
+transcript: channel_ciph_bad.tr
+covers: channel
+
+[chan_ciph_trunc_quiet]
+desc: without -v the LOG_INFO message is suppressed
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_trunc.tr
+covers: channel
+
+[chan_ciph_ccode]
+desc: Get Channel Cipher Suites fails
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_cc.tr
+covers: channel
+
+[chan_ciph_csv]
+desc: csv output drops the header and the column padding
+args: -c -I dummy channel getciphers ipmi
+transcript: channel_ciph_std.tr
+covers: channel
+
+[chan_ciph_csv_oem]
+desc: csv output of an OEM record
+args: -c -I dummy channel getciphers ipmi
+transcript: channel_ciph_oem.tr
+covers: channel
+
+[chan_ciph_no_type]
+desc: getciphers needs a payload type
+args: -I dummy channel getciphers
+covers: channel
+
+[chan_ciph_bad_type]
+desc: the payload type must be ipmi or sol
+args: -I dummy channel getciphers foo
+covers: channel
+
+[chan_ciph_too_many]
+desc: getciphers rejects a fourth argument
+args: -I dummy channel getciphers ipmi 1 2
+covers: channel
+
+[chan_ciph_bad_channel]
+desc: a reserved channel number
+args: -I dummy channel getciphers ipmi 12
+covers: channel
+
+# --- cross-module callers -------------------------------------------------
+#
+# Five of the eleven exported symbols are never reached by the `channel'
+# command itself.  `lan set' (lib/ipmi_lanp.c) is the only caller of
+# _ipmi_set_channel_access() and the only user of ipmi_get_channel_medium()'s
+# return value, and `event' (lib/ipmi_event.c) is the only caller of
+# ipmi_current_channel_info().
+
+[chan_lan_access_on]
+desc: lan set access on drives both Set Channel Access halves
+args: -I dummy lan set 1 access on
+transcript: channel_lanset.tr
+covers: lan
+
+[chan_lan_access_off]
+desc: lan set access off clears the access mode
+args: -I dummy lan set 1 access off
+transcript: channel_lanset.tr
+covers: lan
+
+[chan_lan_alert_on]
+desc: lan set alert on writes alerting enabled
+args: -I dummy lan set 1 alert on
+transcript: channel_lanset.tr
+covers: lan
+
+[chan_lan_alert_off]
+desc: lan set alert off writes alerting disabled
+args: -I dummy lan set 1 alert off
+transcript: channel_lanset.tr
+covers: lan
+
+[chan_lan_notlan]
+desc: a serial channel is refused before any Set Channel Access
+args: -I dummy lan set 1 access on
+transcript: channel_lan_notlan.tr
+covers: lan
+
+[chan_lan_medium_cc]
+desc: Get Channel Info fails, so the medium is reserved
+args: -I dummy lan set 1 access on
+transcript: channel_lan_medium_cc.tr
+covers: lan
+
+[chan_lan_medium_cc2]
+desc: completion code CCh is swallowed without a message
+args: -I dummy lan set 1 access on
+transcript: channel_lan_medium_cc2.tr
+covers: lan
+
+[chan_lan_medium_len]
+desc: a short Get Channel Info reply is a negative return
+args: -I dummy lan set 1 access on
+transcript: channel_lan_medium_len.tr
+covers: lan
+
+[chan_lan_medium_dbg]
+desc: the medium is logged by name at debug level
+args: -vv -I dummy lan set 1 access on
+transcript: channel_lanset.tr
+covers: lan
+
+[chan_lan_setfail]
+desc: the non-volatile Set Channel Access is rejected
+args: -I dummy lan set 1 access on
+transcript: channel_lan_setfail.tr
+covers: lan
+
+[chan_lan_setfail2]
+desc: only the volatile Set Channel Access is rejected
+args: -I dummy lan set 1 access on
+transcript: channel_lan_setfail2.tr
+covers: lan
+
+[chan_lan_getvol_cc]
+desc: the volatile Get Channel Access is rejected
+args: -I dummy lan set 1 access on
+transcript: channel_lan_getvol_cc.tr
+covers: lan
+
+[chan_ev_ch_cc]
+desc: current channel info fails and the event is dropped
+args: -I dummy event 1
+transcript: channel_ev_ch_cc.tr
+covers: event
+
+[chan_ev_ch_cc2]
+desc: completion code CCh prints no channel error
+args: -I dummy event 1
+transcript: channel_ev_ch_cc2.tr
+covers: event
+
+[chan_ev_ch_len]
+desc: a short current channel info reply
+args: -I dummy event 1
+transcript: channel_ev_ch_len.tr
+covers: event
+
+[chan_ev_ch_si]
+desc: a system interface channel adds the generator ID
+args: -I dummy event 1
+transcript: channel_ev_ch_si.tr
+covers: event
+
+# --- bound and mask discriminators ----------------------------------------
+#
+# Correct input alone leaves several masks and bounds indistinguishable from
+# wider or narrower ones, so these cases feed values where the candidates
+# disagree.
+
+[chan_info_ff]
+desc: every reserved bit set exercises each Get Channel Info mask
+args: -I dummy channel info 14
+transcript: channel_info_ff.tr
+covers: channel
+
+[chan_info_len10]
+desc: a ten byte Get Channel Info reply is also an error
+args: -I dummy channel info 1
+transcript: channel_info_len10.tr
+covers: channel
+
+[chan_info_ch14]
+desc: a LAN channel above 7 in the Get Channel Access requests
+args: -I dummy channel info 14
+transcript: channel_ch14lan.tr
+covers: channel
+
+[chan_ciph_alg_mask]
+desc: the reserved algorithm bits are masked off
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_algmask.tr
+covers: channel
+
+[chan_ciph_bad_off10]
+desc: the parse failure offset is not zero
+args: -v -I dummy channel getciphers ipmi
+transcript: channel_ciph_bad10.tr
+covers: channel
+
+[chan_lan_alert_priv15]
+desc: privilege limit 0Fh survives the get/set round trip
+args: -I dummy lan set 1 alert on
+transcript: channel_lanalert.tr
+covers: lan
+
+[chan_authcap_mix]
+desc: adjacent capability bits that differ from each other
+args: -I dummy channel authcap 14 4
+transcript: channel_authcap_mix.tr
+covers: channel
+
+[chan_ciph_std_v]
+desc: a clean parse to the end of the data, verbosely
+args: -v -I dummy channel getciphers ipmi
+transcript: channel_ciph_std.tr
+covers: channel
+
+[chan_ciph_std_part4]
+desc: four bytes of a five byte standard record
+args: -v -I dummy channel getciphers ipmi
+transcript: channel_ciph_part4.tr
+covers: channel
+
+[chan_ciph_oem_part]
+desc: six bytes of an eight byte OEM record
+args: -v -I dummy channel getciphers ipmi
+transcript: channel_ciph_oempart.tr
+covers: channel
+
+[chan_ciph_oem_first]
+desc: an OEM record followed by a standard one
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_oemfirst.tr
+covers: channel
+
+[chan_ciph_cc_data]
+desc: a completion code with a payload behind it
+args: -I dummy channel getciphers ipmi
+transcript: channel_ciph_ccdata.tr
+covers: channel
+
+[chan_getacc_uid_10]
+desc: a user id that prints differently as %d and %x
+args: -I dummy channel getaccess 1 10
+transcript: bmc.tr
+covers: channel
+
+[chan_setacc_dbg]
+desc: each parsed option is logged at debug level
+args: -vv -I dummy channel setaccess 1 2 callin=on privilege=4
+transcript: bmc.tr
+covers: channel
+
+[chan_authcap_kg]
+desc: KG, per-message and user-level bits all differ from their neighbours
+args: -I dummy channel authcap 14 4
+transcript: channel_authcap_kg.tr
+covers: channel
+
+[chan_setacc_v1]
+desc: at -v the per-option log line is below the threshold and stays hidden
+args: -v -I dummy channel setaccess 1 2 callin=on privilege=4
+transcript: bmc.tr
+covers: channel

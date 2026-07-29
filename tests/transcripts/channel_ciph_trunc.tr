@@ -1,0 +1,13 @@
+# The cipher suite data ends in the middle of a record: one complete standard
+# record followed by two stray bytes.  parse_cipher_suite() logs "Incomplete
+# data record in cipher suite data" at LOG_INFO, so the message only appears
+# with -v.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  data c0 00 00 00 00
+  data c0 09
+end

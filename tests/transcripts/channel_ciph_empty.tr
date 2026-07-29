@@ -1,0 +1,9 @@
+# A one byte response: the channel byte and no cipher suite data at all, so the
+# header prints and no rows follow.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+end

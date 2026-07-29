@@ -1,0 +1,17 @@
+# Session support C0h ("session-based") and an access mode of 5, which is past
+# the four the switch names, so both `default:' arms are reached.  The medium
+# is 0Ah "System Interface"; the protocol is 1Fh, past the end of
+# ipmi_channel_protocol_vals.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 0f 0a 1f ff f2 1b 00 00 00
+end
+
+respond get_channel_access
+  netfn 0x06
+  cmd 0x41
+  data 05 04
+end

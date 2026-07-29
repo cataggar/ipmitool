@@ -34,6 +34,9 @@ comptime {
     if (selected("helper")) {
         @import("util/helper.zig").exportSymbols();
     }
+    if (selected("channel")) {
+        @import("cmd/channel.zig").exportSymbols();
+    }
     if (selected("time")) {
         @import("util/time.zig").exportSymbols();
     }

@@ -1,0 +1,54 @@
+#!golden 1
+#!case chan_lan_medium_cc2
+#!section exit
+1
+#!section stdout
+#!section stderr
+Channel 1 is not a LAN channel!
+
+usage: lan set <channel> <command> <parameter>
+
+LAN set command/parameter options:
+  ipaddr <x.x.x.x>               Set channel IP address
+  netmask <x.x.x.x>              Set channel IP netmask
+  macaddr <x:x:x:x:x:x>          Set channel MAC address
+  defgw ipaddr <x.x.x.x>         Set default gateway IP address
+  defgw macaddr <x:x:x:x:x:x>    Set default gateway MAC address
+  bakgw ipaddr <x.x.x.x>         Set backup gateway IP address
+  bakgw macaddr <x:x:x:x:x:x>    Set backup gateway MAC address
+  password <password>            Set session password for this channel
+  snmp <community string>        Set SNMP public community string
+  user                           Enable default user for this channel
+  access <on|off>                Enable or disable access to this channel
+  alert <on|off>                 Enable or disable PEF alerting for this channel
+  arp respond <on|off>           Enable or disable BMC ARP responding
+  arp generate <on|off>          Enable or disable BMC gratuitous ARP generation
+  arp interval <seconds>         Set gratuitous ARP generation interval
+  vlan id <off|<id>>             Disable or enable VLAN and set ID (1-4094)
+  vlan priority <priority>       Set vlan priority (0-7)
+  auth <level> <type,..>         Set channel authentication types
+    level  = CALLBACK, USER, OPERATOR, ADMIN
+    type   = NONE, MD2, MD5, PASSWORD, OEM
+  ipsrc <source>                 Set IP Address source
+    none   = unspecified source
+    static = address manually configured to be static
+    dhcp   = address obtained by BMC running DHCP
+    bios   = address loaded by BIOS or system software
+  cipher_privs XXXXXXXXXXXXXXX   Set RMCP+ cipher suite privilege levels
+    X = Cipher Suite Unused
+    c = CALLBACK
+    u = USER
+    o = OPERATOR
+    a = ADMIN
+    O = OEM
+
+  bad_pass_thresh <thresh_num> <1|0> <reset_interval> <lockout_interval>
+                                Set bad password threshold
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=get_channel_info ccode=0xcc len=0 data=
+bye

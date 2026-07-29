@@ -1,0 +1,29 @@
+# As channel_lanset.tr, but the *non-volatile* Set Channel Access (the first
+# one, access option 1) is rejected.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 01 40
+  data 39 03
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 01 80
+  data 12 05
+end
+
+respond set_channel_access_fail
+  netfn 0x06
+  cmd 0x40
+  ccode 0xd4
+end

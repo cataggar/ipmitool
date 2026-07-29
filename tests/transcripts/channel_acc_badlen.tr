@@ -1,0 +1,15 @@
+# A LAN channel whose Get Channel Access returns 1 byte instead of 2, so
+# _ipmi_get_channel_access() returns -2 on the *volatile* read.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access
+  netfn 0x06
+  cmd 0x41
+  data 22
+end

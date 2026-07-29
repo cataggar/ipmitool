@@ -1,0 +1,15 @@
+# An auth capabilities reply that makes every *adjacent* pair of byte 2 and
+# byte 3 capability bits differ, so swapping any two neighbouring bitfields
+# in the response mirror changes the printed output:
+#
+#   byte 2  2ah -> 0b101010: anon=0 null=1 non_null=0 user_level=1
+#                  per_message=0 kg=1
+#   byte 3  01h -> IPMI v1.5 supported, v2.0 not (the complement of
+#                  channel_authcap_mix.tr)
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  data 0e 15 2a 01 57 01 00 c3
+end

@@ -1,0 +1,13 @@
+# Two complete standard records followed by a record with a bad start byte, so
+# parse_channel_cipher_suite_data() reports a *non-zero* offset - 10, which
+# prints differently as %d and as %x.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  data c0 00 00 00 00
+  data c0 01 01 00 00
+  data aa 09 01 01 01
+end

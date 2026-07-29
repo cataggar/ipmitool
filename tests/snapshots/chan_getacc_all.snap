@@ -1,0 +1,53 @@
+#!golden 1
+#!case chan_getacc_all
+#!section exit
+0
+#!section stdout
+Maximum User IDs     : 3
+Enabled User IDs     : 1
+
+User ID              : 1
+User Name            : admin
+Fixed Name           : Yes
+Access Available     : call-in / callback
+Link Authentication  : enabled
+IPMI Messaging       : enabled
+Privilege Level      : ADMINISTRATOR
+Enable Status        : enabled
+
+User ID              : 2
+User Name            : operator
+Fixed Name           : No
+Access Available     : callback
+Link Authentication  : disabled
+IPMI Messaging       : enabled
+Privilege Level      : OPERATOR
+Enable Status        : enabled
+
+User ID              : 3
+User Name            :\x20
+Fixed Name           : No
+Access Available     : call-in / callback
+Link Authentication  : disabled
+IPMI Messaging       : disabled
+Privilege Level      : NO ACCESS
+Enable Status        : reserved
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 01
+< rule=get_user_access_1 ccode=0x00 len=4 data=03 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=01
+< rule=get_user_name_1 ccode=0x00 len=16 data=61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 02
+< rule=get_user_access_2 ccode=0x00 len=4 data=03 41 01 53
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=02
+< rule=get_user_name_2 ccode=0x00 len=16 data=6f 70 65 72 61 74 6f 72 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 03
+< rule=get_user_access_3 ccode=0x00 len=4 data=03 c1 01 8f
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=03
+< rule=get_user_name_3 ccode=0xcc len=0 data=
+bye

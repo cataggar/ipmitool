@@ -1,0 +1,10 @@
+# Get Channel Info answers ten bytes instead of nine.  The C code tests
+# `data_len != 9', not `data_len < 9', so a *long* reply is an error too - the
+# case that tells the two bounds apart.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00 00
+end

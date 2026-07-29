@@ -1,0 +1,11 @@
+# The cipher suite data ends six bytes into an eight byte OEM record: long
+# enough for a standard record, short of an OEM one.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  data c0 00 00 00 00
+  data c1 80 57 01 00 01
+end

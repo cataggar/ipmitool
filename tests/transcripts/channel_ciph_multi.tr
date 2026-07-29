@@ -1,0 +1,28 @@
+# Two Get Channel Cipher Suites requests.  The first returns a *full* 17 byte
+# response (channel byte + 16 data bytes), which is what makes the read loop
+# ask again with an incremented list index; the second returns 5 bytes and
+# ends it.
+#
+# 16 + 4 = 20 bytes is exactly four standard records, but the fourth record
+# *straddles* the two responses, so a port that parsed each response
+# separately, or that got the running offset wrong, cannot produce this output.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites_0
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 80
+  data 0e
+  data c0 00 00 00 00
+  data c0 01 01 00 00
+  data c0 02 01 01 00
+  data c0
+end
+
+respond get_channel_cipher_suites_1
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 81
+  data 0e
+  data 03 01 01 01
+end

@@ -1,0 +1,10 @@
+# `event <n>' calls ipmi_current_channel_info(), which asks for channel CH_CURRENT
+# (0Eh).  Here that fails with a completion code other than CCh, so the error
+# line prints and the channel is set to CH_UNKNOWN.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  ccode 0xd5
+end

@@ -1,0 +1,12 @@
+# Cipher suite records whose algorithm bytes have the two reserved high bits
+# set.  parse_cipher_suite() masks them off with CIPHER_ALG_MASK (3Fh), so the
+# printed algorithm names are the ones for 01h/02h/03h, not for C1h/C2h/C3h.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  data c0 05 c1 c2 c3
+  data c1 81 57 01 00 c1 c2 c3
+end

@@ -38,6 +38,7 @@
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_event.h>
+#include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
@@ -46,6 +47,7 @@
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
+#include <ipmitool/ipmi_user.h>
 
 /*
  * Plugin-private headers.  These are not under `include/`, so they are reached

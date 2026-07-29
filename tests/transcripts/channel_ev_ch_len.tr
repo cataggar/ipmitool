@@ -1,0 +1,9 @@
+# As channel_ev_ch_cc.tr but Get Channel Info answers 8 bytes, so
+# _ipmi_get_channel_info() returns -2 and the negative branch runs eval_ccode().
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 0e 04 01 84 f2 1b 00 00
+end

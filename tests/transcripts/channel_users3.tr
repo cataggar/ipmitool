@@ -1,0 +1,56 @@
+# Three user slots with distinct names, privileges and access bits, so
+# `channel getaccess <ch>' with no user ID walks all of them and each printed
+# line differs between users.  Get User Access carries the user ID in request
+# byte 1, so the rules match on it.
+default_ccode 0xc1
+
+respond get_user_access_1
+  netfn 0x06
+  cmd 0x44
+  match 01 01
+  # max user ids 3, 1 enabled user, 1 fixed name, callin/callback clear,
+  # link auth + ipmi messaging set, privilege 4 = ADMINISTRATOR
+  data 03 41 01 34
+end
+
+respond get_user_access_2
+  netfn 0x06
+  cmd 0x44
+  match 01 02
+  # callin_callback set, link auth clear,
+  # ipmi messaging set, privilege 3 = OPERATOR
+  data 03 41 01 53
+  # (enable status bits are in byte 1; see get_user_access_3)
+end
+
+respond get_user_access_3
+  netfn 0x06
+  cmd 0x44
+  match 01 03
+  # enable status C0h = reserved, no link auth, no ipmi messaging,
+  # privilege 15 = NO ACCESS
+  data 03 c1 01 8f
+end
+
+respond get_user_name_1
+  netfn 0x06
+  cmd 0x46
+  match 01
+  data 61 64 6d 69 6e 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond get_user_name_2
+  netfn 0x06
+  cmd 0x46
+  match 02
+  data 6f 70 65 72 61 74 6f 72 00 00 00 00 00 00 00 00
+end
+
+respond get_user_name_3
+  netfn 0x06
+  cmd 0x46
+  match 03
+  # completion code CCh is special-cased: the name is blanked rather than
+  # treated as an error
+  ccode 0xcc
+end

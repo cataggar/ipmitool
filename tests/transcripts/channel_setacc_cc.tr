@@ -1,0 +1,14 @@
+# Get User Access succeeds and Set User Access fails.
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  data 04 41 01 34
+end
+
+respond set_user_access
+  netfn 0x06
+  cmd 0x43
+  ccode 0x82
+end
