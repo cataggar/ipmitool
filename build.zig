@@ -927,6 +927,58 @@ pub fn build(b: *std.Build) void {
     }
 
     test_step.dependOn(golden_step);
+
+    // -- `zig build test-transport` / `gen-transport-fixtures` ---------------
+    //
+    // The transport fixture harness (issues #10 and #26).  The golden suite
+    // above only ever speaks to the `dummy` interface, which has no checksums,
+    // no session layer and no packet assembly, so it cannot see any of the
+    // code Phase 4 is about.  This harness runs the binary against a model BMC
+    // over loopback UDP and byte-compares every datagram.
+    // See doc/zig-migration/transport-fixtures.md.
+
+    const transport_exe = b.addExecutable(.{
+        .name = "transport-fixtures",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/transport/main.zig"),
+            // Drives the binary under test as a subprocess, so it is always
+            // built for the host.
+            .target = b.graph.host,
+            .optimize = .Debug,
+        }),
+    });
+
+    const transport_step = b.step("test-transport", "Run the transport fixture suite");
+    const transport_unit = b.addTest(.{ .root_module = transport_exe.root_module });
+    transport_step.dependOn(&b.addRunArtifact(transport_unit).step);
+
+    // The suite needs a binary that actually has the transports compiled in.
+    // When they are switched off there is nothing to check, and saying so is
+    // better than silently passing.
+    if (enabled[pluginIndex("lan")] and enabled[pluginIndex("lanplus")]) {
+        transport_step.dependOn(&addTransport(b, transport_exe, ipmitool, false).step);
+        if (!allSelected(zig_selection)) {
+            const swapped = addSwappedTool(b, .{
+                .target = target,
+                .optimize = optimize,
+                .sanitize_c = sanitize_c,
+                .config_h = config_h,
+                .default_intf = default_intf,
+                .flags = flags,
+                .plugins_enabled = &enabled,
+                .bridge_mod = bridge_mod,
+                .system_libs = swapped_libs,
+            });
+            transport_step.dependOn(&addTransport(b, transport_exe, swapped, false).step);
+        }
+        const gen = addTransport(b, transport_exe, ipmitool, true);
+        b.step(
+            "gen-transport-fixtures",
+            "Re-record tests/transport/fixtures from the C transports",
+        ).dependOn(&gen.step);
+    }
+
+    test_step.dependOn(transport_step);
 }
 
 /// One run of the golden CLI suite against `exe`.
@@ -954,6 +1006,39 @@ fn addGolden(
     // time.  `tmpPath` lives in the cache and is cleaned up on success.
     run.addArg("--work-dir");
     run.addDirectoryArg(b.tmpPath());
+    if (b.args) |args| run.addArgs(args);
+    run.expectExitCode(0);
+    return run;
+}
+
+/// One run of the transport fixture suite against `exe`.
+///
+/// `record` switches the harness from comparing to rewriting the fixtures;
+/// that step has side effects on the source tree and is reachable only through
+/// `zig build gen-transport-fixtures`.
+fn addTransport(
+    b: *std.Build,
+    transport_exe: *std.Build.Step.Compile,
+    exe: *std.Build.Step.Compile,
+    record: bool,
+) *std.Build.Step.Run {
+    const run = b.addRunArtifact(transport_exe);
+    run.setName(b.fmt("{s} {s}", .{ if (record) "record transport" else "transport", exe.name }));
+    run.addArg("--binary");
+    run.addFileArg(exe.getEmittedBin());
+    run.addArg("--iana");
+    run.addFileArg(b.path("tests/fixtures/iana/enterprise-numbers"));
+    run.addArg("--work-dir");
+    run.addDirectoryArg(b.tmpPath());
+    if (record) {
+        // A plain path, not `addDirectoryArg`: this writes into the source
+        // tree on purpose, so it must not be a cached, hashed input.
+        run.addArgs(&.{ "--fixtures-dir", b.pathFromRoot("tests/transport/fixtures"), "--update" });
+        run.has_side_effects = true;
+    } else {
+        run.addArg("--fixtures-dir");
+        run.addDirectoryArg(b.path("tests/transport/fixtures"));
+    }
     if (b.args) |args| run.addArgs(args);
     run.expectExitCode(0);
     return run;

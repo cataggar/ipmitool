@@ -1,0 +1,58 @@
+# case  lan/activate-error
+# desc  session setup aborts on an Activate Session completion code
+# args  ipmitool -I lan -H 127.0.0.1 -p ${port} -U opuser -P op-password -N 1 -R 1 mc info
+001 --> 12 asf.ping
+  raw 06 00 ff 06 00 00 11 be 80 00 00 00
+  asf iana=000011be type=80 tag=00 len=00
+002 <-- 28 asf.pong
+  raw 06 00 ff 06 00 00 11 be 40 00 00 10 00 00 11 be
+  raw 00 00 00 00 81 00 00 00 00 00 00 00
+003 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 04 38 0e 04 31
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=01 lun=0 cmd=38 csum2=31:ok
+  dat 0e 04
+004 <-- 30 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 10 81 1c
+  raw 63 20 04 38 00 01 05 04 01 00 00 00 00 99
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=01 lun=0 cmd=38 csum2=99:ok
+  ccc 00
+  dat 01 05 04 01 00 00 00 00
+005 --> 38 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 18 20 18
+  raw c8 81 08 39 02 6f 70 75 73 65 72 00 00 00 00 00
+  raw 00 00 00 00 00 9e
+  ssn authtype=00 seq=00000000 id=00000000 msglen=18
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=02 lun=0 cmd=39 csum2=9e:ok
+  dat 02 6f 70 75 73 65 72 00 00 00 00 00 00 00 00 00
+  dat 00
+006 <-- 42 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 1c 81 1c
+  raw 63 20 08 39 00 44 33 22 11 c0 c1 c2 c3 c4 c5 c6
+  raw c7 c8 c9 ca cb cc cd ce cf 7d
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=02 lun=0 cmd=39 csum2=7d:ok
+  ccc 00
+  dat 44 33 22 11 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb
+  dat cc cd ce cf
+007 --> 59 ipmi.v15 rq
+  raw 06 00 ff 07 02 00 00 00 00 44 33 22 11 ?? ?? ??
+  raw ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 1d 20 18
+  raw c8 81 0c 3a 02 04 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9
+  raw ca cb cc cd ce cf ?? ?? ?? ?? ??
+  ssn authtype=02 seq=00000000 id=11223344 msglen=1d authcode=16
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=03 lun=0 cmd=3a csum2=??:ok
+  dat 02 04 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd
+  dat ce cf ?? ?? ?? ??
+008 <-- 38 ipmi.v15 rs
+  raw 06 00 ff 07 02 00 00 00 00 44 33 22 11 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 08 81 1c
+  raw 63 20 0c 3a 81 19
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=03 lun=0 cmd=3a csum2=19:ok
+  ccc 81
+  dat -
+exit 1
+out -
+err |Activate Session error:	No session slot available
+err |Error: Unable to establish LAN session
+err |Error: Unable to establish IPMI v1.5 / RMCP session

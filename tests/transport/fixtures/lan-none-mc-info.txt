@@ -1,0 +1,162 @@
+# case  lan/none-mc-info
+# desc  v1.5 session with authtype NONE, then Get Device ID
+# args  ipmitool -I lan -H 127.0.0.1 -p ${port} -U  -P  mc info
+001 --> 12 asf.ping
+  raw 06 00 ff 06 00 00 11 be 80 00 00 00
+  asf iana=000011be type=80 tag=00 len=00
+002 <-- 28 asf.pong
+  raw 06 00 ff 06 00 00 11 be 40 00 00 10 00 00 11 be
+  raw 00 00 00 00 81 00 00 00 00 00 00 00
+003 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 04 38 0e 04 31
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=01 lun=0 cmd=38 csum2=31:ok
+  dat 0e 04
+004 <-- 30 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 10 81 1c
+  raw 63 20 04 38 00 01 01 04 01 00 00 00 00 9d
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=01 lun=0 cmd=38 csum2=9d:ok
+  ccc 00
+  dat 01 01 04 01 00 00 00 00
+005 --> 38 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 18 20 18
+  raw c8 81 08 39 00 00 00 00 00 00 00 00 00 00 00 00
+  raw 00 00 00 00 00 3e
+  ssn authtype=00 seq=00000000 id=00000000 msglen=18
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=02 lun=0 cmd=39 csum2=3e:ok
+  dat 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  dat 00
+006 <-- 42 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 1c 81 1c
+  raw 63 20 08 39 00 44 33 22 11 c0 c1 c2 c3 c4 c5 c6
+  raw c7 c8 c9 ca cb cc cd ce cf 7d
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=02 lun=0 cmd=39 csum2=7d:ok
+  ccc 00
+  dat 44 33 22 11 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb
+  dat cc cd ce cf
+007 --> 43 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 44 33 22 11 1d 20 18
+  raw c8 81 0c 3a 00 04 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9
+  raw ca cb cc cd ce cf ?? ?? ?? ?? ??
+  ssn authtype=00 seq=00000000 id=11223344 msglen=1d
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=03 lun=0 cmd=3a csum2=??:ok
+  dat 00 04 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd
+  dat ce cf ?? ?? ?? ??
+008 <-- 32 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 44 33 22 11 12 81 1c
+  raw 63 20 0c 3a 00 00 0d 0c 0b 0a 01 01 00 00 04 66
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=03 lun=0 cmd=3a csum2=66:ok
+  ccc 00
+  dat 00 0d 0c 0b 0a 01 01 00 00 04
+009 --> 22 ipmi.v15 rq
+  raw 06 00 ff 07 00 01 01 00 00 0d 0c 0b 0a 08 20 18
+  raw c8 81 10 3b 04 30
+  ssn authtype=00 seq=00000101 id=0a0b0c0d msglen=08
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=04 lun=0 cmd=3b csum2=30:ok
+  dat 04
+010 <-- 23 ipmi.v15 rs
+  raw 06 00 ff 07 00 01 00 00 00 0d 0c 0b 0a 09 81 1c
+  raw 63 20 10 3b 00 04 91
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=04 lun=0 cmd=3b csum2=91:ok
+  ccc 00
+  dat 04
+011 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 02 01 00 00 0d 0c 0b 0a 09 20 b0
+  raw 30 81 14 3e 00 02 2b
+  ssn authtype=00 seq=00000102 id=0a0b0c0d msglen=09
+  req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=05 lun=0 cmd=3e csum2=2b:ok
+  dat 00 02
+012 <-- 22 ipmi.v15 rs
+  raw 06 00 ff 07 00 02 00 00 00 0d 0c 0b 0a 08 81 b4
+  raw cb 20 14 3e c1 cd
+  rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=05 lun=0 cmd=3e csum2=cd:ok
+  ccc c1
+  dat -
+013 --> 21 ipmi.v15 rq
+  raw 06 00 ff 07 00 03 01 00 00 0d 0c 0b 0a 07 20 18
+  raw c8 81 18 01 66
+  ssn authtype=00 seq=00000103 id=0a0b0c0d msglen=07
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=06 lun=0 cmd=01 csum2=66:ok
+  dat -
+014 <-- 37 ipmi.v15 rs
+  raw 06 00 ff 07 00 03 00 00 00 0d 0c 0b 0a 17 81 1c
+  raw 63 20 18 01 00 20 81 02 34 02 bf 57 01 00 11 22
+  raw 00 00 00 00 a4
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=06 lun=0 cmd=01 csum2=a4:ok
+  ccc 00
+  dat 20 81 02 34 02 bf 57 01 00 11 22 00 00 00 00
+015 --> 22 ipmi.v15 rq
+  raw 06 00 ff 07 00 04 01 00 00 0d 0c 0b 0a 08 20 b0
+  raw 30 81 1c 00 00 63
+  ssn authtype=00 seq=00000104 id=0a0b0c0d msglen=08
+  req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=07 lun=0 cmd=00 csum2=63:ok
+  dat 00
+016 <-- 22 ipmi.v15 rs
+  raw 06 00 ff 07 00 04 00 00 00 0d 0c 0b 0a 08 81 b4
+  raw cb 20 1c 00 c1 03
+  rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=07 lun=0 cmd=00 csum2=03:ok
+  ccc c1
+  dat -
+017 --> 22 ipmi.v15 rq
+  raw 06 00 ff 07 00 05 01 00 00 0d 0c 0b 0a 08 20 b0
+  raw 30 81 20 00 03 5c
+  ssn authtype=00 seq=00000105 id=0a0b0c0d msglen=08
+  req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=08 lun=0 cmd=00 csum2=5c:ok
+  dat 03
+018 <-- 22 ipmi.v15 rs
+  raw 06 00 ff 07 00 05 00 00 00 0d 0c 0b 0a 08 81 b4
+  raw cb 20 20 00 c1 ff
+  rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=08 lun=0 cmd=00 csum2=ff:ok
+  ccc c1
+  dat -
+019 --> 21 ipmi.v15 rq
+  raw 06 00 ff 07 00 06 01 00 00 0d 0c 0b 0a 07 20 18
+  raw c8 81 24 01 5a
+  ssn authtype=00 seq=00000106 id=0a0b0c0d msglen=07
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=09 lun=0 cmd=01 csum2=5a:ok
+  dat -
+020 <-- 37 ipmi.v15 rs
+  raw 06 00 ff 07 00 06 00 00 00 0d 0c 0b 0a 17 81 1c
+  raw 63 20 24 01 00 20 81 02 34 02 bf 57 01 00 11 22
+  raw 00 00 00 00 98
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=09 lun=0 cmd=01 csum2=98:ok
+  ccc 00
+  dat 20 81 02 34 02 bf 57 01 00 11 22 00 00 00 00
+021 --> 25 ipmi.v15 rq
+  raw 06 00 ff 07 00 07 01 00 00 0d 0c 0b 0a 0b 20 18
+  raw c8 81 28 3c 0d 0c 0b 0a ed
+  ssn authtype=00 seq=00000107 id=0a0b0c0d msglen=0b
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=0a lun=0 cmd=3c csum2=ed:ok
+  dat 0d 0c 0b 0a
+022 <-- 22 ipmi.v15 rs
+  raw 06 00 ff 07 00 07 00 00 00 0d 0c 0b 0a 08 81 1c
+  raw 63 20 28 3c 00 7c
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=0a lun=0 cmd=3c csum2=7c:ok
+  ccc 00
+  dat -
+exit 0
+out |Device ID                 : 32
+out |Device Revision           : 1
+out |Firmware Revision         : 2.34
+out |IPMI Version              : 2.0
+out |Manufacturer ID           : 343
+out |Manufacturer Name         : Intel Corporation
+out |Product ID                : 8721 (0x2211)
+out |Product Name              : Unknown (0x2211)
+out |Device Available          : yes
+out |Provides Device SDRs      : yes
+out |Additional Device Support :
+out |    Sensor Device
+out |    SDR Repository Device
+out |    SEL Device
+out |    FRU Inventory Device
+out |    IPMB Event Receiver
+out |    IPMB Event Generator
+out |    Chassis Device
+out |Aux Firmware Rev Info     : 
+out |    0x00
+out |    0x00
+out |    0x00
+out |    0x00
+err -

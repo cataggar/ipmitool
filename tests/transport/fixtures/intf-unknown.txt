@@ -1,0 +1,6 @@
+# case  intf/unknown
+# desc  ipmi_intf_load rejects an unregistered interface name
+# args  ipmitool -I no-such-intf mc info
+exit 1
+out -
+err |Error loading interface no-such-intf

@@ -1,0 +1,31 @@
+# case  lanplus/open-session-error
+# desc  the tool aborts when the Open Session Response carries a status
+# args  ipmitool -I lanplus -H 127.0.0.1 -p ${port} -U opuser -P op-password -C 3 -N 1 -R 1 mc info
+001 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 00 38 8e 04 b5
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=00 lun=0 cmd=38 csum2=b5:ok
+  dat 8e 04
+002 <-- 30 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 10 81 1c
+  raw 63 20 00 38 00 01 85 04 03 00 00 00 00 1b
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=00 lun=0 cmd=38 csum2=1b:ok
+  ccc 00
+  dat 01 85 04 03 00 00 00 00
+003 --> 48 ipmi.v2 open-session-rq
+  raw 06 00 ff 07 06 10 00 00 00 00 00 00 00 00 20 00
+  raw 00 00 00 00 a4 a3 a2 a0 00 00 00 08 01 00 00 00
+  raw 01 00 00 08 01 00 00 00 02 00 00 08 01 00 00 00
+  ssn authtype=06 payload=10 enc=0 auth=0 id=00000000 seq=00000000 len=0020
+  osr tag=00 privlvl=00 sidm=a0a2a3a4 auth=01 integ=01 conf=01
+004 <-- 52 ipmi.v2 open-session-rs
+  raw 06 00 ff 07 06 11 00 00 00 00 00 00 00 00 24 00
+  raw 00 01 04 00 a4 a3 a2 a0 44 33 00 02 00 00 00 08
+  raw 01 00 00 00 01 00 00 08 01 00 00 00 02 00 00 08
+  raw 01 00 00 00
+exit 1
+out -
+err |Error in open session response message : insufficient resources for session
+err |
+err |Error: Unable to establish IPMI v2 / RMCP+ session

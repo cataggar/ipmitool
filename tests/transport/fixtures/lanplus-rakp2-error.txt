@@ -1,0 +1,42 @@
+# case  lanplus/rakp2-error
+# desc  the tool aborts when RAKP 2 carries a non-zero status code
+# args  ipmitool -I lanplus -H 127.0.0.1 -p ${port} -U opuser -P op-password -C 3 -N 1 -R 1 mc info
+001 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 00 38 8e 04 b5
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=00 lun=0 cmd=38 csum2=b5:ok
+  dat 8e 04
+002 <-- 30 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 10 81 1c
+  raw 63 20 00 38 00 01 85 04 03 00 00 00 00 1b
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=00 lun=0 cmd=38 csum2=1b:ok
+  ccc 00
+  dat 01 85 04 03 00 00 00 00
+003 --> 48 ipmi.v2 open-session-rq
+  raw 06 00 ff 07 06 10 00 00 00 00 00 00 00 00 20 00
+  raw 00 00 00 00 a4 a3 a2 a0 00 00 00 08 01 00 00 00
+  raw 01 00 00 08 01 00 00 00 02 00 00 08 01 00 00 00
+  ssn authtype=06 payload=10 enc=0 auth=0 id=00000000 seq=00000000 len=0020
+  osr tag=00 privlvl=00 sidm=a0a2a3a4 auth=01 integ=01 conf=01
+004 <-- 52 ipmi.v2 open-session-rs
+  raw 06 00 ff 07 06 11 00 00 00 00 00 00 00 00 24 00
+  raw 00 00 04 00 a4 a3 a2 a0 44 33 00 02 00 00 00 08
+  raw 01 00 00 00 01 00 00 08 01 00 00 00 02 00 00 08
+  raw 01 00 00 00
+005 --> 50 ipmi.v2 rakp1
+  raw 06 00 ff 07 06 12 00 00 00 00 00 00 00 00 22 00
+  raw 00 00 00 00 44 33 00 02 ?? ?? ?? ?? ?? ?? ?? ??
+  raw ?? ?? ?? ?? ?? ?? ?? ?? 14 00 00 06 6f 70 75 73
+  raw 65 72
+  ssn authtype=06 payload=12 enc=0 auth=0 id=00000000 seq=00000000 len=0022
+  rk1 tag=00 sidc=02003344 role=14 ulen=6 uname="opuser"
+006 <-- 76 ipmi.v2 rakp2
+  raw 06 00 ff 07 06 13 00 00 00 00 00 00 00 00 3c 00
+  raw 00 0d 00 00 a4 a3 a2 a0 b0 b1 b2 b3 b4 b5 b6 b7
+  raw b8 b9 ba bb bc bd be bf 67 45 23 01 ab 89 ef cd
+  raw 01 23 45 67 89 ab cd ef ?? ?? ?? ?? ?? ?? ?? ??
+  raw ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
+exit 1
+out -
+err |Error: Unable to establish IPMI v2 / RMCP+ session

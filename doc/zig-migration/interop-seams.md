@@ -315,6 +315,14 @@ That is the differential check that used to be spelled out here as an inline
 `-o list` assertion. When porting a module, add a golden case that exercises it
 if the existing cases do not already reach it.
 
+The golden suite speaks only to the `dummy` interface, so it cannot see
+checksums, session state or packet assembly (issue #26). `zig build test` also
+runs the transport fixture suite
+([transport-fixtures.md](transport-fixtures.md)), which drives the binary
+against a model BMC over loopback UDP and byte-compares every datagram. Any
+port that touches `lan`, `lanplus`, `ipmi_intf` or `ipmi_csum` must keep
+`tests/transport/fixtures/` unchanged.
+
 To confirm the substitution actually happened rather than the C silently winning
 the link:
 
