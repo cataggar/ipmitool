@@ -21,6 +21,7 @@
  * Linux `struct stat` bindings, so the bridge has to supply the libc ones to
  * keep the ported code bit-identical to the C it replaces.
  */
+#include <ctype.h>
 #include <fcntl.h>
 #include <paths.h>
 #include <signal.h>
@@ -34,7 +35,9 @@
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_chassis.h>
+#include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_constants.h>
+#include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>

@@ -1,0 +1,19 @@
+# The mirror image of event_ch_num.tr: the channel *number* is an ordinary one
+# (0x02), but the medium is 0x0c = system interface.  is_system() ORs the two
+# tests, so this too takes the 8-byte generator-ID path - which is what
+# separates the medium half of the condition from the channel half.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  # channel 0x02, medium 0x0c = system interface, protocol KCS,
+  # session-less, vendor IANA 7154
+  data 02 0c 01 00 f2 1b 00 00 00
+end
+
+respond platform_event_message
+  netfn 0x04
+  cmd 0x02
+  data
+end

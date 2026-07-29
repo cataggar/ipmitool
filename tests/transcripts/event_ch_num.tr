@@ -1,0 +1,17 @@
+# The medium is *not* the system interface, but the channel number is CH_SYSTEM
+# (0x0f).  is_system() ORs the two tests, so this still takes the 8-byte
+# generator-ID path - which is what separates the two halves of the condition.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  # channel 0x0f, medium 0x04 = 802.3 LAN
+  data 0f 04 01 84 f2 1b 00 00 00
+end
+
+respond platform_event_message
+  netfn 0x04
+  cmd 0x02
+  data
+end

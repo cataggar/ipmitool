@@ -1,0 +1,23 @@
+#!golden 1
+#!case event_file_one
+#!section exit
+0
+#!section stdout
+   0 |  Pre-Init  |0000000000| Temperature #0x30 | Upper Critical going high | Asserted
+#!section stderr
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=0e
+< rule=get_channel_info ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x02 target_cmd=0x00 data=04 01 30 01 09 ff ff
+< rule=platform_event_message ccode=0x00 len=0 data=
+bye

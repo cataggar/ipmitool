@@ -1,0 +1,124 @@
+# Same repository as event_sdr.tr but both hysteresis values are zero, which
+# the caller clamps back up to 1.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+
+# Channel 1 is 802.3 LAN, so is_system() is false and the Platform Event
+# request is 7 bytes with no generator ID.
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # SDR version 51h, 6 records, 0xffff free bytes, reserve supported
+  data 51 06 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+# --- record 0x0001: full threshold sensor ("CPU1 Temp") --------------------
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+respond get_sdr_0001
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 01 00
+  data 02 00
+  partial 4 1 5
+  blob @sdr/full_temp.hex
+end
+
+# --- record 0x0002: digital discrete ("DIGI") ------------------------------
+respond get_sdr_0002
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 02 00
+  data 03 00
+  partial 4 1 5
+  blob @event/sdr_digi.hex
+end
+
+# --- record 0x0003: generic discrete ("GENR") ------------------------------
+respond get_sdr_0003
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 03 00
+  data 04 00
+  partial 4 1 5
+  blob @event/sdr_genr.hex
+end
+
+# --- record 0x0004: sensor-specific discrete ("MEMY") ----------------------
+respond get_sdr_0004
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 04 00
+  data 05 00
+  partial 4 1 5
+  blob @event/sdr_memy.hex
+end
+
+# --- record 0x0005: unhandled event/reading type ("OTHR") ------------------
+respond get_sdr_0005
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 05 00
+  data 06 00
+  partial 4 1 5
+  blob @event/sdr_othr.hex
+end
+
+# --- record 0x0006: event-only record ("EVON") -----------------------------
+# Not a full or compact sensor, so ipmi_event_fromsensor() rejects it with
+# "Unknown sensor type for id".
+respond get_sdr_0006
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 06 00
+  # 0xffff is SDR_RECORD_ID_LAST: end of the repository
+  data ff ff
+  partial 4 1 5
+  blob @event/sdr_evonly.hex
+end
+
+# --- threshold support for sensor 1 ---------------------------------------
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  # all six thresholds readable: lnc 0x0f, lcr 0x0a, lnr 0x05,
+  # unc 0x4b, ucr 0x55, unr 0x5f
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x25
+  # both hysteresis values are zero, which the caller clamps back up to 1
+  data 00 00
+end
+
+respond platform_event_message
+  netfn 0x04
+  cmd 0x02
+  data
+end

@@ -1,0 +1,663 @@
+# lib/ipmi_event.c: the `event` command.
+#
+# Depth coverage for the Zig port tracked in issue #11.  Written against the
+# unmodified C build before the port existed, so these snapshots are a baseline
+# rather than a description of the Zig.
+#
+# The three argument shapes `ipmi_event_main()` recognises are covered
+# separately: a predefined event number, `file <name>`, and
+# `<sensorid> [state] [event_dir]`.
+
+# --- dispatch --------------------------------------------------------------
+
+[event_file_no_name]
+desc: `event file` with no file name falls back to the usage and exits 0
+args: -I dummy event file
+transcript: bmc.tr
+covers: event
+
+[event_help_upper]
+desc: the help keyword is matched with strcmp, so HELP is a sensor ID
+args: -I dummy event HELP
+transcript: event_sdr.tr
+covers: event
+
+# --- predefined events -----------------------------------------------------
+
+[event_num_2]
+desc: predefined event 2, voltage lower critical going low
+args: -I dummy event 2
+transcript: bmc.tr
+covers: event
+
+[event_num_3]
+desc: predefined event 3, memory correctable ECC
+args: -I dummy event 3
+transcript: bmc.tr
+covers: event
+
+[event_num_1_verbose]
+desc: verbose switches the SEL print to the extended verbose form
+args: -I dummy -v event 1
+transcript: bmc.tr
+covers: event
+
+[event_num_1_sysif]
+desc: a system interface channel prepends the SMS generator ID
+args: -I dummy event 1
+transcript: event_sysif.tr
+covers: event
+
+[event_num_1_ch_15]
+desc: channel 0x0f on a LAN medium is still the system interface
+args: -I dummy event 1
+transcript: event_ch_num.tr
+covers: event
+
+[event_num_1_medium_sys]
+desc: the system interface medium on an ordinary channel number
+args: -I dummy event 1
+transcript: event_medium_sys.tr
+covers: event
+
+[event_num_1_ch_unknown]
+desc: Get Channel Info rejected, so no event is sent at all
+args: -I dummy event 1
+transcript: event_ch_unknown.tr
+covers: event
+
+[event_num_1_pem_fail]
+desc: the Platform Event Message command is rejected
+args: -I dummy event 1
+transcript: event_pem_fail.tr
+covers: event
+
+[event_num_2_sysif]
+desc: predefined event 2 over the system interface
+args: -I dummy event 2
+transcript: event_sysif.tr
+covers: event
+
+[event_num_3_sysif]
+desc: predefined event 3 over the system interface
+args: -I dummy event 3
+transcript: event_sysif.tr
+covers: event
+
+[event_num_0]
+desc: a single character that is not 1, 2 or 3 is treated as a sensor ID
+args: -I dummy event 0
+transcript: event_sdr.tr
+covers: event
+
+[event_num_4]
+desc: 4 is one character but not a predefined event, so it is a sensor ID
+args: -I dummy event 4
+transcript: event_sdr.tr
+covers: event
+
+# --- fromsensor: lookup and event direction --------------------------------
+
+[event_sensor_not_found]
+desc: a sensor ID that is not in the repository
+args: -I dummy event NOPE list
+transcript: event_sdr.tr
+covers: event
+
+[event_sensor_evonly]
+desc: an event-only record is neither full nor compact
+args: -I dummy event EVON list
+transcript: event_sdr.tr
+covers: event
+
+[event_sensor_bad_dir]
+desc: an event direction that is neither assert nor deassert
+args: -I dummy event "CPU1 Temp" ucr frobnicate
+transcript: event_sdr.tr
+covers: event
+
+[event_sensor_dir_case]
+desc: the event direction is matched with strcmp, so Assert is invalid
+args: -I dummy event "CPU1 Temp" ucr Assert
+transcript: event_sdr.tr
+covers: event
+
+[event_sensor_dir_case_de]
+desc: the same for the deassert spelling
+args: -I dummy event "CPU1 Temp" ucr Deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_sensor_extra_args]
+desc: a fourth argument is ignored
+args: -I dummy event "CPU1 Temp" ucr assert extra
+transcript: event_sdr.tr
+covers: event
+
+# --- fromsensor: threshold class (event/reading type 01h) ------------------
+
+[event_thresh_list_implicit]
+desc: no state at all lists the six threshold names and returns failure
+args: -I dummy event "CPU1 Temp"
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_list_kw]
+desc: the literal state "list" prints the same list
+args: -I dummy event "CPU1 Temp" list
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_list_upper]
+desc: the threshold list keyword is strcmp, so LIST is an invalid identifier
+args: -I dummy event "CPU1 Temp" LIST
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_bad_state]
+desc: a state that is not one of the six threshold identifiers
+args: -I dummy event "CPU1 Temp" frob
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_lnr]
+desc: lower non-recoverable, asserted
+args: -I dummy event "CPU1 Temp" lnr
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_lcr]
+desc: lower critical, asserted
+args: -I dummy event "CPU1 Temp" lcr
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_lnc]
+desc: lower non-critical, asserted
+args: -I dummy event "CPU1 Temp" lnc
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_unc]
+desc: upper non-critical, asserted
+args: -I dummy event "CPU1 Temp" unc
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_ucr]
+desc: upper critical, asserted
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_unr]
+desc: upper non-recoverable, asserted
+args: -I dummy event "CPU1 Temp" unr
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_lnr_de]
+desc: lower non-recoverable, deasserted
+args: -I dummy event "CPU1 Temp" lnr deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_lcr_de]
+desc: lower critical, deasserted
+args: -I dummy event "CPU1 Temp" lcr deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_lnc_de]
+desc: lower non-critical, deasserted
+args: -I dummy event "CPU1 Temp" lnc deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_unc_de]
+desc: upper non-critical, deasserted
+args: -I dummy event "CPU1 Temp" unc deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_ucr_de]
+desc: upper critical, deasserted
+args: -I dummy event "CPU1 Temp" ucr deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_unr_de]
+desc: upper non-recoverable, deasserted
+args: -I dummy event "CPU1 Temp" unr deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_expl_assert]
+desc: the assert direction spelled out
+args: -I dummy event "CPU1 Temp" ucr assert
+transcript: event_sdr.tr
+covers: event
+
+[event_thresh_sysif]
+desc: a threshold event over the system interface
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_sysif.tr
+covers: event
+
+[event_thresh_thr_fail]
+desc: Get Sensor Thresholds rejected
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_nothr.tr
+covers: event
+
+[event_thresh_hyst_fail]
+desc: Get Sensor Hysteresis rejected, so the offset falls back to 1
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_nohyst.tr
+covers: event
+
+[event_thresh_hyst_zero]
+desc: a zero hysteresis is clamped up to 1
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_hyst0.tr
+covers: event
+
+[event_thresh_clamp_hi]
+desc: an upper threshold of 0xff clamps the trigger reading at 0xff
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_thr_ff.tr
+covers: event
+
+[event_thresh_clamp_lo]
+desc: a lower threshold of 0 clamps the trigger reading at 0
+args: -I dummy event "CPU1 Temp" lcr
+transcript: event_sdr_thr_00.tr
+covers: event
+
+[event_thresh_edge_hi]
+desc: an upper trigger reading of exactly 0xfe, one below saturation
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_thr_fe.tr
+covers: event
+
+[event_thresh_edge_lo]
+desc: a lower trigger reading of exactly -1, one below the floor
+args: -I dummy event "CPU1 Temp" lcr
+transcript: event_sdr_thr_m1.tr
+covers: event
+
+[event_thresh_lun]
+desc: the sensor LUN travels in the threshold and hysteresis requests
+args: -I dummy event "CPU1 Temp" ucr
+transcript: event_sdr_lun.tr
+covers: event
+
+[event_thresh_verbose]
+desc: verbose threshold event
+args: -I dummy -v event "CPU1 Temp" ucr
+transcript: event_sdr.tr
+covers: event
+
+# --- fromsensor: digital discrete (event/reading types 03h-06h, 08h, 09h) --
+
+[event_digi_list_implicit]
+desc: no state prints the sensor states and the shortcut table
+args: -I dummy event DIGI
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_list_kw]
+desc: the list keyword, matched case-insensitively
+args: -I dummy event DIGI LIST
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_present]
+desc: shortcut pair 0, on
+args: -I dummy event DIGI present
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_absent]
+desc: shortcut pair 0, off
+args: -I dummy event DIGI absent
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_assert]
+desc: shortcut pair 1, on
+args: -I dummy event DIGI assert
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_deassert]
+desc: shortcut pair 1, off
+args: -I dummy event DIGI deassert
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_limit]
+desc: shortcut pair 2, on
+args: -I dummy event DIGI limit
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_nolimit]
+desc: shortcut pair 2, off
+args: -I dummy event DIGI nolimit
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_fail]
+desc: shortcut pair 3, on
+args: -I dummy event DIGI fail
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_nofail]
+desc: shortcut pair 3, off
+args: -I dummy event DIGI nofail
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_yes]
+desc: shortcut pair 4, on
+args: -I dummy event DIGI yes
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_no]
+desc: shortcut pair 4, off
+args: -I dummy event DIGI no
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_on]
+desc: shortcut pair 5, on
+args: -I dummy event DIGI on
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_off]
+desc: shortcut pair 5, off
+args: -I dummy event DIGI off
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_up]
+desc: shortcut pair 6, on
+args: -I dummy event DIGI up
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_down]
+desc: shortcut pair 6, off
+args: -I dummy event DIGI down
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_on_case]
+desc: the shortcut table is matched case-insensitively
+args: -I dummy event DIGI PRESENT
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_by_desc]
+desc: a state name from the generic event table rather than a shortcut
+args: -I dummy event DIGI "State Asserted"
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_by_desc_0]
+desc: the offset 0 description from the generic event table
+args: -I dummy event DIGI "State Deasserted"
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_unknown]
+desc: a state that is neither a shortcut nor a table description
+args: -I dummy event DIGI frobnicate
+transcript: event_sdr.tr
+covers: event
+
+[event_digi_deassert_dir]
+desc: a digital discrete event asserted the other way
+args: -I dummy event DIGI on deassert
+transcript: event_sdr.tr
+covers: event
+
+# --- fromsensor: generic discrete (types 02h, 07h, 0Ah, 0Bh, 0Ch) ----------
+
+[event_genr_list_implicit]
+desc: no state prints the sensor states and returns success
+args: -I dummy event GENR
+transcript: event_sdr.tr
+covers: event
+
+[event_genr_list_kw]
+desc: the list keyword
+args: -I dummy event GENR list
+transcript: event_sdr.tr
+covers: event
+
+[event_genr_offset_0]
+desc: the first redundancy state, offset 0
+args: -I dummy event GENR "Fully Redundant"
+transcript: event_sdr.tr
+covers: event
+
+[event_genr_offset_7]
+desc: the last redundancy state, offset 7
+args: -I dummy event GENR "Redundancy Degraded from Non-Redundant"
+transcript: event_sdr.tr
+covers: event
+
+[event_genr_case]
+desc: descriptions are matched with strcasecmp
+args: -I dummy event GENR "redundancy lost"
+transcript: event_sdr.tr
+covers: event
+
+[event_genr_unknown]
+desc: a description that is not in the table for this event type
+args: -I dummy event GENR "Correctable ECC"
+transcript: event_sdr.tr
+covers: event
+
+[event_genr_shortcut]
+desc: the digital shortcuts do not apply to a generic discrete sensor
+args: -I dummy event GENR present
+transcript: event_sdr.tr
+covers: event
+
+# --- fromsensor: sensor-specific discrete (event/reading type 6Fh) --------
+
+[event_spec_list_implicit]
+desc: no state prints the sensor states and returns success
+args: -I dummy event MEMY
+transcript: event_sdr.tr
+covers: event
+
+[event_spec_list_kw]
+desc: the list keyword
+args: -I dummy event MEMY list
+transcript: event_sdr.tr
+covers: event
+
+[event_spec_offset_0]
+desc: memory correctable ECC, offset 0
+args: -I dummy event MEMY "Correctable ECC"
+transcript: event_sdr.tr
+covers: event
+
+[event_spec_offset_1]
+desc: memory uncorrectable ECC, offset 1
+args: -I dummy event MEMY "Uncorrectable ECC"
+transcript: event_sdr.tr
+covers: event
+
+[event_spec_unknown]
+desc: a description from a different sensor type
+args: -I dummy event MEMY "Fully Redundant"
+transcript: event_sdr.tr
+covers: event
+
+[event_spec_deassert]
+desc: a sensor-specific event deasserted
+args: -I dummy event MEMY "Correctable ECC" deassert
+transcript: event_sdr.tr
+covers: event
+
+# --- fromsensor: an event/reading type with no case ------------------------
+
+[event_other_type]
+desc: event/reading type 0Dh falls through the switch and fails silently
+args: -I dummy event OTHR list
+transcript: event_sdr.tr
+covers: event
+
+[event_other_type_state]
+desc: the same with a state, which is never looked at
+args: -I dummy event OTHR present
+transcript: event_sdr.tr
+covers: event
+
+# --- fromfile --------------------------------------------------------------
+
+[event_file_missing]
+desc: a file that does not exist
+args: -I dummy event file {work}/nope.txt
+transcript: bmc.tr
+covers: event
+
+[event_file_one]
+desc: a single event line
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/one.txt
+covers: event
+
+[event_file_comments]
+desc: comments, blank lines and surrounding whitespace are all stripped
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/comments.txt
+covers: event
+
+[event_file_short]
+desc: a line with fewer than seven bytes is reported and skipped
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/short.txt
+covers: event
+
+[event_file_bad_token]
+desc: an unparsable token stops the line and reports it twice
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/badtok.txt
+covers: event
+
+[event_file_bad_then_ok]
+desc: a bad line does not stop the file, and the later line resets the status
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/badtok_then_ok.txt
+covers: event
+
+[event_file_extra]
+desc: tokens past the seventh are ignored
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/extra.txt
+covers: event
+
+[event_file_multi]
+desc: three events from one file
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/multi.txt
+covers: event
+
+[event_file_deassert]
+desc: the event direction bit comes from the file
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/deassert.txt
+covers: event
+
+[event_file_empty]
+desc: an empty file sends nothing and succeeds
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/empty.txt
+covers: event
+
+[event_file_blank]
+desc: a file of blank lines sends nothing and succeeds
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/blank.txt
+covers: event
+
+[event_file_send_fail]
+desc: a rejected event stops the file
+args: -I dummy event file {work}/ev.txt
+transcript: event_pem_fail.tr
+text: ev.txt event/multi.txt
+covers: event
+
+[event_file_ch_unknown]
+desc: an unknown channel stops the file on the first line
+args: -I dummy event file {work}/ev.txt
+transcript: event_ch_unknown.tr
+text: ev.txt event/multi.txt
+covers: event
+
+[event_file_sysif]
+desc: file events over the system interface carry the generator ID
+args: -I dummy event file {work}/ev.txt
+transcript: event_sysif.tr
+text: ev.txt event/multi.txt
+covers: event
+
+[event_file_verbose]
+desc: verbose file replay
+args: -I dummy -v event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/one.txt
+covers: event
+
+[event_st0_offset_guard]
+desc: a zero sensor type short-circuits the offset lookup to 0
+args: -I dummy event SZER "Drive Present"
+transcript: event_sdr_st0.tr
+covers: event
+
+[event_file_fail_stops]
+desc: a rejected event stops the file at that line
+args: -I dummy event file {work}/ev.txt
+transcript: event_pem_fail.tr
+text: ev.txt event/multi.txt
+covers: event
+
+[event_file_kw_case]
+desc: the file keyword is matched with strcmp, so FILE is a sensor name
+args: -I dummy event FILE {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/one.txt
+covers: event
+
+[event_file_long_line]
+desc: a 1023-character line is read whole, so fgets gets the full buffer size
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/longline.txt
+covers: event
+
+[event_file_tab_indent]
+desc: leading whitespace is stripped before the line is tokenised
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/tabtok.txt
+covers: event

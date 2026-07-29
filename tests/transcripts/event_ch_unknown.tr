@@ -1,0 +1,9 @@
+# Get Channel Info is rejected, so ipmi_current_channel_info() leaves the
+# channel at CH_UNKNOWN and ipmi_send_platform_event() refuses to send.
+default_ccode 0xc1
+
+respond platform_event_message
+  netfn 0x04
+  cmd 0x02
+  data
+end
