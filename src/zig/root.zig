@@ -31,6 +31,7 @@ pub const core = struct {
 pub const intf = struct {
     pub const ipmi_intf = @import("intf/intf.zig");
     pub const registry = @import("intf/registry.zig");
+    pub const dummy = @import("intf/dummy.zig");
 };
 
 /// Ports of the crypto primitives that used to come from OpenSSL.
@@ -75,6 +76,7 @@ test {
     _ = crypto.vectors;
     _ = intf.ipmi_intf;
     _ = intf.registry;
+    _ = intf.dummy;
     _ = util.bswap;
     _ = util.helper;
     _ = util.log;

@@ -102,7 +102,7 @@ Request, `struct dummy_rq`, **16 bytes**:
 |      3 |    1 | `msg.target_cmd`                                          |
 |      4 |    2 | `msg.data_len` (native endian)                            |
 |      6 |    2 | padding                                                   |
-|      8 |    8 | `msg.data` pointer - garbage from the client, ignore it   |
+|      8 |    8 | `msg.data` - the client's own pointer; meaningless here   |
 
 If `data_len` is non-zero, exactly `data_len` payload bytes follow the header.
 
@@ -112,7 +112,7 @@ Response, `struct dummy_rs`, **24 bytes**:
 | -----: | ---: | ------------------------------------------------ |
 |      0 |    1 | `msg.netfn` - the convention is `request netfn \| 1` |
 |      1 |    1 | `msg.cmd`                                        |
-|      2 |    1 | `msg.seq`                                        |
+|      2 |    1 | `msg.seq` - from the rule's `seq`, default `0x00` |
 |      3 |    1 | `msg.lun`                                        |
 |      4 |    1 | `ccode`                                          |
 |      5 |    3 | padding                                          |
@@ -131,6 +131,16 @@ Two things are easy to get wrong:
   a single buffered `writeAll` plus `flush`.
 * `close()` sends a "BYE" request, netfn `0x3f` / cmd `0xff`, and then closes the
   socket. The harness logs it as `bye` and stops serving that connection.
+
+Only three of the five response header bytes are derived from the request, and
+the harness answers with `netfn | 1`, the request's own `cmd` and `lun`, and
+whatever the rule's `seq` says. Almost every case sends netfn `0x06` at lun
+`0x00`, so a transport that confused `msg.seq` with `msg.lun` would still pass:
+both are zero. `seq` exists so at least one case can make all five bytes
+distinct and non-zero - see `tests/transcripts/dummy_frame.tr` and
+`tests/cases/50-dummy.cases`. `msg.seq` never reaches stdout on this transport;
+the only thing that prints it is the `-v` trace inside
+`ipmi_dummyipmi_send_cmd()`, so those cases have to be verbose.
 
 ipmitool always sends two probes immediately after opening any interface
 (`picmg_discover()` then `vita_discover()` from `lib/ipmi_main.c`), so even a
@@ -233,6 +243,7 @@ respond get_device_id     # optional name; it appears in the request log
   match 00 01             # optional match on a prefix of the request data
   times 1                 # optional use limit; default unlimited
   ccode 0x00              # default 0x00
+  seq   0x00              # msg.seq of the response header; default 0x00
   data  20 81 02          # repeatable, concatenated, hex.zig grammar
   data  @mc/device_id.hex # ... including @include of a byte-level fixture
 end

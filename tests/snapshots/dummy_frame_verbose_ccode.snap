@@ -1,0 +1,65 @@
+#!golden 1
+#!case dummy_frame_verbose_ccode
+#!section exit
+1
+#!section stdout
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+RAW REQ (channel=0x0 netfn=0x2c lun=0x3 cmd=0x95 data_len=0)
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 2c
+msg.cmd: 95
+msg.target_cmd: 0
+msg.lun: 3
+>>>
+<<< IPMI rsp
+ccode: 83
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 95
+msg.seq: 6d
+msg.lun: 3
+<<<
+Unable to send RAW command (channel=0x0 netfn=0x2c lun=0x3 cmd=0x95 rsp=0x83): Unknown (0x83)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x03 cmd=0x95 target_cmd=0x00 data=
+< rule=frame_probe_ccode ccode=0x83 len=0 data=
+bye

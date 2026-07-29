@@ -31,7 +31,7 @@
 //!
 //!     offset 0  u8   msg.netfn
 //!     offset 1  u8   msg.cmd
-//!     offset 2  u8   msg.seq
+//!     offset 2  u8   msg.seq            (from the transcript rule's `seq')
 //!     offset 3  u8   msg.lun
 //!     offset 4  u8   ccode
 //!     offset 5  --   3 padding bytes
@@ -189,7 +189,7 @@ fn serveConnection(
         var header_out: [rs_size]u8 = @splat(0);
         header_out[0] = netfn | 1; // responses use the odd "response" netfn
         header_out[1] = cmd;
-        header_out[2] = 0; // seq
+        header_out[2] = response.seq;
         header_out[3] = lun;
         header_out[4] = response.ccode;
         std.mem.writeInt(i32, header_out[8..12], @intCast(response.data.len), native_endian);

@@ -76,6 +76,9 @@ comptime {
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }
+    if (selected("dummy")) {
+        @import("intf/dummy.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

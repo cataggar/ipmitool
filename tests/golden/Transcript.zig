@@ -21,6 +21,7 @@
 //!       match 00 01           # optional match on a prefix of the request data
 //!       times 1               # optional; default: unlimited
 //!       ccode 0x00            # default 0x00
+//!       seq   0x00            # response header sequence byte; default 0x00
 //!       data  20 81 02        # repeatable; concatenated; hex.zig grammar
 //!       data  @sdr/full.hex   # ... including @include of a byte-level fixture
 //!     end
@@ -64,6 +65,7 @@ pub const Rule = struct {
     match: []const u8 = &.{},
     times: ?u32 = null,
     ccode: u8 = 0,
+    seq: u8 = 0,
     data: []const u8 = &.{},
     blob: []const u8 = &.{},
     partial: ?Partial = null,
@@ -147,6 +149,9 @@ pub fn load(ctx: hex.Context, transcripts_dir: []const u8, name: []const u8) Err
             } else if (std.mem.eql(u8, key, "ccode")) {
                 rule.ccode = hex.parseByte(rest) orelse
                     return fail(ctx, path, line_no, "ccode is not a hex byte");
+            } else if (std.mem.eql(u8, key, "seq")) {
+                rule.seq = hex.parseByte(rest) orelse
+                    return fail(ctx, path, line_no, "seq is not a hex byte");
             } else if (std.mem.eql(u8, key, "times")) {
                 const n = hex.parseUsize(rest) orelse
                     return fail(ctx, path, line_no, "times is not a number");
@@ -207,6 +212,8 @@ pub const Response = struct {
     ccode: u8,
     data: []const u8,
     rule_name: []const u8,
+    /// `msg.seq` of the dummy response header.
+    seq: u8 = 0,
 };
 
 /// Find the response for a request. Rules are considered in file order.
@@ -232,25 +239,25 @@ pub fn respond(
         if (rule.times) |limit| if (rule.used >= limit) continue;
         rule.used += 1;
         const p = rule.partial orelse
-            return .{ .ccode = rule.ccode, .data = rule.data, .rule_name = rule.name };
+            return .{ .ccode = rule.ccode, .data = rule.data, .rule_name = rule.name, .seq = rule.seq };
 
         const need = @max(p.offset_index + p.offset_width, p.count_index + 1);
         if (data.len < need)
-            return .{ .ccode = 0xc7, .data = &.{}, .rule_name = rule.name };
+            return .{ .ccode = 0xc7, .data = &.{}, .rule_name = rule.name, .seq = rule.seq };
 
         var offset: usize = data[p.offset_index];
         if (p.offset_width == 2)
             offset |= @as(usize, data[p.offset_index + 1]) << 8;
         const want: usize = data[p.count_index];
         if (offset > rule.blob.len)
-            return .{ .ccode = 0xc9, .data = &.{}, .rule_name = rule.name };
+            return .{ .ccode = 0xc9, .data = &.{}, .rule_name = rule.name, .seq = rule.seq };
         const end = @min(rule.blob.len, offset + want);
 
         scratch.clearRetainingCapacity();
         try scratch.appendSlice(gpa, rule.data);
         if (p.count_prefix) try scratch.append(gpa, @intCast(end - offset));
         try scratch.appendSlice(gpa, rule.blob[offset..end]);
-        return .{ .ccode = rule.ccode, .data = scratch.items, .rule_name = rule.name };
+        return .{ .ccode = rule.ccode, .data = scratch.items, .rule_name = rule.name, .seq = rule.seq };
     }
     return .{ .ccode = t.default_ccode, .data = &.{}, .rule_name = "default" };
 }

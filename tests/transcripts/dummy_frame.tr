@@ -1,0 +1,43 @@
+# A BMC for pinning the `dummy' transport's own wire header, not any IPMI
+# command.
+#
+# The framing is `struct dummy_rq' (16 bytes) and `struct dummy_rs' (24 bytes)
+# from src/plugins/dummy/dummy.h. Most golden cases leave nearly every header
+# byte at zero, which makes a swapped, dropped or short-written field
+# indistinguishable from a correct one. The rules here are chosen so that every
+# byte the transport copies is *distinct* and *non-zero*:
+#
+#   request  netfn 0x2c  lun 0x03  cmd 0x94/0x95  data a5 5a 3c c3
+#   response netfn 0x2d  cmd 0x94/0x95  seq 0x5b/0x6d  lun 0x03  ccode 0x00/0x83
+#
+# The response netfn is the request netfn with bit 0 set, so 0x2c -> 0x2d, which
+# differs from every other byte in the header. `seq' never leaves the transport:
+# it is only ever printed by the `-v' trace in ipmi_dummyipmi_send_cmd(), which
+# is why both cases that use this transcript are verbose.
+
+default_ccode 0xc1
+
+# `-v -l 3 raw 0x2c 0x94 0xa5 0x5a 0x3c 0xc3'.
+#
+# Completion code 0x00 with a payload, so the response data path runs too.
+respond frame_probe
+  netfn 0x2c
+  cmd   0x94
+  lun   0x03
+  match a5 5a 3c c3
+  seq   0x5b
+  ccode 0x00
+  data  17 4e 92 db
+end
+
+# `-v -l 3 raw 0x2c 0x95'.
+#
+# A non-zero completion code and no payload, so the five bytes of the response
+# header are all distinct and all non-zero at once.
+respond frame_probe_ccode
+  netfn 0x2c
+  cmd   0x95
+  lun   0x03
+  seq   0x6d
+  ccode 0x83
+end
