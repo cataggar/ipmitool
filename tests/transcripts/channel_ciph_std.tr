@@ -1,0 +1,17 @@
+# Get Channel Cipher Suites returning one short set: 1 channel byte plus 15
+# bytes, which is exactly three standard (C0h) records, so the read loop stops
+# after a single request.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  # channel byte, then
+  #   c0 00 00 00 00 - suite 0,  RAKP-none / none / none
+  #   c0 01 01 00 00 - suite 1,  RAKP-HMAC-SHA1 / none / none
+  #   c0 03 01 01 01 - suite 3,  RAKP-HMAC-SHA1 / HMAC-SHA1-96 / AES-CBC-128
+  data 0e
+  data c0 00 00 00 00
+  data c0 01 01 00 00
+  data c0 03 01 01 01
+end

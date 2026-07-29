@@ -1,0 +1,12 @@
+# An eight byte OEM record followed by a five byte standard record.  If the OEM
+# branch reported the wrong record size the standard record would be parsed
+# from the wrong offset and the second row would not print.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  data c1 80 57 01 00 01 01 01
+  data c0 03 01 01 01
+end

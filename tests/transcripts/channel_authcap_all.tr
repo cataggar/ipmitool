@@ -1,0 +1,16 @@
+# Every optional line of `channel authcap' turned on: IPMI v2.0 data present,
+# KG non-zero, per-message and user-level auth disabled, both user-name bits
+# set, anonymous login enabled, both IPMI versions supported, and the OEM auth
+# type bit (0x20) set so the IANA and auxiliary lines print too.
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  # byte 1: 0xa0 = v2.0 data available (0x80) + OEM auth type (0x20)
+  # byte 2: 0x3f = kg non-zero, per-message + user-level auth disabled,
+  #         non-null and null user names exist, anonymous login enabled
+  # byte 3: 0x03 = IPMI v1.5 and v2.0 both supported
+  # bytes 4-6: OEM IANA 0x0157 little endian, byte 7: aux 0xab
+  data 0e a0 3f 03 57 01 00 ab
+end

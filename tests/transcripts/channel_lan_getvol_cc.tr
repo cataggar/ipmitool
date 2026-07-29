@@ -1,0 +1,28 @@
+# As channel_lanset.tr, but the *volatile* Get Channel Access is rejected, so
+# ipmi_set_channel_access() stops after the non-volatile half.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 01 40
+  data 39 03
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 01 80
+  ccode 0x83
+end
+
+respond set_channel_access
+  netfn 0x06
+  cmd 0x40
+end

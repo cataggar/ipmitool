@@ -1,0 +1,16 @@
+#!golden 1
+#!case chan_ev_ch_cc2
+#!section exit
+1
+#!section stdout
+Sending SAMPLE event: Temperature - Upper Critical - Going High
+#!section stderr
+Failed to send the platform event via an unknown channel
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=0e
+< rule=get_channel_info ccode=0xcc len=0 data=
+bye

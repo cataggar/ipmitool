@@ -1,0 +1,12 @@
+# One OEM (C1h) cipher suite record, which carries a three byte IANA between
+# the suite ID and the algorithms.  The IANA is printed as six hex digits by
+# iana_string(); a standard record leaves it 0 and prints "N/A".
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  # c1 80 <iana 0x0157 LE> 01 01 01 - OEM suite 0x80, IANA 000157
+  data 0e
+  data c1 80 57 01 00 01 01 01
+end

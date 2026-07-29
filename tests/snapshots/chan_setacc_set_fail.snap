@@ -1,0 +1,18 @@
+#!golden 1
+#!case chan_setacc_set_fail
+#!section exit
+1
+#!section stdout
+#!section stderr
+IPMI command failed: Unknown (0x82)
+Unable to Set User Access (channel 1 id 2)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 02
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x43 target_cmd=0x00 data=b1 02 04 00
+< rule=set_user_access ccode=0x82 len=0 data=
+bye

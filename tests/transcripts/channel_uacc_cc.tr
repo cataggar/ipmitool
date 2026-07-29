@@ -1,0 +1,8 @@
+# Get User Access fails, so `channel getaccess' reports it and returns -1.
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  ccode 0xd4
+end

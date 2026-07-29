@@ -1,0 +1,24 @@
+# An OEM cipher suite record whose IANA has three distinct, non-zero bytes.
+#
+# channel_ciph_algmask.tr uses the realistic IANA 0x000157, whose zero most
+# significant byte hides the `record->iana[2] << 16` term of ipmi24toh(): drop
+# it and the printed IANA is identical.  Here the IANA is 0xf3c2b1, so a
+# reversed order (0xb1c2f3), a dropped high byte (0x00c2b1) and a one-byte
+# offset slip all print differently.
+#
+# The record is followed by a standard record so that the OEM record's 8-byte
+# size is pinned too: consume the wrong number of bytes and the next record
+# starts in the wrong place.
+#
+# See the "distinct, non-zero bytes" rule in tests/transport/Bmc.zig.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  data 0e
+  # OEM record: start C1h, suite id 81h, IANA b1 c2 f3, algs 01 02 03
+  data c1 81 b1 c2 f3 01 02 03
+  # standard record: start C0h, suite id 04h, algs 01 41 81
+  data c0 04 01 41 81
+end

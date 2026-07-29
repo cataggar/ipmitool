@@ -1,0 +1,21 @@
+#!golden 1
+#!case chan_authcap_kg
+#!section exit
+0
+#!section stdout
+Channel number             : 14
+IPMI v1.5  auth types      : NONE MD5 PASSWORD\x20
+Per message authentication : enabled
+User level authentication  : disabled
+Non-null user names exist  : no
+Null user names exist      : yes
+Anonymous login enabled    : no
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x38 target_cmd=0x00 data=8e 04
+< rule=get_channel_auth_capabilities ccode=0x00 len=8 data=0e 15 2a 01 57 01 00 c3
+bye

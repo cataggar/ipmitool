@@ -1,0 +1,16 @@
+# A LAN channel whose access mode is 5 - past the four arms of the Access Mode
+# switch, so the `unknown' default is printed for both the volatile and the
+# non-volatile block.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 c4 f2 1b 00 00 00
+end
+
+respond get_channel_access
+  netfn 0x06
+  cmd 0x41
+  data 05 04
+end

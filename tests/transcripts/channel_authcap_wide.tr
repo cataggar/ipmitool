@@ -1,0 +1,23 @@
+# The OEM lines of `channel authcap', with an IANA whose three bytes are all
+# distinct and non-zero.
+#
+# channel_authcap_all.tr reports the realistic IANA 0x000157 (Intel), and that
+# zero most significant byte is exactly what makes it a weak pin: dropping the
+# `oem_id[2] << 16` term leaves the printed number unchanged.  Here the IANA is
+# 0xf3c2b1, so a reversed order (0xb1c2f3), a dropped high byte (0x00c2b1) and
+# a one-byte offset slip all print differently.  The auxiliary byte is 0x5a so
+# that it cannot be confused with any IANA byte either.
+#
+# See the "distinct, non-zero bytes" rule in tests/transport/Bmc.zig.
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  # byte 1: 0xa0 = v2.0 data available (0x80) + OEM auth type (0x20)
+  # byte 2: 0x3f = kg non-zero, per-message + user-level auth disabled,
+  #         non-null and null user names exist, anonymous login enabled
+  # byte 3: 0x03 = IPMI v1.5 and v2.0 both supported
+  # bytes 4-6: OEM IANA 0xf3c2b1 little endian, byte 7: aux 0x5a
+  data 0e a0 3f 03 b1 c2 f3 5a
+end

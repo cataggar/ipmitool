@@ -1,0 +1,19 @@
+# The first Get Channel Authentication Capabilities asks for IPMI v2.0 data by
+# setting bit 7 of the channel byte and is rejected; ipmi_get_channel_auth_cap()
+# clears the bit and asks again.  Both requests are recorded, so a port that
+# skipped the retry, or that failed to clear bit 7, is caught.
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities_v20
+  netfn 0x06
+  cmd 0x38
+  match 81
+  ccode 0xcc
+end
+
+respond get_channel_auth_capabilities_v15
+  netfn 0x06
+  cmd 0x38
+  match 01
+  data 01 15 06 00 00 00 00 00
+end

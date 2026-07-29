@@ -1,0 +1,15 @@
+# Get User Access succeeds but Get User Name fails with a code other than CCh,
+# which is an error rather than a blank name.
+default_ccode 0xc1
+
+respond get_user_access
+  netfn 0x06
+  cmd 0x44
+  data 04 41 01 34
+end
+
+respond get_user_name
+  netfn 0x06
+  cmd 0x46
+  ccode 0xd5
+end

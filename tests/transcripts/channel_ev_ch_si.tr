@@ -1,0 +1,16 @@
+# Get Channel Info reports the system interface medium (0Ch) for the current
+# channel, so ipmi_event.c adds the extra generator ID byte.  This pins the
+# `medium' field _ipmi_get_channel_info() decodes out of response byte 1.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 0f 0c 09 00 f2 1b 00 00 00
+end
+
+respond platform_event_message
+  netfn 0x04
+  cmd 0x02
+  data
+end

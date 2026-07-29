@@ -1,0 +1,9 @@
+# Both attempts at Get Channel Authentication Capabilities fail, so the retry
+# path reports the completion code and returns -1.
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  ccode 0xd4
+end

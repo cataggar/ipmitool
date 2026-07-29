@@ -1,0 +1,37 @@
+# As channel_lanset.tr, but only the *volatile* Set Channel Access is
+# rejected.  The first request carries 01 7a 44 and the second 01 92 84, so the
+# rules below can tell them apart on the access/privilege option bits alone.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 01 40
+  data 39 03
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 01 80
+  data 12 05
+end
+
+respond set_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x40
+  match 01 7a
+end
+
+respond set_channel_access_volatile
+  netfn 0x06
+  cmd 0x40
+  match 01 92
+  ccode 0xd5
+end

@@ -1,0 +1,17 @@
+# Every reserved bit set in the Get Channel Info reply, so each mask in
+# _ipmi_get_channel_info() shows up in the printed output:
+#
+#   byte 0  fe -> channel        0Eh   (0x0f)
+#   byte 1  ff -> medium         7Fh   (0x7f)
+#   byte 2  ff -> protocol       1Fh   (0x1f)
+#   byte 3  ff -> session support C0h  (0xc0) and 63 active sessions (0x3f)
+#   bytes 4-6 aa bb cc -> vendor 0xccbbaa
+#
+# Medium 7Fh is not a LAN medium, so the Channel Access blocks are skipped.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data fe ff ff ff aa bb cc dd ee
+end

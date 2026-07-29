@@ -1,0 +1,21 @@
+#!golden 1
+#!case chan_ciph_multi
+#!section exit
+0
+#!section stdout
+ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg
+0    N/A     none            none            none          \x20
+1    N/A     hmac_sha1       none            none          \x20
+2    N/A     hmac_sha1       hmac_sha1_96    none          \x20
+3    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 80
+< rule=get_channel_cipher_suites_0 ccode=0x00 len=17 data=0e c0 00 00 00 00 c0 01 01 00 00 c0 02 01 01 00 c0
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 81
+< rule=get_channel_cipher_suites_1 ccode=0x00 len=5 data=0e 03 01 01 01
+bye

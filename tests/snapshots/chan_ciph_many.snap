@@ -1,0 +1,35 @@
+#!golden 1
+#!case chan_ciph_many
+#!section exit
+0
+#!section stdout
+ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg
+0    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+1    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+2    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+3    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+4    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+5    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+6    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+7    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+8    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+9    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+10   N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+11   N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 80
+< rule=get_channel_cipher_suites_0 ccode=0x00 len=17 data=0e c0 00 01 01 01 c0 01 01 01 01 c0 02 01 01 01 c0
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 81
+< rule=get_channel_cipher_suites_1 ccode=0x00 len=17 data=0e 03 01 01 01 c0 04 01 01 01 c0 05 01 01 01 c0 06
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 82
+< rule=get_channel_cipher_suites_2 ccode=0x00 len=17 data=0e 01 01 01 c0 07 01 01 01 c0 08 01 01 01 c0 09 01
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 83
+< rule=get_channel_cipher_suites_3 ccode=0x00 len=17 data=0e 01 01 c0 0a 01 01 01 c0 0b 01 01 01 c0 0c 01 01
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 84
+< rule=get_channel_cipher_suites_4 ccode=0x00 len=5 data=0e 01 c0 0d 01
+bye

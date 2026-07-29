@@ -1,0 +1,26 @@
+#!golden 1
+#!case chan_authcap_mix
+#!section exit
+0
+#!section stdout
+Channel number             : 14
+IPMI v1.5  auth types      : OEM\x20
+KG status                  : default (all zeroes)
+Per message authentication : enabled
+User level authentication  : enabled
+Non-null user names exist  : yes
+Null user names exist      : no
+Anonymous login enabled    : no
+Channel supports IPMI v1.5 : no
+Channel supports IPMI v2.0 : yes
+IANA Number for OEM        : 343
+OEM Auxiliary Data         : 0xb
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x38 target_cmd=0x00 data=8e 04
+< rule=get_channel_auth_capabilities ccode=0x00 len=8 data=0e a0 04 02 57 01 00 0b
+bye

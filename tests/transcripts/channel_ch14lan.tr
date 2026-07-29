@@ -1,0 +1,26 @@
+# Channel 0Eh is an 802.3 LAN channel, so the two Get Channel Access requests
+# carry a channel number whose low three bits are not the whole number.  That
+# distinguishes the `& 0x0f' channel mask from a narrower one.
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 0e 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 0e 80
+  # access mode 3 = shared
+  data 03 04
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 0e 40
+  # alerting disabled, access mode 0 = disabled, privilege limit 15
+  data 20 0f
+end

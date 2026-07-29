@@ -120,6 +120,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/oem.zig",
     },
     .{
+        .name = "channel",
+        .replaces = "lib/ipmi_channel.c",
+        .implementation = "src/zig/cmd/channel.zig",
+    },
+    .{
         .name = "strings",
         .replaces = "lib/ipmi_strings.c",
         .implementation = "src/zig/util/strings.zig",

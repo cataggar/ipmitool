@@ -1,0 +1,53 @@
+# Thirteen standard cipher suite records spread over five Get Channel Cipher
+# Suites responses.
+#
+# The first four are full 17 byte responses, which keeps the read loop going;
+# the fifth is short and ends it.  Records straddle the response boundaries.
+#
+# Only *twelve* rows print.  ipmi_print_channel_cipher_suites() passes
+# `sizeof(*suites)' - the size of one struct cipher_suite_info, which is 12 -
+# as the array capacity instead of ARRAY_SIZE(suites), so the parse stops at
+# twelve records however many the BMC reports.  That is upstream behaviour and
+# is reproduced deliberately; see the issue linked from src/zig/cmd/channel.zig.
+
+default_ccode 0xc1
+
+respond get_channel_cipher_suites_0
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 80
+  data 0e
+  data c0 00 01 01 01 c0 01 01 01 01 c0 02 01 01 01 c0
+end
+
+respond get_channel_cipher_suites_1
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 81
+  data 0e
+  data 03 01 01 01 c0 04 01 01 01 c0 05 01 01 01 c0 06
+end
+
+respond get_channel_cipher_suites_2
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 82
+  data 0e
+  data 01 01 01 c0 07 01 01 01 c0 08 01 01 01 c0 09 01
+end
+
+respond get_channel_cipher_suites_3
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 83
+  data 0e
+  data 01 01 c0 0a 01 01 01 c0 0b 01 01 01 c0 0c 01 01
+end
+
+respond get_channel_cipher_suites_4
+  netfn 0x06
+  cmd 0x54
+  match 0e 00 84
+  data 0e
+  data 01 c0 0d 01
+end

@@ -1,0 +1,67 @@
+#!golden 1
+#!case chan_ciph_std_part4
+#!section exit
+0
+#!section stdout
+ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg
+0    N/A     none            none            none          \x20
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 6
+msg.cmd: 54
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 10
+msg.netfn: 7
+msg.cmd: 54
+msg.seq: 0
+msg.lun: 0
+<<<
+Incomplete data record in cipher suite data
+Failed to parse cipher suite data at offset 5
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x54 target_cmd=0x00 data=0e 00 80
+< rule=get_channel_cipher_suites ccode=0x00 len=10 data=0e c0 00 00 00 00 c0 09 01 01
+bye

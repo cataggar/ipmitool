@@ -1,0 +1,24 @@
+# The volatile Get Channel Access succeeds and the non-volatile one fails, so
+# the volatile block prints and then the command reports
+# "Unable to Get Channel Access (non-volatile)".
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 01 80
+  data 22 04
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 01 40
+  ccode 0x82
+end

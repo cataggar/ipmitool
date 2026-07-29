@@ -1,0 +1,38 @@
+# `lan set <ch> access|alert' is the only caller of _ipmi_set_channel_access(),
+# which is one of the eleven symbols lib/ipmi_channel.c exports.  It is reached
+# from lib/ipmi_lanp.c, so `channel' alone never exercises it.
+#
+# Channel 1 is an 802.3 LAN channel (so is_lan_channel() accepts it) and the
+# volatile and non-volatile access settings differ, which makes the two Set
+# Channel Access requests differ in every field:
+#
+#   non-volatile 39 03 -> alerting disabled (0x20), per-message auth (0x10),
+#                         user level auth (0x08), access mode 1, privilege 3
+#   volatile     12 05 -> per-message auth only, access mode 2, privilege 5
+
+default_ccode 0xc1
+
+respond get_channel_info
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+
+respond get_channel_access_nonvolatile
+  netfn 0x06
+  cmd 0x41
+  match 01 40
+  data 39 03
+end
+
+respond get_channel_access_volatile
+  netfn 0x06
+  cmd 0x41
+  match 01 80
+  data 12 05
+end
+
+respond set_channel_access
+  netfn 0x06
+  cmd 0x40
+end

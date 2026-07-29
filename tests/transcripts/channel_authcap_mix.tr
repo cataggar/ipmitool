@@ -1,0 +1,14 @@
+# An auth capabilities reply whose bit pairs *differ*, so that swapping two
+# adjacent bitfields in the response mirror changes the output:
+#
+#   byte 2  04h -> non-null user names exist, null user names do not
+#   byte 3  02h -> IPMI v2.0 supported, v1.5 not
+#   byte 7  0bh -> a one digit auxiliary value, which %x and %02x print
+#                  differently
+default_ccode 0xc1
+
+respond get_channel_auth_capabilities
+  netfn 0x06
+  cmd 0x38
+  data 0e a0 04 02 57 01 00 0b
+end

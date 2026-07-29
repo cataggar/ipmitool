@@ -1,0 +1,140 @@
+#!golden 1
+#!case chan_lan_medium_dbg
+#!section exit
+0
+#!section stdout
+Set Channel Access for channel 1 was successful.
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 6
+msg.cmd: 42
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: 7
+msg.cmd: 42
+msg.seq: 0
+msg.lun: 0
+<<<
+Channel type: 802.3 LAN
+>>> IPMI req
+msg.data_len: 2
+msg.netfn: 6
+msg.cmd: 41
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 7
+msg.cmd: 41
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 6
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 0
+msg.netfn: 7
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 2
+msg.netfn: 6
+msg.cmd: 41
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 7
+msg.cmd: 41
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 6
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 0
+msg.netfn: 7
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=get_channel_info ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x41 target_cmd=0x00 data=01 40
+< rule=get_channel_access_nonvolatile ccode=0x00 len=2 data=39 03
+> netfn=0x06 lun=0x00 cmd=0x40 target_cmd=0x00 data=01 7a 44
+< rule=set_channel_access ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x41 target_cmd=0x00 data=01 80
+< rule=get_channel_access_volatile ccode=0x00 len=2 data=12 05
+> netfn=0x06 lun=0x00 cmd=0x40 target_cmd=0x00 data=01 92 84
+< rule=set_channel_access ccode=0x00 len=0 data=
+bye

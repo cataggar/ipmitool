@@ -1,0 +1,12 @@
+# Get Channel Cipher Suites answers with a completion code *and* a payload, so
+# the completion code is the only thing that can reject the response - the
+# `data_len < 1' guard does not fire.
+default_ccode 0xc1
+
+respond get_channel_cipher_suites
+  netfn 0x06
+  cmd 0x54
+  ccode 0xd4
+  data 0e
+  data c0 00 00 00 00
+end

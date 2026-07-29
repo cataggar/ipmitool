@@ -1,0 +1,91 @@
+#!golden 1
+#!case chan_setacc_dbg
+#!section exit
+1
+#!section stdout
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 2
+msg.netfn: 6
+msg.cmd: 44
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 7
+msg.cmd: 44
+msg.seq: 0
+msg.lun: 0
+<<<
+Option callin==0
+Option privilege==4
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: 6
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 7
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+IPMI command failed: Invalid command
+Unable to Set User Access (channel 1 id 2)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 02
+< rule=get_user_access ccode=0x00 len=4 data=04 41 01 34
+> netfn=0x06 lun=0x00 cmd=0x43 target_cmd=0x00 data=b1 02 04 00
+< rule=default ccode=0xc1 len=0 data=
+bye
