@@ -1,0 +1,30 @@
+#!golden 1
+#!case sl_info_alloc
+#!section exit
+0
+#!section stdout
+SEL Information
+Version          : 1.5 (v1.5, v2 compliant)
+Entries          : 515
+Free Space       : 1280 bytes\x20
+Percent Used     : 86%
+Last Add Time    : S+ 79/041 00:20:20
+Last Del Time    : 05/28/15 02:03:52 UTC
+Overflow         : false
+Supported Cmds   : 'Delete' 'Partial Add' 'Reserve' 'Get Alloc Info'\x20
+# of Alloc Units : 4660
+Alloc Unit Size  : 22136
+# Free Units     : 39612
+Largest Free Blk : 57072
+Max Record Size  : 16
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 03 02 00 05 44 33 22 11 88 77 66 55 0f
+> netfn=0x0a lun=0x00 cmd=0x41 target_cmd=0x00 data=
+< rule=get_sel_alloc ccode=0x00 len=9 data=34 12 78 56 bc 9a f0 de 10
+bye

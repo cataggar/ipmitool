@@ -1,0 +1,319 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Subcommand dispatch, record counting, reservation, clear, delete and
+# the SEL clock.
+
+[sl_many_list]
+desc: sel list: all six records
+args: -I dummy sel list
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_first2]
+desc: sel list: the two oldest records
+args: -I dummy sel list first 2
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_last2]
+desc: sel list: the two newest records
+args: -I dummy sel list last 2
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_last9]
+desc: sel list: more records than the log holds
+args: -I dummy sel list last 9
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_first0]
+desc: sel list: a count of zero
+args: -I dummy sel list first 0
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_count3]
+desc: sel list: a bare count argument
+args: -I dummy sel list 3
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_elast2]
+desc: sel list: extended listing, last two
+args: -I dummy sel elist last 2
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_badopt]
+desc: sel list: an unknown list option
+args: -I dummy sel list middle 2
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_badnum]
+desc: sel list: a non-numeric count
+args: -I dummy sel list first two
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_badnum2]
+desc: sel list: a malformed hex count
+args: -I dummy sel list 0x
+transcript: sel_many.tr
+covers: sel
+
+[sl_many_last2_v]
+desc: verbose sel list last 2
+args: -I dummy -v sel list last 2
+transcript: sel_many.tr
+covers: sel
+
+[sl_nextid_zero]
+desc: next record ID of zero, with the retry quirk
+args: -I dummy sel list
+transcript: sel_nextid_zero.tr
+covers: sel
+
+[sl_nextid_zero_v]
+desc: next record ID of zero, verbose
+args: -I dummy -vv sel list
+transcript: sel_nextid_zero.tr
+covers: sel
+
+[sl_clear]
+desc: clear the SEL
+args: -I dummy sel clear
+transcript: sel_ops.tr
+covers: sel
+
+[sl_delete_one]
+desc: delete one entry
+args: -I dummy sel delete 0x1102
+transcript: sel_ops.tr
+covers: sel
+
+[sl_delete_many]
+desc: delete several entries, processed back to front
+args: -I dummy sel delete 4386 0x1103 65535
+transcript: sel_ops.tr
+covers: sel
+
+[sl_delete_bad]
+desc: delete with an unparseable ID
+args: -I dummy sel delete 0x1102 nope 0x1104
+transcript: sel_ops.tr
+covers: sel
+
+[sl_delete_none]
+desc: delete with no arguments
+args: -I dummy sel delete
+transcript: sel_ops.tr
+covers: sel
+
+[sl_delete_help]
+desc: delete help
+args: -I dummy sel delete help
+transcript: sel_ops.tr
+covers: sel
+
+[sl_clear_noresv]
+desc: clear when the reservation is refused
+args: -I dummy sel clear
+transcript: sel_resv_fail.tr
+covers: sel
+
+[sl_delete_noresv]
+desc: delete when the reservation is refused
+args: -I dummy sel delete 0x1102
+transcript: sel_resv_fail.tr
+covers: sel
+
+[sl_clear_resv_zero]
+desc: clear when the reservation ID is zero
+args: -I dummy sel clear
+transcript: sel_resv_zero.tr
+covers: sel
+
+[sl_clear_ccode]
+desc: clear rejected by the BMC
+args: -I dummy sel clear
+transcript: sel_clear_fail.tr
+covers: sel
+
+[sl_delete_ccode]
+desc: delete rejected by the BMC
+args: -I dummy sel delete 0x1102 0x1103
+transcript: sel_clear_fail.tr
+covers: sel
+
+[sl_time_get]
+desc: sel time get
+args: -I dummy sel time get
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_get_utc]
+desc: sel time get with -Z
+args: -I dummy -Z sel time get
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_set]
+desc: sel time set with an explicit timestamp
+args: -I dummy sel time set "03/14/21 15:09:26"
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_set_utc]
+desc: sel time set with -Z
+args: -I dummy -Z sel time set "03/14/21 15:09:26"
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_set_bad]
+desc: sel time set with an unparseable timestamp
+args: -I dummy sel time set "not a date"
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_set_partial]
+desc: sel time set with a date but no time
+args: -I dummy sel time set "03/14/21"
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_noargs]
+desc: sel time with no subcommand
+args: -I dummy sel time
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_badsub]
+desc: sel time with an unknown subcommand
+args: -I dummy sel time reset
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_set_noarg]
+desc: sel time set with no timestamp
+args: -I dummy sel time set
+transcript: sel_time.tr
+covers: sel
+
+[sl_time_get_short]
+desc: Get SEL Time reply that is too short
+args: -I dummy sel time get
+transcript: sel_time_short.tr
+covers: sel
+
+[sl_time_set_short]
+desc: Set SEL Time followed by a short Get SEL Time
+args: -I dummy sel time set "03/14/21 15:09:26"
+transcript: sel_time_short.tr
+covers: sel
+
+[sl_time_get_ccode]
+desc: Get SEL Time rejected
+args: -I dummy sel time get
+transcript: sel_time_fail.tr
+covers: sel
+
+[sl_time_set_ccode]
+desc: Set SEL Time rejected
+args: -I dummy sel time set "03/14/21 15:09:26"
+transcript: sel_time_fail.tr
+covers: sel
+
+[sl_help]
+desc: sel dispatch: the subcommand list
+args: -I dummy sel help
+transcript: sel_many.tr
+covers: sel
+
+[sl_bad_cmd]
+desc: sel dispatch: an unknown subcommand
+args: -I dummy sel bogus
+transcript: sel_many.tr
+covers: sel
+
+[sl_get_noargs]
+desc: sel dispatch: sel get with no ID
+args: -I dummy sel get
+transcript: sel_many.tr
+covers: sel
+
+[sl_get_help]
+desc: sel dispatch: sel get help
+args: -I dummy sel get help
+transcript: sel_many.tr
+covers: sel
+
+[sl_get_badid]
+desc: sel dispatch: sel get with a bad ID
+args: -I dummy sel get notanumber
+transcript: sel_many.tr
+covers: sel
+
+[sl_save_noargs]
+desc: sel dispatch: sel save with no filename
+args: -I dummy sel save
+transcript: sel_many.tr
+covers: sel
+
+[sl_add_noargs]
+desc: sel dispatch: sel add with no filename
+args: -I dummy sel add
+transcript: sel_many.tr
+covers: sel
+
+[sl_writeraw_noargs]
+desc: sel dispatch: writeraw with no filename
+args: -I dummy sel writeraw
+transcript: sel_many.tr
+covers: sel
+
+[sl_readraw_noargs]
+desc: sel dispatch: readraw with no filename
+args: -I dummy sel readraw
+transcript: sel_many.tr
+covers: sel
+
+[sl_ereadraw_noargs]
+desc: sel dispatch: ereadraw with no filename
+args: -I dummy sel ereadraw
+transcript: sel_many.tr
+covers: sel
+
+[sl_interpret_noargs]
+desc: sel dispatch: interpret with no arguments
+args: -I dummy sel interpret
+transcript: sel_many.tr
+covers: sel
+
+[sl_interpret_short]
+desc: sel dispatch: interpret missing the format
+args: -I dummy sel interpret 674 f
+transcript: sel_many.tr
+covers: sel
+
+[sl_time_set_tz]
+desc: sel time set interprets the string as local time
+args: -I dummy sel time set "03/14/21 15:09:26"
+transcript: sel_time.tr
+env: TZ=XYZ5
+covers: sel
+
+[sl_time_set_tz_utc]
+desc: -Z makes sel time set interpret the string as UTC
+args: -I dummy -Z sel time set "03/14/21 15:09:26"
+transcript: sel_time.tr
+env: TZ=XYZ5
+covers: sel
+
+[sl_time_get_tz]
+desc: sel time get renders the BMC clock in local time
+args: -I dummy sel time get
+transcript: sel_time.tr
+env: TZ=XYZ5
+covers: sel

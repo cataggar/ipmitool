@@ -1,0 +1,79 @@
+# The memory ECC decode of the plain SEL printer, one guard at a time.
+# 
+# `CPU %d DIMM %d' is printed only for sensor type 0Ch, sensor number 0 and event
+# data 1 bits 5:4 equal to 10b.  D001 satisfies all three; D002 additionally sets
+# bit 0 of event data 1, which the mask must ignore; D003 to D005 walk the other
+# three values of bits 5:4; and D006 to D008 change the sensor number, the sensor
+# type and the event type in turn.  Event data 2 is 59h so the CPU and the DIMM
+# number differ, and event data 1 is A0h while event data 2 is B7h, whose bits
+# 5:4 are 11b -- reading the wrong byte cannot produce the same answer.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 08 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 d0 02 4d 3e 2f 6a 20 00 04 0c 00 6f a0 b7 59
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 d0 02 4d 3e 2f 6a 20 00 04 0c 00 6f a1 b7 59
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 d0 02 4d 3e 2f 6a 20 00 04 0c 00 6f b0 b7 59
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 04 d0 02 4d 3e 2f 6a 20 00 04 0c 00 6f 90 b7 59
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 05 d0 02 4d 3e 2f 6a 20 00 04 0c 00 6f 80 b7 59
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 06 d0 02 4d 3e 2f 6a 20 00 04 0c 03 6f a0 b7 59
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 07 d0 02 4d 3e 2f 6a 20 00 04 0d 00 6f a0 b7 59
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data ff ff 08 d0 02 4d 3e 2f 6a 20 00 04 0c 00 01 a0 b7 59
+end

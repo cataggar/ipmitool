@@ -1,0 +1,51 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# PICMG and VITA sensor type and event type tables.
+
+[sl_picmg_list]
+desc: OEM sensor type names from the PICMG rows
+args: -I dummy sel list
+transcript: sel_picmg.tr
+covers: sel
+
+[sl_picmg_verbose]
+desc: the same, verbose
+args: -I dummy -v sel list
+transcript: sel_picmg.tr
+covers: sel
+
+[sl_vita_list]
+desc: the VITA sensor event type table
+args: -I dummy sel list
+transcript: sel_vita.tr
+covers: sel
+
+[sl_vita_verbose]
+desc: the same, verbose
+args: -I dummy -v sel list
+transcript: sel_vita.tr
+covers: sel
+
+[sl_vita_get]
+desc: sel get against a VITA BMC
+args: -I dummy sel get 1 3 9
+transcript: sel_vita.tr
+covers: sel
+
+[sl_entity_get_sep]
+desc: sel get twice for the same record, showing the separator between them
+args: -I dummy sel get 0x6002 0x6002
+transcript: sel_entity.tr
+covers: sel
+
+[sl_many_list_vvv]
+desc: sel list at debug level, which hexdumps Get SEL Info
+args: -I dummy -vvv sel list first 1
+transcript: sel_many.tr
+covers: sel
+
+[sl_rectypes_elist_vvv]
+desc: extended listing of OEM records at debug level
+args: -I dummy -vvv sel elist
+transcript: sel_rectypes.tr
+covers: sel

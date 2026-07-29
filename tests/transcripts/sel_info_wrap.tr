@@ -1,0 +1,18 @@
+# `Entries' chosen so that the 16-bit `e *= 16' in ipmi_sel_get_info() wraps.
+# 
+# 4096 entries * 16 bytes is exactly 65536, which is zero in the uint16_t the
+# upstream code uses.  A 32-bit multiply would print 99% instead of 0%.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 02 00 10 64 00 00 e3 0b 5e 00 e4 0b 5e 0f
+end

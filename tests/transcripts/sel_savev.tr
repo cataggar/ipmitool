@@ -1,0 +1,50 @@
+# Records written out by `sel save' with every printed field distinct.
+# 
+# ipmi_sel_print_event_file() writes the event type and the event direction as a
+# single byte, `event_type | (event_dir << 7)', followed by the three event data
+# bytes.  C002 and C003 are deassertions, so the direction bit is set and a shift
+# of anything but seven lands on a bit the event type does not already own; the
+# three event data bytes are 50h B7h 4Eh, all different, so the three fields
+# cannot be swapped either.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 04 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 c0 02 4d 3e 2f 6a 20 00 04 0c 41 6f 50 b7 4e
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 c0 02 4d 3e 2f 6a 20 00 04 0c 42 ef 50 b7 4e
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 c0 02 4d 3e 2f 6a 20 00 04 01 43 81 51 a1 b1
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data ff ff 04 c0 02 4d 3e 2f 6a 20 00 04 2b 44 6f c1 4e 59
+end

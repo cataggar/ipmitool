@@ -1,0 +1,23 @@
+#!golden 1
+#!case sl_info_zeroadd
+#!section exit
+0
+#!section stdout
+SEL Information
+Version          : 1.5 (v1.5, v2 compliant)
+Entries          : 4660
+Free Space       : 22136 bytes\x20
+Percent Used     : 28%
+Last Add Time    : Not Available
+Last Del Time    : S+ 79/041 00:20:20
+Overflow         : false
+Supported Cmds   : 'Delete' 'Reserve'\x20
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 34 12 78 56 00 00 00 00 44 33 22 11 0a
+bye

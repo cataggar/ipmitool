@@ -1,0 +1,312 @@
+#!golden 1
+#!case sl_rectypes_elist_vvv
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 0301
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 01
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 595555
+ Description           : Upper Critical going high
+
+SEL Record ID          : 0302
+ Record Type           : bf
+ Timestamp             : 06/14/26 23:50:38 UTC
+ Generator ID          : 0021
+ EvM Revision          : 04
+ Sensor Type           : Voltage
+ Sensor Number         : 02
+ Event Type            : Sensor-specific Discrete
+ Event Direction       : Deassertion Event
+ Event Data            : 010203
+ Description           :\x20
+
+SEL Record ID          : 0303
+ Record Type           : c0  (OEM timestamped)
+ Timestamp             : 06/14/26 23:50:39 UTC
+ Manufactacturer ID    : 665544
+ OEM Defined           : 0123456789ab [..Eg..]
+
+SEL Record ID          : 0304
+ Record Type           : df  (OEM timestamped)
+ Timestamp             : 06/14/26 23:50:40 UTC
+ Manufactacturer ID    : 998877
+ OEM Defined           : ba9876543210 [..vT..]
+
+SEL Record ID          : 0305
+ Record Type           : e0  (OEM non-timestamped)
+ OEM Defined           : 4142434445464748494a4b4c4d [ABCDEFGHIJKLM]
+
+SEL Record ID          : 0306
+ Record Type           : ef  (OEM non-timestamped)
+ OEM Defined           : 7f8000207e4142431fff616263 [....~ABC..abc]
+
+SEL Record ID          : 0307
+ Record Type           : Linux kernel panic (OEM record f0)
+ Panic string          : rnel panic!
+
+SEL Record ID          : 0308
+ Record Type           : ff  (OEM non-timestamped)
+ OEM Defined           : ffffffffffffffffffffffffff [.............]
+
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+sel_info (14 bytes)
+ 51 08 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+SEL Next ID: 0000
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0103024d3e2f6a200004010101595555
+SEL Next ID: 0001
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0203bf4e3e2f6a2100040202ef010203
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Iana: 343
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Iana: 343
+SEL Next ID: 0002
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0303c04f3e2f6a4455660123456789ab
+SEL Next ID: 0003
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0403df503e2f6a778899ba9876543210
+SEL Next ID: 0004
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0503e04142434445464748494a4b4c4d
+SEL Next ID: 0005
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0603ef7f8000207e4142431fff616263
+SEL Next ID: 0006
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0703f06b65726e656c2070616e696321
+SEL Next ID: 0007
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 0803ffffffffffffffffffffffffffff
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 08 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=01 00 01 03 02 4d 3e 2f 6a 20 00 04 01 01 01 59 55 55
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 00 00 ff
+< rule=get_sel_0001 ccode=0x00 len=18 data=02 00 02 03 bf 4e 3e 2f 6a 21 00 04 02 02 ef 01 02 03
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 00 00 ff
+< rule=get_sel_0002 ccode=0x00 len=18 data=03 00 03 03 c0 4f 3e 2f 6a 44 55 66 01 23 45 67 89 ab
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 00 00 ff
+< rule=get_sel_0003 ccode=0x00 len=18 data=04 00 04 03 df 50 3e 2f 6a 77 88 99 ba 98 76 54 32 10
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 04 00 00 ff
+< rule=get_sel_0004 ccode=0x00 len=18 data=05 00 05 03 e0 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=06 00 06 03 ef 7f 80 00 20 7e 41 42 43 1f ff 61 62 63
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 00 00 ff
+< rule=get_sel_0006 ccode=0x00 len=18 data=07 00 07 03 f0 6b 65 72 6e 65 6c 20 70 61 6e 69 63 21
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 07 00 00 ff
+< rule=get_sel_0007 ccode=0x00 len=18 data=ff ff 08 03 ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+bye

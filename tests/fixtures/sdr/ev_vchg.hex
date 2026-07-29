@@ -1,0 +1,20 @@
+# SDR Type 03h - Event-Only Sensor Record, generated for issue #11.
+# Sensor type 2Bh: the version-change clause that deliberately prints nothing.
+
+13 00        # [1:2]  Record ID = 0x0013
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+16           # [5]    Record length = 22 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+10           # [8]    Sensor number
+22           # [9]    Entity ID
+01           # [10]   Entity instance
+2b           # [11]   Sensor type
+6f           # [12]   Event/reading type
+00 00        # [13:14] Sensor record sharing
+00           # [15]   Reserved
+00           # [16]   OEM
+ca           # [17]   ID string type/length: 8-bit ASCII, 10 chars
+56 45 52 20 43 48 41 4e 47 45   # [18:27] "VER CHANGE"

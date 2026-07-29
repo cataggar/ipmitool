@@ -1,0 +1,44 @@
+# A BMC that reports a next record ID of zero.
+# 
+# __ipmi_sel_savelist_entries() treats a next ID of zero as suspicious and
+# retries the Get SEL Entry once before giving up, `because some hardware has
+# quirks and will return 0 randomly'.  The first record here answers zero once
+# and then answers properly; the second answers zero every time.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 03 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000_zero
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  # next id 0 on the first try: the quirk retry
+  data 00 00 01 11 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+  times 1
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 02 11 01 11 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+end
+
+respond get_sel_1102_zero
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 11
+  # next id 0 twice: the walk really does end
+  data 00 00 02 11 02 01 e3 0b 5e 20 00 04 02 31 01 52 a2 b2
+end

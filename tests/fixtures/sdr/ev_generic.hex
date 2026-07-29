@@ -1,0 +1,20 @@
+# SDR Type 03h - Event-Only Sensor Record, generated for issue #11.
+# A carrier for the generic-discrete, OEM and fall-through event type ranges.
+
+15 00        # [1:2]  Record ID = 0x0015
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+13           # [5]    Record length = 19 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+12           # [8]    Sensor number
+07           # [9]    Entity ID
+01           # [10]   Entity instance
+07           # [11]   Sensor type
+6f           # [12]   Event/reading type
+00 00        # [13:14] Sensor record sharing
+00           # [15]   Reserved
+00           # [16]   OEM
+c7           # [17]   ID string type/length: 8-bit ASCII, 7 chars
+47 45 4e 45 52 49 43   # [18:24] "GENERIC"

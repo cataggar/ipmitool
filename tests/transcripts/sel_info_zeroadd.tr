@@ -1,0 +1,21 @@
+# A SEL whose Last Add Time is all zeroes and whose Last Erase Time is not.
+# 
+# ipmi_sel_get_info() reports "Not Available" when the four timestamp bytes are
+# all ones or all zeroes.  The erase timestamp here is 11223344h, four distinct
+# non-zero bytes, and it sits immediately after the add timestamp -- so a
+# comparison that started one byte late would read three bytes of the add
+# timestamp plus 44h and stop saying "Not Available".
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 34 12 78 56 00 00 00 00 44 33 22 11 0a
+end

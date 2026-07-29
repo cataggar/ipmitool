@@ -1,0 +1,1 @@
+0x001F: Event: at Mar 27 06:41:10 2007;from:(0x9a,0,7); sensor:(0xc3,119); event:0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF(asserted): 0xA3 0x00 0x88

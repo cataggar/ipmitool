@@ -1,0 +1,181 @@
+#!golden 1
+#!case sl_kontron_list
+#!section exit
+0
+#!section stdout
+ 700 | 06/14/26 | 23:50:37 UTC | Unknown #0x10 | Push Button | Asserted
+ 701 | 06/14/26 | 23:50:37 UTC | Unknown #0x11 | Software Reset | Asserted
+ 702 | 06/14/26 | 23:50:37 UTC | IPMBL Link State #0x12 | IPMB L Enabled | Asserted
+ 703 | 06/14/26 | 23:50:37 UTC | Board Reset #0x13 | Power Up Reset | Asserted
+ 704 | 06/14/26 | 23:50:37 UTC | POST Value Sensor #0x14 | Post Error (see data2) | Asserted
+ 705 | 06/14/26 | 23:50:37 UTC | FWUM Status #0x15 | Firmware Watchdog Bite, reset occurred | Asserted
+ 706 | 06/14/26 | 23:50:37 UTC | Switch Mngt Software Status #0x16 | Failure (see data2) | Asserted
+ 707 | 06/14/26 | 23:50:37 UTC | OEM Diagnostic Status #0x17 | Pass | Asserted
+ 708 | 06/14/26 | 23:50:37 UTC | Board Reset #0x18 | Asserted | Asserted
+ 709 | 06/14/26 | 23:50:37 UTC | Unknown #0x19 |  | Asserted
+ 70a | 06/14/26 | 23:50:37 UTC | Unknown #0x1a |  | Asserted
+ 70b | 06/14/26 | 23:50:37 UTC | Unknown #0x1b | Transition to M0 | Asserted
+ 710 | 06/14/26 | 23:50:37 UTC | OS Critical Stop #0x30 |  | Asserted
+ 711 | 06/14/26 | 23:50:37 UTC | Unknown #0x31 |  | Asserted
+ 712 | 06/14/26 | 23:50:37 UTC | Unknown #0x32 |  | Asserted
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 0f 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=01 00 00 07 02 4d 3e 2f 6a 20 00 04 c1 10 6f 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 00 00 ff
+< rule=get_sel_0001 ccode=0x00 len=18 data=02 00 01 07 02 4d 3e 2f 6a 20 00 04 c1 11 6f 08 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 00 00 ff
+< rule=get_sel_0002 ccode=0x00 len=18 data=03 00 02 07 02 4d 3e 2f 6a 20 00 04 c3 12 6f 03 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 00 00 ff
+< rule=get_sel_0003 ccode=0x00 len=18 data=04 00 03 07 02 4d 3e 2f 6a 20 00 04 c4 13 6f 09 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 04 00 00 ff
+< rule=get_sel_0004 ccode=0x00 len=18 data=05 00 04 07 02 4d 3e 2f 6a 20 00 04 c6 14 6f 0e 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=06 00 05 07 02 4d 3e 2f 6a 20 00 04 c7 15 6f 08 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 00 00 ff
+< rule=get_sel_0006 ccode=0x00 len=18 data=07 00 06 07 02 4d 3e 2f 6a 20 00 04 c8 16 6f 03 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 07 00 00 ff
+< rule=get_sel_0007 ccode=0x00 len=18 data=08 00 07 07 02 4d 3e 2f 6a 20 00 04 c9 17 6f 01 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 08 00 00 ff
+< rule=get_sel_0008 ccode=0x00 len=18 data=09 00 08 07 02 4d 3e 2f 6a 20 00 04 cf 18 6f 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 09 00 00 ff
+< rule=get_sel_0009 ccode=0x00 len=18 data=0a 00 09 07 02 4d 3e 2f 6a 20 00 04 c1 19 6f 0d 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0a 00 00 ff
+< rule=get_sel_000a ccode=0x00 len=18 data=0b 00 0a 07 02 4d 3e 2f 6a 20 00 04 bf 1a 6f 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0b 00 00 ff
+< rule=get_sel_000b ccode=0x00 len=18 data=0c 00 0b 07 02 4d 3e 2f 6a 20 00 04 f0 1b 6f 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0c 00 00 ff
+< rule=get_sel_000c ccode=0x00 len=18 data=0d 00 10 07 02 4d 3e 2f 6a 20 00 04 20 30 70 00 11 22
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0d 00 00 ff
+< rule=get_sel_000d ccode=0x00 len=18 data=0e 00 11 07 02 4d 3e 2f 6a 20 00 04 c1 31 7e 01 11 22
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0e 00 00 ff
+< rule=get_sel_000e ccode=0x00 len=18 data=ff ff 12 07 02 4d 3e 2f 6a 20 00 04 c1 32 7f 01 11 22
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 01 00 00 00 00 00
+bye

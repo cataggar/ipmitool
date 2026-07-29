@@ -1,0 +1,25 @@
+#!golden 1
+#!case sl_dell_devid_fail
+#!section exit
+0
+#!section stdout
+ 600 | 06/14/26 | 23:50:37 UTC | Memory #0x11 | Correctable ECC | Asserted
+#!section stderr
+Get Device ID command failed: 0xc1 Invalid command
+Get Device ID command failed: 0xc1 Invalid command
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=ff ff 00 06 02 4d 3e 2f 6a 20 00 04 0c 11 6f a0 00 01
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id_fail ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id_fail ccode=0xc1 len=0 data=
+bye

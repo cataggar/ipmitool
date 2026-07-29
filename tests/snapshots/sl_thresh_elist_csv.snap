@@ -1,0 +1,76 @@
+#!golden 1
+#!case sl_thresh_elist_csv
+#!section exit
+0
+#!section stdout
+100,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Non-critical going low ,Asserted,Reading 0
+101,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Non-critical going high,Deasserted,Reading 0 < Threshold 3 % Volts*Watts
+102,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Critical going low ,Asserted,Reading 0
+103,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Critical going high,Deasserted,Reading 0
+104,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Non-recoverable going low ,Deasserted,Reading 25.50
+105,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Non-recoverable going high,Asserted,Reading 25.50 > Threshold 3 % Volts*Watts
+106,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Upper Non-critical going low ,Deasserted,Reading 25.50
+107,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Upper Non-critical going high,Asserted,Reading 25.50
+108,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Upper Critical going low ,Asserted,Reading 0
+109,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Upper Critical going high,Deasserted,Reading 0 < Threshold 3 % Volts*Watts
+10a,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Upper Non-recoverable going low ,Asserted,Reading 0
+10b,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Upper Non-recoverable going high,Deasserted,Reading 0
+10c,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Non-critical going low ,Deasserted,Reading 0
+10d,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Non-critical going high,Asserted,Reading 0 > Threshold 3 % Volts*Watts
+10e,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Critical going low ,Deasserted,Reading 0
+10f,06/14/26,23:50:37 UTC,Temperature VCORE 3V3,Lower Critical going high,Asserted,Reading 0
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 10 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=01 00 00 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 00 55 0a
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=ff ff 05 00 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 05 00 05 17
+< rule=get_sdr_0005 ccode=0x00 len=25 data=ff ff 20 00 2d 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 05 04 06 00 03 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 05 00 1c 17
+< rule=get_sdr_0005 ccode=0x00 len=25 data=ff ff 00 f0 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 56 43 4f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 05 00 33 06
+< rule=get_sdr_0005 ccode=0x00 len=8 data=ff ff 52 45 20 33 56 33
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 00 00 ff
+< rule=get_sel_0001 ccode=0x00 len=18 data=02 00 01 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 11 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 00 00 ff
+< rule=get_sel_0002 ccode=0x00 len=18 data=03 00 02 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 22 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 00 00 ff
+< rule=get_sel_0003 ccode=0x00 len=18 data=04 00 03 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 33 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 04 00 00 ff
+< rule=get_sel_0004 ccode=0x00 len=18 data=05 00 04 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 44 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=06 00 05 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 55 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 00 00 ff
+< rule=get_sel_0006 ccode=0x00 len=18 data=07 00 06 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 66 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 07 00 00 ff
+< rule=get_sel_0007 ccode=0x00 len=18 data=08 00 07 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 77 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 08 00 00 ff
+< rule=get_sel_0008 ccode=0x00 len=18 data=09 00 08 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 88 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 09 00 00 ff
+< rule=get_sel_0009 ccode=0x00 len=18 data=0a 00 09 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 99 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0a 00 00 ff
+< rule=get_sel_000a ccode=0x00 len=18 data=0b 00 0a 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 aa 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0b 00 00 ff
+< rule=get_sel_000b ccode=0x00 len=18 data=0c 00 0b 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 bb 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0c 00 00 ff
+< rule=get_sel_000c ccode=0x00 len=18 data=0d 00 0c 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 c0 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0d 00 00 ff
+< rule=get_sel_000d ccode=0x00 len=18 data=0e 00 0d 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 d1 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0e 00 00 ff
+< rule=get_sel_000e ccode=0x00 len=18 data=0f 00 0e 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 e2 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0f 00 00 ff
+< rule=get_sel_000f ccode=0x00 len=18 data=ff ff 0f 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 f3 55 0a
+bye

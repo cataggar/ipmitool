@@ -1,0 +1,55 @@
+# The same log, but the very first Get SEL Entry returns a next ID of zero.
+# 
+# That drives __ipmi_sel_savelist_entries() into its retry, and the retry returns
+# a next ID of 1.  The skip loop must carry on from record 1 rather than stop, so
+# this pins the inner zero test as well as the outer one.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 05 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000_first
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 00 00 01 90 02 4d 3e 2f 6a 20 00 04 01 20 01 51 a1 b1
+  times 1
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 90 02 4d 3e 2f 6a 20 00 04 01 20 01 51 a1 b1
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 90 02 4d 3e 2f 6a 20 00 04 01 21 01 51 a1 b1
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 90 02 4d 3e 2f 6a 20 00 04 01 22 01 51 a1 b1
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data ff ff 04 90 02 4d 3e 2f 6a 20 00 04 01 23 01 51 a1 b1
+end

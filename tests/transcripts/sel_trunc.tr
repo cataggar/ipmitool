@@ -1,0 +1,182 @@
+# A BMC whose Get SEL Entry replies are truncated to every length from zero to
+# seventeen bytes.
+# 
+# ipmi_sel_get_std_entry() reads eighteen bytes out of the reply without ever
+# consulting rsp->data_len, so a short reply is decoded from whatever the
+# previous reply left behind in the interface's static response buffer.  Record
+# 3000h is fetched first to seed that buffer with a known pattern.
+# 
+# This is the parser's behaviour, not a recommendation; see the tracking issue
+# for lib/ipmi_sel.c's missing length checks.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_3000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 30
+  data ff ff 00 30 02 00 e3 0b 5e 20 00 04 01 77 01 51 a1 b1
+end
+
+respond get_sel_3001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 30
+  # reply truncated to 0 byte(s)
+  data 
+end
+
+respond get_sel_3002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 30
+  # reply truncated to 1 byte(s)
+  data ff
+end
+
+respond get_sel_3003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 30
+  # reply truncated to 2 byte(s)
+  data ff ff
+end
+
+respond get_sel_3004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 30
+  # reply truncated to 3 byte(s)
+  data ff ff 04
+end
+
+respond get_sel_3005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 30
+  # reply truncated to 4 byte(s)
+  data ff ff 05 30
+end
+
+respond get_sel_3006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 30
+  # reply truncated to 5 byte(s)
+  data ff ff 06 30 02
+end
+
+respond get_sel_3007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 30
+  # reply truncated to 6 byte(s)
+  data ff ff 07 30 02 4d
+end
+
+respond get_sel_3008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 30
+  # reply truncated to 7 byte(s)
+  data ff ff 08 30 02 4d 3e
+end
+
+respond get_sel_3009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 30
+  # reply truncated to 8 byte(s)
+  data ff ff 09 30 02 4d 3e 2f
+end
+
+respond get_sel_300a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 30
+  # reply truncated to 9 byte(s)
+  data ff ff 0a 30 02 4d 3e 2f 6a
+end
+
+respond get_sel_300b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 30
+  # reply truncated to 10 byte(s)
+  data ff ff 0b 30 02 4d 3e 2f 6a 20
+end
+
+respond get_sel_300c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 30
+  # reply truncated to 11 byte(s)
+  data ff ff 0c 30 02 4d 3e 2f 6a 20 00
+end
+
+respond get_sel_300d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 30
+  # reply truncated to 12 byte(s)
+  data ff ff 0d 30 02 4d 3e 2f 6a 20 00 04
+end
+
+respond get_sel_300e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 30
+  # reply truncated to 13 byte(s)
+  data ff ff 0e 30 02 4d 3e 2f 6a 20 00 04 0c
+end
+
+respond get_sel_300f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0f 30
+  # reply truncated to 14 byte(s)
+  data ff ff 0f 30 02 4d 3e 2f 6a 20 00 04 0c 8e
+end
+
+respond get_sel_3010
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 10 30
+  # reply truncated to 15 byte(s)
+  data ff ff 10 30 02 4d 3e 2f 6a 20 00 04 0c 8f 01
+end
+
+respond get_sel_3011
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 11 30
+  # reply truncated to 16 byte(s)
+  data ff ff 11 30 02 4d 3e 2f 6a 20 00 04 0c 90 01 61
+end
+
+respond get_sel_3012
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 12 30
+  # reply truncated to 17 byte(s)
+  data ff ff 12 30 02 4d 3e 2f 6a 20 00 04 0c 91 01 61 c1
+end
+
+respond get_sel_ccode
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 99 30
+  ccode 0xcb
+end

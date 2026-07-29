@@ -1,0 +1,250 @@
+#!golden 1
+#!case sl_oemmsg_verbose
+#!section exit
+0
+#!section stdout
+nrecs=7
+SEL Record ID          : 5001
+ Record Type           : e0  (OEM non-timestamped)
+ OEM Defined           : 3132334435363777883a3b3c3d [...D...w.....]
+
+ | Kernel fault Code = 0x31 Sub = 0x33 Flags = 0x77 End = 0x3b | Any E0 recordSEL Record ID          : 5002
+ Record Type           : e0  (OEM non-timestamped)
+ OEM Defined           : 3132339935363777883a3b3c3d [.......w.....]
+
+ | Any E0 recordSEL Record ID          : 5003
+ Record Type           : c0  (OEM timestamped)
+ Timestamp             : 01/01/20 00:08:32 UTC
+ Manufactacturer ID    : 332211
+ OEM Defined           : 414243444546 [ABCDEF]
+
+SEL Record ID          : 5004
+ Record Type           : 02
+ Timestamp             : 01/01/20 00:08:32 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 30
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 4c05
+ Record Type           : d0  (OEM timestamped)
+ Timestamp             : 04/05/06 01:49:05 UTC
+ Manufactacturer ID    : 7c6b5a
+ OEM Defined           : 99aabbccddee [......]
+
+SEL Record ID          : 4c06
+ Record Type           : d0  (OEM timestamped)
+ Timestamp             : 04/05/06 01:53:21 UTC
+ Manufactacturer ID    : 7c6b5a
+ OEM Defined           : 99aabbccddee [......]
+
+SEL Record ID          : 4c07
+ Record Type           : d0  (OEM timestamped)
+ Timestamp             : 04/05/06 01:49:05 UTC
+ Manufactacturer ID    : 7c6b5a
+ OEM Defined           : 99abbbccddee [......]
+
+SEL Record ID          : 5a08
+ Record Type           : d1  (OEM timestamped)
+ Timestamp             : 04/05/06 01:49:05 UTC
+ Manufactacturer ID    : 776655
+ OEM Defined           : 8899a1b2c3d4 [......]
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 08 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=01 00 01 50 e0 31 32 33 44 35 36 37 77 88 3a 3b 3c 3d
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 00 00 ff
+< rule=get_sel_0001 ccode=0x00 len=18 data=02 00 02 50 e0 31 32 33 99 35 36 37 77 88 3a 3b 3c 3d
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 00 00 ff
+< rule=get_sel_0002 ccode=0x00 len=18 data=03 00 03 50 c0 00 e3 0b 5e 11 22 33 41 42 43 44 45 46
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 00 00 ff
+< rule=get_sel_0003 ccode=0x00 len=18 data=04 00 04 50 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 04 00 00 ff
+< rule=get_sel_0004 ccode=0x00 len=18 data=05 00 05 4c d0 11 22 33 44 5a 6b 7c 99 aa bb cc dd ee
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=06 00 06 4c d0 11 23 33 44 5a 6b 7c 99 aa bb cc dd ee
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 00 00 ff
+< rule=get_sel_0006 ccode=0x00 len=18 data=07 00 07 4c d0 11 22 33 44 5a 6b 7c 99 ab bb cc dd ee
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 07 00 00 ff
+< rule=get_sel_0007 ccode=0x00 len=18 data=ff ff 08 5a d1 11 22 33 44 55 66 77 88 99 a1 b2 c3 d4
+bye

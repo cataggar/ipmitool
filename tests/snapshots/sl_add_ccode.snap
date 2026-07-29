@@ -1,0 +1,16 @@
+#!golden 1
+#!case sl_add_ccode
+#!section exit
+1
+#!section stdout
+   0 |  Pre-Init  |0000000000| Temperature #0x30 | Lower Non-critical going high | Deasserted
+#!section stderr
+Add SEL Entry failed: Parameter out of range
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x44 target_cmd=0x00 data=00 00 02 00 00 00 00 41 00 04 01 30 81 51 a1 b1
+< rule=add_sel_fail ccode=0xc9 len=0 data=
+bye

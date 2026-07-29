@@ -1,0 +1,23 @@
+#!golden 1
+#!case sl_info_nocmds
+#!section exit
+0
+#!section stdout
+SEL Information
+Version          : 5.3 (Unknown)
+Entries          : 1
+Free Space       : 65534 bytes\x20
+Percent Used     : unknown
+Last Add Time    : Not Available
+Last Del Time    : Not Available
+Overflow         : true
+Supported Cmds   : None
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=35 01 00 fe ff ff ff ff ff ff ff ff ff 80
+bye

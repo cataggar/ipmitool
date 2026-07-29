@@ -1,0 +1,69 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Kontron, Viking, Supermicro and Quanta OEM event decoding.
+
+[sl_kontron_list]
+desc: Kontron OEM sensor event type table
+args: -I dummy sel list
+transcript: sel_kontron.tr
+covers: sel
+
+[sl_kontron_verbose]
+desc: verbose Kontron OEM sensor event types
+args: -I dummy -v sel elist
+transcript: sel_kontron.tr
+covers: sel
+
+[sl_viking_list]
+desc: Viking OEM description command
+args: -I dummy sel list
+transcript: sel_viking.tr
+covers: sel
+
+[sl_viking_verbose]
+desc: Viking OEM description command, verbose
+args: -I dummy -v sel list
+transcript: sel_viking.tr
+covers: sel
+
+[sl_smc_list]
+desc: Supermicro OEM decoding, IANA 10876
+args: -I dummy sel list
+transcript: sel_smc.tr
+covers: sel
+
+[sl_smc_verbose]
+desc: Supermicro OEM decoding, verbose
+args: -I dummy -v sel list
+transcript: sel_smc.tr
+covers: sel
+
+[sl_smc47488_list]
+desc: Supermicro OEM decoding, IANA 47488
+args: -I dummy sel list
+transcript: sel_smc47488.tr
+covers: sel
+
+[sl_smc_fail]
+desc: Supermicro decoding when the OEM commands fail
+args: -I dummy sel list
+transcript: sel_smc_fail.tr
+covers: sel
+
+[sl_quanta_list]
+desc: Quanta OEM decoding hand-off
+args: -I dummy sel list
+transcript: sel_quanta.tr
+covers: sel
+
+[sl_iana_wide]
+desc: manufacturer ID with three non-zero bytes
+args: -I dummy -vvv sel list
+transcript: sel_iana_wide.tr
+covers: sel
+
+[sl_smc_boardid_fail]
+desc: Supermicro decoding when Get Board ID fails
+args: -I dummy sel list
+transcript: sel_smc_boardid_fail.tr
+covers: sel

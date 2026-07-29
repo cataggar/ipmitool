@@ -1,0 +1,46 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Entity and FRU resolution in `sel get', and event descriptions that
+# depend on event data byte 2.
+
+[sl_entity_get]
+desc: sel get resolving a sensor entity to a FRU device
+args: -I dummy sel get 0x6001
+transcript: sel_entity.tr
+covers: sel
+
+[sl_entity_get2]
+desc: sel get for two records, with the separator line
+args: -I dummy sel get 0x6001 0x6002
+transcript: sel_entity.tr
+covers: sel
+
+[sl_entity_get_v]
+desc: sel get with an entity lookup, verbose
+args: -I dummy -v sel get 0x6002
+transcript: sel_entity.tr
+covers: sel
+
+[sl_entity_elist]
+desc: extended listing against the same SDRs
+args: -I dummy sel elist
+transcript: sel_entity.tr
+covers: sel
+
+[sl_evtdata_list]
+desc: descriptions selected by event data byte 2
+args: -I dummy sel list
+transcript: sel_evtdata.tr
+covers: sel
+
+[sl_evtdata_verbose]
+desc: the same, verbose
+args: -I dummy -v sel list
+transcript: sel_evtdata.tr
+covers: sel
+
+[sl_evtdata_csv]
+desc: the same, CSV
+args: -I dummy -c sel list
+transcript: sel_evtdata.tr
+covers: sel

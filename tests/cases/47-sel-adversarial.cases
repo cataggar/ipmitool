@@ -1,0 +1,191 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Malformed replies, malformed input files and the -O message
+# translation file.
+
+[sl_trunc_get]
+desc: Get SEL Entry replies truncated to every length
+args: -I dummy sel get 0x3000 0x3001 0x3002 0x3003 0x3004 0x3005 0x3006 0x3007 0x3008 0x3009 0x300a 0x300b 0x300c 0x300d 0x300e 0x300f 0x3010 0x3011 0x3012
+transcript: sel_trunc.tr
+covers: sel
+
+[sl_trunc_get_v]
+desc: truncated Get SEL Entry replies, verbose
+args: -I dummy -v sel get 0x3000 0x3001 0x3005 0x3011 0x3012
+transcript: sel_trunc.tr
+covers: sel
+
+[sl_trunc_ccode]
+desc: Get SEL Entry rejected by the BMC
+args: -I dummy sel get 0x3000 0x3099 0x3012
+transcript: sel_trunc.tr
+covers: sel
+
+[sl_trunc_notfound]
+desc: Get SEL Entry for an ID the BMC does not know
+args: -I dummy sel get 0x4242
+transcript: sel_trunc.tr
+covers: sel
+
+[sl_walk_trunc]
+desc: a truncated reply in the middle of a SEL walk
+args: -I dummy sel list
+transcript: sel_walk_trunc.tr
+covers: sel
+
+[sl_walk_trunc_e]
+desc: a truncated reply during an extended SEL walk
+args: -I dummy sel elist
+transcript: sel_walk_trunc.tr
+covers: sel
+
+[sl_walk_ccode]
+desc: Get SEL Entry rejected during a SEL walk
+args: -I dummy sel list
+transcript: sel_walk_ccode.tr
+covers: sel
+
+[sl_oemmsg_list]
+desc: sel -O: OEM records described by a translation file
+args: -I dummy -O {work}/oem.txt sel list
+transcript: sel_oemmsg.tr
+text: oem.txt sel/oemmsg_ok.txt
+covers: sel
+
+[sl_oemmsg_csv]
+desc: sel -O: the same, in CSV form
+args: -I dummy -O {work}/oem.txt -c sel list
+transcript: sel_oemmsg.tr
+text: oem.txt sel/oemmsg_ok.txt
+covers: sel
+
+[sl_oemmsg_verbose]
+desc: sel -O: the same, verbose
+args: -I dummy -O {work}/oem.txt -v sel list
+transcript: sel_oemmsg.tr
+text: oem.txt sel/oemmsg_ok.txt
+covers: sel
+
+[sl_oemmsg_bad]
+desc: sel -O: a translation file with a short line
+args: -I dummy -O {work}/oem.txt sel list
+transcript: sel_oemmsg.tr
+text: oem.txt sel/oemmsg_bad.txt
+covers: sel
+
+[sl_oemmsg_empty]
+desc: sel -O: an empty translation file
+args: -I dummy -O {work}/oem.txt sel list
+transcript: sel_oemmsg.tr
+text: oem.txt sel/oemmsg_empty.txt
+covers: sel
+
+[sl_oemmsg_missing]
+desc: sel -O with a file that does not exist
+args: -I dummy -O {work}/nope.txt sel list
+transcript: sel_oemmsg.tr
+covers: sel
+
+[sl_int_empty]
+desc: sel interpret: an empty file
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_empty.txt
+covers: sel
+
+[sl_int_badid]
+desc: sel interpret: a record ID that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_badid.txt
+covers: sel
+
+[sl_int_badtype]
+desc: sel interpret: a sensor type that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_badtype.txt
+covers: sel
+
+[sl_int_badnum]
+desc: sel interpret: a sensor number that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_badnum.txt
+covers: sel
+
+[sl_int_badevent]
+desc: sel interpret: an event type that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_badevent.txt
+covers: sel
+
+[sl_int_baddata0]
+desc: sel interpret: event data 0 overflowing
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_baddata0.txt
+covers: sel
+
+[sl_int_baddata1]
+desc: sel interpret: event data 1 overflowing
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_baddata1.txt
+covers: sel
+
+[sl_int_baddata2]
+desc: sel interpret: event data 2 overflowing
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_baddata2.txt
+covers: sel
+
+[sl_int_frubad2]
+desc: sel interpret: a FRU id that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_frubad2.txt
+covers: sel
+
+[sl_int_frubad1]
+desc: sel interpret: a previous state that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_frubad1.txt
+covers: sel
+
+[sl_int_frubadcause]
+desc: sel interpret: a cause that overflows
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_frubadcause.txt
+covers: sel
+
+[sl_int_badformat]
+desc: sel interpret with an unknown format
+args: -I dummy sel interpret 674 {work}/log.txt xyz
+transcript: sel_interpret.tr
+text: log.txt sel/pps_empty.txt
+covers: sel
+
+[sl_int_missing]
+desc: sel interpret on a file that does not exist
+args: -I dummy sel interpret 674 {work}/nope.txt pps
+transcript: sel_interpret.tr
+covers: sel
+
+[sl_int_badiana]
+desc: sel interpret with an unparseable IANA
+args: -I dummy sel interpret notanumber {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_empty.txt
+covers: sel
+
+[sl_int_bigiana]
+desc: sel interpret with a wide IANA
+args: -I dummy sel interpret 4293844410 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_empty.txt
+covers: sel

@@ -1,0 +1,15 @@
+# An interface that answers nothing beyond the usual probes.
+# 
+# `sel interpret' does not talk to the BMC: it reparses a text log.  Only the
+# paths that fail before the record is printed are covered here, because
+# ipmi_sel_interpret() leaves its sel_event_record uninitialised and never fills
+# in the timestamp -- there is a FIXME in the source saying so -- so a
+# successfully parsed line prints whatever was on the stack.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end

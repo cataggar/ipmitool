@@ -1,0 +1,32 @@
+#!golden 1
+#!case sl_bytes_csv
+#!section exit
+0
+#!section stdout
+3ca5,06/14/26,23:50:37 UTC,Temperature #0x2d,Upper Critical going high,Asserted
+5ac3,04/05/06,01:49:05 UTC,OEM record c1,332211,a1b2c3d4e5f6
+7e6d,,,OEM record e3,1a2b3c4d5e6f718293a4b5c6d7
+1234, Pre-Init ,0439303757,Voltage #0x11,,Deasserted
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 04 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=01 00 a5 3c 02 4d 3e 2f 6a b7 91 4a 01 2d 01 59 7b 1e
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 00 00 ff
+< rule=get_sel_0001 ccode=0x00 len=18 data=02 00 c3 5a c1 11 22 33 44 11 22 33 a1 b2 c3 d4 e5 f6
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 00 00 ff
+< rule=get_sel_0002 ccode=0x00 len=18 data=03 00 6d 7e e3 1a 2b 3c 4d 5e 6f 71 82 93 a4 b5 c6 d7
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 00 00 ff
+< rule=get_sel_0003 ccode=0x00 len=18 data=ff ff 34 12 02 4d 3e 2f 1a 43 21 04 02 11 ef 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+bye

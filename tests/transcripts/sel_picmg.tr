@@ -1,0 +1,76 @@
+# A BMC that answers Get PICMG Properties, so ipmitool sets intf->picmg_avail.
+# 
+# ipmi_get_oem_sensor_type() then accepts rows tagged with the PICMG IANA in
+# addition to rows tagged with the BMC's own manufacturer, but only remembers
+# them as a fallback: an exact manufacturer match still wins.
+
+default_ccode 0xc1
+
+respond picmg_props
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  # group extension 0, PICMG extension version 2.2
+  data 00 22 00 00
+end
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 07 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 80 02 4d 3e 2f 6a 20 00 04 f0 21 6f 00 11 22
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 80 02 4d 3e 2f 6a 20 00 04 f1 22 6f 01 11 22
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 80 02 4d 3e 2f 6a 20 00 04 f2 23 6f 02 11 22
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 04 80 02 4d 3e 2f 6a 20 00 04 f3 24 6f 03 11 22
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 05 80 02 4d 3e 2f 6a 20 00 04 f4 25 6f 04 11 22
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 06 80 02 4d 3e 2f 6a 20 00 04 f5 26 6f 00 11 22
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data ff ff 07 80 02 4d 3e 2f 6a 20 00 04 c1 27 6f 00 11 22
+end

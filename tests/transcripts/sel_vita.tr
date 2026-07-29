@@ -1,0 +1,102 @@
+# A BMC that answers Get VSO Capabilities, so ipmitool sets intf->vita_avail.
+# 
+# That is the only way to reach the two-table walk in
+# ipmi_get_first_event_sensor_type(): it starts in vita_sensor_event_types and,
+# when that table runs out without a hit, continues into
+# sensor_specific_event_types.  The records below cover a hit in the first
+# table, a hit only in the second, and a code that is in neither.
+# 
+# Get PICMG Properties is left unanswered, because ipmi_main.c only tries VITA
+# discovery when PICMG discovery has failed.
+
+default_ccode 0xc1
+
+respond vso_caps
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  # group extension 03h = VITA, VSO revision 1.1
+  data 03 00 00 00 11
+end
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 0a 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 81 02 4d 3e 2f 6a 20 00 04 f0 41 6f 00 11 22
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 02 81 02 4d 3e 2f 6a 20 00 04 f0 42 6f 07 11 22
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 03 81 02 4d 3e 2f 6a 20 00 04 f1 43 6f 03 11 22
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 04 81 02 4d 3e 2f 6a 20 00 04 f3 44 6f 05 11 22
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 05 81 02 4d 3e 2f 6a 20 00 04 f3 45 6f 06 11 22
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 06 81 02 4d 3e 2f 6a 20 00 04 f2 46 6f 00 11 22
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 07 81 02 4d 3e 2f 6a 20 00 04 f5 47 6f 01 11 22
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 08 81 02 4d 3e 2f 6a 20 00 04 01 48 6f 00 11 22
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 09 81 02 4d 3e 2f 6a 20 00 04 07 49 6f 00 11 22
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data ff ff 0a 81 02 4d 3e 2f 6a 20 00 04 0c 4a 6f 01 11 22
+end

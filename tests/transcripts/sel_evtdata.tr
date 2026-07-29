@@ -1,0 +1,149 @@
+# Records whose description is selected by event data byte 2 as well as by the
+# offset in byte 1.
+# 
+# ipmi_get_event_desc() walks the sensor-specific table with
+# ipmi_get_next_event_sensor_type() and accepts a row either when the row is
+# marked ALL_OFFSETS_SPECIFIED or when bits 7:6 of event data 1 declare byte 2
+# present and byte 2 equals the row's value.  Sensor type 0Fh has three offsets
+# with long data-2 tables, so the walk has to skip past many non-matching rows
+# before it finds the answer -- or run off the end of the table.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 12 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 70 02 4d 3e 2f 6a 20 00 04 0f 10 6f 40 00 00
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 70 02 4d 3e 2f 6a 20 00 04 0f 10 6f 40 03 00
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 70 02 4d 3e 2f 6a 20 00 04 0f 10 6f 40 0d 00
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 70 02 4d 3e 2f 6a 20 00 04 0f 10 6f 40 0e 00
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 70 02 4d 3e 2f 6a 20 00 04 0f 11 6f 41 00 00
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 05 70 02 4d 3e 2f 6a 20 00 04 0f 11 6f 41 0a 00
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 06 70 02 4d 3e 2f 6a 20 00 04 0f 11 6f 41 0f 00
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 07 70 02 4d 3e 2f 6a 20 00 04 0f 12 6f 42 00 00
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 08 70 02 4d 3e 2f 6a 20 00 04 0f 12 6f 42 04 00
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 09 70 02 4d 3e 2f 6a 20 00 04 0f 12 6f 42 09 00
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 0a 70 02 4d 3e 2f 6a 20 00 04 0f 13 6f 00 03 00
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data 0c 00 0b 70 02 4d 3e 2f 6a 20 00 04 0f 14 6f c0 03 00
+end
+
+respond get_sel_000c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 00
+  data 0d 00 0c 70 02 4d 3e 2f 6a 20 00 04 08 15 6f 46 02 00
+end
+
+respond get_sel_000d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 00
+  data 0e 00 0d 70 02 4d 3e 2f 6a 20 00 04 08 16 6f 46 77 00
+end
+
+respond get_sel_000e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 00
+  data 0f 00 0e 70 02 4d 3e 2f 6a 20 00 04 08 17 6f 06 02 00
+end
+
+respond get_sel_000f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0f 00
+  data 10 00 0f 70 02 4d 3e 2f 6a 20 00 04 0c 18 6f 48 02 00
+end
+
+respond get_sel_0010
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 10 00
+  data 11 00 10 70 02 4d 3e 2f 6a 20 00 04 2a 19 6f 41 22 00
+end
+
+respond get_sel_0011
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 11 00
+  data ff ff 11 70 02 4d 3e 2f 6a 20 00 04 2b 1a 6f 47 00 00
+end

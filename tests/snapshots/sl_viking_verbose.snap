@@ -1,0 +1,474 @@
+#!golden 1
+#!case sl_viking_verbose
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 1234
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 30
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           : Drive Slot 7 fault
+
+SEL Record ID          : 5678
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 31
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           : Enclosure hot
+
+SEL Record ID          : 00ab
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 32
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           :\x20
+
+SEL Record ID          : ab00
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 33
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           :\x20
+
+SEL Record ID          : 0005
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 34
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           :\x20
+
+SEL Record ID          : 0006
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 35
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           :\x20
+
+SEL Record ID          : 0007
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 36
+ Event Type            : OEM
+ Event Direction       : Assertion Event
+ Event Data            : 112233
+ Description           :\x20
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2e
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 22
+msg.netfn: 2f
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2e
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 17
+msg.netfn: 2f
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2e
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 2f
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Viking OEM response too short
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2e
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: 2f
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Viking OEM response has unexpected length
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2e
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: 2f
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Viking OEM response has unexpected length
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2e
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: d5
+data_len: 0
+msg.netfn: 2f
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+OEM command returned error code: Command not supported in present state
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 07 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=34 12 34 12 02 4d 3e 2f 6a 20 00 04 20 30 70 11 22 33
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=15 24 00 01 34 12
+< rule=viking_ok ccode=0x00 len=22 data=15 24 00 12 44 72 69 76 65 20 53 6c 6f 74 20 37 20 66 61 75 6c 74
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 34 12 00 ff
+< rule=get_sel_1234 ccode=0x00 len=18 data=78 56 78 56 02 4d 3e 2f 6a 20 00 04 20 31 7e 11 22 33
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=15 24 00 01 78 56
+< rule=viking_ok2 ccode=0x00 len=17 data=15 24 00 0d 45 6e 63 6c 6f 73 75 72 65 20 68 6f 74
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 78 56 00 ff
+< rule=get_sel_5678 ccode=0x00 len=18 data=ab 00 ab 00 02 4d 3e 2f 6a 20 00 04 20 32 71 11 22 33
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=15 24 00 01 ab 00
+< rule=viking_short ccode=0x00 len=4 data=15 24 00 01
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 ab 00 00 ff
+< rule=get_sel_00ab ccode=0x00 len=18 data=00 ab 00 ab 02 4d 3e 2f 6a 20 00 04 20 33 72 11 22 33
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=15 24 00 01 00 ab
+< rule=viking_badlen ccode=0x00 len=6 data=15 24 00 09 41 42
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 ab 00 ff
+< rule=get_sel_ab00 ccode=0x00 len=18 data=05 00 05 00 02 4d 3e 2f 6a 20 00 04 20 34 73 11 22 33
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=15 24 00 01 05 00
+< rule=viking_badiana ccode=0x00 len=6 data=57 01 00 02 41 42
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=06 00 06 00 02 4d 3e 2f 6a 20 00 04 20 35 74 11 22 33
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 15 24 00 01 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=15 24 00 01 06 00
+< rule=viking_ccode ccode=0xd5 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 00 00 ff
+< rule=get_sel_0006 ccode=0x00 len=18 data=ff ff 07 00 02 4d 3e 2f 6a 20 00 04 20 36 7f 11 22 33
+bye

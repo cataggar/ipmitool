@@ -1,0 +1,506 @@
+#!golden 1
+#!case sl_trunc_get
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 3000
+ Record Type           : 02
+ Timestamp             : 01/01/20 00:08:32 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 77
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 0302
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:26:39 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 0302
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:26:39 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 0302
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:26:39 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 0304
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:26:39 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 3005
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:26:39 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 3006
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:26:39 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 3007
+ Record Type           : 02
+ Timestamp             : S+ 70/002 00:24:45 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 3008
+ Record Type           : 02
+ Timestamp             : S+ 70/001 22:38:05 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 3009
+ Record Type           : 02
+ Timestamp             : S+ 70/036 20:02:21 GMT
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 300a
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0001
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 300b
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 300c
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 00
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 300d
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : reserved
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 300e
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 00
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 300f
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 8e
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           :\x20
+
+SEL Record ID          : 3010
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 8f
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 3011
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 90
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 61a1b1
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 3012
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 91
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 61c1b1
+ Description           : Lower Non-critical going high
+
+#!section stderr
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 30 00 ff
+< rule=get_sel_3000 ccode=0x00 len=18 data=ff ff 00 30 02 00 e3 0b 5e 20 00 04 01 77 01 51 a1 b1
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 30 00 ff
+< rule=get_sel_3001 ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 30 00 ff
+< rule=get_sel_3002 ccode=0x00 len=1 data=ff
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 30 00 ff
+< rule=get_sel_3003 ccode=0x00 len=2 data=ff ff
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 04 30 00 ff
+< rule=get_sel_3004 ccode=0x00 len=3 data=ff ff 04
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 30 00 ff
+< rule=get_sel_3005 ccode=0x00 len=4 data=ff ff 05 30
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 30 00 ff
+< rule=get_sel_3006 ccode=0x00 len=5 data=ff ff 06 30 02
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 07 30 00 ff
+< rule=get_sel_3007 ccode=0x00 len=6 data=ff ff 07 30 02 4d
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 08 30 00 ff
+< rule=get_sel_3008 ccode=0x00 len=7 data=ff ff 08 30 02 4d 3e
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 09 30 00 ff
+< rule=get_sel_3009 ccode=0x00 len=8 data=ff ff 09 30 02 4d 3e 2f
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0a 30 00 ff
+< rule=get_sel_300a ccode=0x00 len=9 data=ff ff 0a 30 02 4d 3e 2f 6a
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0b 30 00 ff
+< rule=get_sel_300b ccode=0x00 len=10 data=ff ff 0b 30 02 4d 3e 2f 6a 20
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0c 30 00 ff
+< rule=get_sel_300c ccode=0x00 len=11 data=ff ff 0c 30 02 4d 3e 2f 6a 20 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0d 30 00 ff
+< rule=get_sel_300d ccode=0x00 len=12 data=ff ff 0d 30 02 4d 3e 2f 6a 20 00 04
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0e 30 00 ff
+< rule=get_sel_300e ccode=0x00 len=13 data=ff ff 0e 30 02 4d 3e 2f 6a 20 00 04 0c
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0f 30 00 ff
+< rule=get_sel_300f ccode=0x00 len=14 data=ff ff 0f 30 02 4d 3e 2f 6a 20 00 04 0c 8e
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 10 30 00 ff
+< rule=get_sel_3010 ccode=0x00 len=15 data=ff ff 10 30 02 4d 3e 2f 6a 20 00 04 0c 8f 01
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 11 30 00 ff
+< rule=get_sel_3011 ccode=0x00 len=16 data=ff ff 11 30 02 4d 3e 2f 6a 20 00 04 0c 90 01 61
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 12 30 00 ff
+< rule=get_sel_3012 ccode=0x00 len=17 data=ff ff 12 30 02 4d 3e 2f 6a 20 00 04 0c 91 01 61 c1
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye

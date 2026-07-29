@@ -1,0 +1,81 @@
+# A compact sensor SDR and an event-only SDR behind two SEL entries.
+# 
+# ipmi_sdr_find_sdr_bynumtype() only ever matches full, compact and event-only
+# records, so those are the three arms of the SDR switch in
+# ipmi_sel_print_std_entry() that the command layer can reach.  The compact
+# record is also a threshold sensor, which makes ipmi_sel_print_std_entry() cast
+# it to a full record: that read past the end of the allocation is upstream
+# behaviour and is reproduced deliberately.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 02 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data 01 00
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 01 02 02 4d 3e 2f 6a 20 00 04 04 02 01 51 30 60
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data ff ff 02 02 02 4e 3e 2f 6a 20 00 04 09 03 6f 01 ff ff
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 01 00
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 00 00
+  data 03 00
+  partial 4 1 5
+  blob @sdr/compact_fan.hex
+end
+
+respond get_sdr_0002
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 02 00
+  data 03 00
+  partial 4 1 5
+  blob @sdr/compact_fan.hex
+end
+
+respond get_sdr_0003
+  netfn 0x0a
+  cmd 0x23
+  match 01 00 03 00
+  data ff ff
+  partial 4 1 5
+  blob @sdr/eventonly_pwr.hex
+end

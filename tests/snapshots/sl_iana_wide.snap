@@ -1,0 +1,139 @@
+#!golden 1
+#!case sl_iana_wide
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 0b00
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 40
+ Event Type            : Sensor-specific Discrete
+ Event Direction       : Assertion Event
+ Event Data            : a01122
+ Description           : Correctable ECC
+
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+sel_info (14 bytes)
+ 51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+SEL Next ID: 0000
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+SEL Entry: 000b024d3e2f6a2000040c406fa01122
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Iana: 1039546
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Iana: 1039546
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=ff ff 00 0b 02 4d 3e 2f 6a 20 00 04 0c 40 6f a0 11 22
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf ba dc 0f 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf ba dc 0f 01 00 00 00 00 00
+bye

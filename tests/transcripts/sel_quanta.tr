@@ -1,0 +1,77 @@
+# A Quanta BMC (IANA 7244).
+# 
+# ipmi_get_oem_desc() forwards Quanta records to oem_qct_get_evt_desc(), which
+# still lives in lib/ipmi_quantaoem.c.  This transcript pins that the hand-off
+# happens and that the Get Platform ID command (netfn 36h, cmd 65h) is issued
+# with the expected magic bytes.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 4c 1c 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 06 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 0a 02 4d 3e 2f 6a 20 00 04 0c 40 6f 00 11 00
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 0a 02 4d 3e 2f 6a 20 00 04 0c 41 6f 00 11 4b
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 0a 02 4d 3e 2f 6a 20 00 04 0c 42 6f 00 11 ff
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 0a 02 4d 3e 2f 6a 20 00 04 0c 43 6f 00 11 92
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 0a 02 4d 3e 2f 6a 20 00 04 01 44 6f 00 11 92
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data ff ff 05 0a 02 4d 3e 2f 6a 20 00 04 0c 45 03 00 11 92
+end
+
+respond platform_purley
+  netfn 0x36
+  cmd 0x65
+  # OEM_QCT_PLATFORM_PURLEY
+  data 02 00
+  times 4
+end
+
+respond platform_other
+  netfn 0x36
+  cmd 0x65
+  # OEM_QCT_PLATFORM_GRANTLEY
+  data 01 00
+end

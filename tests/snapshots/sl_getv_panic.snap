@@ -1,0 +1,92 @@
+#!golden 1
+#!case sl_getv_panic
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 7151
+ Record Type           : Linux kernel panic (OEM record f0)
+ Panic string          : PANIC HERE!
+
+Sensor ID              : PANIC SENSOR (0x48)
+Entity ID              : 30.1 (Cooling Unit)
+Sensor Type            : OS Critical Stop (0x20)
+
+----------------------
+
+SEL Record ID          : 7152
+ Record Type           : f1
+ Generator ID          : 494e
+ EvM Revision          : 43
+ Sensor Type           : OS Critical Stop
+ Sensor Number         : 48
+ Event Type            : Reserved
+ Event Direction       : Assertion Event
+ Event Data (RAW)      : 524521
+ Event Data            : 524521
+ Description           :\x20
+
+Sensor ID              : PANIC SENSOR (0x48)
+Entity ID              : 30.1 (Cooling Unit)
+Sensor Type            : OS Critical Stop (0x20)
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 51 71 00 ff
+< rule=get_sel_7151 ccode=0x00 len=18 data=ff ff 51 71 f0 11 22 50 41 4e 49 43 20 48 45 52 45 21
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 09 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_0000 ccode=0x00 len=7 data=02 00 01 00 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 05 17
+< rule=get_sdr_0001 ccode=0x00 len=25 data=02 00 20 00 01 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 1c 17
+< rule=get_sdr_0001 ccode=0x00 len=25 data=02 00 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 43 50 55
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 33 06
+< rule=get_sdr_0001 ccode=0x00 len=8 data=02 00 31 20 54 65 6d 70
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 00 05
+< rule=get_sdr_0002 ccode=0x00 len=7 data=10 00 02 00 51 02 1f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 05 17
+< rule=get_sdr_0002 ccode=0x00 len=25 data=10 00 20 00 02 1d 01 7f 68 04 01 ff 3f ff 3f 3f 3f 00 12 00 00 00 02 02 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 02 00 1c 08
+< rule=get_sdr_0002 ccode=0x00 len=10 data=10 00 00 00 00 c4 46 41 4e 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 10 00 00 05
+< rule=get_sdr_0010 ccode=0x00 len=7 data=11 00 10 00 51 03 15
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 10 00 05 15
+< rule=get_sdr_0010 ccode=0x00 len=23 data=11 00 20 00 00 20 01 0c 6f 00 00 00 00 c9 4d 45 4d 20 53 4c 4f 54 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 11 00 00 05
+< rule=get_sdr_0011 ccode=0x00 len=7 data=12 00 11 00 51 03 15
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 11 00 05 15
+< rule=get_sdr_0011 ccode=0x00 len=23 data=12 00 20 00 03 20 02 0c 6f 00 00 00 00 c9 4d 45 4d 20 53 4c 4f 54 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 12 00 00 05
+< rule=get_sdr_0012 ccode=0x00 len=7 data=13 00 12 00 51 03 12
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 12 00 05 12
+< rule=get_sdr_0012 ccode=0x00 len=20 data=13 00 20 00 00 04 01 0d 6f 00 00 00 00 c6 44 52 49 56 45 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 13 00 00 05
+< rule=get_sdr_0013 ccode=0x00 len=7 data=14 00 13 00 51 03 16
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 13 00 05 16
+< rule=get_sdr_0013 ccode=0x00 len=24 data=14 00 20 00 10 22 01 2b 6f 00 00 00 00 ca 56 45 52 20 43 48 41 4e 47 45
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 14 00 00 05
+< rule=get_sdr_0014 ccode=0x00 len=7 data=15 00 14 00 51 03 14
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 14 00 05 14
+< rule=get_sdr_0014 ccode=0x00 len=22 data=15 00 20 00 11 22 02 2c 6f 00 00 00 00 c8 46 57 20 45 52 52 4f 52
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 15 00 00 05
+< rule=get_sdr_0015 ccode=0x00 len=7 data=16 00 15 00 51 03 13
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 15 00 05 13
+< rule=get_sdr_0015 ccode=0x00 len=21 data=16 00 20 00 12 07 01 07 6f 00 00 00 00 c7 47 45 4e 45 52 49 43
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 16 00 00 05
+< rule=get_sdr_0016 ccode=0x00 len=7 data=ff ff 16 00 51 03 18
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 16 00 05 17
+< rule=get_sdr_0016 ccode=0x00 len=25 data=ff ff 4e 01 48 1e 01 20 6f 00 00 00 00 cc 50 41 4e 49 43 20 53 45 4e 53 4f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 16 00 1c 01
+< rule=get_sdr_0016 ccode=0x00 len=3 data=ff ff 52
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 52 71 00 ff
+< rule=get_sel_7152 ccode=0x00 len=18 data=ff ff 52 71 f1 11 22 50 41 4e 49 43 20 48 45 52 45 21
+bye

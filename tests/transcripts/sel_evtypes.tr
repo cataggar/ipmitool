@@ -1,0 +1,445 @@
+# Every event/reading type class and a spread of sensor types.
+# 
+#   02h..0ch  generic discrete, resolved through generic_event_types[]
+#   0dh..0fh  reserved reading types with no table entry
+#   6fh       sensor-specific discrete, over nineteen sensor types
+#   70h..7fh  OEM event/reading types, which take the OEM description path
+#   2dh..ffh  sensor type codes past SENSOR_TYPE_MAX and into the OEM range
+# 
+# The last two records are the memory-ECC special case in
+# ipmi_sel_print_std_entry() (sensor type 0Ch, sensor number 0, EV1[5:4] == 2)
+# and the version-change branch of ipmi_sel_print_extended_entry_verbose() whose
+# upstream body is empty.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 3b 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data 01 00
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 04 02 4d 3e 2f 6a 20 00 04 05 02 02 02 1f 2e
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 04 02 4d 3e 2f 6a 20 00 04 05 03 03 02 1f 2e
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 04 02 4d 3e 2f 6a 20 00 04 05 04 04 02 1f 2e
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 04 02 4d 3e 2f 6a 20 00 04 05 05 05 02 1f 2e
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 04 02 4d 3e 2f 6a 20 00 04 05 06 06 02 1f 2e
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 05 04 02 4d 3e 2f 6a 20 00 04 05 07 07 02 1f 2e
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 06 04 02 4d 3e 2f 6a 20 00 04 05 08 08 02 1f 2e
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 07 04 02 4d 3e 2f 6a 20 00 04 05 09 09 02 1f 2e
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 08 04 02 4d 3e 2f 6a 20 00 04 05 0a 0a 02 1f 2e
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 09 04 02 4d 3e 2f 6a 20 00 04 05 0b 0b 02 1f 2e
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 0a 04 02 4d 3e 2f 6a 20 00 04 05 0c 0c 02 1f 2e
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data 0c 00 0b 04 02 4d 3e 2f 6a 20 00 04 05 0d 0d 02 1f 2e
+end
+
+respond get_sel_000c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0c 00
+  data 0d 00 0c 04 02 4d 3e 2f 6a 20 00 04 05 0e 0e 02 1f 2e
+end
+
+respond get_sel_000d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0d 00
+  data 0e 00 0d 04 02 4d 3e 2f 6a 20 00 04 05 0f 0f 02 1f 2e
+end
+
+respond get_sel_000e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0e 00
+  data 0f 00 0e 04 02 4d 3e 2f 6a 20 00 04 01 01 6f 01 ff ff
+end
+
+respond get_sel_000f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0f 00
+  data 10 00 0f 04 02 4d 3e 2f 6a 20 00 04 05 05 6f 01 ff ff
+end
+
+respond get_sel_0010
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 10 00
+  data 11 00 10 04 02 4d 3e 2f 6a 20 00 04 07 07 6f 01 ff ff
+end
+
+respond get_sel_0011
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 11 00
+  data 12 00 11 04 02 4d 3e 2f 6a 20 00 04 08 08 6f 01 ff ff
+end
+
+respond get_sel_0012
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 12 00
+  data 13 00 12 04 02 4d 3e 2f 6a 20 00 04 09 09 6f 01 ff ff
+end
+
+respond get_sel_0013
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 13 00
+  data 14 00 13 04 02 4d 3e 2f 6a 20 00 04 0c 0c 6f 01 ff ff
+end
+
+respond get_sel_0014
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 14 00
+  data 15 00 14 04 02 4d 3e 2f 6a 20 00 04 0f 0f 6f 01 ff ff
+end
+
+respond get_sel_0015
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 15 00
+  data 16 00 15 04 02 4d 3e 2f 6a 20 00 04 10 10 6f 01 ff ff
+end
+
+respond get_sel_0016
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 16 00
+  data 17 00 16 04 02 4d 3e 2f 6a 20 00 04 12 12 6f 01 ff ff
+end
+
+respond get_sel_0017
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 17 00
+  data 18 00 17 04 02 4d 3e 2f 6a 20 00 04 13 13 6f 01 ff ff
+end
+
+respond get_sel_0018
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 18 00
+  data 19 00 18 04 02 4d 3e 2f 6a 20 00 04 14 14 6f 01 ff ff
+end
+
+respond get_sel_0019
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 19 00
+  data 1a 00 19 04 02 4d 3e 2f 6a 20 00 04 19 19 6f 01 ff ff
+end
+
+respond get_sel_001a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 1a 00
+  data 1b 00 1a 04 02 4d 3e 2f 6a 20 00 04 1d 1d 6f 01 ff ff
+end
+
+respond get_sel_001b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 1b 00
+  data 1c 00 1b 04 02 4d 3e 2f 6a 20 00 04 21 21 6f 01 ff ff
+end
+
+respond get_sel_001c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 1c 00
+  data 1d 00 1c 04 02 4d 3e 2f 6a 20 00 04 23 23 6f 01 ff ff
+end
+
+respond get_sel_001d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 1d 00
+  data 1e 00 1d 04 02 4d 3e 2f 6a 20 00 04 28 28 6f 01 ff ff
+end
+
+respond get_sel_001e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 1e 00
+  data 1f 00 1e 04 02 4d 3e 2f 6a 20 00 04 2a 2a 6f 01 ff ff
+end
+
+respond get_sel_001f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 1f 00
+  data 20 00 1f 04 02 4d 3e 2f 6a 20 00 04 2b 2b 6f 01 ff ff
+end
+
+respond get_sel_0020
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 20 00
+  data 21 00 20 04 02 4d 3e 2f 6a 20 00 04 2c 2c 6f 01 ff ff
+end
+
+respond get_sel_0021
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 21 00
+  data 22 00 21 04 02 4d 3e 2f 6a 20 00 04 2d 71 6f 00 11 22
+end
+
+respond get_sel_0022
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 22 00
+  data 23 00 22 04 02 4d 3e 2f 6a 20 00 04 40 71 6f 00 11 22
+end
+
+respond get_sel_0023
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 23 00
+  data 24 00 23 04 02 4d 3e 2f 6a 20 00 04 bf 71 6f 00 11 22
+end
+
+respond get_sel_0024
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 24 00
+  data 25 00 24 04 02 4d 3e 2f 6a 20 00 04 c0 71 6f 00 11 22
+end
+
+respond get_sel_0025
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 25 00
+  data 26 00 25 04 02 4d 3e 2f 6a 20 00 04 d0 71 6f 00 11 22
+end
+
+respond get_sel_0026
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 26 00
+  data 27 00 26 04 02 4d 3e 2f 6a 20 00 04 ef 71 6f 00 11 22
+end
+
+respond get_sel_0027
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 27 00
+  data 28 00 27 04 02 4d 3e 2f 6a 20 00 04 f0 71 6f 00 11 22
+end
+
+respond get_sel_0028
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 28 00
+  data 29 00 28 04 02 4d 3e 2f 6a 20 00 04 ff 71 6f 00 11 22
+end
+
+respond get_sel_0029
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 29 00
+  data 2a 00 29 04 02 4d 3e 2f 6a 20 00 04 25 70 70 03 44 55
+end
+
+respond get_sel_002a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 2a 00
+  data 2b 00 2a 04 02 4d 3e 2f 6a 20 00 04 25 71 71 03 44 55
+end
+
+respond get_sel_002b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 2b 00
+  data 2c 00 2b 04 02 4d 3e 2f 6a 20 00 04 25 72 72 03 44 55
+end
+
+respond get_sel_002c
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 2c 00
+  data 2d 00 2c 04 02 4d 3e 2f 6a 20 00 04 25 73 73 03 44 55
+end
+
+respond get_sel_002d
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 2d 00
+  data 2e 00 2d 04 02 4d 3e 2f 6a 20 00 04 25 74 74 03 44 55
+end
+
+respond get_sel_002e
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 2e 00
+  data 2f 00 2e 04 02 4d 3e 2f 6a 20 00 04 25 75 75 03 44 55
+end
+
+respond get_sel_002f
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 2f 00
+  data 30 00 2f 04 02 4d 3e 2f 6a 20 00 04 25 76 76 03 44 55
+end
+
+respond get_sel_0030
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 30 00
+  data 31 00 30 04 02 4d 3e 2f 6a 20 00 04 25 77 77 03 44 55
+end
+
+respond get_sel_0031
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 31 00
+  data 32 00 31 04 02 4d 3e 2f 6a 20 00 04 25 78 78 03 44 55
+end
+
+respond get_sel_0032
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 32 00
+  data 33 00 32 04 02 4d 3e 2f 6a 20 00 04 25 79 79 03 44 55
+end
+
+respond get_sel_0033
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 33 00
+  data 34 00 33 04 02 4d 3e 2f 6a 20 00 04 25 7a 7a 03 44 55
+end
+
+respond get_sel_0034
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 34 00
+  data 35 00 34 04 02 4d 3e 2f 6a 20 00 04 25 7b 7b 03 44 55
+end
+
+respond get_sel_0035
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 35 00
+  data 36 00 35 04 02 4d 3e 2f 6a 20 00 04 25 7c 7c 03 44 55
+end
+
+respond get_sel_0036
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 36 00
+  data 37 00 36 04 02 4d 3e 2f 6a 20 00 04 25 7d 7d 03 44 55
+end
+
+respond get_sel_0037
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 37 00
+  data 38 00 37 04 02 4d 3e 2f 6a 20 00 04 25 7e 7e 03 44 55
+end
+
+respond get_sel_0038
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 38 00
+  data 39 00 38 04 02 4d 3e 2f 6a 20 00 04 25 7f 7f 03 44 55
+end
+
+respond get_sel_0039
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 39 00
+  data 3a 00 39 04 02 4d 3e 2f 6a 20 00 04 0c 00 6f 20 00 35
+end
+
+respond get_sel_003a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 3a 00
+  data ff ff 3a 04 02 4d 3e 2f 6a 20 00 04 2b 03 6f c1 07 08
+end

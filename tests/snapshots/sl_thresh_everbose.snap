@@ -1,0 +1,527 @@
+#!golden 1
+#!case sl_thresh_everbose
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 0100
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 00550a
+ Description           : Lower Non-critical going low\x20
+
+SEL Record ID          : 0101
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : 11550a
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 0102
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 22550a
+ Description           : Lower Critical going low\x20
+
+SEL Record ID          : 0103
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : 33550a
+ Description           : Lower Critical going high
+
+SEL Record ID          : 0104
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : 44550a
+ Description           : Lower Non-recoverable going low\x20
+
+SEL Record ID          : 0105
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 55550a
+ Description           : Lower Non-recoverable going high
+
+SEL Record ID          : 0106
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : 66550a
+ Description           : Upper Non-critical going low\x20
+
+SEL Record ID          : 0107
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 77550a
+ Description           : Upper Non-critical going high
+
+SEL Record ID          : 0108
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 88550a
+ Description           : Upper Critical going low\x20
+
+SEL Record ID          : 0109
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : 99550a
+ Description           : Upper Critical going high
+
+SEL Record ID          : 010a
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : aa550a
+ Description           : Upper Non-recoverable going low\x20
+
+SEL Record ID          : 010b
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : bb550a
+ Description           : Upper Non-recoverable going high
+
+SEL Record ID          : 010c
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : c0550a
+ Description           : Lower Non-critical going low\x20
+
+SEL Record ID          : 010d
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : d1550a
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 010e
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : e2550a
+ Description           : Lower Critical going low\x20
+
+SEL Record ID          : 010f
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 2d
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : f3550a
+ Description           : Lower Critical going high
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 10 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=01 00 00 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 00 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 00 00 ff
+< rule=get_sel_0001 ccode=0x00 len=18 data=02 00 01 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 11 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 00 00 ff
+< rule=get_sel_0002 ccode=0x00 len=18 data=03 00 02 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 22 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 00 00 ff
+< rule=get_sel_0003 ccode=0x00 len=18 data=04 00 03 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 33 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 04 00 00 ff
+< rule=get_sel_0004 ccode=0x00 len=18 data=05 00 04 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 44 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=06 00 05 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 55 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 06 00 00 ff
+< rule=get_sel_0006 ccode=0x00 len=18 data=07 00 06 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 66 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 07 00 00 ff
+< rule=get_sel_0007 ccode=0x00 len=18 data=08 00 07 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 77 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 08 00 00 ff
+< rule=get_sel_0008 ccode=0x00 len=18 data=09 00 08 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 88 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 09 00 00 ff
+< rule=get_sel_0009 ccode=0x00 len=18 data=0a 00 09 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 99 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0a 00 00 ff
+< rule=get_sel_000a ccode=0x00 len=18 data=0b 00 0a 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 aa 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0b 00 00 ff
+< rule=get_sel_000b ccode=0x00 len=18 data=0c 00 0b 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 bb 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0c 00 00 ff
+< rule=get_sel_000c ccode=0x00 len=18 data=0d 00 0c 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 c0 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0d 00 00 ff
+< rule=get_sel_000d ccode=0x00 len=18 data=0e 00 0d 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 d1 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0e 00 00 ff
+< rule=get_sel_000e ccode=0x00 len=18 data=0f 00 0e 01 02 4d 3e 2f 6a 20 00 04 01 2d 81 e2 55 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0f 00 00 ff
+< rule=get_sel_000f ccode=0x00 len=18 data=ff ff 0f 01 02 4d 3e 2f 6a 20 00 04 01 2d 01 f3 55 0a
+bye

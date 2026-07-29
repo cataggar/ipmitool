@@ -1,0 +1,126 @@
+#!golden 1
+#!case sl_readraw_verbose
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 2101
+ Record Type           : 02
+ Timestamp             : 01/01/20 00:08:32 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 30
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 2102
+ Record Type           : 02
+ Timestamp             : 01/01/20 00:08:33 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Processor
+ Sensor Number         : 33
+ Event Type            : Sensor-specific Discrete
+ Event Direction       : Assertion Event
+ Event Data            : 00a4b4
+ Description           : IERR
+
+SEL Record ID          : 2103
+ Record Type           : c2  (OEM timestamped)
+ Timestamp             : 01/01/20 00:08:34 UTC
+ Manufactacturer ID    : 112233
+ OEM Defined           : 414243444546 [ABCDEF]
+
+SEL Record ID          : 2104
+ Record Type           : e4  (OEM non-timestamped)
+ OEM Defined           : 2122232425262728292a2b2c2d [.............]
+
+SEL Record ID          : 2105
+ Record Type           : 02
+ Timestamp             : S+ 87/005 18:48:31 GMT
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 31
+ Event Type            : Threshold
+ Event Direction       : Deassertion Event
+ Event Data            : 500000
+ Description           : Lower Non-critical going low\x20
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+bye

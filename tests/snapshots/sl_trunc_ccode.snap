@@ -1,0 +1,67 @@
+#!golden 1
+#!case sl_trunc_ccode
+#!section exit
+1
+#!section stdout
+SEL Record ID          : 3000
+ Record Type           : 02
+ Timestamp             : 01/01/20 00:08:32 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Temperature
+ Sensor Number         : 77
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 51a1b1
+ Description           : Lower Non-critical going high
+
+SEL Record ID          : 3012
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 91
+ Event Type            : Threshold
+ Event Direction       : Assertion Event
+ Event Data            : 61c1b1
+ Description           : Lower Non-critical going high
+
+#!section stderr
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Get SEL Entry 3099 command failed: Requested sensor, data, or record not found
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 30 00 ff
+< rule=get_sel_3000 ccode=0x00 len=18 data=ff ff 00 30 02 00 e3 0b 5e 20 00 04 01 77 01 51 a1 b1
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 99 30 00 ff
+< rule=get_sel_ccode ccode=0xcb len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 12 30 00 ff
+< rule=get_sel_3012 ccode=0x00 len=17 data=ff ff 12 30 02 4d 3e 2f 6a 20 00 04 0c 91 01 61 c1
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye

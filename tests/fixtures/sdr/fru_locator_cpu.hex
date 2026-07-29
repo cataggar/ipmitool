@@ -1,0 +1,20 @@
+# SDR Type 11h - FRU Device Locator Record for entity 03h/01h (Processor).
+# Parsed by struct sdr_record_fru_locator.
+
+09 00        # [1:2]  Record ID = 0x0009
+51           # [3]    SDR version 1.5
+11           # [4]    Record type 11h = FRU Device Locator
+13           # [5]    Record length = 19 bytes follow
+
+20           # [6]    Device access address (BMC)
+03           # [7]    FRU device ID / slave address = 3
+80           # [8]    Logical FRU device, LUN 0, bus 0
+00           # [9]    Channel number
+00           # [10]   Reserved
+10           # [11]   Device type 10h = logical FRU inventory device
+00           # [12]   Device type modifier 00h = IPMI FRU inventory
+03           # [13]   Entity ID 3 = Processor
+01           # [14]   Entity instance 1
+00           # [15]   OEM
+c8           # [16]   ID string type/length: 8-bit ASCII, 8 characters
+43 50 55 20 46 52 55 31   # [17:24] "CPU FRU1"

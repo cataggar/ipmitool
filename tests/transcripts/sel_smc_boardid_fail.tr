@@ -1,0 +1,31 @@
+# A Supermicro BMC that answers Get Device ID but rejects Get Board ID.
+# 
+# ipmi_get_oem_id() returns zero in that case and get_supermicro_evt_desc()
+# abandons the decode.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 7c 2a 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 01 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data ff ff 10 09 02 4d 3e 2f 6a 20 00 04 0c 40 6f 00 b7 0e
+end
+
+respond board_id_fail
+  netfn 0x30
+  cmd 0x21
+  ccode 0xc1
+end

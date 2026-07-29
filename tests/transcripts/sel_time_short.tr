@@ -1,0 +1,25 @@
+# A BMC whose Get SEL Time reply is one byte short.
+# 
+# ipmi_sel_get_time() checks the length before decoding, which is unusual for
+# this file; the check is pinned here.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_time_short
+  netfn 0x0a
+  cmd 0x48
+  # three bytes: the length check rejects this
+  data 4d 3e 2f
+end
+
+respond set_sel_time
+  netfn 0x0a
+  cmd 0x49
+  data 
+end

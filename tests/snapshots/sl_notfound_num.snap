@@ -1,0 +1,36 @@
+#!golden 1
+#!case sl_notfound_num
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 8001
+ Record Type           : 00
+ Timestamp             : S+ 70/001 00:00:00 GMT
+ Generator ID          : 0000
+ EvM Revision          : 04
+ Sensor Type           : reserved
+ Sensor Number         : 01
+ Event Type            : Unspecified
+ Event Direction       : Assertion Event
+ Event Data            : 000000
+ Description           :\x20
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 80 00 ff
+< rule=get_sel_8001 ccode=0x00 len=18 data=ff ff 01 80 00 00 00 00 00 00 00 04 00 01 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_0000 ccode=0x00 len=7 data=ff ff 15 00 51 03 13
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 15 00 05 13
+< rule=get_sdr_0015 ccode=0x00 len=21 data=ff ff 20 00 12 07 01 07 6f 00 00 00 00 c7 47 45 4e 45 52 49 43
+bye

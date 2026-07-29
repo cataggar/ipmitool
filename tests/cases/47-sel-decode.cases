@@ -1,0 +1,99 @@
+# Generated for issue #11: lib/ipmi_sel.c.
+#
+# Record types, event/reading types, sensor types and SDR resolution.
+
+[sl_thresh_elist]
+desc: threshold events resolved through a full SDR
+args: -I dummy sel elist
+transcript: sel_thresh.tr
+covers: sel
+
+[sl_thresh_elist_csv]
+desc: same threshold events in csv form
+args: -I dummy -c sel elist
+transcript: sel_thresh.tr
+covers: sel
+
+[sl_thresh_everbose]
+desc: verbose extended listing of the threshold events
+args: -I dummy -v sel elist
+transcript: sel_thresh.tr
+covers: sel
+
+[sl_thresh_list]
+desc: threshold events without the SDR lookup
+args: -I dummy sel list
+transcript: sel_thresh.tr
+covers: sel
+
+[sl_thresh_get]
+desc: sel get uses the extended verbose printer
+args: -I dummy sel get 1 2 3 4
+transcript: sel_thresh.tr
+covers: sel
+
+[sl_sdrtypes_elist]
+desc: compact and event-only SDRs behind SEL entries
+args: -I dummy sel elist
+transcript: sel_sdrtypes.tr
+covers: sel
+
+[sl_sdrtypes_everbose]
+desc: verbose extended listing over both SDR types
+args: -I dummy -v sel elist
+transcript: sel_sdrtypes.tr
+covers: sel
+
+[sl_sdrtypes_get]
+desc: sel get prints the SDR and any FRU for the entity
+args: -I dummy sel get 1 2
+transcript: sel_sdrtypes.tr
+covers: sel
+
+[sl_rectypes_list]
+desc: one SEL record of every record-type class
+args: -I dummy sel list
+transcript: sel_rectypes.tr
+covers: sel
+
+[sl_rectypes_csv]
+desc: every record-type class in csv form
+args: -I dummy -c sel list
+transcript: sel_rectypes.tr
+covers: sel
+
+[sl_rectypes_verbose]
+desc: verbose form of every record-type class
+args: -I dummy -v sel list
+transcript: sel_rectypes.tr
+covers: sel
+
+[sl_rectypes_elist]
+desc: extended listing of every record-type class
+args: -I dummy sel elist
+transcript: sel_rectypes.tr
+covers: sel
+
+[sl_rectypes_get_panic]
+desc: sel get on the kernel panic pseudo record
+args: -I dummy sel get 7
+transcript: sel_rectypes.tr
+covers: sel
+
+[sl_evtypes_list]
+desc: every event/reading type class and many sensor types
+args: -I dummy sel list
+transcript: sel_evtypes.tr
+covers: sel
+
+[sl_evtypes_verbose]
+desc: verbose form of every event/reading type class
+args: -I dummy -v sel list
+transcript: sel_evtypes.tr
+covers: sel
+
+[sl_evtypes_csv]
+desc: every event/reading type class in csv form
+args: -I dummy -c sel list
+transcript: sel_evtypes.tr
+covers: sel

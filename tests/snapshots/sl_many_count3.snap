@@ -1,0 +1,23 @@
+#!golden 1
+#!case sl_many_count3
+#!section exit
+0
+#!section stdout
+1101 | 01/01/20 | 00:08:32 UTC | Temperature #0x30 | Lower Non-critical going high | Asserted
+1102 | 01/01/20 | 00:08:33 UTC | Voltage #0x31 | Lower Critical going low  | Asserted
+1103 | 01/01/20 | 00:08:34 UTC | Fan #0x32 | Upper Non-critical going high | Asserted
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info ccode=0x00 len=14 data=51 06 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 00 00 00 ff
+< rule=get_sel_0000 ccode=0x00 len=18 data=02 11 01 11 02 00 e3 0b 5e 20 00 04 01 30 01 51 a1 b1
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 02 11 00 ff
+< rule=get_sel_1102 ccode=0x00 len=18 data=03 11 02 11 02 01 e3 0b 5e 20 00 04 02 31 01 52 a2 b2
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 03 11 00 ff
+< rule=get_sel_1103 ccode=0x00 len=18 data=04 11 03 11 02 02 e3 0b 5e 20 00 04 04 32 01 07 a3 b3
+bye

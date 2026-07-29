@@ -1,0 +1,20 @@
+# SDR Type 03h - Event-Only Sensor Record, generated for issue #11.
+# Sensor number 0, sensor type 0Ch: the CPU/DIMM clause of ipmi_sel_print_extended_entry_verbose().
+
+10 00        # [1:2]  Record ID = 0x0010
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+15           # [5]    Record length = 21 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+00           # [8]    Sensor number
+20           # [9]    Entity ID
+01           # [10]   Entity instance
+0c           # [11]   Sensor type
+6f           # [12]   Event/reading type
+00 00        # [13:14] Sensor record sharing
+00           # [15]   Reserved
+00           # [16]   OEM
+c9           # [17]   ID string type/length: 8-bit ASCII, 9 chars
+4d 45 4d 20 53 4c 4f 54 30   # [18:26] "MEM SLOT0"

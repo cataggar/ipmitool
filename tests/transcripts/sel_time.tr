@@ -1,0 +1,25 @@
+# A BMC with a working SEL clock.
+# 
+# The reported time is 6A2F3E4Dh; all four bytes differ and none is zero, so a
+# listing of it pins both the width and the byte order of ipmi32toh().
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_time
+  netfn 0x0a
+  cmd 0x48
+  # 6a2f3e4d: four distinct non-zero bytes
+  data 4d 3e 2f 6a
+end
+
+respond set_sel_time
+  netfn 0x0a
+  cmd 0x49
+  data 
+end

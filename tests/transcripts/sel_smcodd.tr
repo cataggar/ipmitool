@@ -1,0 +1,209 @@
+# Supermicro DIMM naming driven by an odd event data 3.
+# 
+# The six chipset arms of get_supermicro_evt_desc() reduce event data 3 with
+# three different masks -- 03h, 0Fh and 07h -- and then add one.  Every existing
+# Supermicro fixture uses an even data 3, which makes those masks agree with each
+# other and with a mask that drops bit 0.  The records here use 0Bh and 0Dh, so
+# each mask produces a different CPU or riser number, and they walk one board
+# from each of the six tables twice so that both event data 2 values are decoded
+# by every arm.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 7c 2a 00 01 00 00 00 00 00
+end
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 0c 00 ff ff 00 e3 0b 5e 00 00 00 00 0a
+end
+
+respond get_sel_0000
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 00 00
+  data 01 00 00 0b 02 4d 3e 2f 6a 20 00 04 0c 70 6f 00 5a 0b
+end
+
+respond get_sel_0001
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 01 00
+  data 02 00 01 0b 02 4d 3e 2f 6a 20 00 04 0c 71 6f 00 5a 0b
+end
+
+respond get_sel_0002
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 02 00
+  data 03 00 02 0b 02 4d 3e 2f 6a 20 00 04 0c 72 6f 00 5a 0b
+end
+
+respond get_sel_0003
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 03 00
+  data 04 00 03 0b 02 4d 3e 2f 6a 20 00 04 0c 73 6f 00 5a 0b
+end
+
+respond get_sel_0004
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 04 00
+  data 05 00 04 0b 02 4d 3e 2f 6a 20 00 04 0c 74 6f 00 5a 0b
+end
+
+respond get_sel_0005
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 05 00
+  data 06 00 05 0b 02 4d 3e 2f 6a 20 00 04 0c 75 6f 00 5a 0b
+end
+
+respond get_sel_0006
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 06 00
+  data 07 00 10 0b 02 4d 3e 2f 6a 20 00 04 0c 80 6f 00 f9 0d
+end
+
+respond get_sel_0007
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 07 00
+  data 08 00 11 0b 02 4d 3e 2f 6a 20 00 04 0c 81 6f 00 f9 0d
+end
+
+respond get_sel_0008
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 08 00
+  data 09 00 12 0b 02 4d 3e 2f 6a 20 00 04 0c 82 6f 00 f9 0d
+end
+
+respond get_sel_0009
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 09 00
+  data 0a 00 13 0b 02 4d 3e 2f 6a 20 00 04 0c 83 6f 00 f9 0d
+end
+
+respond get_sel_000a
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0a 00
+  data 0b 00 14 0b 02 4d 3e 2f 6a 20 00 04 0c 84 6f 00 f9 0d
+end
+
+respond get_sel_000b
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 0b 00
+  data ff ff 15 0b 02 4d 3e 2f 6a 20 00 04 0c 85 6f 00 f9 0d
+end
+
+respond board_id_a0
+  netfn 0x30
+  cmd 0x21
+  # supermicro_X8 -> chipset 0
+  data 80 a8
+  times 1
+end
+
+respond board_id_a1
+  netfn 0x30
+  cmd 0x21
+  # supermicro_romely -> chipset 1
+  data 41 08
+  times 1
+end
+
+respond board_id_a2
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x9 -> chipset 2
+  data 35 06
+  times 1
+end
+
+respond board_id_a3
+  netfn 0x30
+  cmd 0x21
+  # supermicro_brickland -> chipset 3
+  data 26 07
+  times 1
+end
+
+respond board_id_a4
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10QRH -> chipset 4
+  data 72 08
+  times 1
+end
+
+respond board_id_a5
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10OBi -> chipset 5
+  data 23 09
+  times 1
+end
+
+respond board_id_b0
+  netfn 0x30
+  cmd 0x21
+  # supermicro_X8 -> chipset 0
+  data 80 a8
+  times 1
+end
+
+respond board_id_b1
+  netfn 0x30
+  cmd 0x21
+  # supermicro_romely -> chipset 1
+  data 41 08
+  times 1
+end
+
+respond board_id_b2
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x9 -> chipset 2
+  data 35 06
+  times 1
+end
+
+respond board_id_b3
+  netfn 0x30
+  cmd 0x21
+  # supermicro_brickland -> chipset 3
+  data 26 07
+  times 1
+end
+
+respond board_id_b4
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10QRH -> chipset 4
+  data 72 08
+  times 1
+end
+
+respond board_id_b5
+  netfn 0x30
+  cmd 0x21
+  # supermicro_x10OBi -> chipset 5
+  data 23 09
+  times 1
+end
+
+respond board_id_x
+  netfn 0x30
+  cmd 0x21
+  data 72 08
+end
