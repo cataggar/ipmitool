@@ -1,0 +1,25 @@
+# A system info parameter whose first block declares exactly 14 bytes.
+#
+# ipmi_sysinfo_main() computes the block count as ((length + 2) + 15) / 16.
+# A declared length of 14 makes the numerator exactly 32 - 16 + 15, so the
+# count is 1: only the first block is read.  Adding one to the constant, or
+# rounding the other way, would read a second block, which the responder
+# below is happy to supply so that the difference lands in both the output
+# and the recorded request bytes.
+
+default_ccode 0xc1
+
+respond get_system_name_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 02 00 00
+  # param rev 0x11, set 0, encoding 0 (ASCII), declared length 14
+  data 11 00 00 0e 66 6f 75 72 74 65 65 6e 2d 62 79 74 65 73
+end
+
+respond get_system_name_set1
+  netfn 0x06
+  cmd 0x59
+  match 00 02 01 00
+  data 11 01 21 21 21 21 21 21 21 21 21 21 21 21 21 21 21 21
+end

@@ -1,0 +1,18 @@
+#!golden 1
+#!case mc_guid_auto_future_timestamp
+#!section exit
+0
+#!section stdout
+System GUID   : a747c000-2c29-11ea-0414-dc500080447e
+GUID Encoding : IPMI
+GUID Version  : Time-based
+Timestamp     : 01/01/20 00:00:00 UTC
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x37 target_cmd=0x00 data=
+< rule=get_system_guid ccode=0x00 len=16 data=7e 44 80 00 50 dc 14 04 ea 11 29 2c 00 c0 47 a7
+bye

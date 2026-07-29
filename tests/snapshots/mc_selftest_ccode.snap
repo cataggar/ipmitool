@@ -1,0 +1,15 @@
+#!golden 1
+#!case mc_selftest_ccode
+#!section exit
+1
+#!section stdout
+#!section stderr
+Bad response: (Insufficient privilege level)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xd4 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xd4 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x04 target_cmd=0x00 data=
+< rule=default ccode=0xd4 len=0 data=
+bye

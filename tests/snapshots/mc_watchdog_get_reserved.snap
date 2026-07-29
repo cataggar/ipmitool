@@ -1,0 +1,27 @@
+#!golden 1
+#!case mc_watchdog_get_reserved
+#!section exit
+0
+#!section stdout
+Watchdog Timer Use:     Reserved (0x07)
+Watchdog Timer Is:      Stopped
+Watchdog Timer Logging: On
+Watchdog Timer Action:  Power Cycle (0x4b)
+Pre-timeout interrupt:  Reserved
+Pre-timeout interval:   255 seconds
+Timer Expiration Flags: (0x5a)
+                        * BIOS FRB2
+                        * OS Load
+                        * SMS/OS
+                        * Reserved
+Initial Countdown:      0.1 sec
+Present Countdown:      0.0 sec
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x25 target_cmd=0x00 data=
+< rule=get_watchdog_timer ccode=0x00 len=8 data=07 4b ff 5a 01 00 00 00
+bye

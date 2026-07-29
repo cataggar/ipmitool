@@ -1,0 +1,17 @@
+# A BMC that rejects Get/Set System Info Parameters with 0x80, the
+# "parameter not supported" completion code that ipmi_sysinfo_main()
+# reports specially.
+
+default_ccode 0xc1
+
+respond get_system_info
+  netfn 0x06
+  cmd 0x59
+  ccode 0x80
+end
+
+respond set_system_info
+  netfn 0x06
+  cmd 0x58
+  ccode 0x80
+end

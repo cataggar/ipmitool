@@ -1,0 +1,8 @@
+# A GUID with no valid version nibble in any of the three encodings, so
+# automatic detection has to fall back to dumping the raw bytes.
+#
+#   RFC4122 version nibble: 0
+#   IPMI    version nibble: 0
+#   SMBIOS  version nibble: 0
+
+aa bb cc dd ee ff 00 00 12 00 34 56 78 9a bc de

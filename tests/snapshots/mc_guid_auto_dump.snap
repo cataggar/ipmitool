@@ -1,0 +1,17 @@
+#!golden 1
+#!case mc_guid_auto_dump
+#!section exit
+0
+#!section stdout
+System GUID   : aabbccddeeff000012003456789abcde
+GUID Encoding : Unknown (data dumped) (WARNING: IPMI Specification violation!)
+GUID Version  : Unknown/unsupported (0)
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x37 target_cmd=0x00 data=
+< rule=get_system_guid ccode=0x00 len=16 data=aa bb cc dd ee ff 00 00 12 00 34 56 78 9a bc de
+bye

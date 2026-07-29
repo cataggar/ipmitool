@@ -1,0 +1,16 @@
+# Only the first Set System Info block is accepted; the second is rejected,
+# which stops ipmi_sysinfo_main()'s write loop part way through.
+
+default_ccode 0xc1
+
+respond set_system_info_block0
+  netfn 0x06
+  cmd 0x58
+  match 02 00
+end
+
+respond set_system_info_rest
+  netfn 0x06
+  cmd 0x58
+  ccode 0xc9
+end

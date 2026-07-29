@@ -35,6 +35,7 @@
 #include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_sel.h>
@@ -59,19 +60,29 @@
 /*
  * Functions the C tree exports but no header declares.
  *
+ * A ported Zig module must be able to name the C signature it is replacing so
+ * that `abi.assertCallSignature()` can check it, and the project forbids
+ * `extern fn` outside this bridge - so the declaration goes here instead.  See
+ * doc/zig-migration/interop-seams.md.
+ *
  * `lib/ipmi_raw.c` defines `ipmi_raw_help()` and `lib/dimm_spd.c` defines
  * `ipmi_spd_print()`, both with external linkage and neither with a prototype
  * in `include/ipmitool/`; `lib/ipmi_raw.c` reaches the latter through a local
  * declaration of its own.  Restating them here is what lets `cmd/raw.zig` call
  * `ipmi_spd_print()` and assert its own `ipmi_raw_help()` against the C
- * signature without an `extern fn`, which the interop contract forbids.  Each
- * declaration is copied from the definition it describes, so a change to
- * either is a C compile error in the defining translation unit rather than a
- * silent ABI mismatch.
+ * signature.  Each declaration is copied from the definition it describes, so
+ * a change to either is a C compile error in the defining translation unit
+ * rather than a silent ABI mismatch.
  *
  * The `ipmi_spd_print()` line goes away when `lib/dimm_spd.c` is ported; the
  * `ipmi_raw_help()` one when nothing needs to compare against the C signature
  * any more, since `lib/ipmi_raw.c` was its only caller.
+ *
+ * `struct wdt_string_s` is defined inside `lib/ipmi_mc.c`; only a pointer to
+ * it appears in `find_set_wdt_string()`'s signature, so an incomplete type is
+ * enough.
  */
 void ipmi_raw_help(void);
 int ipmi_spd_print(uint8_t *spd_data, int len);
+struct wdt_string_s;
+int find_set_wdt_string(const struct wdt_string_s *w[], const char *s);

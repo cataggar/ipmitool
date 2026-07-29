@@ -1,0 +1,13 @@
+# A GUID whose version nibble is valid in both the IPMI and the SMBIOS
+# encodings, but whose IPMI-encoded timestamp is the only valid one.
+#
+# ipmi_parse_guid() probes RFC4122, then IPMI, then SMBIOS and stops at the
+# first encoding whose version says "time based" AND whose timestamp is in
+# [Epoch .. now].  Detection must therefore stop at IPMI: if it did not, the
+# later SMBIOS probe (version 3, name-based MD5) would win instead.
+#
+#   RFC4122 version nibble: 0xa (invalid)
+#   IPMI    version nibble: 1   (time based), timestamp 2004-11-09 11:33:20
+#   SMBIOS  version nibble: 3   (valid, but probed after IPMI)
+
+de ad be ef 00 01 a1 30 d9 11 43 32 00 c0 08 28

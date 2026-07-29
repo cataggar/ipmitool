@@ -1,0 +1,10 @@
+# Get Device ID answered with distinct, non-zero bytes in every multi-byte
+# field, so that byte order and field width are actually pinned.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id_wide.hex
+end

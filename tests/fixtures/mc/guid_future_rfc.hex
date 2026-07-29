@@ -1,0 +1,18 @@
+# A GUID whose RFC4122 reading is a version 1 (time-based) UUID dated in the
+# year 2500, and whose IPMI reading is a version 1 UUID dated 2020-01-01.
+#
+# The two readings use disjoint halves of the 16 bytes - RFC4122 takes its
+# time fields from bytes 0..7, IPMI from bytes 8..15 - so both can be pinned
+# at once.  ipmi_parse_guid()'s autodetect loop runs RFC4122 first, accepts
+# the version but rejects the timestamp because _is_time_valid() refuses a
+# date in the future, and therefore keeps looking; IPMI is accepted and ends
+# the loop.  Drop the future check and the very first mode would win instead.
+#
+# The SMBIOS reading of the same bytes has version 0, so it never competes.
+
+7e 44 80 00   # RFC4122 time_low  (MSB first)
+50 dc         # RFC4122 time_mid  (MSB first)
+14 04         # RFC4122 time_hi_and_version: version 1, year 2500
+ea 11         # IPMI time_hi_and_version (LSB first): version 1
+29 2c         # IPMI time_mid (LSB first)
+00 c0 47 a7   # IPMI time_low (LSB first) -> 2020-01-01T00:00:00Z

@@ -1,0 +1,4 @@
+# A Get Device ID response without the optional auxiliary firmware revision,
+# which is what most real BMCs send.
+
+7f 0f 81 99 51 41 57 01 00 28 00

@@ -1,0 +1,5 @@
+# Every command fails with 0xd4 "Insufficient privilege level", so that the
+# completion-code branch of each mc handler prints a string that is distinct
+# from the 0xc1 "Invalid command" that an absent rule produces.
+
+default_ccode 0xd4

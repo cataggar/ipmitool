@@ -1,0 +1,20 @@
+# A watchdog whose timer-use and timer-action bytes both carry a reserved bit.
+#
+# ipmi_mc_get_watchdog() indexes eight-entry tables with `use & 0x07` and
+# with `(intr_action >> 4) & 0x07`, so the bits above must be masked off;
+# widening either mask to 0x0f would index the NULL terminator of the table
+# and dereference it.  Both bytes carry a bit that only the correct mask
+# discards.
+
+default_ccode 0xc1
+
+respond get_watchdog_timer
+  netfn 0x06
+  cmd 0x25
+  # use 0x0d: nolog=0, running=0, bit 3 set, use=5 (OEM)
+  # intr_action 0x8b: bit 7 set, so intr nibble is 8 -> masked to 0 (None),
+  # action=3 (Power Cycle)
+  # pre-timeout 0s; expiration flags 0x00
+  # initial countdown 6000 (600.0s), present countdown 6000 (600.0s)
+  data 0d 8b 00 00 70 17 70 17
+end

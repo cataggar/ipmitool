@@ -1,0 +1,16 @@
+# A Get Device ID response one byte longer than struct ipm_devid_rsp.
+#
+# ipmi_mc_get_deviceid() only prints the auxiliary firmware revision when
+# rsp->data_len is exactly sizeof(*devid) (16), so a 17-byte response must
+# not print it. That distinguishes "==" from ">=".
+
+7f        # Device ID
+0f        # Device Revision: bit 7 clear = no Device SDRs, revision 15
+81        # FW rev 1: bit 7 set = device not available, major 1
+99        # FW rev 2 -> "1.99"
+51        # IPMI version, BCD: LSN major 1, MSN minor 5 -> 1.5
+41        # Additional device support: sensor device (bit 0) + bridge (bit 6)
+57 01 00  # Manufacturer ID, LSB first: 0x000157 = 343 = Intel Corporation
+28 00     # Product ID, LSB first: 0x0028 -> "S5000PAL"
+de ad be ef  # Auxiliary firmware revision information
+5a           # One byte too many

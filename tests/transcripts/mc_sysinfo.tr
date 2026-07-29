@@ -1,0 +1,99 @@
+# System info parameters for `mc getsysinfo` / `mc setsysinfo`.
+#
+# The number of blocks ipmi_sysinfo_main() reads is derived from the first
+# block: when the encoding nibble is ASCII (0) the count comes from the
+# declared length, otherwise the per-parameter default is kept (4 in general,
+# 2 for delloem_url).  The parameters below are chosen so that every one of
+# those paths yields a different block count.
+
+default_ccode 0xc1
+
+respond set_system_info
+  netfn 0x06
+  cmd 0x58
+end
+
+respond get_system_name_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 02 00 00
+  data 11 00 00 0f 69 70 6d 69 74 6f 6f 6c 2d 67 6f 6c 64 65
+end
+
+respond get_system_name_set1
+  netfn 0x06
+  cmd 0x59
+  match 00 02 01 00
+  data 11 01 6e 2d 68 6f 73 74 00 00 00 00 00 00 00 00 00 00
+end
+
+respond get_fw_version_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 01 00 00
+  data 11 00 00 2f 42 49 4f 53 2d 31 2e 32 2e 33 2d 61 62 63
+end
+
+respond get_fw_version_set1
+  netfn 0x06
+  cmd 0x59
+  match 00 01 01 00
+  data 11 01 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 70 71 72 73
+end
+
+respond get_fw_version_set2
+  netfn 0x06
+  cmd 0x59
+  match 00 01 02 00
+  data 11 02 74 75 76 77 78 79 7a 30 31 32 33 34 35 36 37 38
+end
+
+respond get_fw_version_set3
+  netfn 0x06
+  cmd 0x59
+  match 00 01 03 00
+  data 11 03 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond get_os_name_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 04 00 00
+  data 11 00 01 0a 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e
+end
+
+respond get_os_name_set1
+  netfn 0x06
+  cmd 0x59
+  match 00 04 01 00
+  data 11 01 6f 70 71 72 73 74 75 76 77 78 79 7a 41 42 43 44
+end
+
+respond get_os_name_set2
+  netfn 0x06
+  cmd 0x59
+  match 00 04 02 00
+  data 11 02 45 46 47 48 49 4a 4b 4c 4d 4e 4f 50 51 52 53 54
+end
+
+respond get_os_name_set3
+  netfn 0x06
+  cmd 0x59
+  match 00 04 03 00
+  data 11 03 55 56 57 58 00 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond get_delloem_url_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 de 00 00
+  data 11 00 01 00 68 74 74 70 3a 2f 2f 62 6d 63 2e 65 78 61
+end
+
+respond get_delloem_url_set1
+  netfn 0x06
+  cmd 0x59
+  match 00 de 01 00
+  data 11 01 6d 70 6c 65 2f 69 6e 64 65 78 2e 68 74 6d 6c 00
+end
+

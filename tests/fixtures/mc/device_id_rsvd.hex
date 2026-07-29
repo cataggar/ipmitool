@@ -1,0 +1,15 @@
+# A Get Device ID response whose Device Revision has the reserved bit 4 set.
+#
+# ipmi_mc_get_deviceid() prints `device_revision & 0x0F`, so bit 4 must not
+# reach the output; it also tests bit 7 separately for "Provides Device SDRs".
+# 0x9f exercises both at once and distinguishes the 0x0F mask from 0x1F.
+
+7f        # Device ID
+9f        # Device Revision: bit 7 = has Device SDRs, bit 4 reserved, rev 15
+81        # FW rev 1: bit 7 set = device not available, major 1
+99        # FW rev 2 -> "1.99"
+51        # IPMI version, BCD: LSN major 1, MSN minor 5 -> 1.5
+41        # Additional device support: sensor device (bit 0) + bridge (bit 6)
+57 01 00  # Manufacturer ID, LSB first: 0x000157 = 343 = Intel Corporation
+28 00     # Product ID, LSB first: 0x0028 -> "S5000PAL"
+de ad be ef  # Auxiliary firmware revision information

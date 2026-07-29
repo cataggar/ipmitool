@@ -1,0 +1,10 @@
+# Reset Watchdog Timer rejected with 0x80, which ipmi_mc_rst_watchdog()
+# translates to its own message instead of the generic completion code text.
+
+default_ccode 0xc1
+
+respond reset_watchdog_timer
+  netfn 0x06
+  cmd 0x22
+  ccode 0x80
+end

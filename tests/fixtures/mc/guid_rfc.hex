@@ -1,0 +1,7 @@
+# A GUID that only decodes to a valid version nibble under RFC4122.
+#
+#   RFC4122 version nibble: 4 (random)  <- detected
+#   IPMI    version nibble: 6 (invalid)
+#   SMBIOS  version nibble: 0xb (invalid)
+
+01 02 03 04 05 06 4a bc 0f 60 11 22 33 44 55 66
