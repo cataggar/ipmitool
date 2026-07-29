@@ -1,0 +1,35 @@
+# SDR Type 02h - Compact Sensor Record (IPMI 2.0 spec Table 43-2), derived
+# from event/sdr_othr.hex with sensor type 00h and event/reading type 6Fh.
+#
+# ipmi_event_find_offset() returns offset 0 without searching when *either*
+# the sensor type or the event type is zero, so this record distinguishes the
+# `||' in that guard from an `&&'.
+
+05 00        # [1:2]  Record ID = 0x0005
+51           # [3]    SDR version 1.5
+02           # [4]    Record type 02h = Compact Sensor Record
+1f           # [5]    Record length = 31 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+06           # [8]    Sensor number 6
+1d           # [9]    Entity ID 29 = Fan device
+01           # [10]   Entity instance 1
+7f           # [11]   Sensor initialization
+68           # [12]   Sensor capabilities
+00           # [13]   Sensor type 00h = reserved/unspecified
+6f           # [14]   Event/reading type 6Fh = sensor-specific discrete
+ff 3f        # [15:16] Assertion event mask
+ff 3f        # [17:18] Deassertion event mask
+3f 3f        # [19:20] Settable / readable threshold mask
+00           # [21]   Units 1
+00           # [22]   Units 2: unspecified
+00           # [23]   Units 3
+00           # [24]   Sensor record sharing
+00           # [25]   Sensor record sharing / entity instance increment
+02           # [26]   Positive-going threshold hysteresis
+02           # [27]   Negative-going threshold hysteresis
+00 00 00     # [28:30] Reserved
+00           # [31]   OEM
+c4           # [32]   ID string type/length: 8-bit ASCII, 4 characters
+53 5a 45 52  # [33:36] "SZER"

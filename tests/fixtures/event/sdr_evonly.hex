@@ -1,0 +1,23 @@
+# SDR Type 03h - Event-Only Sensor Record (IPMI 2.0 spec Table 43-3), derived
+# from sdr/eventonly_pwr.hex with a different record ID and name.  It is
+# neither a full nor a compact sensor record, so ipmi_event_fromsensor()
+# rejects it with "Unknown sensor type for id".
+
+06 00        # [1:2]  Record ID = 0x0006
+51           # [3]    SDR version 1.5
+03           # [4]    Record type 03h = Event-Only Record
+14           # [5]    Record length = 20 bytes follow
+
+20           # [6]    Sensor owner ID
+00           # [7]    Owner LUN 0, channel 0
+07           # [8]    Sensor number 7
+15           # [9]    Entity ID 21 = Power unit
+01           # [10]   Entity instance 1
+09           # [11]   Sensor type 09h = Power Unit
+6f           # [12]   Event/reading type 6Fh = sensor-specific discrete
+00           # [13]   Sensor record sharing
+00           # [14]   Sensor record sharing / entity instance increment
+00           # [15]   Reserved
+00           # [16]   OEM
+c4           # [17]   ID string type/length: 8-bit ASCII, 4 characters
+45 56 4f 4e  # [18:21] "EVON"

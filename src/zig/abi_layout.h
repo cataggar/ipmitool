@@ -28,6 +28,9 @@
 #include <stddef.h>
 
 #include <ipmitool/ipmi.h>
+#include <ipmitool/ipmi_event.h>
+#include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_sel.h>
 
 enum ipmitool_abi_layout {
 	/* struct ipmi_rq - opaque: `msg.netfn:6` / `msg.lun:2` are bitfields. */
@@ -56,4 +59,83 @@ enum ipmitool_abi_layout {
 	ABI_OFFSETOF_ipmi_rq_entry__bridging_level =
 		offsetof(struct ipmi_rq_entry, bridging_level),
 	ABI_OFFSETOF_ipmi_rq_entry__next = offsetof(struct ipmi_rq_entry, next),
+
+	/*
+	 * struct platform_event_msg - opaque: `event_type:7` / `event_dir:1`
+	 * are bitfields.  The byte holding them is pinned by `event_data`.
+	 */
+	ABI_SIZEOF_platform_event_msg = sizeof(struct platform_event_msg),
+	ABI_ALIGNOF_platform_event_msg = _Alignof(struct platform_event_msg),
+	ABI_OFFSETOF_platform_event_msg__evm_rev =
+		offsetof(struct platform_event_msg, evm_rev),
+	ABI_OFFSETOF_platform_event_msg__sensor_type =
+		offsetof(struct platform_event_msg, sensor_type),
+	ABI_OFFSETOF_platform_event_msg__sensor_num =
+		offsetof(struct platform_event_msg, sensor_num),
+	ABI_OFFSETOF_platform_event_msg__event_data =
+		offsetof(struct platform_event_msg, event_data),
+
+	/*
+	 * struct sel_event_record - opaque because its `standard_type` arm
+	 * carries the same `event_type:7` / `event_dir:1` pair.
+	 */
+	ABI_SIZEOF_sel_event_record = sizeof(struct sel_event_record),
+	ABI_ALIGNOF_sel_event_record = _Alignof(struct sel_event_record),
+	ABI_OFFSETOF_sel_event_record__record_id =
+		offsetof(struct sel_event_record, record_id),
+	ABI_OFFSETOF_sel_event_record__record_type =
+		offsetof(struct sel_event_record, record_type),
+	ABI_OFFSETOF_sel_event_record__sel_type =
+		offsetof(struct sel_event_record, sel_type),
+	ABI_OFFSETOF_sel_event_record__std__timestamp =
+		offsetof(struct sel_event_record, sel_type.standard_type.timestamp),
+	ABI_OFFSETOF_sel_event_record__std__gen_id =
+		offsetof(struct sel_event_record, sel_type.standard_type.gen_id),
+	ABI_OFFSETOF_sel_event_record__std__evm_rev =
+		offsetof(struct sel_event_record, sel_type.standard_type.evm_rev),
+	ABI_OFFSETOF_sel_event_record__std__sensor_type =
+		offsetof(struct sel_event_record, sel_type.standard_type.sensor_type),
+	ABI_OFFSETOF_sel_event_record__std__sensor_num =
+		offsetof(struct sel_event_record, sel_type.standard_type.sensor_num),
+	ABI_OFFSETOF_sel_event_record__std__event_data =
+		offsetof(struct sel_event_record, sel_type.standard_type.event_data),
+
+	/*
+	 * struct sdr_record_common_sensor - opaque: `keys.lun` / `keys.channel`
+	 * and the `sensor.init` / `sensor.capabilities` sub-structs are all
+	 * bitfields.  Only the prefix `lib/ipmi_event.c` reads is listed; the
+	 * byte carrying the lun/channel bitfields is named via the field that
+	 * follows it.
+	 */
+	ABI_OFFSETOF_sdr_common__keys__owner_id =
+		offsetof(struct sdr_record_common_sensor, keys.owner_id),
+	ABI_OFFSETOF_sdr_common__keys__sensor_num =
+		offsetof(struct sdr_record_common_sensor, keys.sensor_num),
+	ABI_OFFSETOF_sdr_common__keys__flags =
+		offsetof(struct sdr_record_common_sensor, keys.sensor_num) - 1,
+	ABI_OFFSETOF_sdr_common__sensor__type =
+		offsetof(struct sdr_record_common_sensor, sensor.type),
+	ABI_OFFSETOF_sdr_common__event_type =
+		offsetof(struct sdr_record_common_sensor, event_type),
+
+	/*
+	 * struct sdr_record_list - not opaque, but `translate-c` drops the
+	 * ATTRIBUTE_PACKING and emits a naturally aligned struct, so the Zig
+	 * view of it is wrong by 8 bytes at `record`.  A hand written mirror
+	 * checked against these constants is the only safe way to read it.
+	 */
+	ABI_SIZEOF_sdr_record_list = sizeof(struct sdr_record_list),
+	ABI_ALIGNOF_sdr_record_list = _Alignof(struct sdr_record_list),
+	ABI_OFFSETOF_sdr_record_list__id = offsetof(struct sdr_record_list, id),
+	ABI_OFFSETOF_sdr_record_list__version =
+		offsetof(struct sdr_record_list, version),
+	ABI_OFFSETOF_sdr_record_list__type =
+		offsetof(struct sdr_record_list, type),
+	ABI_OFFSETOF_sdr_record_list__length =
+		offsetof(struct sdr_record_list, length),
+	ABI_OFFSETOF_sdr_record_list__raw = offsetof(struct sdr_record_list, raw),
+	ABI_OFFSETOF_sdr_record_list__next =
+		offsetof(struct sdr_record_list, next),
+	ABI_OFFSETOF_sdr_record_list__record =
+		offsetof(struct sdr_record_list, record),
 };

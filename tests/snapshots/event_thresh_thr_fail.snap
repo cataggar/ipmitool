@@ -1,0 +1,30 @@
+#!golden 1
+#!case event_thresh_thr_fail
+#!section exit
+1
+#!section stdout
+Finding sensor CPU1 Temp... ok
+#!section stderr
+Command Get Sensor Thresholds failed: Requested sensor, data, or record not found
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 06 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=02 00 01 00 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 05 17
+< rule=get_sdr_0001 ccode=0x00 len=25 data=02 00 20 00 01 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 1c 17
+< rule=get_sdr_0001 ccode=0x00 len=25 data=02 00 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 43 50 55
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 33 06
+< rule=get_sdr_0001 ccode=0x00 len=8 data=02 00 31 20 54 65 6d 70
+> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=01
+< rule=get_sensor_thresholds ccode=0xcb len=0 data=
+bye

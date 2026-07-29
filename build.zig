@@ -175,6 +175,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "lib/ipmi_chassis.c",
         .implementation = "src/zig/cmd/chassis.zig",
     },
+    .{
+        .name = "event",
+        .replaces = "lib/ipmi_event.c",
+        .implementation = "src/zig/cmd/event.zig",
+    },
 };
 
 /// Root of the Zig source tree.

@@ -25,7 +25,7 @@ Supporting files at the root of `src/zig/`:
 | File            | Role |
 | --------------- | ---- |
 | `ipmi_c.h`      | umbrella header listing which C headers the bridge exposes |
-| `abi_layout.h`  | `sizeof`/`alignof`/`offsetof` for C types `translate-c` cannot represent |
+| `abi_layout.h`  | `sizeof`/`alignof`/`offsetof` for C types `translate-c` cannot represent, or represents wrongly |
 | `abi.zig`       | comptime layout and signature assertions |
 | `root.zig`      | namespace of every header port; the root of `zig build test` |
 | `exports.zig`   | link-time root of `libipmitool_zig.a`; one guarded `@import` per port |
@@ -237,6 +237,27 @@ pub const NetFnLun = switch (builtin.target.cpu.arch.endian()) {
 
 Bitfield members have no address, so assert the offset of the field that follows
 them instead.
+
+### `#pragma pack` is silently lost
+
+`ipmitool` packs its wire structs with `#pragma pack(push, 1)` whenever
+`HAVE_PRAGMA_PACK` is defined — which it is on every platform the build
+supports, so `ATTRIBUTE_PACKING` expands to nothing and the pragma does all the
+work. `translate-c` **ignores the pragma**: it emits an ordinary `extern
+struct` with natural alignment, and the resulting Zig type compiles cleanly
+while pointing at the wrong bytes.
+
+`struct sdr_record_list` is the worked example. C makes it 29 bytes with
+`record` at offset 21; `c.struct_sdr_record_list` is 32 bytes with `record` at
+offset 24, so `sdr.record.common` reads three bytes into the pointer and yields
+garbage. Nothing warns, and the symptom is a SIGSEGV a long way from the cause.
+
+So: **a type is only safe to use straight from `ipmi_c` if it is not inside a
+`#pragma pack` region.** For anything between a `push` and a `pop`, write a
+mirror with `align(1)` fields and pin it with `assertOpaqueLayout`, exactly as
+if `translate-c` had demoted it to `opaque {}` — the mirror in
+`src/zig/cmd/event.zig` is the pattern to copy. `grep -n 'pragma pack'
+include/ipmitool/*.h` lists the affected regions.
 
 ### Adding assertions for another header
 
