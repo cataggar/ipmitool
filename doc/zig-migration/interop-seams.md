@@ -18,6 +18,7 @@ kept apart, exactly as `include/ipmitool/*.h` and `lib/*.c` are.
 | `src/zig/intf/`      | `include/ipmitool/ipmi_intf.h`, `src/plugins/*` | the transport vtable and the transports |
 | `src/zig/cmd/`       | `lib/ipmi_*.c`                             | one module per command translation unit |
 | `src/zig/util/`      | `lib/helper.c`, `lib/log.c`, `bswap.h`, `ipmi_time.c`, `ipmi_strings.c` | shared utilities |
+| `src/zig/crypto/`    | `src/plugins/lan/{md5,auth}.c`, `src/plugins/lanplus/lanplus_crypt*.c` | hashes, HMAC, AES-CBC and the RMCP+/RAKP layer on `std.crypto` — see [crypto.md](crypto.md) |
 
 Supporting files at the root of `src/zig/`:
 

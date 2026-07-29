@@ -32,6 +32,21 @@ pub const intf = struct {
     pub const ipmi_intf = @import("intf/intf.zig");
 };
 
+/// Ports of the crypto primitives that used to come from OpenSSL.
+///
+/// Only the modules that stand alone appear here: the ones that `@export` C
+/// symbols and call back into `log.c` are reached through `exports.zig`.  What
+/// is left is the part worth testing directly, which is the arithmetic.
+pub const crypto = struct {
+    pub const aes_cbc = @import("crypto/aes_cbc.zig");
+    pub const mac = @import("crypto/mac.zig");
+    pub const md5 = @import("crypto/md5.zig");
+    pub const payload = @import("crypto/payload.zig");
+    pub const rakp = @import("crypto/rakp.zig");
+    pub const v15_auth = @import("crypto/v15_auth.zig");
+    pub const vectors = @import("crypto/vectors_test.zig");
+};
+
 /// Ports of the shared utilities.
 pub const util = struct {
     pub const bswap = @import("util/bswap.zig");
@@ -44,11 +59,19 @@ pub const util = struct {
 test {
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
+    std.testing.refAllDecls(crypto);
     std.testing.refAllDecls(intf);
     std.testing.refAllDecls(util);
     _ = abi;
     _ = core.ipmi;
     _ = core.oem;
+    _ = crypto.aes_cbc;
+    _ = crypto.mac;
+    _ = crypto.md5;
+    _ = crypto.payload;
+    _ = crypto.rakp;
+    _ = crypto.v15_auth;
+    _ = crypto.vectors;
     _ = intf.ipmi_intf;
     _ = util.bswap;
     _ = util.helper;
