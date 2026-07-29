@@ -46,7 +46,7 @@ var special_authcode: [16]u8 = @splat(0);
 ///
 /// `H(password + session_id + msg + session_seq + password)`, where the
 /// password is the first 16 bytes of the session authcode buffer.
-fn authMd5(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
+pub fn authMd5(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
     const message: []const u8 = if (data_len > 0) data[0..@intCast(data_len)] else &.{};
     md5_authcode = v15.md5(s.authcode[0..16], s.session_id, message, s.in_seq);
 
@@ -61,7 +61,7 @@ fn authMd5(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
 /// MD2 is not available: it left OpenSSL in version 3 and ipmitool never had an
 /// internal implementation, so this is the warning and the zero authcode the C
 /// already produces.
-fn authMd2(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
+pub fn authMd2(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
     _ = s;
     _ = data;
     _ = data_len;
@@ -78,7 +78,7 @@ fn authMd2(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
 ///
 /// `H(H(password) XOR challenge)`, with the password taken as a C string rather
 /// than as a fixed 16 byte field.
-fn authSpecial(s: *Session) callconv(.c) [*c]u8 {
+pub fn authSpecial(s: *Session) callconv(.c) [*c]u8 {
     special_authcode = v15.special(std.mem.sliceTo(&s.authcode, 0), &s.challenge);
     return &special_authcode;
 }

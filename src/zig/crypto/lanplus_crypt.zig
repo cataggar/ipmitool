@@ -55,16 +55,10 @@ const auth_rakp_hmac_sha256 = 0x03;
 const integrity_none = 0x00;
 const integrity_hmac_sha1_96 = 0x01;
 const integrity_hmac_md5_128 = 0x02;
-const integrity_hmac_sha256_128 = 0x04;
 
 /// Table 13-19 confidentiality algorithm numbers.
 const crypt_none = 0x00;
 const crypt_aes_cbc_128 = 0x01;
-
-/// Truncated authcode lengths, from `src/plugins/lanplus/lanplus.h`.
-const sha1_authcode_size = 12;
-const hmac_md5_authcode_size = 16;
-const hmac_sha256_authcode_size = 16;
 
 /// The C allocated every scratch buffer with `malloc`, and reported a failure
 /// to the caller rather than aborting.  Using libc's allocator keeps both the
@@ -114,44 +108,37 @@ fn assertSupportedAuthAlg(auth_alg: u8, comptime site: cassert.Site) void {
 
 const have_sha256 = assert_text.have_sha256;
 
+// The three truncation tables and the digest-length table live in `mac.zig`,
+// which has no C ABI surface and so can be reached from `vectors_test.zig`.
+// That matters: these lengths decide how many bytes of a BMC's authentication
+// code are actually checked, and a length is only pinned by a vector if the
+// vector exercises an input on which the candidate lengths disagree.  See the
+// byte-sensitivity maps in `rakp.txt` and `integrity.txt`.
+
 /// How much of a RAKP authentication code is compared against the BMC's.
 ///
 /// The C reaches this through a switch that also asserts the digest length, so
 /// an unknown algorithm aborts rather than falling through with an
 /// uninitialised length.
 fn rakpAuthcodeLength(auth_alg: u8, comptime site: cassert.Site) u32 {
-    return switch (auth_alg) {
-        auth_rakp_hmac_sha1 => sha1_authcode_size,
-        auth_rakp_hmac_md5 => hmac_md5_authcode_size,
-        auth_rakp_hmac_sha256 => if (have_sha256)
-            hmac_sha256_authcode_size
-        else
-            cassert.unreachableBranch(site),
-        else => cassert.unreachableBranch(site),
-    };
+    if (!have_sha256 and auth_alg == auth_rakp_hmac_sha256) cassert.unreachableBranch(site);
+    return mac_mod.rakpAuthcodeLength(auth_alg) orelse cassert.unreachableBranch(site);
 }
 
 /// The same, keyed by integrity algorithm: Intel BMCs answer RAKP 4 with one.
 ///
-/// Note that `IPMI_INTEGRITY_MD5_128` (0x03) is deliberately absent — the C
+/// Note that `IPMI_INTEGRITY_HMAC_SHA256_128` is deliberately absent — the C
 /// asserts on it even though `lanplus_HMAC` would happily hash it as SHA-256.
-fn integrityAuthcodeLength(integrity_alg: u8, comptime site: cassert.Site) u32 {
-    return switch (integrity_alg) {
-        integrity_hmac_sha1_96 => sha1_authcode_size,
-        integrity_hmac_md5_128 => hmac_md5_authcode_size,
-        else => cassert.unreachableBranch(site),
-    };
+fn intelplusRakpAuthcodeLength(integrity_alg: u8, comptime site: cassert.Site) u32 {
+    return mac_mod.intelplusRakpAuthcodeLength(integrity_alg) orelse
+        cassert.unreachableBranch(site);
 }
 
 /// The C follows every RAKP HMAC with a switch asserting the digest length it
 /// just produced.  Nothing depends on the result; it only pins the algorithm.
 fn assertRakpDigestLength(auth_alg: u8, mac_length: u32, comptime site: cassert.Site) void {
-    const expected: u32 = switch (auth_alg) {
-        auth_rakp_hmac_sha1 => 20,
-        auth_rakp_hmac_md5 => 16,
-        auth_rakp_hmac_sha256 => if (have_sha256) 32 else cassert.unreachableBranch(site),
-        else => cassert.unreachableBranch(site),
-    };
+    if (!have_sha256 and auth_alg == auth_rakp_hmac_sha256) cassert.unreachableBranch(site);
+    const expected = mac_mod.rakpDigestLength(auth_alg) orelse cassert.unreachableBranch(site);
     cassert.expect(mac_length == expected, site);
 }
 
@@ -173,7 +160,7 @@ fn keyedHash(algorithm: u8, key: []const u8, data: []const u8, out: *[max_md_siz
 ///
 /// Returns 1 when the code matches and 0 when it does not; an authentication
 /// algorithm of RAKP-none is reported as a match.
-fn rakp2HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf) callconv(.c) c_int {
+pub fn rakp2HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf) callconv(.c) c_int {
     if (session.v2_data.auth_alg == auth_rakp_none) return 1;
 
     assertSupportedAuthAlg(session.v2_data.auth_alg, .{
@@ -214,7 +201,7 @@ fn rakp2HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf)
 /// Returns 1 when the value matches and 0 when it does not.  Intel BMCs answer
 /// RAKP 4 keyed with the *integrity* algorithm instead of the authentication
 /// one, which is what the `intelplus` OEM branch is for.
-fn rakp4HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf) callconv(.c) c_int {
+pub fn rakp4HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf) callconv(.c) c_int {
     const intelplus = oemActive(intf, "intelplus");
 
     if (intelplus) {
@@ -264,7 +251,7 @@ fn rakp4HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf)
     }
 
     const compare_length = if (intelplus)
-        integrityAuthcodeLength(algorithm, .{
+        intelplusRakpAuthcodeLength(algorithm, .{
             .file = source,
             .line = 353,
             .func = "lanplus_rakp4_hmac_matches",
@@ -290,7 +277,7 @@ fn rakp4HmacMatches(session: *const Session, bmc_mac: [*c]const u8, intf: *Intf)
 /// `lanplus_generate_rakp3_authcode` - compute the RAKP 3 authentication code.
 ///
 /// Returns 0 on success and 1 on failure.
-fn generateRakp3Authcode(
+pub fn generateRakp3Authcode(
     output_buffer: [*c]u8,
     session: *const Session,
     mac_length: [*c]u32,
@@ -345,7 +332,7 @@ fn generateRakp3Authcode(
 ///
 /// Keyed with Kg when a BMC key is configured (two-key login) and with the user
 /// authcode otherwise.  Returns 0 on success and 1 on failure.
-fn generateSik(session: *Session, intf: *Intf) callconv(.c) c_int {
+pub fn generateSik(session: *Session, intf: *Intf) callconv(.c) c_int {
     session.v2_data.sik = @splat(0);
     session.v2_data.sik_len = 0;
 
@@ -425,7 +412,7 @@ fn generateK(
 }
 
 /// `lanplus_generate_k1` - derive K1, the integrity authcode key.
-fn generateK1(session: *Session) callconv(.c) c_int {
+pub fn generateK1(session: *Session) callconv(.c) c_int {
     return generateK(
         session,
         &rakp.const_1,
@@ -437,7 +424,7 @@ fn generateK1(session: *Session) callconv(.c) c_int {
 }
 
 /// `lanplus_generate_k2` - derive K2, whose first 16 bytes are the AES key.
-fn generateK2(session: *Session) callconv(.c) c_int {
+pub fn generateK2(session: *Session) callconv(.c) c_int {
     return generateK(
         session,
         &rakp.const_2,
@@ -454,7 +441,7 @@ fn generateK2(session: *Session) callconv(.c) c_int {
 /// ciphertext.  With confidentiality disabled nothing is copied and only
 /// `bytes_written` is set, because the caller has already assembled the
 /// plaintext in place.  Returns 0 on success and 1 on failure.
-fn encryptPayload(
+pub fn encryptPayload(
     crypt_alg: u8,
     key: [*c]const u8,
     input: [*c]const u8,
@@ -510,7 +497,7 @@ fn encryptPayload(
 ///
 /// Returns 1 when the packet is acceptable — which includes every case where
 /// there is nothing to check — and 0 when the authcode is wrong.
-fn hasValidAuthCode(rs: *ipmi.Response, session: *Session) callconv(.c) c_int {
+pub fn hasValidAuthCode(rs: *ipmi.Response, session: *Session) callconv(.c) c_int {
     if (rs.session.authtype != c.IPMI_SESSION_AUTHTYPE_RMCP_PLUS or
         @intFromEnum(session.v2_data.session_state) != c.LANPLUS_STATE_ACTIVE or
         rs.session.bAuthenticated == 0 or
@@ -570,7 +557,7 @@ const unsupported_integrity_alg: cassert.Site = .{
 ///
 /// `input` starts at the confidentiality header, so the first block is the IV.
 /// Returns 0 on success and 1 on failure.
-fn decryptPayload(
+pub fn decryptPayload(
     crypt_alg: u8,
     key: [*c]const u8,
     input: [*c]const u8,

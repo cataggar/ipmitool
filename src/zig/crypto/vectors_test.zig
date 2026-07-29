@@ -28,6 +28,24 @@ const mac_mod = @import("mac.zig");
 const md5_mod = @import("md5.zig");
 const payload_mod = @import("payload.zig");
 const rakp = @import("rakp.zig");
+const stubs = @import("test_stubs.zig");
+
+// The exported wrappers themselves, linked against `test_stubs.zig` so the
+// vectors drive the shipped code rather than a re-implementation of it.
+const auth_mod = @import("auth.zig");
+const lanplus_crypt = @import("lanplus_crypt.zig");
+const lanplus_crypt_impl = @import("lanplus_crypt_impl.zig");
+
+comptime {
+    // Force both wrappers to be analysed so their `@export`s are emitted and
+    // resolve each other -- `lanplus_crypt.zig` calls `lanplus_rand` and the
+    // AES entry points through the `ipmi_c` bridge.
+    _ = auth_mod;
+    _ = lanplus_crypt;
+    _ = lanplus_crypt_impl;
+}
+const intf_mod = @import("../intf/intf.zig");
+const ipmi = @import("../core/ipmi.zig");
 const v15 = @import("v15_auth.zig");
 
 const md5_vectors = @embedFile("crypto_vectors_md5");
@@ -159,7 +177,13 @@ fn checkMd5(case: Case) !void {
     // The generator wraps this case in appends of length 0 and -1, which the C
     // documents as no-ops.
     const no_op = std.mem.eql(u8, case.name, "md5/append-zero");
-    if (no_op) md5_mod.append(&state, data.ptr, 0);
+    if (no_op) {
+        // A null pointer is what makes this distinguish `nbytes <= 0` from
+        // `nbytes < 0`: with a valid pointer both spellings hash nothing.
+        md5_mod.append(&state, null, 0);
+        md5_mod.append(&state, null, -1);
+        md5_mod.append(&state, data.ptr, 0);
+    }
 
     var offset: usize = 0;
     while (offset < data.len) {
@@ -205,6 +229,17 @@ fn checkAuth(case: Case) !void {
 
         const out = v15.md5(&password, session_id, message, in_seq);
         try std.testing.expectEqualSlices(u8, &expected, &out);
+
+        // Again through the exported `ipmi_auth_md5`, which is where the
+        // password/session-id/sequence fields are pulled out of the session.
+        var session = std.mem.zeroes(intf_mod.Session);
+        @memcpy(session.authcode[0..password.len], &password);
+        session.session_id = session_id;
+        session.in_seq = in_seq;
+        var buffer: [scratch_size]u8 = undefined;
+        @memcpy(buffer[0..message.len], message);
+        const returned = auth_mod.authMd5(&session, &buffer, @intCast(message.len));
+        try std.testing.expectEqualSlices(u8, &expected, returned[0..16]);
         return;
     }
 
@@ -216,11 +251,21 @@ fn checkAuth(case: Case) !void {
 
         const out = v15.special(std.mem.sliceTo(&authcode, 0), &challenge);
         try std.testing.expectEqualSlices(u8, &expected, &out);
+
+        var session = std.mem.zeroes(intf_mod.Session);
+        @memcpy(session.authcode[0..authcode.len], &authcode);
+        session.challenge = challenge;
+        const returned = auth_mod.authSpecial(&session);
+        try std.testing.expectEqualSlices(u8, &expected, returned[0..16]);
         return;
     }
 
     // auth/md2/unsupported: the baseline answers with zeros, and so do we.
+    // `ipmi_auth_md2` also prints its warning, which is why this is noisy.
     try std.testing.expectEqualSlices(u8, &expected, &v15.md2_unsupported);
+    var session = std.mem.zeroes(intf_mod.Session);
+    const returned = auth_mod.authMd2(&session, null, 0);
+    try std.testing.expectEqualSlices(u8, &expected, returned[0..16]);
 }
 
 test "auth.c vectors" {
@@ -247,6 +292,26 @@ fn checkHmac(case: Case) !void {
 
     try std.testing.expectEqual(try case.int("md_len"), length);
     try std.testing.expectEqualSlices(u8, expected_md, out[0..length]);
+
+    // Again through the exported `lanplus_HMAC`, so the wrapper's own argument
+    // marshalling and digest copy are covered and not just `mac.hmac`.
+    var wrapped: [mac_mod.max_digest_length]u8 = @splat(0xa5);
+    var wrapped_len: u32 = 0xffff_ffff;
+    const returned = lanplus_crypt_impl.hmac(
+        @intCast(try case.int("mac")),
+        if (key_bytes.len == 0) null else key_bytes.ptr,
+        @intCast(key_bytes.len),
+        data_bytes.ptr,
+        @intCast(data_bytes.len),
+        &wrapped,
+        &wrapped_len,
+    );
+    try std.testing.expectEqual(@as([*c]u8, &wrapped), returned);
+    try std.testing.expectEqual(try case.int("md_len"), wrapped_len);
+    try std.testing.expectEqualSlices(u8, expected_md, wrapped[0..wrapped_len]);
+    // Everything past the digest must still be untouched: a wrapper that copies
+    // too many bytes would otherwise pass unnoticed.
+    for (wrapped[wrapped_len..]) |b| try std.testing.expectEqual(@as(u8, 0xa5), b);
 }
 
 test "lanplus_HMAC vectors" {
@@ -289,6 +354,19 @@ fn checkAesCbc(case: Case) !void {
     }
     try std.testing.expectEqualSlices(u8, want, out[0..data.len]);
 
+    // And again through the two exported entry points, which is where the
+    // block-multiple assertion and the `bytes_written` contract live.
+    var wrapped: [scratch_size]u8 = @splat(0xa5);
+    var written: u32 = 0xffff_ffff;
+    if (encrypting) {
+        lanplus_crypt_impl.encryptAesCbc128(&iv, &key, data.ptr, @intCast(data.len), &wrapped, &written);
+    } else {
+        lanplus_crypt_impl.decryptAesCbc128(&iv, &key, data.ptr, @intCast(data.len), &wrapped, &written);
+    }
+    try std.testing.expectEqual(try case.int("bytes_written"), written);
+    try std.testing.expectEqualSlices(u8, want, wrapped[0..written]);
+    try std.testing.expectEqual(@as(u8, 0xa5), wrapped[written]);
+
     // The `-in-place` cases exist because the C hands the same buffer in and
     // out, so run them that way too: CBC decryption in particular has to keep a
     // copy of each input block before it is overwritten.
@@ -329,11 +407,26 @@ fn checkPayload(case: Case) !void {
         const untouched = try case.hex("output", &expected);
         for (untouched) |b| try std.testing.expectEqual(@as(u8, 0xcc), b);
 
-        // Decryption is a plain move, which the Zig port keeps as a copy.
-        var decoded: [scratch_size]u8 = undefined;
-        std.mem.copyForwards(u8, decoded[0..data.len], data);
-        try std.testing.expectEqual(try case.int("decrypted_size"), @as(u32, @intCast(data.len)));
+        // Decryption is a plain move, which the Zig port keeps as a copy.  Run
+        // it through the real entry point so the copy itself is covered.
+        var decoded: [scratch_size]u8 = @splat(0xcc);
+        var size: u16 = 0xffff;
+        try std.testing.expectEqual(
+            @as(c_int, 0),
+            lanplus_crypt.decryptPayload(crypt_none, null, data.ptr, @intCast(data.len), &decoded, &size),
+        );
+        try std.testing.expectEqual(try case.int("decrypted_size"), @as(u32, size));
         try std.testing.expectEqualSlices(u8, try case.hex("decrypted", &expected), decoded[0..data.len]);
+
+        // ...and the encrypt side, which must leave `output` alone entirely.
+        var untouched_out: [scratch_size]u8 = @splat(0xcc);
+        var written_none: u16 = 0xffff;
+        try std.testing.expectEqual(
+            @as(c_int, 0),
+            lanplus_crypt.encryptPayload(crypt_none, null, data.ptr, @intCast(data.len), &untouched_out, &written_none),
+        );
+        try std.testing.expectEqual(try case.int("bytes_written"), @as(u32, written_none));
+        for (untouched_out[0..data.len]) |b| try std.testing.expectEqual(@as(u8, 0xcc), b);
         return;
     }
 
@@ -365,6 +458,36 @@ fn checkPayload(case: Case) !void {
     var decrypted_expected: [scratch_size]u8 = undefined;
     const want_plain = try case.hex("decrypted", &decrypted_expected);
     try std.testing.expectEqualSlices(u8, want_plain, decrypted[0..size]);
+
+    // The real `lanplus_decrypt_payload` against the captured ciphertext.  This
+    // direction is fully deterministic, so it is compared byte for byte.
+    var wrapped: [scratch_size]u8 = @splat(0xa5);
+    var wrapped_size: u16 = 0xffff;
+    try std.testing.expectEqual(
+        @as(c_int, 0),
+        lanplus_crypt.decryptPayload(crypt_aes_cbc_128, &key, want.ptr, @intCast(want.len), &wrapped, &wrapped_size),
+    );
+    try std.testing.expectEqual(try case.int("decrypted_size"), @as(u32, wrapped_size));
+    try std.testing.expectEqualSlices(u8, want_plain, wrapped[0..wrapped_size]);
+
+    // `lanplus_encrypt_payload` draws its own IV, so its ciphertext cannot be
+    // compared against a capture.  What is checkable is its length and that the
+    // result round-trips through the decrypt side above.
+    var encrypted: [scratch_size]u8 = @splat(0xa5);
+    var written_aes: u16 = 0xffff;
+    try std.testing.expectEqual(
+        @as(c_int, 0),
+        lanplus_crypt.encryptPayload(crypt_aes_cbc_128, &key, data.ptr, @intCast(data.len), &encrypted, &written_aes),
+    );
+    try std.testing.expectEqual(try case.int("bytes_written"), @as(u32, written_aes));
+
+    var round_trip: [scratch_size]u8 = @splat(0xa5);
+    var round_trip_size: u16 = 0xffff;
+    try std.testing.expectEqual(
+        @as(c_int, 0),
+        lanplus_crypt.decryptPayload(crypt_aes_cbc_128, &key, &encrypted, written_aes, &round_trip, &round_trip_size),
+    );
+    try std.testing.expectEqualSlices(u8, data, round_trip[0..round_trip_size]);
 }
 
 test "confidentiality payload vectors" {
@@ -378,6 +501,31 @@ test "confidentiality payload vectors" {
 
 /// `IPMI_AUTH_RAKP_NONE`.
 const auth_rakp_none = 0;
+/// `IPMI_AUTHCODE_BUFFER_SIZE`.
+const authcode_buffer_size = 20;
+/// `IPMI_CRYPT_AES_CBC_128`.
+const crypt_aes_cbc_128 = 0x01;
+/// `IPMI_CRYPT_NONE`.
+const crypt_none = 0x00;
+
+/// Reproduce a `*_byte_sensitivity` map: for each byte of `digest`, does a
+/// comparison of the first `compare_length` bytes notice a bit flip there?
+///
+/// A vector that only says "the correct authcode was accepted" cannot pin a
+/// *length*, because every candidate length agrees when all the bytes match.
+/// The generator therefore recorded, byte by byte, which ones the C actually
+/// looked at, and this rebuilds that string from the length the port chose.
+/// Any disagreement about the truncation point changes the string.
+fn sensitivityMap(digest: []const u8, compare_length: u32, out: []u8) []const u8 {
+    for (digest, 0..) |_, i| {
+        var trial: [mac_mod.max_digest_length]u8 = undefined;
+        @memcpy(trial[0..digest.len], digest);
+        trial[i] ^= 0x01;
+        const matches = std.mem.eql(u8, trial[0..compare_length], digest[0..compare_length]);
+        out[i] = if (matches) '0' else '1';
+    }
+    return out[0..digest.len];
+}
 
 fn checkRakp(case: Case) !void {
     var console_rand: [16]u8 = undefined;
@@ -446,6 +594,15 @@ fn checkRakp(case: Case) !void {
         const length = mac_mod.hmac(algorithm, &authcode, buffer, &out);
         try std.testing.expectEqualSlices(u8, try case.hex("rakp2_mac", &expected), out[0..length]);
         try std.testing.expectEqual(@as(u32, 1), try case.int("rakp2_matches_real"));
+
+        // RAKP 2 compares the *whole* digest, so the map is all ones and its
+        // length is what pins `mac_length`.  A comparison that stopped at the
+        // truncated authcode length would leave trailing zeros here.
+        var map: [mac_mod.max_digest_length]u8 = undefined;
+        try std.testing.expectEqualStrings(
+            try case.str("rakp2_byte_sensitivity"),
+            sensitivityMap(out[0..length], length, &map),
+        );
     }
 
     // RAKP 3: same key, and two OEM quirks send the command line privilege
@@ -491,15 +648,41 @@ fn checkRakp(case: Case) !void {
         );
     }
 
-    // RAKP 4: keyed with the SIK, and compared only over the truncated prefix.
+    // RAKP 4: keyed with the SIK, and compared only over a truncated prefix.
+    //
+    // Under `intelplus` both the key and the truncation come from the
+    // *integrity* algorithm and a table of their own, so this follows the same
+    // two-way branch `lanplus_rakp4_hmac_matches` does.
     {
+        const intelplus = std.mem.eql(u8, oem, "intelplus");
+        const integrity_alg: u8 = @intCast(try case.int("integrity_alg"));
+        const rakp4_alg_num = if (intelplus) integrity_alg else auth_alg;
+        const rakp4_algorithm = mac_mod.algorithmFor(rakp4_alg_num).?;
+        const compare_length = if (intelplus)
+            mac_mod.intelplusRakpAuthcodeLength(rakp4_alg_num).?
+        else
+            mac_mod.rakpAuthcodeLength(rakp4_alg_num).?;
+
         var buffer: [rakp.rakp4_length]u8 = undefined;
         rakp.rakp4(&buffer, inputs);
         try std.testing.expectEqualSlices(u8, try case.hex("rakp4_input", &expected), &buffer);
 
-        const length = mac_mod.hmac(algorithm, sik[0..sik_len], &buffer, &out);
+        const length = mac_mod.hmac(rakp4_algorithm, sik[0..sik_len], &buffer, &out);
         try std.testing.expectEqualSlices(u8, try case.hex("rakp4_mac", &expected), out[0..length]);
         try std.testing.expectEqual(@as(u32, 1), try case.int("rakp4_matches_real"));
+
+        // The one that matters.  `compare_length` decides how many bytes of the
+        // BMC's authentication code are checked at all, and it appears nowhere
+        // else in the computation -- so nothing above this line would notice if
+        // it were wrong.  The map does.
+        try std.testing.expectEqual(length, mac_mod.rakpDigestLength(rakp4_alg_num) orelse
+            rakp4_algorithm.digestLength());
+        try std.testing.expect(length >= compare_length);
+        var map: [mac_mod.max_digest_length]u8 = undefined;
+        try std.testing.expectEqualStrings(
+            try case.str("rakp4_byte_sensitivity"),
+            sensitivityMap(out[0..length], compare_length, &map),
+        );
     }
 
     // Integrity check value over a whole synthetic packet.
@@ -523,12 +706,209 @@ fn checkRakp(case: Case) !void {
         try std.testing.expect(std.mem.eql(u8, on_the_wire, out[0..authcode_length]));
         try std.testing.expectEqual(@as(u32, 1), try case.int("integrity_valid"));
         try std.testing.expectEqual(@as(u32, 0), try case.int("integrity_valid_tampered"));
+
+        var map: [mac_mod.max_digest_length]u8 = undefined;
+        try std.testing.expectEqualStrings(
+            try case.str("integrity_byte_sensitivity"),
+            sensitivityMap(on_the_wire, authcode_length, &map),
+        );
     }
+}
+
+// ---------------------------------------------------------------------------
+// Driving the exported wrappers directly
+// ---------------------------------------------------------------------------
+//
+// Everything above re-derives what the C did from the pure modules.  That
+// catches a wrong hash or a wrong buffer, but it cannot catch a constant that
+// exists only inside `lanplus_crypt.zig` -- a comparison length, a packet
+// offset -- because no test executes the line it is on.  `test_stubs.zig`
+// supplies the handful of C symbols those wrappers need so the real functions
+// can be called here with the captured inputs.
+
+/// A `Session`/`Intf` pair populated exactly as `gen_vectors.c` populated the
+/// C ones, so the wrapper sees the same state the fixture was recorded from.
+const Fixture = struct {
+    session: intf_mod.Session,
+    intf: intf_mod.Intf,
+
+    fn init(case: Case) !Fixture {
+        var self: Fixture = .{
+            .session = std.mem.zeroes(intf_mod.Session),
+            .intf = std.mem.zeroes(intf_mod.Intf),
+        };
+
+        // The generator dumped the two key buffers as raw memory, so they are
+        // restored the same way rather than re-derived from the password.
+        const user = try case.str("username");
+        @memcpy(self.intf.ssn_params.username[0..user.len], user);
+        _ = try case.hex("session_authcode", self.session.authcode[0..authcode_buffer_size]);
+        _ = try case.hex("session_kg", self.intf.ssn_params.kg[0..authcode_buffer_size]);
+
+        const v2 = &self.session.v2_data;
+        v2.crypt_alg = crypt_aes_cbc_128;
+        v2.auth_alg = @intCast(try case.int("auth_alg"));
+        v2.integrity_alg = @intCast(try case.int("integrity_alg"));
+        v2.requested_role = @intCast(try case.int("requested_role"));
+        self.intf.ssn_params.privlvl = @intCast(try case.int("privlvl"));
+
+        var buf: [16]u8 = undefined;
+        v2.console_id = std.mem.bytesToValue(u32, (try case.hex("console_id", &buf))[0..4]);
+        v2.bmc_id = std.mem.bytesToValue(u32, (try case.hex("bmc_id", &buf))[0..4]);
+        _ = try case.hex("console_rand", &v2.console_rand);
+        _ = try case.hex("bmc_rand", &v2.bmc_rand);
+        _ = try case.hex("bmc_guid", &v2.bmc_guid);
+        return self;
+    }
+};
+
+/// Replay a whole RAKP exchange through the exported functions and check every
+/// answer against the fixture.
+fn checkRakpWrappers(case: Case) !void {
+    const oem = try case.str("oem");
+    stubs.active_oem = oem;
+    defer stubs.active_oem = "";
+
+    var fixture = try Fixture.init(case);
+    const session = &fixture.session;
+    const intf = &fixture.intf;
+
+    var scratch: [scratch_size]u8 = undefined;
+    var bmc_mac: [mac_mod.max_digest_length]u8 = @splat(0);
+
+    // RAKP 2, then RAKP 3, then the SIK the rest of the exchange is keyed with.
+    if (try case.int("auth_alg") != auth_rakp_none) {
+        const expected_mac = try case.hex("rakp2_mac", &scratch);
+        @memcpy(bmc_mac[0..expected_mac.len], expected_mac);
+        try std.testing.expectEqual(
+            @as(c_int, @intCast(try case.int("rakp2_matches_real"))),
+            lanplus_crypt.rakp2HmacMatches(session, &bmc_mac, intf),
+        );
+        try expectSensitivity(case, "rakp2_byte_sensitivity", &bmc_mac, expected_mac.len, struct {
+            fn call(s: *intf_mod.Session, m: [*c]const u8, i: *intf_mod.Intf) c_int {
+                return lanplus_crypt.rakp2HmacMatches(s, m, i);
+            }
+        }.call, session, intf);
+    }
+
+    var rakp3: [mac_mod.max_digest_length]u8 = @splat(0);
+    var rakp3_len: u32 = 0;
+    try std.testing.expectEqual(
+        @as(c_int, @intCast(try case.int("rakp3_rc"))),
+        lanplus_crypt.generateRakp3Authcode(&rakp3, session, &rakp3_len, intf),
+    );
+    try std.testing.expectEqual(try case.int("rakp3_len"), rakp3_len);
+    try std.testing.expectEqualSlices(
+        u8,
+        try case.hex("rakp3_mac", &scratch),
+        rakp3[0..rakp3_len],
+    );
+
+    try std.testing.expectEqual(
+        @as(c_int, @intCast(try case.int("sik_rc"))),
+        lanplus_crypt.generateSik(session, intf),
+    );
+    try std.testing.expectEqual(try case.int("sik_len"), session.v2_data.sik_len);
+    try std.testing.expectEqualSlices(
+        u8,
+        try case.hex("sik", &scratch),
+        session.v2_data.sik[0..session.v2_data.sik_len],
+    );
+
+    // K1 and K2 are dumped whole, so a copy of the wrong length shows up as a
+    // difference in the untouched tail rather than being silently trimmed.
+    try std.testing.expectEqual(
+        @as(c_int, @intCast(try case.int("k1_rc"))),
+        lanplus_crypt.generateK1(session),
+    );
+    try std.testing.expectEqual(try case.int("k1_len"), session.v2_data.k1_len);
+    try std.testing.expectEqualSlices(u8, try case.hex("k1", &scratch), &session.v2_data.k1);
+
+    try std.testing.expectEqual(
+        @as(c_int, @intCast(try case.int("k2_rc"))),
+        lanplus_crypt.generateK2(session),
+    );
+    try std.testing.expectEqual(try case.int("k2_len"), session.v2_data.k2_len);
+    try std.testing.expectEqualSlices(u8, try case.hex("k2", &scratch), &session.v2_data.k2);
+
+    if (try case.int("auth_alg") == auth_rakp_none) return;
+
+    // RAKP 4, and the byte-sensitivity map that pins its truncation length.
+    {
+        const expected_mac = try case.hex("rakp4_mac", &scratch);
+        bmc_mac = @splat(0);
+        @memcpy(bmc_mac[0..expected_mac.len], expected_mac);
+        try std.testing.expectEqual(
+            @as(c_int, @intCast(try case.int("rakp4_matches_real"))),
+            lanplus_crypt.rakp4HmacMatches(session, &bmc_mac, intf),
+        );
+        try expectSensitivity(case, "rakp4_byte_sensitivity", &bmc_mac, expected_mac.len, struct {
+            fn call(s: *intf_mod.Session, m: [*c]const u8, i: *intf_mod.Intf) c_int {
+                return lanplus_crypt.rakp4HmacMatches(s, m, i);
+            }
+        }.call, session, intf);
+    }
+
+    // The integrity check value over a whole synthetic packet, through the real
+    // `lanplus_has_valid_auth_code` -- which is where the packet offset and the
+    // third truncation table live.
+    if (case.get("integrity_packet") != null) {
+        var rs = std.mem.zeroes(ipmi.Response);
+        const packet = try case.hex("integrity_packet", &scratch);
+        @memcpy(rs.data[0..packet.len], packet);
+        rs.data_len = @intCast(packet.len);
+        rs.session.authtype = authtype_rmcp_plus;
+        rs.session.bAuthenticated = 1;
+        session.v2_data.session_state = @enumFromInt(state_active);
+
+        try std.testing.expectEqual(
+            @as(c_int, @intCast(try case.int("integrity_valid"))),
+            lanplus_crypt.hasValidAuthCode(&rs, session),
+        );
+
+        const authcode_length: u32 = @intCast(try case.int("integrity_authcode_length"));
+        const map = try case.str("integrity_byte_sensitivity");
+        const base = packet.len - authcode_length;
+        for (map, 0..) |want, i| {
+            rs.data[base + i] ^= 0x01;
+            const answer = lanplus_crypt.hasValidAuthCode(&rs, session);
+            rs.data[base + i] ^= 0x01;
+            try std.testing.expectEqual(want == '1', answer == 0);
+        }
+    }
+}
+
+/// Flip each byte of `good` in turn and check the wrapper's answer against the
+/// recorded map.  This is what actually pins a comparison length: on a correct
+/// authcode every candidate length agrees, and only a crafted mismatch
+/// separates them.
+fn expectSensitivity(
+    case: Case,
+    field: []const u8,
+    good: *[mac_mod.max_digest_length]u8,
+    length: usize,
+    call: *const fn (*intf_mod.Session, [*c]const u8, *intf_mod.Intf) c_int,
+    session: *intf_mod.Session,
+    intf: *intf_mod.Intf,
+) !void {
+    const map = try case.str(field);
+    try std.testing.expectEqual(length, map.len);
+    for (map, 0..) |want, i| {
+        good[i] ^= 0x01;
+        const answer = call(session, good, intf);
+        good[i] ^= 0x01;
+        try std.testing.expectEqual(want == '1', answer == 0);
+    }
+}
+
+test "RAKP vectors, through the exported wrappers" {
+    const count = try forEachCase(rakp_vectors, checkRakpWrappers);
+    try std.testing.expectEqual(@as(usize, 29), count);
 }
 
 test "RAKP key derivation vectors" {
     const count = try forEachCase(rakp_vectors, checkRakp);
-    try std.testing.expectEqual(@as(usize, 27), count);
+    try std.testing.expectEqual(@as(usize, 29), count);
 }
 
 // ---------------------------------------------------------------------------
@@ -537,8 +917,8 @@ test "RAKP key derivation vectors" {
 
 /// `IPMI_SESSION_AUTHTYPE_RMCP_PLUS`.
 const authtype_rmcp_plus = 0x06;
-/// `LANPLUS_STATE_ACTIVE`.
-const state_active = 3;
+/// `LANPLUS_STATE_ACTIVE` -- the 7th enumerator of `enum LANPLUS_SESSION_STATE`.
+const state_active = 6;
 
 fn checkIntegrity(case: Case) !void {
     var k1: [mac_mod.max_digest_length]u8 = undefined;
@@ -604,6 +984,12 @@ fn checkIntegrity(case: Case) !void {
         try std.testing.expectEqual(try case.int(variant.field), @intFromBool(still_valid));
         try std.testing.expect(!still_valid);
     }
+
+    var map: [mac_mod.max_digest_length]u8 = undefined;
+    try std.testing.expectEqualStrings(
+        try case.str("byte_sensitivity"),
+        sensitivityMap(bmc, authcode_length, &map),
+    );
 
     if (case.get("valid_digest_tail")) |_| {
         @memcpy(tampered[0..data.len], data);
@@ -682,6 +1068,6 @@ test "assert branch vectors" {
 test "every fixture file is covered" {
     // The per-file tests above pin each count; this keeps the total honest if a
     // fixture is ever added without a test to read it.
-    const totals = 28 + 94 + 320 + 54 + 59 + 85 + 27 + 12;
-    try std.testing.expectEqual(@as(usize, 679), totals);
+    const totals = 28 + 94 + 320 + 54 + 59 + 85 + 29 + 12;
+    try std.testing.expectEqual(@as(usize, 681), totals);
 }

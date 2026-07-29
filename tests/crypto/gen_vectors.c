@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -166,6 +167,81 @@ static void emit_int(const char *field, long value)
 static void emit_str(const char *field, const char *value)
 {
 	fprintf(out, "%s=%s\n", field, value);
+}
+
+/*
+ * A byte-sensitivity map: which bytes of a keyed hash the C actually compares.
+ *
+ * A vector that only records "the correct authcode is accepted" does not pin
+ * the comparison *length*, because 12 and 20 agree whenever all 20 bytes
+ * match.  Pinning a length needs an input on which the candidate lengths
+ * disagree, so this flips one bit in each byte of an otherwise-correct authcode
+ * in turn and records whether the C still accepted it:
+ *
+ *     '1' -> flipping this byte changed the answer to "no match"
+ *     '0' -> the C did not look at this byte
+ *
+ * For HMAC-SHA1-96 that is "111111111111" followed by eight '0's, which is
+ * satisfied by exactly one comparison length.  The map is derived from the C's
+ * observed behaviour rather than transcribed from a header, so it cannot
+ * inherit a mistake from the port it is meant to check.
+ */
+typedef int (*recheck_fn)(const uint8_t *candidate, void *ctx);
+
+static void emit_sensitivity(const char *field, const uint8_t *good, int len,
+                             recheck_fn recheck, void *ctx)
+{
+	uint8_t trial[IPMI_MAX_MD_SIZE];
+	char map[IPMI_MAX_MD_SIZE + 1];
+	int i;
+
+	assert(len <= IPMI_MAX_MD_SIZE);
+	for (i = 0; i < len; ++i) {
+		memcpy(trial, good, (size_t)len);
+		trial[i] ^= 0x01;
+		capture_reset();
+		map[i] = recheck(trial, ctx) ? '0' : '1';
+	}
+	map[len] = '\0';
+	capture_reset();
+	emit_str(field, map);
+}
+
+/* Contexts for emit_sensitivity(), one per function whose comparison length
+ * has to be pinned. */
+struct rakp_recheck_ctx {
+	struct ipmi_session *session;
+	struct ipmi_intf *intf;
+};
+
+static int recheck_rakp2(const uint8_t *candidate, void *vctx)
+{
+	struct rakp_recheck_ctx *ctx = vctx;
+	return lanplus_rakp2_hmac_matches(ctx->session, (uint8_t *)candidate,
+	                                  ctx->intf);
+}
+
+static int recheck_rakp4(const uint8_t *candidate, void *vctx)
+{
+	struct rakp_recheck_ctx *ctx = vctx;
+	return lanplus_rakp4_hmac_matches(ctx->session, (uint8_t *)candidate,
+	                                  ctx->intf);
+}
+
+struct integrity_recheck_ctx {
+	struct ipmi_rs *rs;
+	struct ipmi_session *session;
+	/* Offset of the authcode inside rs->data. */
+	int offset;
+};
+
+static int recheck_integrity(const uint8_t *candidate, void *vctx)
+{
+	struct integrity_recheck_ctx *ctx = vctx;
+	int len = ctx->rs->data_len - ctx->offset;
+
+	memcpy(ctx->rs->data + ctx->offset, candidate, (size_t)len);
+	return lanplus_has_valid_auth_code(ctx->rs, ctx->session);
 }
 
 static void emit_capture(const char *field, const char *desc)
@@ -791,6 +867,27 @@ static void gen_integrity(const char *dir)
 					memcpy(rs.data + rs.data_len - authcode_length,
 					       generated, authcode_length);
 				}
+
+				/*
+				 * The whole truncation table, read straight off
+				 * the C: flip each byte of the trailing authcode
+				 * in turn and record whether the C noticed.  The
+				 * run of '1's is exactly the compared prefix, so
+				 * this pins the length from both sides at once --
+				 * too long and the trailing '0's disagree, too
+				 * short and the leading '1's do.
+				 */
+				{
+					struct integrity_recheck_ctx ctx = {
+						&rs, &session,
+						(int)(rs.data_len - authcode_length)
+					};
+					emit_sensitivity(
+						"byte_sensitivity",
+						rs.data + rs.data_len - authcode_length,
+						(int)authcode_length,
+						recheck_integrity, &ctx);
+				}
 			}
 		}
 	}
@@ -862,6 +959,8 @@ static void gen_rakp_case(const struct rakp_case *tc, int index)
 	uint8_t bmc_mac[IPMI_MAX_MD_SIZE];
 	uint8_t rakp3[IPMI_MAX_MD_SIZE];
 	uint32_t rakp3_len = 0;
+	int rakp2_mac_len = 0;
+	int rakp4_mac_len = 0;
 	int matches;
 
 	memset(&session, 0, sizeof(session));
@@ -931,10 +1030,20 @@ static void gen_rakp_case(const struct rakp_case *tc, int index)
 			const uint8_t *mac = capture_get(
 				">> rakp2 mac as computed by the remote console", &len);
 			memcpy(bmc_mac, mac, len);
+			rakp2_mac_len = len;
 		}
 		capture_reset();
 		emit_int("rakp2_matches_real",
 		         lanplus_rakp2_hmac_matches(&session, bmc_mac, &intf));
+
+		/* Which bytes of the BMC's RAKP 2 authcode are compared.  This
+		 * function compares the whole digest, so the map is all ones
+		 * and its *length* pins the digest length. */
+		{
+			struct rakp_recheck_ctx ctx = { &session, &intf };
+			emit_sensitivity("rakp2_byte_sensitivity", bmc_mac,
+			                 rakp2_mac_len, recheck_rakp2, &ctx);
+		}
 	}
 
 	/* RAKP 3 */
@@ -981,10 +1090,24 @@ static void gen_rakp_case(const struct rakp_case *tc, int index)
 			const uint8_t *mac = capture_get(
 				">> rakp4 mac as computed by the remote console", &len);
 			memcpy(bmc_mac, mac, len);
+			rakp4_mac_len = len;
 		}
 		capture_reset();
 		emit_int("rakp4_matches_real",
 		         lanplus_rakp4_hmac_matches(&session, bmc_mac, &intf));
+
+		/*
+		 * The one that matters.  Unlike RAKP 2, this function compares
+		 * only a *truncated* prefix, and which prefix depends on the
+		 * authentication algorithm -- or, under `intelplus`, on the
+		 * integrity algorithm, from a second and differently populated
+		 * table.  Both are pinned here from observed behaviour.
+		 */
+		{
+			struct rakp_recheck_ctx ctx = { &session, &intf };
+			emit_sensitivity("rakp4_byte_sensitivity", bmc_mac,
+			                 rakp4_mac_len, recheck_rakp4, &ctx);
+		}
 	}
 
 	/* Integrity check value over a synthetic RMCP+ packet. */
@@ -1037,6 +1160,20 @@ static void gen_rakp_case(const struct rakp_case *tc, int index)
 		capture_reset();
 		emit_int("integrity_valid_tampered",
 		         lanplus_has_valid_auth_code(&rs, &session));
+		rs.data[10] ^= 0xff;
+
+		/* Which bytes of the trailing authcode the C compares -- the
+		 * third and last of the truncation tables. */
+		{
+			struct integrity_recheck_ctx ctx = {
+				&rs, &session,
+				(int)(rs.data_len - authcode_length)
+			};
+			emit_sensitivity("integrity_byte_sensitivity",
+			                 rs.data + rs.data_len - authcode_length,
+			                 (int)authcode_length,
+			                 recheck_integrity, &ctx);
+		}
 	}
 
 	active_oem = NULL;
@@ -1104,6 +1241,18 @@ static void gen_rakp(const char *dir)
 		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", "intelplus", 0x14, 4 },
 		{ "rakp/md5/intelplus",    IPMI_AUTH_RAKP_HMAC_MD5,
 		  IPMI_INTEGRITY_HMAC_MD5_128, "admin", "password", "", "intelplus", 0x14, 4 },
+		/*
+		 * `intelplus` keys and truncates RAKP 4 by the *integrity*
+		 * algorithm from a table of its own.  On the diagonal that is
+		 * indistinguishable from the authentication table, so these two
+		 * pull the algorithms apart: the digest length comes from one
+		 * table and the comparison length from the other, and getting
+		 * either wrong changes the recorded byte-sensitivity map.
+		 */
+		{ "rakp/mix/intelplus-sha1-md5", IPMI_AUTH_RAKP_HMAC_SHA1,
+		  IPMI_INTEGRITY_HMAC_MD5_128, "admin", "password", "", "intelplus", 0x14, 4 },
+		{ "rakp/mix/intelplus-md5-sha1", IPMI_AUTH_RAKP_HMAC_MD5,
+		  IPMI_INTEGRITY_HMAC_SHA1_96, "admin", "password", "", "intelplus", 0x14, 4 },
 		/*
 		 * `intelplus` + cipher suite 17 is deliberately absent: the C
 		 * asserts on it inside `lanplus_rakp4_hmac_matches` because the

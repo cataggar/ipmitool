@@ -95,6 +95,53 @@ pub fn integrityAuthcodeLength(integrity_alg: u8) ?u32 {
     };
 }
 
+/// How much of the BMC's RAKP 4 authcode `lanplus_rakp4_hmac_matches` compares,
+/// keyed by the *authentication* algorithm.
+///
+/// A third table, distinct from both of the above: it accepts `0x03`
+/// (`IPMI_AUTH_RAKP_HMAC_SHA256`), which `integrityAuthcodeLength` rejects.
+/// Returns null for the values the C asserts on.
+pub fn rakpAuthcodeLength(auth_alg: u8) ?u32 {
+    return switch (auth_alg) {
+        // IPMI_AUTH_RAKP_HMAC_SHA1
+        0x01 => Algorithm.sha1.authcodeLength(),
+        // IPMI_AUTH_RAKP_HMAC_MD5
+        0x02 => Algorithm.md5.authcodeLength(),
+        // IPMI_AUTH_RAKP_HMAC_SHA256
+        0x03 => Algorithm.sha256.authcodeLength(),
+        else => null,
+    };
+}
+
+/// The same, for the `intelplus` branch, which is keyed by the *integrity*
+/// algorithm instead.
+///
+/// Narrower again: the Intel workaround handles only SHA1-96 and MD5-128, so
+/// `IPMI_INTEGRITY_HMAC_SHA256_128` (0x04) aborts here even though
+/// `integrityAuthcodeLength` accepts it. See the note about cipher suite 17 in
+/// `doc/zig-migration/crypto.md`.
+pub fn intelplusRakpAuthcodeLength(integrity_alg: u8) ?u32 {
+    return switch (integrity_alg) {
+        // IPMI_INTEGRITY_HMAC_SHA1_96
+        0x01 => Algorithm.sha1.authcodeLength(),
+        // IPMI_INTEGRITY_HMAC_MD5_128
+        0x02 => Algorithm.md5.authcodeLength(),
+        else => null,
+    };
+}
+
+/// The digest length `lanplus_rakp*` assert on after each keyed hash.
+///
+/// Returns null for the values the C asserts on.
+pub fn rakpDigestLength(auth_alg: u8) ?u32 {
+    return switch (auth_alg) {
+        0x01 => Algorithm.sha1.digestLength(),
+        0x02 => Algorithm.md5.digestLength(),
+        0x03 => Algorithm.sha256.digestLength(),
+        else => null,
+    };
+}
+
 /// HMAC `data` under `key`, writing the digest to the front of `out`.
 ///
 /// Returns the digest length, which is what the C hands back through `md_len`.

@@ -93,7 +93,7 @@ fn rand(buffer: [*c]u8, num_bytes: u32) callconv(.c) c_int {
 /// `lanplus_HMAC` - MAC `d[0..n]` under `key`, selecting the digest with `mac`.
 ///
 /// Returns `md`, as the C did.  `md_len` receives the digest length.
-fn hmac(
+pub fn hmac(
     algorithm: u8,
     key: ?*const anyopaque,
     key_len: c_int,
@@ -131,7 +131,7 @@ fn hmac(
 /// payloads itself, and OpenSSL was explicitly told not to add any
 /// (`EVP_CIPHER_CTX_set_padding(ctx, 0)`), so the block cipher output is the
 /// same length as its input.
-fn encryptAesCbc128(
+pub fn encryptAesCbc128(
     iv: [*c]const u8,
     key: [*c]const u8,
     input: [*c]const u8,
@@ -165,7 +165,7 @@ fn encryptAesCbc128(
 }
 
 /// `lanplus_decrypt_aes_cbc_128` - decrypt `input_length` bytes into `output`.
-fn decryptAesCbc128(
+pub fn decryptAesCbc128(
     iv: [*c]const u8,
     key: [*c]const u8,
     input: [*c]const u8,

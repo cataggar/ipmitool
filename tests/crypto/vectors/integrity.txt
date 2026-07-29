@@ -15,6 +15,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/33]
 integrity_alg=1
@@ -28,6 +29,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/47]
 integrity_alg=1
@@ -41,6 +43,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/48]
 integrity_alg=1
@@ -54,6 +57,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/64]
 integrity_alg=1
@@ -67,6 +71,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/96]
 integrity_alg=1
@@ -80,6 +85,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/97]
 integrity_alg=1
@@ -93,6 +99,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/128]
 integrity_alg=1
@@ -106,6 +113,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k16/255]
 integrity_alg=1
@@ -119,6 +127,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/32]
 integrity_alg=1
@@ -132,6 +141,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/33]
 integrity_alg=1
@@ -145,6 +155,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/47]
 integrity_alg=1
@@ -158,6 +169,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/48]
 integrity_alg=1
@@ -171,6 +183,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/64]
 integrity_alg=1
@@ -184,6 +197,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/96]
 integrity_alg=1
@@ -197,6 +211,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/97]
 integrity_alg=1
@@ -210,6 +225,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/128]
 integrity_alg=1
@@ -223,6 +239,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k20/255]
 integrity_alg=1
@@ -236,6 +253,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/32]
 integrity_alg=1
@@ -249,6 +267,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/33]
 integrity_alg=1
@@ -262,6 +281,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/47]
 integrity_alg=1
@@ -275,6 +295,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/48]
 integrity_alg=1
@@ -288,6 +309,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/64]
 integrity_alg=1
@@ -301,6 +323,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/96]
 integrity_alg=1
@@ -314,6 +337,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/97]
 integrity_alg=1
@@ -327,6 +351,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/128]
 integrity_alg=1
@@ -340,6 +365,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/sha1-96/k32/255]
 integrity_alg=1
@@ -353,6 +379,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=111111111111
 
 [integrity/md5-128/k16/32]
 integrity_alg=2
@@ -365,6 +392,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/33]
 integrity_alg=2
@@ -377,6 +405,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/47]
 integrity_alg=2
@@ -389,6 +418,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/48]
 integrity_alg=2
@@ -401,6 +431,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/64]
 integrity_alg=2
@@ -413,6 +444,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/96]
 integrity_alg=2
@@ -425,6 +457,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/97]
 integrity_alg=2
@@ -437,6 +470,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/128]
 integrity_alg=2
@@ -449,6 +483,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k16/255]
 integrity_alg=2
@@ -461,6 +496,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/32]
 integrity_alg=2
@@ -473,6 +509,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/33]
 integrity_alg=2
@@ -485,6 +522,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/47]
 integrity_alg=2
@@ -497,6 +535,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/48]
 integrity_alg=2
@@ -509,6 +548,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/64]
 integrity_alg=2
@@ -521,6 +561,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/96]
 integrity_alg=2
@@ -533,6 +574,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/97]
 integrity_alg=2
@@ -545,6 +587,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/128]
 integrity_alg=2
@@ -557,6 +600,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k20/255]
 integrity_alg=2
@@ -569,6 +613,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/32]
 integrity_alg=2
@@ -581,6 +626,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/33]
 integrity_alg=2
@@ -593,6 +639,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/47]
 integrity_alg=2
@@ -605,6 +652,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/48]
 integrity_alg=2
@@ -617,6 +665,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/64]
 integrity_alg=2
@@ -629,6 +678,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/96]
 integrity_alg=2
@@ -641,6 +691,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/97]
 integrity_alg=2
@@ -653,6 +704,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/128]
 integrity_alg=2
@@ -665,6 +717,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/md5-128/k32/255]
 integrity_alg=2
@@ -677,6 +730,7 @@ valid=1
 valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/32]
 integrity_alg=4
@@ -690,6 +744,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/33]
 integrity_alg=4
@@ -703,6 +758,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/47]
 integrity_alg=4
@@ -716,6 +772,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/48]
 integrity_alg=4
@@ -729,6 +786,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/64]
 integrity_alg=4
@@ -742,6 +800,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/96]
 integrity_alg=4
@@ -755,6 +814,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/97]
 integrity_alg=4
@@ -768,6 +828,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/128]
 integrity_alg=4
@@ -781,6 +842,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k16/255]
 integrity_alg=4
@@ -794,6 +856,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/32]
 integrity_alg=4
@@ -807,6 +870,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/33]
 integrity_alg=4
@@ -820,6 +884,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/47]
 integrity_alg=4
@@ -833,6 +898,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/48]
 integrity_alg=4
@@ -846,6 +912,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/64]
 integrity_alg=4
@@ -859,6 +926,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/96]
 integrity_alg=4
@@ -872,6 +940,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/97]
 integrity_alg=4
@@ -885,6 +954,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/128]
 integrity_alg=4
@@ -898,6 +968,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k20/255]
 integrity_alg=4
@@ -911,6 +982,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/32]
 integrity_alg=4
@@ -924,6 +996,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/33]
 integrity_alg=4
@@ -937,6 +1010,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/47]
 integrity_alg=4
@@ -950,6 +1024,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/48]
 integrity_alg=4
@@ -963,6 +1038,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/64]
 integrity_alg=4
@@ -976,6 +1052,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/96]
 integrity_alg=4
@@ -989,6 +1066,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/97]
 integrity_alg=4
@@ -1002,6 +1080,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/128]
 integrity_alg=4
@@ -1015,6 +1094,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/sha256-128/k32/255]
 integrity_alg=4
@@ -1028,6 +1108,7 @@ valid_body_flipped=0
 valid_authcode_last_flipped=0
 valid_authcode_first_flipped=0
 valid_digest_tail=0
+byte_sensitivity=1111111111111111
 
 [integrity/early/not-rmcp-plus]
 integrity_alg=1

@@ -12,7 +12,7 @@ asserted to reproduce them bit for bit.
 The 173-case golden harness under `tests/golden/` does **not** exercise any of
 this code — it drives the `dummy` interface, which has no session layer, so
 nothing below the command layer is reachable from it (see
-[#26](https://github.com/cataggar/ipmitool/issues/26)). The 679 captured
+[#26](https://github.com/cataggar/ipmitool/issues/26)). The 681 captured
 vectors are therefore not a supplement to the golden run; for this port they
 are the verification.
 
@@ -53,19 +53,24 @@ tested independently of the exported wrappers:
 | `lanplus_decrypt_aes_cbc_128` | `aes_cbc.txt`, `aborts.txt` | 17 + 1 |
 | `lanplus_encrypt_payload` | `payload.txt`, `aborts.txt` | 59 + 1 |
 | `lanplus_decrypt_payload` | `payload.txt`, `aborts.txt` | 59 + 3 |
-| `lanplus_rakp2_hmac_matches` | `rakp.txt`, `aborts.txt` | 27 + 1 |
-| `lanplus_rakp4_hmac_matches` | `rakp.txt`, `aborts.txt` | 27 + 1 |
-| `lanplus_generate_rakp3_authcode` | `rakp.txt`, `aborts.txt` | 27 + 1 |
-| `lanplus_generate_sik` | `rakp.txt`, `aborts.txt` | 27 + 1 |
-| `lanplus_generate_k1` | `rakp.txt` | 27 |
-| `lanplus_generate_k2` | `rakp.txt` | 27 |
-| `lanplus_has_valid_auth_code` | `integrity.txt`, `rakp.txt`, `aborts.txt` | 85 + 27 + 1 |
+| `lanplus_rakp2_hmac_matches` | `rakp.txt`, `aborts.txt` | 29 + 1 |
+| `lanplus_rakp4_hmac_matches` | `rakp.txt`, `aborts.txt` | 29 + 1 |
+| `lanplus_generate_rakp3_authcode` | `rakp.txt`, `aborts.txt` | 29 + 1 |
+| `lanplus_generate_sik` | `rakp.txt`, `aborts.txt` | 29 + 1 |
+| `lanplus_generate_k1` | `rakp.txt` | 29 |
+| `lanplus_generate_k2` | `rakp.txt` | 29 |
+| `lanplus_has_valid_auth_code` | `integrity.txt`, `rakp.txt`, `aborts.txt` | 85 + 29 + 1 |
 | `lanplus_seed_prng` | **none** | nondeterministic; see *What has no vector coverage* |
 | `lanplus_rand` | **none** | nondeterministic; see *What has no vector coverage* |
 
 The `payload.txt` and `rakp.txt` cases each pin several intermediate buffers,
 so the case counts above understate the number of individual byte-string
 comparisons.
+
+Every one of these functions is driven **through its exported C-ABI entry
+point** by the vector tests, not re-implemented alongside it; see *The tests
+must call the shipped code, not re-implement it* below. The only exceptions are
+`lanplus_seed_prng` and `lanplus_rand`.
 
 ## Algorithm mapping
 
@@ -142,11 +147,24 @@ differently:
   `lanplus_rakp4_hmac_matches()` (authentication space) each have their own
   `switch` that `assert(0)`s on the value the *other* space owns —
   `0x03` (`IPMI_INTEGRITY_MD5_128`) and `0x04` respectively.
-  `mac.zig`'s `integrityAuthcodeLength` is therefore a *separate* lookup from
-  `algorithmFor`, returning null exactly where the C asserts, and
-  `lanplus_crypt.zig` keeps the authentication-space switches explicit rather
-  than routing them through `mac.zig`. `abort/integrity/md5-128` in
-  `aborts.txt` pins the resulting abort.
+  `mac.zig` therefore holds **four** separate lookups, each returning null
+  exactly where the C asserts. `abort/integrity/md5-128` in `aborts.txt` pins
+  the resulting abort.
+
+| `mac.zig` lookup | C site | Accepts | Asserts on |
+| --- | --- | --- | --- |
+| `algorithmFor` | `lanplus_HMAC` | 0x01, 0x02, 0x03, 0x04 | everything else |
+| `integrityAuthcodeLength` | `lanplus_has_valid_auth_code` | 0x01→12, 0x02→16, 0x04→16 | 0x03 |
+| `rakpAuthcodeLength` | `lanplus_rakp4_hmac_matches`, non-`intelplus` | 0x01→12, 0x02→16, 0x03→16 | 0x04 |
+| `intelplusRakpAuthcodeLength` | `lanplus_rakp4_hmac_matches`, `intelplus` | 0x01→12, 0x02→16 | 0x04 |
+
+All four live in `mac.zig` rather than being duplicated at their call sites,
+because a length that exists in more than one place is a length that can drift.
+They share `Algorithm.authcodeLength` for the numbers and differ only in which
+algorithm ids they accept — which is exactly how the C's macros and switches
+relate. The mutation battery below still mutates each table *individually* (by
+replacing its delegation with a literal) so that a future edit reintroducing
+per-table numbers stays covered.
 
 ## Confidentiality padding
 
@@ -277,6 +295,13 @@ installs a capturing `printbuf` so the C's own intermediate values (the
 generated IV, the K1/K2 material, the RAKP message buffers) end up in the
 fixtures too, rather than being re-derived by the Zig side.
 
+Re-running the generator reproduces every fixture byte for byte except
+`payload.txt`, whose `lanplus_encrypt_payload` cases embed a fresh random IV
+drawn inside the C. The abort-capture harness in `gen_vectors.c` is also
+occasionally seen to record `SIGPIPE` instead of `SIGABRT` for one case when
+the aborting child loses the race to write its diagnostic; the committed
+fixture holds the correct `SIGABRT` capture.
+
 > **Azure Linux note:** `/etc/ssl/openssl.cnf` there activates the SymCrypt
 > provider, which refuses HMAC-MD5 and makes the generator fail. The build step
 > runs with `OPENSSL_CONF=/dev/null` to select OpenSSL's built-in default
@@ -284,7 +309,7 @@ fixtures too, rather than being re-derived by the Zig side.
 
 ### Coverage
 
-**679 cases**, parsed and asserted by `src/zig/crypto/vectors_test.zig`:
+**681 cases**, parsed and asserted by `src/zig/crypto/vectors_test.zig`:
 
 | Fixture | Cases | What it pins |
 | --- | --- | --- |
@@ -294,7 +319,7 @@ fixtures too, rather than being re-derived by the Zig side.
 | `aes_cbc.txt` | 54 | encrypt and decrypt at 0–10, 16 and 32 blocks; twelve degenerate keys (all-zero, all-ones, each single bit set); eight IV variations; and eight `input == output` cases at 1–4 blocks in both directions |
 | `payload.txt` | 59 | every payload length 0–48 exhaustively, plus 100, 127, 128, 255, 256 and 511, so every padding residue class is hit from both sides; plus four `IPMI_CRYPT_NONE` cases pinning the encrypt/decrypt asymmetry |
 | `integrity.txt` | 85 | `lanplus_has_valid_auth_code` for all three integrity algorithms × three K1 lengths × nine packet lengths, plus its four early returns — see below |
-| `rakp.txt` | 27 | complete RAKP 1–4 sequences across SHA-1, MD5 and SHA-256, with and without a Kg, plus the no-username, no-password, long-username, single-character-username, every-privilege-level, name-only-lookup, `i82571spt` (with and without Kg), `intelplus` and no-auth paths, and eight cases that decouple the authentication algorithm from the integrity algorithm. Each case pins the exact RAKP 2/3/4 and SIK message buffers, every authcode and return code, the SIK, K1, K2, the integrity authcode length, and both the accepting and the tampered `lanplus_has_valid_auth_code` results |
+| `rakp.txt` | 29 | complete RAKP 1–4 sequences across SHA-1, MD5 and SHA-256, with and without a Kg, plus the no-username, no-password, long-username, single-character-username, every-privilege-level, name-only-lookup, `i82571spt` (with and without Kg), `intelplus` and no-auth paths, and ten cases that decouple the authentication algorithm from the integrity algorithm — two of them specifically so the `intelplus` truncation table cannot hide behind the non-`intelplus` one on the diagonal. Each case pins the exact RAKP 2/3/4 and SIK message buffers, every authcode and return code, the SIK, K1, K2, the integrity authcode length, and both the accepting and the tampered `lanplus_has_valid_auth_code` results |
 | `aborts.txt` | 12 | every reachable `assert()` branch — see below |
 
 The vectors_test module asserts the exact per-file case counts, so a truncated
@@ -315,12 +340,6 @@ and, crucially, one where the authcode is replaced by the **tail** of the
 untruncated digest. Only an implementation that truncates at the right offset
 rejects that last one. `vectors_test.zig` reproduces all five answers.
 
-A mutation check confirms the fixtures bite: changing
-`mac.zig`'s `integrityAuthcodeLength(0x01)` from 12 to 20 fails both the
-integrity vectors and the standalone truncation test, and making
-`aes_cbc.decrypt` read its chaining block back out of the (already overwritten)
-output buffer fails `aes/decrypt-in-place/32`.
-
 #### What has no vector coverage
 
 * `lanplus_seed_prng` and `lanplus_rand` are nondeterministic by construction,
@@ -333,6 +352,117 @@ output buffer fails `aes/decrypt-in-place/32`.
   endianness plus a reading of the C.
 * `lanplus_rakp4_hmac_matches`'s `intelplus` path with SHA-256, which aborts —
   captured in `aborts.txt` rather than `rakp.txt` for that reason.
+
+## Pinning a *length* needs a vector where the candidate lengths disagree
+
+**This is the most important thing in this document. Issue
+[#10](https://github.com/cataggar/ipmitool/issues/10) (transports) will hit the
+identical problem with checksums and packet lengths, and should use the same
+method.**
+
+A vector that asserts only *"correct input produces correct output"* does not
+pin a length. If the BMC's authcode is correct in all 20 bytes, comparing 12 of
+them and comparing all 20 give the same answer, so no such vector can tell the
+two apart. The first version of this port had exactly that hole: the integrity
+truncation length was pinned, but the RAKP 4 one was not, and changing it from
+12 to 20 left the whole suite green. That constant decides how many bytes of a
+BMC's RAKP 4 authcode are checked, so a wrong value there is an
+authentication-strength defect that would have shipped as a passing build.
+
+Pinning a length requires an input crafted so that the candidate lengths
+*disagree* — for a truncated comparison, an authcode that matches in the first
+12 bytes and differs after them. Correct code must answer *match*; any longer
+comparison must answer *no match*.
+
+The generalisation used here is a **byte-sensitivity map**. For each byte of an
+otherwise-correct authcode the generator flips one bit, asks the C whether it
+still accepts, and records `1` if the C noticed and `0` if it did not:
+
+```
+rakp4_byte_sensitivity=11111111111100000000     # HMAC-SHA1-96: 12 of 20
+rakp4_byte_sensitivity=1111111111111111         # HMAC-MD5-128: 16 of 16
+rakp4_byte_sensitivity=11111111111111110000000000000000  # HMAC-SHA256-128: 16 of 32
+```
+
+This is better than a single crafted authcode in three ways:
+
+1. It pins the length from **both** sides at once. Too long and the trailing
+   `0`s disagree; too short and the leading `1`s disagree. Exactly one length
+   satisfies the map.
+2. It is **transcription-free**. The map is observed behaviour of the C, not a
+   number copied out of `lanplus.h` — so it cannot inherit the same mistake as
+   the port it is checking.
+3. It needs no knowledge of *why* a byte matters, so it also catches offsets,
+   field reordering and off-by-ones, not just truncation.
+
+Maps are emitted for RAKP 2, RAKP 4 (both the `intelplus` and non-`intelplus`
+branches) and the integrity check value. See `emit_sensitivity()` in
+`tests/crypto/gen_vectors.c` and `expectSensitivity()` in
+`src/zig/crypto/vectors_test.zig`.
+
+### The tests must call the shipped code, not re-implement it
+
+The second-order reason the gap survived is that the vector tests originally
+*re-implemented* what the exported wrappers do and compared that against the
+fixtures. Any constant living only in a C-facing wrapper is then invisible: no
+test executes the line it is on.
+
+`src/zig/crypto/test_stubs.zig` fixes this structurally. It provides the four
+C symbols the wrappers need to link (`verbose`, `printbuf`, `lprintf`,
+`buf2str`, `ipmi_oem_active`) so the **real** exported functions are linked into
+the unit-test binary and driven by the vectors. Every one of the 17 exported
+symbols except the two PRNG entry points is now called directly by a test. The
+stub file `@compileError`s outside `builtin.is_test` so it can never reach a
+real link.
+
+### Mutation battery
+
+Every length, offset, constant and comparison in the port was mutated one at a
+time and the suite re-run. All of the following now fail:
+
+| Mutation | Caught by |
+| --- | --- |
+| `Algorithm.authcodeLength` sha1 12→20 / md5 16→8 / sha256 16→32 | `rakp/{sha1,md5,sha256}/admin` |
+| `integrityAuthcodeLength` sha1 12→20, md5 16→12, sha256 16→32 (table de-unified) | `rakp/{sha1,md5}/admin` |
+| `rakpAuthcodeLength` sha1 12→20, md5 16→8, sha256 16→32 (table de-unified) | `rakp/{sha1,md5}/admin` |
+| `intelplusRakpAuthcodeLength` sha1 12→20, md5 16→12 (table de-unified) | `rakp/{sha1,md5}/intelplus` |
+| `lanplus_rakp4_hmac_matches` `intelplus` branch forced on / off | `rakp/mix/intelplus-*` |
+| integrity hash start offset 4→5 | `rakp/sha1/admin` |
+| RAKP-none K1/K2 constant copy 20→19 | `rakp/none/noauth` |
+| RAKP 2 / RAKP 3 password key length 20→16 | `rakp/sha1/longuser` |
+| SIK Kg key length 20→16 | `rakp/sha1/longuser` |
+| RAKP 4 hashed-body length −1 | `rakp` vectors |
+| `Algorithm.digestLength` sha1 20→16 | `hmac/01/0/0` |
+| K1 constant 0x01→0x02, K2 constant 0x02→0x03 | `rakp/sha1/admin` |
+| RAKP session id assembled big-endian | `rakp/sha1/admin` |
+| RAKP 2/3/4 `role` ↔ `requested_role` | `rakp` vectors |
+| `lanplus_HMAC` copies `length − 1` bytes | `hmac/01/0/0` |
+| AES entry point corrupts one output byte | `aes/encrypt/16` |
+| AES / confidentiality block size 16→8 | `aes`, `payload` vectors |
+| CBC encrypt emits the pre-cipher block | `aes/encrypt/16` |
+| `aes_cbc.decrypt` reads its chaining block from the overwritten output | `aes/decrypt-in-place/32` |
+| pad fill 1..n → 0..n−1, pad length byte forced to 0 | `payload/aes/0` |
+| `padLength` drops the pad length byte | `payload` vectors |
+| `payloadLength` drops the pad length byte or stops validating the pad | `payload` vectors |
+| `lanplus_encrypt_payload` corrupts the padded input | `payload` round-trip |
+| `lanplus_decrypt_payload` `IPMI_CRYPT_NONE` path drops the data | `payload/none/40` |
+| `ipmi_auth_md5` uses `out_seq`, or swaps session id and sequence | `auth/md5/*` |
+| `ipmi_auth_special` treats the password as 16 fixed bytes | `auth/special/0` |
+| `ipmi_auth_md2` returns anything but zeros | `auth/md2/unsupported` |
+| `md5_finish` corrupts the digest, `md5` bit count ×8→×4 | `md5/rfc1321/*` |
+| `md5_append` zero-length no longer a no-op | `md5/append-zero` |
+| `v15_auth` authcode length 16→12, password field 16→12, XOR→OR | `auth/*` |
+
+Lengths that are **not** pinned by a vector, and why that is acceptable:
+
+* `authcode_buffer_size` (20) in `src/zig/intf/intf.zig` and `max_md_size`
+  (0x20) in `src/zig/core/ipmi.zig` are hand-written literals, but they are
+  field sizes in `extern struct`s that `abi.assertLayout` compares against the
+  translate-c'd C structs at compile time. Their *values* are pinned by a
+  different, stronger mechanism than a vector. Their *use sites* are pinned by
+  the mutations above.
+* `lanplus_seed_prng` and `lanplus_rand`: nondeterministic, see
+  *What has no vector coverage* above.
 
 ## Dropping `-lcrypto`
 
