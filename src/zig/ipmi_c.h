@@ -30,6 +30,15 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+/*
+ * Sockets.  `src/plugins/ipmi_intf.c` resolves the BMC address with
+ * getaddrinfo() and walks the local interface list with getifaddrs() to find a
+ * scope id for a link local IPv6 target; `ipmi_intf.h` already pulls in
+ * <sys/socket.h>, <netinet/in.h> and <arpa/inet.h>, but not these two.
+ */
+#include <ifaddrs.h>
+#include <netdb.h>
+
 #include <ipmitool/helper.h>
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
@@ -135,3 +144,60 @@ const char *ipmi_get_oem_sensor_type(struct ipmi_intf *intf, uint8_t code);
 struct ipmi_sel_oem_msg_rec;
 extern struct ipmi_sel_oem_msg_rec *sel_oem_msg;
 char *strptime(const char *s, const char *format, struct tm *tm);
+
+/*
+ * `src/plugins/ipmi_intf.c` defines these two without a prototype in
+ * `include/ipmitool/ipmi_intf.h`; `lib/ipmi_main.c` and `lib/hpm2.c` each
+ * repeat a local declaration instead.  `src/zig/intf/registry.zig` has to
+ * export them, so the signature is restated here to be checked against.
+ */
+void ipmi_intf_set_max_request_data_size(struct ipmi_intf *intf, uint16_t size);
+void ipmi_intf_set_max_response_data_size(struct ipmi_intf *intf, uint16_t size);
+
+/*
+ * The transport instances.
+ *
+ * Each `src/plugins/<name>/<name>.c` defines exactly one `struct ipmi_intf`
+ * with external linkage and no header declares it; `src/plugins/ipmi_intf.c`
+ * carries its own `extern` block instead, and `src/zig/intf/registry.zig` — the
+ * Zig replacement for that translation unit — needs the same declarations to
+ * build `ipmi_intf_table`.  The `#ifdef` guards and the order below are copied
+ * from `src/plugins/ipmi_intf.c` verbatim, so the Zig table is assembled from
+ * exactly the same set under exactly the same conditions.
+ *
+ * Each entry disappears when its plugin is ported to Zig.
+ */
+#ifdef IPMI_INTF_OPEN
+extern struct ipmi_intf ipmi_open_intf;
+#endif
+#ifdef IPMI_INTF_IMB
+extern struct ipmi_intf ipmi_imb_intf;
+#endif
+#ifdef IPMI_INTF_LIPMI
+extern struct ipmi_intf ipmi_lipmi_intf;
+#endif
+#ifdef IPMI_INTF_BMC
+extern struct ipmi_intf ipmi_bmc_intf;
+#endif
+#ifdef IPMI_INTF_LAN
+extern struct ipmi_intf ipmi_lan_intf;
+#endif
+#ifdef IPMI_INTF_LANPLUS
+extern struct ipmi_intf ipmi_lanplus_intf;
+#endif
+#ifdef IPMI_INTF_FREE
+extern struct ipmi_intf ipmi_free_intf;
+#endif
+#ifdef IPMI_INTF_SERIAL
+extern struct ipmi_intf ipmi_serial_term_intf;
+extern struct ipmi_intf ipmi_serial_bm_intf;
+#endif
+#ifdef IPMI_INTF_DUMMY
+extern struct ipmi_intf ipmi_dummy_intf;
+#endif
+#ifdef IPMI_INTF_USB
+extern struct ipmi_intf ipmi_usb_intf;
+#endif
+#ifdef IPMI_INTF_DBUS
+extern struct ipmi_intf ipmi_dbus_intf;
+#endif

@@ -27,6 +27,9 @@
 
 #include <stddef.h>
 
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_sdr.h>
@@ -280,4 +283,28 @@ enum ipmitool_abi_layout {
 		offsetof(struct oem_cipher_suite_record_t, iana),
 	ABI_OFFSETOF_oem_cipher_suite_record__auth_alg =
 		offsetof(struct oem_cipher_suite_record_t, auth_alg),
+
+	/*
+	 * struct sockaddr_in6 - not opaque, but `s6_addr` is a *macro* naming a
+	 * member of an anonymous union inside `struct in6_addr`, and the union
+	 * member is spelled differently by every libc (`__in6_u.__u6_addr8` on
+	 * glibc, `__in6_union.__s6_addr` on musl).  `translate-c` cannot follow
+	 * the macro, so `src/zig/intf/registry.zig` uses `std.posix.sockaddr.in6`
+	 * — which Zig defines per target, including the BSD `sin6_len` byte — and
+	 * pins it against these numbers instead.  The offsets still come from the
+	 * C compiler for the real target, so the check is as strong as a direct
+	 * comparison would have been.
+	 */
+	ABI_SIZEOF_sockaddr_in6 = sizeof(struct sockaddr_in6),
+	ABI_ALIGNOF_sockaddr_in6 = _Alignof(struct sockaddr_in6),
+	ABI_OFFSETOF_sockaddr_in6__sin6_family =
+		offsetof(struct sockaddr_in6, sin6_family),
+	ABI_OFFSETOF_sockaddr_in6__sin6_port =
+		offsetof(struct sockaddr_in6, sin6_port),
+	ABI_OFFSETOF_sockaddr_in6__sin6_flowinfo =
+		offsetof(struct sockaddr_in6, sin6_flowinfo),
+	ABI_OFFSETOF_sockaddr_in6__sin6_addr =
+		offsetof(struct sockaddr_in6, sin6_addr),
+	ABI_OFFSETOF_sockaddr_in6__sin6_scope_id =
+		offsetof(struct sockaddr_in6, sin6_scope_id),
 };
