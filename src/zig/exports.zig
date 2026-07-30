@@ -82,6 +82,9 @@ comptime {
     if (selected("open")) {
         @import("intf/open.zig").exportSymbols();
     }
+    if (selected("lan")) {
+        @import("intf/lan.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

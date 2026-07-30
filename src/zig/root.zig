@@ -33,6 +33,7 @@ pub const intf = struct {
     pub const registry = @import("intf/registry.zig");
     pub const dummy = @import("intf/dummy.zig");
     pub const open = @import("intf/open.zig");
+    pub const lan = @import("intf/lan.zig");
 };
 
 /// Ports of the crypto primitives that used to come from OpenSSL.
@@ -79,6 +80,7 @@ test {
     _ = intf.registry;
     _ = intf.dummy;
     _ = intf.open;
+    _ = intf.lan;
     _ = util.bswap;
     _ = util.helper;
     _ = util.log;
