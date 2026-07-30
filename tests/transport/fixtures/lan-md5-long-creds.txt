@@ -1,0 +1,178 @@
+# case  lan/md5-long-creds
+# desc  credentials that fill both fixed size fields, pinning the truncation
+# args  ipmitool -I lan -H 127.0.0.1 -p ${port} -U AbCdEfGhIjKlMnOp -P aB1!cD2@eF3#gH4$ mc info
+001 --> 12 asf.ping
+  raw 06 00 ff 06 00 00 11 be 80 00 00 00
+  asf iana=000011be type=80 tag=00 len=00
+002 <-- 28 asf.pong
+  raw 06 00 ff 06 00 00 11 be 40 00 00 10 00 00 11 be
+  raw 00 00 00 00 81 00 00 00 00 00 00 00
+003 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 04 38 0e 04 31
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=01 lun=0 cmd=38 csum2=31:ok
+  dat 0e 04
+004 <-- 30 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 10 81 1c
+  raw 63 20 04 38 00 01 05 04 01 00 00 00 00 99
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=01 lun=0 cmd=38 csum2=99:ok
+  ccc 00
+  dat 01 05 04 01 00 00 00 00
+005 --> 38 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 18 20 18
+  raw c8 81 08 39 02 41 62 43 64 45 66 47 68 49 6a 4b
+  raw 6c 4d 6e 4f 70 b4
+  ssn authtype=00 seq=00000000 id=00000000 msglen=18
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=02 lun=0 cmd=39 csum2=b4:ok
+  dat 02 41 62 43 64 45 66 47 68 49 6a 4b 6c 4d 6e 4f
+  dat 70
+006 <-- 42 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 1c 81 1c
+  raw 63 20 08 39 00 44 33 22 11 c0 c1 c2 c3 c4 c5 c6
+  raw c7 c8 c9 ca cb cc cd ce cf 7d
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=02 lun=0 cmd=39 csum2=7d:ok
+  ccc 00
+  dat 44 33 22 11 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb
+  dat cc cd ce cf
+007 --> 59 ipmi.v15 rq
+  raw 06 00 ff 07 02 00 00 00 00 44 33 22 11 ?? ?? ??
+  raw ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 1d 20 18
+  raw c8 81 0c 3a 02 04 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9
+  raw ca cb cc cd ce cf ?? ?? ?? ?? ??
+  ssn authtype=02 seq=00000000 id=11223344 msglen=1d authcode=16
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=03 lun=0 cmd=3a csum2=??:ok
+  dat 02 04 c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd
+  dat ce cf ?? ?? ?? ??
+008 <-- 48 ipmi.v15 rs
+  raw 06 00 ff 07 02 00 00 00 00 44 33 22 11 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 12 81 1c
+  raw 63 20 0c 3a 00 02 0d 0c 0b 0a 84 73 62 51 04 bc
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=03 lun=0 cmd=3a csum2=bc:ok
+  ccc 00
+  dat 02 0d 0c 0b 0a 84 73 62 51 04
+009 --> 38 ipmi.v15 rq
+  raw 06 00 ff 07 02 84 73 62 51 0d 0c 0b 0a c5 cd cf
+  raw 48 fe 81 0c 03 37 68 66 6f e3 2b 8c 18 08 20 18
+  raw c8 81 10 3b 04 30
+  ssn authtype=02 seq=51627384 id=0a0b0c0d msglen=08 authcode=16
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=04 lun=0 cmd=3b csum2=30:ok
+  dat 04
+010 <-- 39 ipmi.v15 rs
+  raw 06 00 ff 07 02 3d 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 09 81 1c
+  raw 63 20 10 3b 00 04 91
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=04 lun=0 cmd=3b csum2=91:ok
+  ccc 00
+  dat 04
+011 --> 39 ipmi.v15 rq
+  raw 06 00 ff 07 02 85 73 62 51 0d 0c 0b 0a 15 5e c3
+  raw f5 a7 1f bb 06 18 6b 16 21 b4 96 7a 73 09 20 b0
+  raw 30 81 14 3e 00 02 2b
+  ssn authtype=02 seq=51627385 id=0a0b0c0d msglen=09 authcode=16
+  req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=05 lun=0 cmd=3e csum2=2b:ok
+  dat 00 02
+012 <-- 38 ipmi.v15 rs
+  raw 06 00 ff 07 02 3e 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 08 81 b4
+  raw cb 20 14 3e c1 cd
+  rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=05 lun=0 cmd=3e csum2=cd:ok
+  ccc c1
+  dat -
+013 --> 37 ipmi.v15 rq
+  raw 06 00 ff 07 02 86 73 62 51 0d 0c 0b 0a 9a c6 41
+  raw c0 8a 75 d8 77 f1 11 97 10 25 e3 66 22 07 20 18
+  raw c8 81 18 01 66
+  ssn authtype=02 seq=51627386 id=0a0b0c0d msglen=07 authcode=16
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=06 lun=0 cmd=01 csum2=66:ok
+  dat -
+014 <-- 53 ipmi.v15 rs
+  raw 06 00 ff 07 02 3f 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 17 81 1c
+  raw 63 20 18 01 00 20 81 02 34 02 bf 57 01 00 11 22
+  raw 00 00 00 00 a4
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=06 lun=0 cmd=01 csum2=a4:ok
+  ccc 00
+  dat 20 81 02 34 02 bf 57 01 00 11 22 00 00 00 00
+015 --> 38 ipmi.v15 rq
+  raw 06 00 ff 07 02 87 73 62 51 0d 0c 0b 0a d7 0d 63
+  raw b8 e6 f2 bd 66 3b db 5e 53 dc 78 ec 43 08 20 b0
+  raw 30 81 1c 00 00 63
+  ssn authtype=02 seq=51627387 id=0a0b0c0d msglen=08 authcode=16
+  req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=07 lun=0 cmd=00 csum2=63:ok
+  dat 00
+016 <-- 38 ipmi.v15 rs
+  raw 06 00 ff 07 02 40 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 08 81 b4
+  raw cb 20 1c 00 c1 03
+  rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=07 lun=0 cmd=00 csum2=03:ok
+  ccc c1
+  dat -
+017 --> 38 ipmi.v15 rq
+  raw 06 00 ff 07 02 88 73 62 51 0d 0c 0b 0a ee f9 b3
+  raw 98 c7 ef ee 7c de 6a 88 be a3 08 bf 9e 08 20 b0
+  raw 30 81 20 00 03 5c
+  ssn authtype=02 seq=51627388 id=0a0b0c0d msglen=08 authcode=16
+  req rsaddr=20 netfn=2c lun=0 csum1=30:ok rqaddr=81 rqseq=08 lun=0 cmd=00 csum2=5c:ok
+  dat 03
+018 <-- 38 ipmi.v15 rs
+  raw 06 00 ff 07 02 41 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 08 81 b4
+  raw cb 20 20 00 c1 ff
+  rsp rqaddr=81 netfn=2d lun=0 csum1=cb:ok rsaddr=20 rqseq=08 lun=0 cmd=00 csum2=ff:ok
+  ccc c1
+  dat -
+019 --> 37 ipmi.v15 rq
+  raw 06 00 ff 07 02 89 73 62 51 0d 0c 0b 0a f6 5d be
+  raw 7f a9 a1 9b 1a 30 68 67 64 ee 77 aa 3e 07 20 18
+  raw c8 81 24 01 5a
+  ssn authtype=02 seq=51627389 id=0a0b0c0d msglen=07 authcode=16
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=09 lun=0 cmd=01 csum2=5a:ok
+  dat -
+020 <-- 53 ipmi.v15 rs
+  raw 06 00 ff 07 02 42 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 17 81 1c
+  raw 63 20 24 01 00 20 81 02 34 02 bf 57 01 00 11 22
+  raw 00 00 00 00 98
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=09 lun=0 cmd=01 csum2=98:ok
+  ccc 00
+  dat 20 81 02 34 02 bf 57 01 00 11 22 00 00 00 00
+021 --> 41 ipmi.v15 rq
+  raw 06 00 ff 07 02 8a 73 62 51 0d 0c 0b 0a 71 92 7d
+  raw b8 ea 22 d0 6b 35 7c 38 67 dd 22 6b 8e 0b 20 18
+  raw c8 81 28 3c 0d 0c 0b 0a ed
+  ssn authtype=02 seq=5162738a id=0a0b0c0d msglen=0b authcode=16
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=0a lun=0 cmd=3c csum2=ed:ok
+  dat 0d 0c 0b 0a
+022 <-- 38 ipmi.v15 rs
+  raw 06 00 ff 07 02 43 2c 1b 0a 0d 0c 0b 0a 00 00 00
+  raw 00 00 00 00 00 00 00 00 00 00 00 00 00 08 81 1c
+  raw 63 20 28 3c 00 7c
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=0a lun=0 cmd=3c csum2=7c:ok
+  ccc 00
+  dat -
+exit 0
+out |Device ID                 : 32
+out |Device Revision           : 1
+out |Firmware Revision         : 2.34
+out |IPMI Version              : 2.0
+out |Manufacturer ID           : 343
+out |Manufacturer Name         : Intel Corporation
+out |Product ID                : 8721 (0x2211)
+out |Product Name              : Unknown (0x2211)
+out |Device Available          : yes
+out |Provides Device SDRs      : yes
+out |Additional Device Support :
+out |    Sensor Device
+out |    SDR Repository Device
+out |    SEL Device
+out |    FRU Inventory Device
+out |    IPMB Event Receiver
+out |    IPMB Event Generator
+out |    Chassis Device
+out |Aux Firmware Rev Info     : 
+out |    0x00
+out |    0x00
+out |    0x00
+out |    0x00
+err -

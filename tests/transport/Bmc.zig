@@ -52,6 +52,7 @@ const bmc_slave_addr = 0x20;
 const remote_swid = 0x81;
 
 const netfn_app = 0x06;
+const netfn_storage = 0x0a;
 
 /// `IPMI_LANPLUS_OFFSET_*` in src/plugins/lanplus/lanplus.h.
 const off_authtype = 0x04;
@@ -83,7 +84,10 @@ pub fn csum(bytes: []const u8) u8 {
 /// These are constants so that a recorded transcript is reproducible; a real
 /// BMC would pick most of them at random.
 pub const Personality = struct {
-    /// The user the BMC knows about; RAKP authcodes are computed for it.
+    /// The user the BMC knows about.  Checked against the name on the wire in
+    /// both Get Session Challenge (v1.5) and RAKP 1 (v2.0), so it is the BMC
+    /// side detector for the 16 byte truncation in
+    /// `ipmi_intf_session_set_username()`.
     username: []const u8 = "",
     /// Its password.  Zero padded to 20 bytes to make Kuid.
     password: []const u8 = "",
@@ -163,6 +167,17 @@ pub const Personality = struct {
     /// Extra (netfn, cmd) responses beyond the ones the model implements.
     /// Anything not matched answers 0xC1, "invalid command".
     extra: []const Canned = &.{},
+
+    /// When set, the BMC serves this image as FRU device 0 through
+    /// Get FRU Inventory Area Info and Read FRU Data.
+    ///
+    /// This is the only stateful, request-dependent responder the model has,
+    /// and it exists for one reason: `read_fru_area()` sizes every Read FRU
+    /// Data chunk from `ipmi_intf_get_max_response_data_size()`, so the
+    /// requested byte count lands on the wire.  That makes the payload size
+    /// arithmetic in `src/plugins/ipmi_intf.c` — including the per bridging
+    /// level adjustments — transcript visible, which nothing else reaches.
+    fru: ?[]const u8 = null,
 };
 
 pub const Deaf = struct { netfn: u8, cmd: u8 };
@@ -507,7 +522,16 @@ fn handleV15(b: *Bmc, req: []const u8, reply: *std.ArrayList(u8), drop: bool) !v
     }
 
     var buf: [512]u8 = undefined;
-    const r = try b.dispatch(m, &buf);
+    var r = try b.dispatch(m, &buf);
+
+    // The v1.5 message length is a single byte, so a response body of more than
+    // 247 data bytes cannot be framed at all.  A real BMC would never produce
+    // one, and the tool asking for one means it picked the wrong transport, so
+    // record a violation instead of trapping on the length cast.
+    if (r.data.len > 247) {
+        try b.fail("v1.5 response body of {d} bytes does not fit the length byte", .{r.data.len});
+        r.data = r.data[0..247];
+    }
 
     // The response mirrors the request's session framing, which is what a real
     // BMC does and what `ipmi_lan_poll_recv` assumes when it decides whether to
@@ -562,7 +586,30 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
     for (b.p.extra) |c| {
         if (c.netfn == m.netfn and c.cmd == m.cmd) return .{ .ccode = c.ccode, .data = c.data };
     }
-    if (m.netfn != netfn_app) return .{ .ccode = 0xc1 };
+    if (m.netfn != netfn_app) {
+        if (b.p.fru) |image| if (m.netfn == netfn_storage) switch (m.cmd) {
+            // Get FRU Inventory Area Info.
+            0x10 => {
+                std.mem.writeInt(u16, buf[0..2], @intCast(image.len), .little);
+                buf[2] = 0x00; // byte access
+                return .{ .data = buf[0..3] };
+            },
+            // Read FRU Data.  The count the tool asks for is the thing under
+            // test, so answer exactly that many bytes (clamped at the end of
+            // the image) rather than whatever is convenient.
+            0x11 => {
+                if (m.data.len < 4) return .{ .ccode = 0xc7 };
+                const off = std.mem.readInt(u16, m.data[1..3], .little);
+                if (off >= image.len) return .{ .ccode = 0xc9 };
+                const n = @min(@as(usize, m.data[3]), image.len - off);
+                buf[0] = @intCast(n);
+                @memcpy(buf[1..][0..n], image[off..][0..n]);
+                return .{ .data = buf[0 .. n + 1] };
+            },
+            else => {},
+        };
+        return .{ .ccode = 0xc1 };
+    }
 
     switch (m.cmd) {
         // Get Device ID.
@@ -590,6 +637,18 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
         },
         // Get Session Challenge.
         0x39 => {
+            // `ipmi_lan_get_session_challenge` copies exactly 16 bytes out of
+            // the session parameters, so this is where a username truncation
+            // bug becomes visible BMC side rather than only as a byte diff.
+            if (m.data.len >= 17) {
+                const wire = std.mem.sliceTo(m.data[1..17], 0);
+                if (!std.mem.eql(u8, wire, b.p.username)) {
+                    try b.fail(
+                        "Get Session Challenge username \"{s}\" is not the configured \"{s}\"",
+                        .{ wire, b.p.username },
+                    );
+                }
+            }
             std.mem.writeInt(u32, buf[0..4], b.p.temp_session_id, .little);
             @memcpy(buf[4..20], &b.p.challenge);
             return .{ .data = buf[0..20] };
@@ -852,6 +911,16 @@ fn rakp2(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) !void {
     const avail = @min(@as(usize, b.v2.username_len), payload.len - 28);
     @memcpy(b.v2.username_buf[0..avail], payload[28..][0..avail]);
     b.v2.username_len = @intCast(avail);
+
+    // The username on the wire has to be the one the BMC knows.  Without this
+    // the `Personality.username` field is dead: RAKP 2 keys on the password
+    // only, so a truncation bug in `ipmi_intf_session_set_username()` would
+    // show up as a transcript diff but never as a BMC side violation.
+    if (!std.mem.eql(u8, b.v2.username(), b.p.username)) {
+        try b.fail("RAKP 1 username \"{s}\" is not the configured \"{s}\"", .{
+            b.v2.username(), b.p.username,
+        });
+    }
 
     try b.t.print(
         "  rk1 tag={x:0>2} sidc={x:0>8} role={x:0>2} ulen={d} uname=\"{s}\"\n",

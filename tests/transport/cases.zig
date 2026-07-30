@@ -54,6 +54,28 @@ pub const Case = struct {
 const user = "opuser";
 const pass = "op-password";
 
+/// Credentials that exactly fill the two fixed size fields the session setters
+/// copy into.  `lib/ipmi_main.c` caps `-U` at 16 bytes and `-P` at 16 bytes for
+/// `lan` / 20 for `lanplus`, so these are the longest values the CLI accepts
+/// and every byte of both fields is distinct and non-zero.
+///
+/// That is what makes the copy lengths pinnable: `src/plugins/lan/lan.c:1568`
+/// puts all 16 username bytes onto the wire in Get Session Challenge and
+/// `ipmi_auth_md5` keys on all 16 password bytes, so a copy that stops one byte
+/// short leaves a zero where a known non-zero byte belongs.  With `user`/`pass`
+/// (6 and 11 bytes) the tail of both fields is already zero and neither length
+/// is pinned at all.
+const long_user = "AbCdEfGhIjKlMnOp";
+const pass_16 = "aB1!cD2@eF3#gH4$";
+
+/// 20 bytes, the full `IPMI_AUTHCODE_BUFFER_SIZE`.  `lib/ipmi_main.c` rejects
+/// anything longer for `lanplus`, so 20 is the longest password the truncation
+/// in `ipmi_intf_session_set_password()` can be driven with; RAKP keys on all
+/// 20 (`lanplus_crypt.c` passes `IPMI_AUTHCODE_BUFFER_SIZE`, not `strlen`), so
+/// a copy that stops at 16 leaves four zero key bytes and the RAKP 2 authcode
+/// no longer verifies.
+const pass_20 = "aB1!cD2@eF3#gH4$iJ5%";
+
 /// Get Device ID, answered so that `mc info` renders a full report.  The
 /// payload deliberately contains an embedded zero (the aux firmware revision)
 /// and a manufacturer id that is not byte symmetric.
@@ -74,6 +96,58 @@ const chassis_status: Bmc.Canned = .{
 };
 
 const canned: []const Bmc.Canned = &.{ device_id, chassis_status };
+
+/// `0 - sum`, the FRU "zero checksum" every area ends with.
+fn fruChecksum(bytes: []const u8) u8 {
+    var sum: u8 = 0;
+    for (bytes) |b| sum +%= b;
+    return 0 -% sum;
+}
+
+/// A minimal but well formed 64 byte FRU image: an eight byte common header
+/// pointing at a board info area.
+///
+/// Its only job is to be big enough that `read_fru_area()` has to split the
+/// read into several Read FRU Data commands, because the byte count in each of
+/// those is `ipmi_intf_get_max_response_data_size(intf) - 2` and is therefore
+/// the wire visible consequence of the payload size arithmetic.
+const fru_image: [64]u8 = blk: {
+    var img: [64]u8 = @splat(0);
+
+    // Common header: format version 1, board area at offset 1 * 8.
+    img[0] = 0x01;
+    img[3] = 0x01;
+    img[7] = fruChecksum(img[0..7]);
+
+    // Board info area: version, length in 8 byte multiples, language.
+    img[8] = 0x01;
+    img[9] = 7;
+    img[10] = 0x19;
+    // Manufacturing date, three little endian bytes, all distinct and non-zero
+    // so a byte swap or a short write changes the rendered date.
+    img[11] = 0x11;
+    img[12] = 0x22;
+    img[13] = 0x33;
+
+    const fields = [_][]const u8{
+        "ZigForge",
+        "TransportBox",
+        "SN-2468",
+        "PN-1357",
+        "FID-99",
+    };
+    var at: usize = 14;
+    for (fields) |f| {
+        img[at] = 0xc0 | @as(u8, f.len); // 8 bit ASCII, length f.len
+        at += 1;
+        @memcpy(img[at..][0..f.len], f);
+        at += f.len;
+    }
+    img[at] = 0xc1; // no more fields
+    img[63] = fruChecksum(img[8..63]);
+
+    break :blk img;
+};
 
 /// The RMCP+ payload size is a little endian u16 at offset 0x0e.  Every other
 /// case has a payload shorter than 256 bytes, so its high byte is always zero
@@ -273,6 +347,16 @@ pub const all: []const Case = &.{
     },
 
     .{
+        .name = "lan/md5-long-creds",
+        .desc = "credentials that fill both fixed size fields, pinning the truncation",
+        .args = &.{
+            "-I", "lan",     "-H", "127.0.0.1", "-p", "${port}",
+            "-U", long_user, "-P", pass_16,     "mc", "info",
+        },
+        .bmc = .{ .username = long_user, .password = pass_16, .extra = canned },
+    },
+
+    .{
         .name = "lan/md5-bridged",
         .desc = "a bridged request: three checksum ranges and a Send Message wrapper",
         .args = &.{
@@ -310,6 +394,80 @@ pub const all: []const Case = &.{
                 chassis_status,
                 .{ .netfn = 0x2e, .cmd = 0x98, .data = &.{ 0x5e, 0x5f } },
             },
+        },
+    },
+
+    .{
+        .name = "lan/authtype-none-clears-password",
+        .desc = "-A NONE clears the password, so MD5 is no longer eligible",
+        // `IPMI_SESSION_AUTHTYPE_NONE` is zero, which is also the "caller did
+        // not choose" value `ipmi_get_auth_capabilities_cmd()` tests for.  The
+        // only thing keeping it out of the MD5 branch is that
+        // `ipmi_intf_session_set_authtype()` zeroed the password first, so
+        // dropping that clear turns this into a full MD5 session.
+        .args = &.{
+            "-I", "lan",  "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,   "-P", pass,        "-A", "NONE",
+            "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .extra = canned },
+    },
+
+    .{
+        .name = "lan/md5-fru",
+        .desc = "chunked FRU reads, pinning the unbridged maximum response size",
+        // `read_fru_area()` sizes each Read FRU Data request from
+        // `ipmi_intf_get_max_response_data_size()`, so the byte count in the
+        // request is that function's return value minus two.
+        .args = &.{
+            "-I", "lan", "-H", "127.0.0.1", "-p",  "${port}",
+            "-U", user,  "-P", pass,        "fru", "print",
+            "0",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = canned,
+            .fru = &fru_image,
+        },
+    },
+
+    .{
+        .name = "lan/md5-fru-bridged",
+        .desc = "chunked FRU reads one bridge deep: the response size loses the wrapper",
+        .args = &.{
+            "-I", "lan", "-H",  "127.0.0.1", "-p", "${port}",
+            "-U", user,  "-P",  pass,        "-t", "0x82",
+            "-b", "6",   "fru", "print",     "0",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = canned,
+            .fru = &fru_image,
+        },
+    },
+
+    .{
+        .name = "lan/md5-fru-transit-channel",
+        .desc = "double bridging selected by the transit channel alone, not the address",
+        // `-T` names the same address as `-t`, so `transit_addr !=
+        // target_addr` is false and only `transit_channel != target_channel`
+        // can make `ipmi_intf_get_bridging_level()` answer 2.  Level 2 costs
+        // another eight bytes of response budget, which changes every Read FRU
+        // Data byte count on the wire.
+        .args = &.{
+            "-I", "lan", "-H", "127.0.0.1", "-p",  "${port}",
+            "-U", user,  "-P", pass,        "-t",  "0x82",
+            "-b", "6",   "-T", "0x82",      "-B",  "7",
+            "-N", "1",   "-R", "1",         "fru", "print",
+            "0",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = canned,
+            .fru = &fru_image,
         },
     },
 
@@ -353,6 +511,20 @@ pub const all: []const Case = &.{
             "-C", "3",       "mc", "info",
         },
         .bmc = .{ .username = user, .password = pass, .kg = "bmc-key", .extra = canned },
+    },
+    .{
+        .name = "lanplus/cipher3-long-creds",
+        .desc = "credentials that fill both fixed size fields, pinning the truncation",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", long_user, "-P", pass_20,     "-C", "3",
+            "mc", "info",
+        },
+        // RAKP 1 carries the username length and the username itself, so the
+        // 16 byte truncation is on the wire; the 20 byte password is the whole
+        // RAKP HMAC key, so a short copy fails BMC side authcode verification
+        // rather than merely diffing.
+        .bmc = .{ .username = long_user, .password = pass_20, .extra = canned },
     },
     .{
         .name = "lanplus/cipher1-raw-long",
