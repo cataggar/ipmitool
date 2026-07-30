@@ -73,6 +73,9 @@ comptime {
     if (selected("sel")) {
         @import("cmd/sel.zig").exportSymbols();
     }
+    if (selected("sdr")) {
+        @import("cmd/sdr.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }
