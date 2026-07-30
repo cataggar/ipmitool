@@ -95,11 +95,7 @@ dnl set default option values
 dnl
 
 xenable_all_options=yes
-xenable_intf_bmc=no
-xenable_intf_dbus=no
 xenable_intf_dummy=no
-xenable_intf_imb=yes
-xenable_intf_lipmi=yes
 xenable_intf_open=yes
 #xenable_intf_serial=yes
 xenable_intf_usb=no
@@ -115,39 +111,27 @@ solaris*)
 	# openssl libs are in /usr/sfw/lib on solaris 10
 	LIBS="$LIBS -R/usr/sfw/lib"
 	# disable the linux-specific interfaces
-	xenable_intf_bmc=yes
-	xenable_intf_imb=no
 	xenable_intf_open=no
-	xenable_intf_lipmi=no
 	xenable_ipmishell=no
 	xenable_all_options=no
 	;;
 *cygwin*)
 	# disable the linux and solaris-specific interfaces
-	xenable_intf_imb=no
 	xenable_intf_open=no
-	xenable_intf_lipmi=no
 	;;
 *darwin*|aix*)
 	# disable the linux and solaris-specific interfaces
-	xenable_intf_imb=no
 	xenable_intf_open=no
-	xenable_intf_lipmi=no
 	xenable_ipmishell=no
 	;;
 *freebsd*)
-	xenable_intf_imb=no
-	xenable_intf_lipmi=no
 	CFLAGS="$CFLAGS -D__BSD_VISIBLE"
 	;;
 *netbsd*)
-	xenable_intf_imb=no
-	xenable_intf_lipmi=no
 	xenable_intf_open=no
 	;;
 gnu*)
 	# disable the linux and solaris-specific interfaces on Hurd
-	xenable_intf_imb=no
 	xenable_intf_open=no
 	xenable_intf_usb=yes
 	;;
@@ -226,14 +210,6 @@ AC_CHECK_LIB([crypto], [MD2_Init],
 	    AC_DEFINE(HAVE_CRYPTO_MD2, [1], [Define to 1 if libcrypto supports MD2.])
 	fi],
 	[], [-lcrypto])
-
-dnl check for libsystemd in case dbus-intf is requested
-AC_CHECK_LIB([systemd], [sd_bus_default],
-	[
-		LIBS="$LIBS -lsystemd"
-		have_systemd=yes
-	],
-	[ have_systemd=no],[])
 
 dnl enable IPMIv1.5 LAN interface
 AC_ARG_ENABLE([intf-lan],
@@ -353,129 +329,6 @@ AC_CHECK_HEADER([linux/ipmi.h],
 		[Define to 1 if you have the <sys/ipmi.h> header file.])],
 		[echo "** Unable to find OpenIPMI header files.  Using internal version."])])
 
-dnl look for FreeIPMI files
-AC_CHECK_LIB(freeipmi, ipmi_open_inband, [have_free=yes], [have_free=no])
-if test "x$have_free" != "xyes"; then
-	AC_CHECK_LIB(freeipmi, ipmi_ctx_open_inband, [have_free=yes], [have_free=no])
-fi
-AC_ARG_ENABLE([intf-free],
-	[AS_HELP_STRING([--enable-intf-free],[enable FreeIPMI IPMI interface [default=auto]])],
-	[xenable_intf_free=$enableval],
-	[xenable_intf_free=$have_free])
-if test "x$xenable_intf_free" = "xstatic" || test "x$xenable_intf_free" = "xplugin"; then
-	xenable_intf_free=yes
-fi
-if test "x$xenable_intf_free" != "xno" && test "x$have_free" != "xyes"; then
-	echo "** Unable to build FreeIPMI interface support!"
-	xenable_intf_free=no
-fi
-if test "x$xenable_intf_free" = "xyes"; then
-dnl Determine if you got the right FreeIPMI version  
-    AC_MSG_CHECKING([for libfreeipmi version 0.3.0])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <sys/types.h>	/* For size_t */
-#include <stdio.h>	/* For NULL */
-#include <freeipmi/freeipmi.h>
-#include <freeipmi/udm/ipmi-udm.h>
-    ]], [[
-    ipmi_device_t dev;
-    dev = ipmi_open_inband(IPMI_DEVICE_KCS,
-                           0,
-                           0,
-                           0,
-                           NULL,
-                           0);
-    ]])],[ac_free_version_0_3_0=yes],[ac_free_version_0_3_0=no])
-    AC_MSG_RESULT($ac_free_version_0_3_0)
-    AC_MSG_CHECKING([for libfreeipmi version 0.4.0])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <sys/types.h>	/* For size_t */
-#include <stdio.h>	/* For NULL */
-#include <freeipmi/freeipmi.h>
-#include <freeipmi/udm/ipmi-udm.h>
-    ]], [[
-    ipmi_device_t dev = NULL;
-    int rv;
-    dev = ipmi_device_create();
-    rv = ipmi_open_inband(dev,
-                          IPMI_DEVICE_KCS,
-                          0,
-                          0,
-                          0,
-                          NULL,
-                          0);
-    ]])],[ac_free_version_0_4_0=yes],[ac_free_version_0_4_0=no])
-    AC_MSG_RESULT($ac_free_version_0_4_0)
-    AC_MSG_CHECKING([for libfreeipmi version 0.5.0])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <sys/types.h>	/* For size_t */
-#include <stdio.h>	/* For NULL */
-#include <freeipmi/freeipmi.h>
-#include <freeipmi/udm/ipmi-udm.h>
-    ]], [[
-    ipmi_device_t dev = NULL;
-    int rv;
-    dev = ipmi_device_create();
-    rv = ipmi_open_inband(dev,
-                          IPMI_DEVICE_KCS,
-                          0,
-                          0,
-                          0,
-                          NULL,
-                          0,
-                          0);
-    ]])],[ac_free_version_0_5_0=yes],[ac_free_version_0_5_0=no])
-    AC_MSG_RESULT($ac_free_version_0_5_0)
-
-    AC_MSG_CHECKING([for libfreeipmi version 0.6.0])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdio.h>	/* For NULL */
-#include <freeipmi/freeipmi.h>
-    ]], [[
-    ipmi_ctx_t ctx = NULL;
-    int rv;
-    ctx = ipmi_ctx_create();
-    rv = ipmi_ctx_open_inband(ctx,
-                              IPMI_DEVICE_KCS,
-                              0,
-                              0,
-                              0,
-                              NULL,
-                              0,
-                              0);
-    ]])],[ac_free_version_0_6_0=yes],[ac_free_version_0_6_0=no])
-    AC_MSG_RESULT($ac_free_version_0_6_0)
-
-    if test "x$ac_free_version_0_3_0" = "xyes" \
-       || test "x$ac_free_version_0_4_0" = "xyes" \
-       || test "x$ac_free_version_0_5_0" = "xyes" \
-       || test "x$ac_free_version_0_6_0" = "xyes"; then
-       AC_DEFINE(IPMI_INTF_FREE, [1], [Define to 1 to enable FreeIPMI interface.])
-       AC_SUBST(INTF_FREE, [free])
-       AC_SUBST(INTF_FREE_LIB, [libintf_free.la])
-       IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB free/libintf_free.la"
-       if test "x$ac_free_version_0_3_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_0_3_0, [1], [Define to 1 for FreeIPMI 0.3.0.])
-       fi
-       if test "x$ac_free_version_0_4_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_0_4_0, [1], [Define to 1 for FreeIPMI 0.4.0.])
-       fi
-       if test "x$ac_free_version_0_5_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_0_5_0, [1], [Define to 1 for FreeIPMI 0.5.0.])
-       fi
-       if test "x$ac_free_version_0_6_0" = "xyes"; then
-          AC_DEFINE(IPMI_INTF_FREE_0_6_0, [1], [Define to 1 for FreeIPMI 0.6.0.])
-       fi
-    else
-       xenable_intf_free=no
-    fi
-
-    AC_CHECK_LIB(freeipmi,
-      ipmi_cmd_raw_ipmb, 
-      AC_DEFINE(IPMI_INTF_FREE_BRIDGING, [1],
-        [Define to 1 to enable FreeIPMI Bridging Support.]))
-fi
-
 dnl look for termios header file
 AC_CHECK_HEADER([termios.h],
 	[AC_DEFINE(HAVE_TERMIOS_H, [1], [Define to 1 if you have <termios.h>.])],
@@ -534,74 +387,6 @@ if test "x$xenable_intf_open" = "xyes"; then
 	fi
 	CPPFLAGS="$ORIG_CPPFLAGS"
 	AC_MSG_RESULT([$have_openipmi_dual_bridge])
-fi
-
-dnl enable Intel IMB interface
-AC_ARG_ENABLE([intf-imb],
-	[AS_HELP_STRING([--enable-intf-imb],[enable Intel IMB driver interface [default=auto]])],
-	[xenable_intf_imb=$enableval],
-	[])
-if test "x$xenable_intf_imb" = "xstatic" || test "x$xenable_intf_imb" = "xplugin"; then
-	xenable_intf_imb=yes
-fi
-if test "x$xenable_intf_imb" = "xyes"; then
-	AC_DEFINE(IPMI_INTF_IMB, [1], [Define to 1 to enable Intel IMB interface.])
-	AC_SUBST(INTF_IMB, [imb])
-	AC_SUBST(INTF_IMB_LIB, [libintf_imb.la])
-	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB imb/libintf_imb.la"
-fi
-
-dnl enable Solaris LIPMI interface
-AC_CHECK_HEADER([sys/lipmi/lipmi_intf.h], [have_lipmi=yes], [have_lipmi=no])
-AC_ARG_ENABLE([intf-lipmi],
-	[AS_HELP_STRING([--enable-intf-lipmi],[enable Solaris 9 x86 IPMI interface [default=no]])],
-	[xenable_intf_lipmi=$enableval],
-	[])
-if test "x$xenable_intf_lipmi" = "xstatic" || test "x$xenable_intf_lipmi" = "xplugin"; then
-	xenable_intf_lipmi=yes
-fi
-if test "x$xenable_intf_lipmi" != "xno" && test "x$have_lipmi" != "xyes"; then
-	echo "** Unable to build Solaris 9 x86 IPMI interface support!"
-	xenable_intf_lipmi=no
-fi
-if test "x$xenable_intf_lipmi" = "xyes"; then
-	AC_DEFINE(IPMI_INTF_LIPMI, [1], [Define to 1 to enable Solaris 9 LIPMI interface.])
-	AC_SUBST(INTF_LIPMI, [lipmi])
-	AC_SUBST(INTF_LIPMI_LIB, [libintf_lipmi.la])
-	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB lipmi/libintf_lipmi.la"
-fi
-
-dnl enable Solaris BMC interface
-AC_ARG_ENABLE([intf-bmc],
-	[AS_HELP_STRING([--enable-intf-bmc],[enable Solaris 10 x86 IPMI interface [default=auto]])],
-	[xenable_intf_bmc=$enableval],
-	[xenable_intf_bmc=no])
-if test "x$xenable_intf_bmc" = "xstatic" || test "x$xenable_intf_bmc" = "xplugin"; then
-	xenable_intf_bmc=yes
-fi
-if test "x$xenable_intf_bmc" = "xyes"; then
-	AC_DEFINE(IPMI_INTF_BMC, [1], [Define to 1 to enable Solaris 10 BMC interface.])
-	AC_SUBST(INTF_BMC, [bmc])
-	AC_SUBST(INTF_BMC_LIB, [libintf_bmc.la])
-	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB bmc/libintf_bmc.la"
-fi
-
-dnl enable IPMI dbus interface
-AC_ARG_ENABLE([intf-dbus],
-		[AS_HELP_STRING([--enable-intf-dbus],[enable IPMI dbus interface [default=no]])],
-		[xenable_intf_dbus=$enableval],
-		[xenable_intf_dbus=no])
-if test "x$xenable_intf_dbus" != "xno"; then
-	if test "x$have_systemd" != "xyes"; then
-		AC_MSG_ERROR([** Unable to find libsystemd required by dbus-intf.])
-		xenable_intf_dbus=no
-	fi
-fi
-if test "x$xenable_intf_dbus" = "xyes"; then
-	AC_DEFINE(IPMI_INTF_DBUS, [1], [Define to 1 to enable dbus interface.])
-	AC_SUBST(INTF_DBUS, [dbus])
-	AC_SUBST(INTF_DBUS_LIB, [libintf_dbus.la])
-	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB dbus/libintf_dbus.la"
 fi
 
 dnl enable Dummy interface for testing
@@ -740,12 +525,7 @@ AC_CONFIG_FILES([Makefile
 		src/plugins/lan/Makefile
 		src/plugins/lanplus/Makefile
 		src/plugins/open/Makefile
-		src/plugins/free/Makefile
-		src/plugins/imb/Makefile
-		src/plugins/bmc/Makefile
-		src/plugins/dbus/Makefile
 		src/plugins/usb/Makefile
-		src/plugins/lipmi/Makefile
 		src/plugins/serial/Makefile
 		src/plugins/dummy/Makefile
 		doc/ipmitool.1
@@ -760,12 +540,7 @@ AC_MSG_RESULT([Interfaces (default=$DEFAULT_INTF)])
 AC_MSG_RESULT([  lan     : $xenable_intf_lan])
 AC_MSG_RESULT([  lanplus : $xenable_intf_lanplus])
 AC_MSG_RESULT([  open    : $xenable_intf_open])
-AC_MSG_RESULT([  free    : $xenable_intf_free])
-AC_MSG_RESULT([  imb     : $xenable_intf_imb])
-AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
-AC_MSG_RESULT([  dbus    : $xenable_intf_dbus])
 AC_MSG_RESULT([  usb     : $xenable_intf_usb])
-AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
 AC_MSG_RESULT([  serial  : $xenable_intf_serial])
 AC_MSG_RESULT([  dummy   : $xenable_intf_dummy])
 AC_MSG_RESULT([])

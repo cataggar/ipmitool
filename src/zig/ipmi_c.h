@@ -185,23 +185,11 @@ void ipmi_intf_set_max_response_data_size(struct ipmi_intf *intf, uint16_t size)
 #ifdef IPMI_INTF_OPEN
 extern struct ipmi_intf ipmi_open_intf;
 #endif
-#ifdef IPMI_INTF_IMB
-extern struct ipmi_intf ipmi_imb_intf;
-#endif
-#ifdef IPMI_INTF_LIPMI
-extern struct ipmi_intf ipmi_lipmi_intf;
-#endif
-#ifdef IPMI_INTF_BMC
-extern struct ipmi_intf ipmi_bmc_intf;
-#endif
 #ifdef IPMI_INTF_LAN
 extern struct ipmi_intf ipmi_lan_intf;
 #endif
 #ifdef IPMI_INTF_LANPLUS
 extern struct ipmi_intf ipmi_lanplus_intf;
-#endif
-#ifdef IPMI_INTF_FREE
-extern struct ipmi_intf ipmi_free_intf;
 #endif
 #ifdef IPMI_INTF_SERIAL
 extern struct ipmi_intf ipmi_serial_term_intf;
@@ -212,9 +200,6 @@ extern struct ipmi_intf ipmi_dummy_intf;
 #endif
 #ifdef IPMI_INTF_USB
 extern struct ipmi_intf ipmi_usb_intf;
-#endif
-#ifdef IPMI_INTF_DBUS
-extern struct ipmi_intf ipmi_dbus_intf;
 #endif
 
 /*

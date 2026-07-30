@@ -12,6 +12,15 @@
 
 Originally written by Duncan Laurie.
 
+## Deviations from upstream
+
+This fork is not byte-for-byte upstream. Intentional differences are recorded
+here; everything else is a bug.
+
+| Deviation | Since | Rationale |
+| --- | --- | --- |
+| The `imb`, `lipmi`, `bmc`, `free` and `dbus` interface plugins have been **removed**. `ipmitool -h` no longer lists `imb`, and `--enable-intf-{imb,lipmi,bmc,free,dbus}` / `-Dintf-{imb,lipmi,bmc,free,dbus}` no longer exist. | issue #10 | None of the five can be built or tested on any platform this fork supports, so a Zig port of them would be unverifiable dead code. See [doc/zig-migration/dropped-transports.md](doc/zig-migration/dropped-transports.md). |
+
 ## Overview
 
 ipmitool is a utility for managing and configuring devices that support
@@ -94,11 +103,7 @@ defaults:
 | `-Dintf-open` | on for Linux | Linux OpenIPMI driver |
 | `-Dintf-serial` | on | serial basic/terminal mode |
 | `-Dintf-dummy` | on | test interface used by the golden test harness |
-| `-Dintf-imb` | on for Linux | Intel IMB driver |
 | `-Dintf-usb` | off | AMI USB |
-| `-Dintf-free` | off | needs `libfreeipmi` |
-| `-Dintf-dbus` | off | needs `libsystemd` |
-| `-Dintf-lipmi`, `-Dintf-bmc` | off | Solaris only; do not build on Linux |
 | `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
 | `-Dipmishell` | on | `ipmitool shell`/`exec`; requires `libreadline` |
@@ -371,7 +376,6 @@ usage: ipmitool [options...] <command>
 
 Interfaces:
     open         Linux OpenIPMI Interface [default]
-    imb          Intel IMB Interface
     lan          IPMI v1.5 LAN Interface
     lanplus      IPMI v2.0 RMCP+ LAN Interface
 

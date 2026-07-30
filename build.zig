@@ -289,27 +289,6 @@ const plugins = [_]Plugin{
         .help = "Linux OpenIPMI kernel driver interface",
     },
     .{
-        .name = "imb",
-        .macro = "IPMI_INTF_IMB",
-        .sources = .{ .dir = "src/plugins/imb", .files = &.{ "imbapi.c", "imb.c" } },
-        .default = .linux_only,
-        .help = "Intel IMB driver interface",
-    },
-    .{
-        .name = "lipmi",
-        .macro = "IPMI_INTF_LIPMI",
-        .sources = .{ .dir = "src/plugins/lipmi", .files = &.{"lipmi.c"} },
-        .default = .off,
-        .help = "Solaris 9 x86 IPMI interface (needs <sys/lipmi/lipmi_intf.h>)",
-    },
-    .{
-        .name = "bmc",
-        .macro = "IPMI_INTF_BMC",
-        .sources = .{ .dir = "src/plugins/bmc", .files = &.{"bmc.c"} },
-        .default = .off,
-        .help = "Solaris 10 x86 BMC interface (needs <sys/stropts.h>)",
-    },
-    .{
         .name = "lan",
         .macro = "IPMI_INTF_LAN",
         .sources = .{
@@ -337,14 +316,6 @@ const plugins = [_]Plugin{
         .help = "IPMIv2.0 RMCP+ LAN interface (requires libcrypto)",
     },
     .{
-        .name = "free",
-        .macro = "IPMI_INTF_FREE",
-        .sources = .{ .dir = "src/plugins/free", .files = &.{"free.c"} },
-        .default = .off,
-        .system_libs = &.{"freeipmi"},
-        .help = "FreeIPMI interface (requires libfreeipmi)",
-    },
-    .{
         .name = "serial",
         .macro = "IPMI_INTF_SERIAL",
         .sources = .{
@@ -367,14 +338,6 @@ const plugins = [_]Plugin{
         .sources = .{ .dir = "src/plugins/usb", .files = &.{"usb.c"} },
         .default = .off,
         .help = "AMI USB interface",
-    },
-    .{
-        .name = "dbus",
-        .macro = "IPMI_INTF_DBUS",
-        .sources = .{ .dir = "src/plugins/dbus", .files = &.{"dbus.c"} },
-        .default = .off,
-        .system_libs = &.{"systemd"},
-        .help = "OpenBMC dbus interface (requires libsystemd)",
     },
 };
 
@@ -631,24 +594,12 @@ pub fn build(b: *std.Build) void {
 
         // Interfaces
         .IPMI_INTF_OPEN = flag(enabled[pluginIndex("open")]),
-        .IPMI_INTF_IMB = flag(enabled[pluginIndex("imb")]),
-        .IPMI_INTF_LIPMI = flag(enabled[pluginIndex("lipmi")]),
-        .IPMI_INTF_BMC = flag(enabled[pluginIndex("bmc")]),
         .IPMI_INTF_LAN = flag(enabled[pluginIndex("lan")]),
         .IPMI_INTF_LANPLUS = flag(enabled[pluginIndex("lanplus")]),
-        .IPMI_INTF_FREE = flag(enabled[pluginIndex("free")]),
         .IPMI_INTF_SERIAL = flag(enabled[pluginIndex("serial")]),
         .IPMI_INTF_DUMMY = flag(enabled[pluginIndex("dummy")]),
         .IPMI_INTF_USB = flag(enabled[pluginIndex("usb")]),
-        .IPMI_INTF_DBUS = flag(enabled[pluginIndex("dbus")]),
         .ENABLE_INTF_OPEN_DUAL_BRIDGE = flag(false),
-
-        // FreeIPMI ABI variants; only 0.6.0+ is still realistic.
-        .IPMI_INTF_FREE_0_3_0 = flag(false),
-        .IPMI_INTF_FREE_0_4_0 = flag(false),
-        .IPMI_INTF_FREE_0_5_0 = flag(false),
-        .IPMI_INTF_FREE_0_6_0 = flag(enabled[pluginIndex("free")]),
-        .IPMI_INTF_FREE_BRIDGING = flag(enabled[pluginIndex("free")]),
 
         // Misc feature switches
         .ENABLE_ALL_OPTIONS = flag(all_options),

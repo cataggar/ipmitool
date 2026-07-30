@@ -50,7 +50,6 @@ usage: ipmitool [options...] <command>
 
 Interfaces:
 \topen          Linux OpenIPMI Interface [default]
-\timb           Intel IMB Interface\x20
 \tlan           IPMI v1.5 LAN Interface\x20
 \tlanplus       IPMI v2.0 RMCP+ LAN Interface\x20
 \tserial-terminal  Serial Interface, Terminal Mode\x20

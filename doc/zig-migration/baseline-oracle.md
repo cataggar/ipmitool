@@ -194,6 +194,12 @@ ipmievd version 1.8.19.61.g3ca7703
 
 ### Interfaces reported by `ipmitool -h`
 
+> **Superseded.** This section records the *upstream* baseline as it was
+> measured, and is left unedited on purpose. `imb`, `lipmi`, `bmc`, `free` and
+> `dbus` were removed from this fork under issue #10, so the current `-h`
+> baseline has no `imb` line. See
+> [`dropped-transports.md`](dropped-transports.md).
+
 ```
 Interfaces:
 	open          Linux OpenIPMI Interface [default]
