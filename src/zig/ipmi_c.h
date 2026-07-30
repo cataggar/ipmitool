@@ -27,7 +27,9 @@
 #include <paths.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 /*
@@ -69,6 +71,7 @@
  * `src/plugins/*` to the bridge's `-I` list would make the two `asf.h` /
  * `rmcp.h` pairs ambiguous.
  */
+#include "../plugins/dummy/dummy.h"
 #include "../plugins/lan/md5.h"
 #include "../plugins/lan/auth.h"
 #include "../plugins/lanplus/lanplus.h"
@@ -201,3 +204,12 @@ extern struct ipmi_intf ipmi_usb_intf;
 #ifdef IPMI_INTF_DBUS
 extern struct ipmi_intf ipmi_dbus_intf;
 #endif
+
+/*
+ * `src/plugins/dummy/dummy.c` defines these two with external linkage and no
+ * prototype anywhere; nothing outside that file calls them, but they are
+ * global symbols, so the Zig replacement has to export them under the same
+ * names with the same signatures.
+ */
+int data_read(int fd, void *data_ptr, int data_len);
+int data_write(int fd, void *data_ptr, int data_len);

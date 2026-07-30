@@ -205,6 +205,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
     },
+    .{
+        .name = "dummy",
+        .replaces = "src/plugins/dummy/dummy.c",
+        .implementation = "src/zig/intf/dummy.zig",
+    },
 };
 
 /// Root of the Zig source tree.

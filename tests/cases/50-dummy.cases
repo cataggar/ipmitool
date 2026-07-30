@@ -1,0 +1,25 @@
+# Cases for the `dummy' interface plugin itself (src/plugins/dummy/dummy.c),
+# as opposed to the commands that ride on it.
+#
+# Everything else in tests/cases/ happens to travel over this transport, so the
+# request bytes are covered incidentally. What is *not* covered incidentally is
+# the response header: the model BMC answers with netfn = request netfn | 1,
+# cmd = request cmd, lun = request lun and seq = 0, and nearly every case sends
+# netfn 0x06 lun 0x00, so `msg.seq' and `msg.lun' are both zero and a port that
+# confused the two would pass. `msg.seq' additionally never reaches stdout: the
+# only thing that ever prints it is the `-v' trace inside
+# ipmi_dummyipmi_send_cmd(), so pinning it needs a verbose case.
+#
+# See tests/transcripts/dummy_frame.tr for the byte choices.
+
+[dummy_frame_verbose]
+desc: the dummy transport's -v trace with every request and response header byte distinct
+args: -I dummy -v -l 3 raw 0x2c 0x94 0xa5 0x5a 0x3c 0xc3
+transcript: dummy_frame.tr
+covers: raw
+
+[dummy_frame_verbose_ccode]
+desc: as above with a non-zero completion code and an empty payload
+args: -I dummy -v -l 3 raw 0x2c 0x95
+transcript: dummy_frame.tr
+covers: raw
