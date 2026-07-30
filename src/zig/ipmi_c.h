@@ -61,6 +61,7 @@
 #include <ipmitool/ipmi_sel_supermicro.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sdr.h>
+#include <ipmitool/ipmi_sdradd.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
 #include <ipmitool/ipmi_user.h>
@@ -137,6 +138,20 @@
  * inside the `.c`, so an incomplete type is enough here: only a pointer to it
  * ever crosses the boundary, and `cmd/sel.zig` owns the complete definition.
  *
+ * `lib/ipmi_sdradd.c` contributes three more.  `ipmi_sdr_add_record()` is
+ * declared nowhere; `ipmi_parse_range_list()` and `ipmi_hex_to_dec()` are
+ * forward declared at the top of that `.c` and nowhere else.  All three are
+ * global symbols the Zig replacement has to re-export under the same
+ * signatures.
+ *
+ * `lib/ipmi_sdr.c` contributes seven.  `ipmi_sdr_get_info()`,
+ * `ipmi_sdr_print_type()`, `ipmi_sdr_print_entity()`,
+ * `ipmi_sdr_print_sensor_fc()`, `ipmi_sdr_get_sensor_event_status()` and
+ * `ipmi_sdr_get_sensor_event_enable()` are global by omission - no header
+ * declares them.  `printf_sdr_usage()` is forward declared inside that `.c`
+ * with a K&R empty parameter list, so it gets the same `void` treatment as
+ * the `ipmi_sensor.c` usage printers.
+ *
  * `strptime()` is declared by glibc's `<time.h>` only under `_XOPEN_SOURCE`;
  * `lib/ipmi_sel.c` reaches it by defining `__USE_XOPEN` by hand before the
  * include.  Restating the prototype here is the same trick without depending
@@ -159,6 +174,26 @@ const char *ipmi_get_oem_sensor_type(struct ipmi_intf *intf, uint8_t code);
 struct ipmi_sel_oem_msg_rec;
 extern struct ipmi_sel_oem_msg_rec *sel_oem_msg;
 char *strptime(const char *s, const char *format, struct tm *tm);
+
+int ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr);
+int ipmi_parse_range_list(const char *rangeList, unsigned char *pHexList);
+int ipmi_hex_to_dec(char *rangeList, unsigned char *pDecValue);
+int ipmi_sdr_get_info(struct ipmi_intf *intf,
+		      struct get_sdr_repository_info_rsp *sdr_repository_info);
+int ipmi_sdr_print_type(struct ipmi_intf *intf, char *type);
+int ipmi_sdr_print_entity(struct ipmi_intf *intf, char *entitystr);
+int ipmi_sdr_print_sensor_fc(struct ipmi_intf *intf,
+			     struct sdr_record_common_sensor *sensor,
+			     uint8_t sdr_record_type);
+struct ipmi_rs *ipmi_sdr_get_sensor_event_status(struct ipmi_intf *intf,
+						 uint8_t sensor,
+						 uint8_t target, uint8_t lun,
+						 uint8_t channel);
+struct ipmi_rs *ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf,
+						 uint8_t sensor,
+						 uint8_t target, uint8_t lun,
+						 uint8_t channel);
+void printf_sdr_usage(void);
 
 /*
  * `src/plugins/ipmi_intf.c` defines these two without a prototype in

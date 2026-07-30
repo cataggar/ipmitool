@@ -254,6 +254,183 @@ enum ipmitool_abi_layout {
 		offsetof(struct sdr_record_list, next),
 	ABI_OFFSETOF_sdr_record_list__record =
 		offsetof(struct sdr_record_list, record),
+
+	/* The rest of ipmi_sdr.h, for src/zig/cmd/sdr.zig.  That port mirrors
+	 * every SDR record type in full rather than indexing a handful of byte
+	 * offsets, because it reads nearly every field, so what it needs is one
+	 * size per record plus the offsets of the fields that follow a bitfield
+	 * group (bitfield members have no address of their own).
+	 */
+	ABI_SIZEOF_sdr_get_rq = sizeof(struct sdr_get_rq),
+	ABI_OFFSETOF_sdr_get_rq__id = offsetof(struct sdr_get_rq, id),
+	ABI_OFFSETOF_sdr_get_rq__offset = offsetof(struct sdr_get_rq, offset),
+	ABI_OFFSETOF_sdr_get_rq__length = offsetof(struct sdr_get_rq, length),
+
+	ABI_SIZEOF_sdr_repo_info_rs = sizeof(struct sdr_repo_info_rs),
+	ABI_OFFSETOF_sdr_repo_info_rs__count =
+		offsetof(struct sdr_repo_info_rs, count),
+	ABI_OFFSETOF_sdr_repo_info_rs__free =
+		offsetof(struct sdr_repo_info_rs, free),
+	ABI_OFFSETOF_sdr_repo_info_rs__add_stamp =
+		offsetof(struct sdr_repo_info_rs, add_stamp),
+	ABI_OFFSETOF_sdr_repo_info_rs__erase_stamp =
+		offsetof(struct sdr_repo_info_rs, erase_stamp),
+	ABI_OFFSETOF_sdr_repo_info_rs__op_support =
+		offsetof(struct sdr_repo_info_rs, op_support),
+
+	ABI_SIZEOF_sdr_device_info_rs = sizeof(struct sdr_device_info_rs),
+	ABI_OFFSETOF_sdr_device_info_rs__flags =
+		offsetof(struct sdr_device_info_rs, flags),
+	ABI_OFFSETOF_sdr_device_info_rs__popChangeInd =
+		offsetof(struct sdr_device_info_rs, popChangeInd),
+
+	ABI_SIZEOF_get_sdr_repository_info_rsp =
+		sizeof(struct get_sdr_repository_info_rsp),
+	ABI_OFFSETOF_get_sdr_repository_info_rsp__record_count_lsb =
+		offsetof(struct get_sdr_repository_info_rsp, record_count_lsb),
+	ABI_OFFSETOF_get_sdr_repository_info_rsp__record_count_msb =
+		offsetof(struct get_sdr_repository_info_rsp, record_count_msb),
+	ABI_OFFSETOF_get_sdr_repository_info_rsp__free_space =
+		offsetof(struct get_sdr_repository_info_rsp, free_space),
+	ABI_OFFSETOF_get_sdr_repository_info_rsp__most_recent_addition_timestamp =
+		offsetof(struct get_sdr_repository_info_rsp,
+			 most_recent_addition_timestamp),
+	ABI_OFFSETOF_get_sdr_repository_info_rsp__most_recent_erase_timestamp =
+		offsetof(struct get_sdr_repository_info_rsp,
+			 most_recent_erase_timestamp),
+
+	ABI_SIZEOF_sdr_record_mask = sizeof(struct sdr_record_mask),
+	ABI_SIZEOF_sdr_record_common_sensor =
+		sizeof(struct sdr_record_common_sensor),
+	ABI_OFFSETOF_sdr_common__sensor__init =
+		offsetof(struct sdr_record_common_sensor, sensor.type) - 2,
+	ABI_OFFSETOF_sdr_common__mask =
+		offsetof(struct sdr_record_common_sensor, mask),
+
+	ABI_OFFSETOF_sdr_full__linearization =
+		offsetof(struct sdr_record_full_sensor, linearization),
+	ABI_OFFSETOF_sdr_full__analog_flag =
+		offsetof(struct sdr_record_full_sensor, nominal_read) - 1,
+	ABI_OFFSETOF_sdr_full__nominal_read =
+		offsetof(struct sdr_record_full_sensor, nominal_read),
+	ABI_OFFSETOF_sdr_full__normal_max =
+		offsetof(struct sdr_record_full_sensor, normal_max),
+	ABI_OFFSETOF_sdr_full__normal_min =
+		offsetof(struct sdr_record_full_sensor, normal_min),
+	ABI_OFFSETOF_sdr_full__sensor_max =
+		offsetof(struct sdr_record_full_sensor, sensor_max),
+	ABI_OFFSETOF_sdr_full__sensor_min =
+		offsetof(struct sdr_record_full_sensor, sensor_min),
+	ABI_OFFSETOF_sdr_full__threshold =
+		offsetof(struct sdr_record_full_sensor, threshold),
+	ABI_OFFSETOF_sdr_full__oem =
+		offsetof(struct sdr_record_full_sensor, oem),
+	ABI_OFFSETOF_sdr_full__id_code =
+		offsetof(struct sdr_record_full_sensor, id_code),
+
+	ABI_SIZEOF_sdr_record_compact_sensor =
+		sizeof(struct sdr_record_compact_sensor),
+	ABI_OFFSETOF_sdr_compact__share =
+		offsetof(struct sdr_record_compact_sensor, share),
+	ABI_OFFSETOF_sdr_compact__oem =
+		offsetof(struct sdr_record_compact_sensor, oem),
+	ABI_OFFSETOF_sdr_compact__id_code =
+		offsetof(struct sdr_record_compact_sensor, id_code),
+
+	ABI_SIZEOF_sdr_record_eventonly_sensor =
+		sizeof(struct sdr_record_eventonly_sensor),
+	ABI_OFFSETOF_sdr_eventonly__keys__sensor_num =
+		offsetof(struct sdr_record_eventonly_sensor, keys.sensor_num),
+	ABI_OFFSETOF_sdr_eventonly__sensor_type =
+		offsetof(struct sdr_record_eventonly_sensor, sensor_type),
+	ABI_OFFSETOF_sdr_eventonly__event_type =
+		offsetof(struct sdr_record_eventonly_sensor, event_type),
+	ABI_OFFSETOF_sdr_eventonly__share =
+		offsetof(struct sdr_record_eventonly_sensor, share),
+	ABI_OFFSETOF_sdr_eventonly__oem =
+		offsetof(struct sdr_record_eventonly_sensor, oem),
+	ABI_OFFSETOF_sdr_eventonly__id_code =
+		offsetof(struct sdr_record_eventonly_sensor, id_code),
+
+	ABI_SIZEOF_sdr_record_mc_locator = sizeof(struct sdr_record_mc_locator),
+	ABI_OFFSETOF_sdr_mcloc__dev_support =
+		offsetof(struct sdr_record_mc_locator, dev_support),
+	ABI_OFFSETOF_sdr_mcloc__entity =
+		offsetof(struct sdr_record_mc_locator, entity),
+	ABI_OFFSETOF_sdr_mcloc__oem =
+		offsetof(struct sdr_record_mc_locator, oem),
+	ABI_OFFSETOF_sdr_mcloc__id_code =
+		offsetof(struct sdr_record_mc_locator, id_code),
+
+	ABI_SIZEOF_sdr_record_fru_locator =
+		sizeof(struct sdr_record_fru_locator),
+	ABI_OFFSETOF_sdr_fruloc__device_id =
+		offsetof(struct sdr_record_fru_locator, device_id),
+	ABI_OFFSETOF_sdr_fruloc__dev_type =
+		offsetof(struct sdr_record_fru_locator, dev_type),
+	ABI_OFFSETOF_sdr_fruloc__dev_type_modifier =
+		offsetof(struct sdr_record_fru_locator, dev_type_modifier),
+	ABI_OFFSETOF_sdr_fruloc__entity =
+		offsetof(struct sdr_record_fru_locator, entity),
+	ABI_OFFSETOF_sdr_fruloc__oem =
+		offsetof(struct sdr_record_fru_locator, oem),
+	ABI_OFFSETOF_sdr_fruloc__id_code =
+		offsetof(struct sdr_record_fru_locator, id_code),
+
+	ABI_SIZEOF_sdr_record_generic_locator =
+		sizeof(struct sdr_record_generic_locator),
+	ABI_OFFSETOF_sdr_genloc__dev_slave_addr =
+		offsetof(struct sdr_record_generic_locator, dev_slave_addr),
+	ABI_OFFSETOF_sdr_genloc__dev_type =
+		offsetof(struct sdr_record_generic_locator, dev_type),
+	ABI_OFFSETOF_sdr_genloc__dev_type_modifier =
+		offsetof(struct sdr_record_generic_locator, dev_type_modifier),
+	ABI_OFFSETOF_sdr_genloc__entity =
+		offsetof(struct sdr_record_generic_locator, entity),
+	ABI_OFFSETOF_sdr_genloc__oem =
+		offsetof(struct sdr_record_generic_locator, oem),
+	ABI_OFFSETOF_sdr_genloc__id_code =
+		offsetof(struct sdr_record_generic_locator, id_code),
+
+	ABI_SIZEOF_sdr_record_entity_assoc =
+		sizeof(struct sdr_record_entity_assoc),
+	ABI_OFFSETOF_sdr_entassoc__entity_id_1 =
+		offsetof(struct sdr_record_entity_assoc, entity_id_1),
+	ABI_OFFSETOF_sdr_entassoc__entity_inst_4 =
+		offsetof(struct sdr_record_entity_assoc, entity_inst_4),
+
+	ABI_SIZEOF_sdr_record_oem = sizeof(struct sdr_record_oem),
+	ABI_ALIGNOF_sdr_record_oem = _Alignof(struct sdr_record_oem),
+	ABI_OFFSETOF_sdr_record_oem__data_len =
+		offsetof(struct sdr_record_oem, data_len),
+
+	ABI_SIZEOF_ipmi_sdr_iterator = sizeof(struct ipmi_sdr_iterator),
+	ABI_ALIGNOF_ipmi_sdr_iterator = _Alignof(struct ipmi_sdr_iterator),
+	ABI_OFFSETOF_ipmi_sdr_iterator__total =
+		offsetof(struct ipmi_sdr_iterator, total),
+	ABI_OFFSETOF_ipmi_sdr_iterator__next =
+		offsetof(struct ipmi_sdr_iterator, next),
+	ABI_OFFSETOF_ipmi_sdr_iterator__use_built_in =
+		offsetof(struct ipmi_sdr_iterator, use_built_in),
+
+	ABI_SIZEOF_sensor_reading = sizeof(struct sensor_reading),
+	ABI_ALIGNOF_sensor_reading = _Alignof(struct sensor_reading),
+	ABI_OFFSETOF_sensor_reading__full = offsetof(struct sensor_reading, full),
+	ABI_OFFSETOF_sensor_reading__compact =
+		offsetof(struct sensor_reading, compact),
+	ABI_OFFSETOF_sensor_reading__s_reading_valid =
+		offsetof(struct sensor_reading, s_reading_valid),
+	ABI_OFFSETOF_sensor_reading__s_reading =
+		offsetof(struct sensor_reading, s_reading),
+	ABI_OFFSETOF_sensor_reading__s_has_analog_value =
+		offsetof(struct sensor_reading, s_has_analog_value),
+	ABI_OFFSETOF_sensor_reading__s_a_val =
+		offsetof(struct sensor_reading, s_a_val),
+	ABI_OFFSETOF_sensor_reading__s_a_str =
+		offsetof(struct sensor_reading, s_a_str),
+	ABI_OFFSETOF_sensor_reading__s_a_units =
+		offsetof(struct sensor_reading, s_a_units),
+
 	/* struct get_channel_auth_cap_rsp - opaque: bytes 1-3 are all bitfields.
 	 * Only three offsets are addressable; the bitfield bytes are pinned by
 	 * the fields on either side of them.
