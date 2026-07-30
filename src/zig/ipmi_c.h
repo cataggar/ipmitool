@@ -74,6 +74,16 @@
 #include "../plugins/dummy/dummy.h"
 #include "../plugins/lan/md5.h"
 #include "../plugins/lan/auth.h"
+/*
+ * ipmitool's own copy of the OpenIPMI driver ABI.  `src/plugins/open/open.c`
+ * only falls back to it when neither <linux/ipmi.h> nor <sys/ipmi.h> exists, so
+ * on Linux the C build does not use it -- but it is ipmitool source rather than
+ * a kernel header, which is exactly what `src/zig/intf/open.zig` is allowed to
+ * compare its hand-written structs against.  `intf/open.zig` additionally pins
+ * every size, offset and ioctl number against the values <linux/ipmi.h>
+ * produces, so a drift between the two is a test failure and not a silent one.
+ */
+#include "../plugins/open/open.h"
 #include "../plugins/lanplus/lanplus.h"
 #include "../plugins/lanplus/lanplus_crypt.h"
 #include "../plugins/lanplus/lanplus_crypt_impl.h"
@@ -213,3 +223,10 @@ extern struct ipmi_intf ipmi_dbus_intf;
  */
 int data_read(int fd, void *data_ptr, int data_len);
 int data_write(int fd, void *data_ptr, int data_len);
+
+/*
+ * `src/plugins/open/open.c` defines `ipmi_openipmi_setup()` with external
+ * linkage and declares it nowhere; `src/zig/intf/open.zig` needs the C type to
+ * compare its replacement against.
+ */
+int ipmi_openipmi_setup(struct ipmi_intf *intf);
