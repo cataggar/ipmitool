@@ -1,0 +1,25 @@
+#!golden 1
+#!case sd_info_gallery
+#!section exit
+0
+#!section stdout
+SDR Version                         : 0x51
+Record Count                        : 10
+Free Space                          : 4660 bytes
+Most recent Addition                : NA
+Most recent Erase                   : NA
+SDR overflow                        : no
+SDR Repository Update Support       : unspecified
+Delete SDR supported                : no
+Partial Add SDR supported           : no
+Reserve SDR repository supported    : yes
+SDR Repository Alloc info supported : no
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 0a 00 34 12 00 e3 0b 5e 08 19 2a 3b 02
+bye

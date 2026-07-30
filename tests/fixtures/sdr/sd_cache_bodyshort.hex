@@ -1,0 +1,10 @@
+# A record whose declared length runs past the end of the file.  The
+# C reports `record 3104 read 5 bytes, expected 27', frees the
+# partial record and stops.
+
+@sdr/sd_look_3101.hex
+04 31  # record ID 0x3104
+51     # SDR version
+02     # record type 02h
+1b     # declares 27 body bytes ...
+20 00 14 1d 01  # ... but only five are present

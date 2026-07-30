@@ -1,0 +1,15 @@
+# MC Device Locator truncated immediately after id_code.
+
+05 21                        # Record ID = 0x2105
+51                           # SDR version 0x51
+12                           # Record type 0x12
+0b                           # Record length = 11 bytes follow
+24                           # Device slave address 0x24
+07                           # Channel number 7
+ab                           # pwr_state_notif=5 global_init=0xb
+bf                           # Device support 0xbf
+00 00 00                     # Reserved
+07                           # Entity ID 0x07
+02                           # Entity instance 0x02
+00                           # OEM 0x00
+c7                           # ID string type/length 0xc7

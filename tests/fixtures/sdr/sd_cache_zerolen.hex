@@ -1,0 +1,10 @@
+# A zero-length header in the middle of the file.  The C `continue's
+# without consuming any body bytes, so the following record is still
+# parsed - a length of 0 is skipped, not an error.
+
+@sdr/sd_look_3101.hex
+bc 9a  # record ID 0x9abc
+51     # SDR version
+01     # record type 01h
+00     # declared length 0 -> `continue', no body read
+@sdr/sd_look_3104.hex

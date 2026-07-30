@@ -1,0 +1,22 @@
+# Reserve SDR Repository fails.  ipmi_sdr_start() reports `Unable to obtain
+# SDR reservation' and returns NULL.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  ccode 0xc1
+end

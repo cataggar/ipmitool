@@ -1,0 +1,95 @@
+# The reservation is cancelled on the very first header read.  The C sleeps
+# `rand() & 3' seconds, re-reserves and restarts the request with the new
+# reservation ID.  The two reservation IDs (0xa55a and 0x3c7e) share no bytes,
+# so a mutation that reuses the stale one is visible in the request log.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_first
+  netfn 0x0a
+  cmd 0x22
+  times 1
+  # the first reservation, 0xa55a
+  data 5a a5
+end
+
+respond reserve_renewed
+  netfn 0x0a
+  cmd 0x22
+  # after the cancellation the BMC hands out 0x3c7e;
+  # every later request must carry the new value
+  data 7e 3c
+end
+
+respond get_sdr_cancelled
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  times 1
+  ccode 0xc5
+  # Get SDR with the original reservation: 0xc5
+  # `Reservation cancelled' exactly once
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 7e 3c 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match 7e 3c 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_5678
+  netfn 0x0a
+  cmd 0x23
+  match 7e 3c 78 56
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_compact_fan.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 2a c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

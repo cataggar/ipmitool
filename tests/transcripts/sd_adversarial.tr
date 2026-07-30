@@ -1,0 +1,386 @@
+# Malformed and edge-case SDR records.  The BMC supplies these bytes, so they
+# are untrusted input; the C's behaviour is the specification even where it is
+# wrong (see the upstream defects issue linked from the PR).
+#
+# Every truncation here stops at a byte the C is still allowed to read: the
+# record buffer is malloc(len + 1) and memset to zero, so index `len' is a
+# guaranteed NUL.  Truncations that would read past index `len' are genuine
+# out-of-bounds reads whose result is heap-dependent and therefore cannot be
+# snapshotted; they are reported as an upstream defect instead.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 24 00 5a 3c 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  data 02 21
+  partial 4 1 5
+  blob @sdr/sd_adv_full_t42.hex
+end
+
+respond get_sdr_2101
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 01 21
+  data 02 21
+  partial 4 1 5
+  blob @sdr/sd_adv_full_t42.hex
+end
+
+respond get_sdr_2102
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 02 21
+  data 03 21
+  partial 4 1 5
+  blob @sdr/sd_adv_full_t43.hex
+end
+
+respond get_sdr_2103
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 03 21
+  data 04 21
+  partial 4 1 5
+  blob @sdr/sd_adv_comp_t27.hex
+end
+
+respond get_sdr_2104
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 04 21
+  data 05 21
+  partial 4 1 5
+  blob @sdr/sd_adv_ev_t12.hex
+end
+
+respond get_sdr_2105
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 05 21
+  data 06 21
+  partial 4 1 5
+  blob @sdr/sd_adv_mc_t11.hex
+end
+
+respond get_sdr_2106
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 06 21
+  data 07 21
+  partial 4 1 5
+  blob @sdr/sd_adv_fru_t11.hex
+end
+
+respond get_sdr_2107
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 07 21
+  data 11 21
+  partial 4 1 5
+  blob @sdr/sd_adv_gen_t11.hex
+end
+
+respond get_sdr_2111
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 11 21
+  data 12 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_zero.hex
+end
+
+respond get_sdr_2112
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 12 21
+  data 13 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_over.hex
+end
+
+respond get_sdr_2113
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 13 21
+  data 14 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_6bit.hex
+end
+
+respond get_sdr_2114
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 14 21
+  data 15 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_bcd.hex
+end
+
+respond get_sdr_2115
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 15 21
+  data 16 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_uni.hex
+end
+
+respond get_sdr_2116
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 16 21
+  data 17 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_16.hex
+end
+
+respond get_sdr_2117
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 17 21
+  data 21 21
+  partial 4 1 5
+  blob @sdr/sd_adv_id_ctrl.hex
+end
+
+respond get_sdr_2121
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 21 21
+  data 22 21
+  partial 4 1 5
+  blob @sdr/sd_adv_stype_oem.hex
+end
+
+respond get_sdr_2122
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 22 21
+  data 23 21
+  partial 4 1 5
+  blob @sdr/sd_adv_stype_2d.hex
+end
+
+respond get_sdr_2123
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 23 21
+  data 24 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_max.hex
+end
+
+respond get_sdr_2124
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 24 21
+  data 25 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_bad.hex
+end
+
+respond get_sdr_2125
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 25 21
+  data 26 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_div.hex
+end
+
+respond get_sdr_2126
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 26 21
+  data 27 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_mul.hex
+end
+
+respond get_sdr_2127
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 27 21
+  data 28 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_pct0.hex
+end
+
+respond get_sdr_2128
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 28 21
+  data 29 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_pctu.hex
+end
+
+respond get_sdr_2129
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 29 21
+  data 2a 21
+  partial 4 1 5
+  blob @sdr/sd_adv_unit_rsvd.hex
+end
+
+respond get_sdr_212a
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 2a 21
+  data 2b 21
+  partial 4 1 5
+  blob @sdr/sd_adv_rate_day.hex
+end
+
+respond get_sdr_212b
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 2b 21
+  data 31 21
+  partial 4 1 5
+  blob @sdr/sd_adv_rate_rsvd.hex
+end
+
+respond get_sdr_2131
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 31 21
+  data 32 21
+  partial 4 1 5
+  blob @sdr/sd_adv_ev_0f.hex
+end
+
+respond get_sdr_2132
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 32 21
+  data 33 21
+  partial 4 1 5
+  blob @sdr/sd_adv_ev_7f.hex
+end
+
+respond get_sdr_2133
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 33 21
+  data 34 21
+  partial 4 1 5
+  blob @sdr/sd_adv_ev_00.hex
+end
+
+respond get_sdr_2134
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 34 21
+  data 41 21
+  partial 4 1 5
+  blob @sdr/sd_adv_disc_comp.hex
+end
+
+respond get_sdr_2141
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 41 21
+  data 42 21
+  partial 4 1 5
+  blob @sdr/sd_adv_ent_ff.hex
+end
+
+respond get_sdr_2142
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 42 21
+  data 43 21
+  partial 4 1 5
+  blob @sdr/sd_adv_type_13.hex
+end
+
+respond get_sdr_2143
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 43 21
+  data 44 21
+  partial 4 1 5
+  blob @sdr/sd_adv_type_14.hex
+end
+
+respond get_sdr_2144
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 44 21
+  data 45 21
+  partial 4 1 5
+  blob @sdr/sd_adv_type_15.hex
+end
+
+respond get_sdr_2145
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 45 21
+  data 47 21
+  partial 4 1 5
+  blob @sdr/sd_adv_type_ff.hex
+end
+
+respond get_sdr_2147
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 47 21
+  data 48 21
+  partial 4 1 5
+  blob @sdr/sd_adv_oem_empty.hex
+end
+
+respond get_sdr_2148
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 48 21
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_adv_oem_short.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 5b c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

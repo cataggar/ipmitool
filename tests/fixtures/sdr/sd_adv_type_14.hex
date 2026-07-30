@@ -1,0 +1,8 @@
+# Record type 0x14 = Management Controller Confirmation; the C
+# has a `not implemented' arm for it.
+
+43 21                        # Record ID = 0x2143
+51                           # SDR version 0x51
+14                           # Record type 0x14
+06                           # Record length = 6 bytes follow
+20 00 01 02 03 04            # Opaque body

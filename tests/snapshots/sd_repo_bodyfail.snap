@@ -1,0 +1,23 @@
+#!golden 1
+#!case sd_repo_bodyfail
+#!section exit
+1
+#!section stdout
+#!section stderr
+ipmitool: ipmi_sdr_get_record() failed
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 00 00 00 05
+< rule=get_sdr_hdr ccode=0x00 len=7 data=ff ff 34 12 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 34 12 05 17
+< rule=get_sdr_body_fail ccode=0xcb len=0 data=
+bye

@@ -1,0 +1,41 @@
+# Full Sensor Record for the conversion battery.
+# linearization 00h = linear
+
+01 11                        # Record ID = 0x1101
+51                           # SDR version 0x51
+01                           # Record type 0x01
+35                           # Record length = 53 bytes follow
+20                           # Sensor owner ID 0x20
+00                           # Owner LUN / channel 0x00
+41                           # Sensor number 65
+03                           # Entity ID 0x03
+41                           # Entity instance 0x41
+7f                           # Sensor initialization 0x7f
+68                           # Sensor capabilities 0x68
+01                           # Sensor type 0x01
+01                           # Event/reading type 0x01
+ff 3f ff 3f 3f 3f            # Event mask / threshold masks
+00                           # Units 1: analog=0 rate=0 mod=0 pct=0
+04                           # Units 2: base unit 0x04
+00                           # Units 3: modifier unit 0x00
+00                           # Linearization 0x00
+11 2a                        # M = 17, tolerance = 42
+bf ab a9 de                  # B = -321, acc = 683, accexp = 2, dir = 1, Rexp = -3, Bexp = -2
+07                           # Analog flags 0x07
+33                           # Nominal reading 51
+66                           # Normal maximum 102
+11                           # Normal minimum 17
+f0                           # Sensor maximum reading 240
+03                           # Sensor minimum reading 3
+e1                           # Upper non-recoverable 225
+d2                           # Upper critical 210
+c3                           # Upper non-critical 195
+14                           # Lower non-recoverable 20
+25                           # Lower critical 37
+36                           # Lower non-critical 54
+1b                           # Positive-going hysteresis 27
+2c                           # Negative-going hysteresis 44
+00 00                        # Reserved
+00                           # OEM 0x00
+ca                           # ID string type/length 0xca
+4c 69 6e 20 4c 69 6e 65 61 72 # ID string 'Lin Linear'

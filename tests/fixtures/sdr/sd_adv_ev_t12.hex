@@ -1,0 +1,18 @@
+# Event-Only Record truncated immediately after id_code.
+
+04 21                        # Record ID = 0x2104
+51                           # SDR version 0x51
+03                           # Record type 0x03
+0c                           # Record length = 12 bytes follow
+20                           # Sensor owner ID 0x20
+00                           # Owner LUN / channel 0x00
+64                           # Sensor number 100
+15                           # Entity ID 0x15
+01                           # Entity instance 0x01
+09                           # Sensor type 0x09
+6f                           # Event/reading type 0x6f
+00                           # Record sharing: count/mod_type 0x00
+00                           # Record sharing: mod_offset/entity_inst 0x00
+00                           # Reserved
+00                           # OEM 0x00
+c6                           # ID string type/length 0xc6

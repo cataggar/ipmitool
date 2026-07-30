@@ -1,0 +1,27 @@
+# Lookup fixture: compact record 'FAN2 Tach'.
+
+05 31                        # Record ID = 0x3105
+51                           # SDR version 0x51
+02                           # Record type 0x02
+24                           # Record length = 36 bytes follow
+20                           # Sensor owner ID 0x20
+00                           # Owner LUN / channel 0x00
+15                           # Sensor number 21
+1d                           # Entity ID 0x1d
+02                           # Entity instance 0x02
+7f                           # Sensor initialization 0x7f
+68                           # Sensor capabilities 0x68
+04                           # Sensor type 0x04
+01                           # Event/reading type 0x01
+ff 3f ff 3f 3f 3f            # Event mask / threshold masks
+00                           # Units 1: analog=0 rate=0 mod=0 pct=0
+12                           # Units 2: base unit 0x12
+00                           # Units 3: modifier unit 0x00
+00                           # Record sharing: count/mod_type 0x00
+00                           # Record sharing: mod_offset/entity_inst 0x00
+02                           # Positive-going hysteresis 2
+02                           # Negative-going hysteresis 2
+00 00 00                     # Reserved
+00                           # OEM 0x00
+c9                           # ID string type/length 0xc9
+46 41 4e 32 20 54 61 63 68   # ID string 'FAN2 Tach'

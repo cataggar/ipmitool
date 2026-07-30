@@ -1,0 +1,222 @@
+# lib/ipmi_sdradd.c - the SDR writer.
+#
+# `sdr fill sensors', `nosat', `file' and `range', the Clear SDR Repository
+# poll loop, the Add SDR Record chunking, and every parse arm of
+# ipmi_parse_range_list() / ipmi_hex_to_dec().
+
+[sd_fill_sensors]
+desc: `sdr fill sensors' - built-in scan plus 21 satellite slots
+args: -I dummy sdr fill sensors
+transcript: sd_add_ok.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_fill_nosat]
+desc: `sdr fill nosat' - built-in sensors only
+args: -I dummy sdr fill nosat
+transcript: sd_add_ok.tr
+covers: sdr
+
+[sd_fill_nosat_v]
+desc: `-vvv sdr fill nosat' - the per-record ID/NAME trace from ipmi_sdr_print_name_from_rawentry()
+args: -I dummy -vvv sdr fill nosat
+transcript: sd_add_ok.tr
+covers: sdr
+
+[sd_fill_clearwait]
+desc: the erase needs a second poll
+args: -I dummy sdr fill nosat
+transcript: sd_add_clearwait.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_fill_clearstuck]
+desc: the erase never completes - five polls then give up
+args: -I dummy sdr fill nosat
+transcript: sd_add_clearstuck.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_fill_clearerr]
+desc: Clear SDR Repository refused
+args: -I dummy sdr fill nosat
+transcript: sd_add_clearerr.tr
+covers: sdr
+
+[sd_fill_nores]
+desc: the reservation for the clear is refused
+args: -I dummy sdr fill nosat
+transcript: sd_add_nores.tr
+covers: sdr
+
+[sd_fill_adderr]
+desc: every Add SDR Record is refused
+args: -I dummy sdr fill nosat
+transcript: sd_add_adderr.tr
+covers: sdr
+
+[sd_fill_shortrsp]
+desc: Add SDR Record returns a one-byte response
+args: -I dummy sdr fill nosat
+transcript: sd_add_shortrsp.tr
+covers: sdr
+
+[sd_fill_file_two]
+desc: `sdr fill file' with two complete records
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_two.hex
+covers: sdr
+
+[sd_fill_file_two_v]
+desc: same, with the binHdr debug trace
+args: -I dummy -vvv sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_two.hex
+covers: sdr
+
+[sd_fill_file_trunc]
+desc: `sdr fill file' where the last record is truncated
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_trunc.hex
+covers: sdr
+
+[sd_fill_file_short]
+desc: `sdr fill file' with a file shorter than one header
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_short.hex
+covers: sdr
+
+[sd_fill_file_empty]
+desc: `sdr fill file' with an empty file
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_empty.hex
+covers: sdr
+
+[sd_fill_file_zerolen]
+desc: `sdr fill file' with a zero-length record
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_zerolen.hex
+covers: sdr
+
+[sd_fill_file_missing]
+desc: `sdr fill file' with a file that does not exist
+args: -I dummy sdr fill file {work}/nosuch.bin
+transcript: sd_add_file.tr
+covers: sdr
+
+[sd_range_one]
+desc: `sdr fill range 0x28' - a single even address
+args: -I dummy sdr fill range "0x28"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_two]
+desc: `sdr fill range 0x28,0x32' - two comma-separated addresses
+args: -I dummy sdr fill range "0x28,0x32"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_three]
+desc: `sdr fill range 0x28,0x32,0x40' - three addresses - only the first comma is honoured, so the second element still carries the rest of the string and fails to parse
+args: -I dummy sdr fill range "0x28,0x32,0x40"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_span]
+desc: `sdr fill range 0x40-0x46' - an ascending range
+args: -I dummy sdr fill range "0x40-0x46"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_span_rev]
+desc: `sdr fill range 0x46-0x40' - a descending range: startValue wraps all the way round the byte before it meets endValue
+args: -I dummy sdr fill range "0x46-0x40"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_span_full]
+desc: `sdr fill range 0x42-0x40' - a descending range that writes exactly MAX_NUM_SLOT entries, filling listValue[] to its last byte without running past it
+args: -I dummy sdr fill range "0x42-0x40"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_odd]
+desc: `sdr fill range 0x29' - an odd I2C address is rejected
+args: -I dummy sdr fill range "0x29"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_odd_span]
+desc: `sdr fill range 0x40-0x45' - a range with an odd end
+args: -I dummy sdr fill range "0x40-0x45"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_mix]
+desc: `sdr fill range 0x28,0x40-0x44' - a single address and a range
+args: -I dummy sdr fill range "0x28,0x40-0x44"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_bad_len]
+desc: `sdr fill range 0x2' - not four characters
+args: -I dummy sdr fill range "0x2"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_bad_pfx]
+desc: `sdr fill range 1234' - missing the 0x prefix
+args: -I dummy sdr fill range "1234"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_bad_hi]
+desc: `sdr fill range 0xz8' - a non-hex digit in the high nibble
+args: -I dummy sdr fill range "0xz8"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_bad_lo]
+desc: `sdr fill range 0x2z' - a non-hex digit in the low nibble
+args: -I dummy sdr fill range "0x2z"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_upper]
+desc: `sdr fill range 0xAE' - upper-case hex digits
+args: -I dummy sdr fill range "0xAE"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_empty]
+desc: `sdr fill range ''' - an empty range string
+args: -I dummy sdr fill range ""
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_range_comma1st]
+desc: `sdr fill range ,0x28' - a leading comma short-circuits the parser
+args: -I dummy sdr fill range ",0x28"
+transcript: sd_add_range.tr
+timeout_ms: 30000
+covers: sdr
