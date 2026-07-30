@@ -342,7 +342,6 @@ archive() {
 	ipmievd_sha="$(sha256_of "$ORACLE_DIR/ipmievd")"
 
 	local intf_lan intf_lanplus intf_open intf_serial intf_usb intf_dummy
-	local intf_imb intf_bmc intf_dbus intf_lipmi intf_free
 	local crypto_sha256 crypto_md5 crypto_md2 readline_enabled
 	intf_lan="$(config_h_value IPMI_INTF_LAN)"
 	intf_lanplus="$(config_h_value IPMI_INTF_LANPLUS)"
@@ -350,11 +349,6 @@ archive() {
 	intf_serial="$(config_h_value IPMI_INTF_SERIAL)"
 	intf_usb="$(config_h_value IPMI_INTF_USB)"
 	intf_dummy="$(config_h_value IPMI_INTF_DUMMY)"
-	intf_imb="$(config_h_value IPMI_INTF_IMB)"
-	intf_bmc="$(config_h_value IPMI_INTF_BMC)"
-	intf_dbus="$(config_h_value IPMI_INTF_DBUS)"
-	intf_lipmi="$(config_h_value IPMI_INTF_LIPMI)"
-	intf_free="$(config_h_value IPMI_INTF_FREE)"
 	crypto_sha256="$(config_h_value HAVE_CRYPTO_SHA256)"
 	crypto_md5="$(config_h_value HAVE_CRYPTO_MD5)"
 	crypto_md2="$(config_h_value HAVE_CRYPTO_MD2)"
@@ -404,11 +398,6 @@ archive() {
 		IPMI_INTF_SERIAL  : $intf_serial
 		IPMI_INTF_USB     : $intf_usb
 		IPMI_INTF_DUMMY   : $intf_dummy
-		IPMI_INTF_IMB     : $intf_imb
-		IPMI_INTF_BMC     : $intf_bmc
-		IPMI_INTF_DBUS    : $intf_dbus
-		IPMI_INTF_LIPMI   : $intf_lipmi
-		IPMI_INTF_FREE    : $intf_free
 		HAVE_CRYPTO_SHA256: $crypto_sha256
 		HAVE_CRYPTO_MD5   : $crypto_md5
 		HAVE_CRYPTO_MD2   : $crypto_md2
@@ -456,11 +445,6 @@ archive() {
 		    "intf_serial": $(json_bool "$intf_serial"),
 		    "intf_usb": $(json_bool "$intf_usb"),
 		    "intf_dummy": $(json_bool "$intf_dummy"),
-		    "intf_imb": $(json_bool "$intf_imb"),
-		    "intf_bmc": $(json_bool "$intf_bmc"),
-		    "intf_dbus": $(json_bool "$intf_dbus"),
-		    "intf_lipmi": $(json_bool "$intf_lipmi"),
-		    "intf_free": $(json_bool "$intf_free"),
 		    "crypto_sha256": $(json_bool "$crypto_sha256"),
 		    "crypto_md5": $(json_bool "$crypto_md5"),
 		    "crypto_md2": $(json_bool "$crypto_md2"),

@@ -31,9 +31,7 @@ steps:
       ./bootstrap
 
       ./configure --enable-intf-dummy \
-                  --enable-intf-dbus \
-                  --enable-intf-usb \
-                  --enable-intf-free
+                  --enable-intf-usb
 
       make
 

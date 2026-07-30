@@ -57,19 +57,17 @@ const default_payload_size = 25;
 /// Keep this list identical to the `#ifdef` ladder in
 /// `src/plugins/ipmi_intf.c`: the order decides both the `-h` interface list
 /// and which entry `get_default_interface()` falls back to.
+///
+/// `imb`, `lipmi`, `bmc`, `free` and `dbus` are absent because this fork
+/// removed those plugins; see `doc/zig-migration/dropped-transports.md`.
 const registered = [_]struct { macro: []const u8, symbol: []const u8 }{
     .{ .macro = "IPMI_INTF_OPEN", .symbol = "ipmi_open_intf" },
-    .{ .macro = "IPMI_INTF_IMB", .symbol = "ipmi_imb_intf" },
-    .{ .macro = "IPMI_INTF_LIPMI", .symbol = "ipmi_lipmi_intf" },
-    .{ .macro = "IPMI_INTF_BMC", .symbol = "ipmi_bmc_intf" },
     .{ .macro = "IPMI_INTF_LAN", .symbol = "ipmi_lan_intf" },
     .{ .macro = "IPMI_INTF_LANPLUS", .symbol = "ipmi_lanplus_intf" },
-    .{ .macro = "IPMI_INTF_FREE", .symbol = "ipmi_free_intf" },
     .{ .macro = "IPMI_INTF_SERIAL", .symbol = "ipmi_serial_term_intf" },
     .{ .macro = "IPMI_INTF_SERIAL", .symbol = "ipmi_serial_bm_intf" },
     .{ .macro = "IPMI_INTF_DUMMY", .symbol = "ipmi_dummy_intf" },
     .{ .macro = "IPMI_INTF_USB", .symbol = "ipmi_usb_intf" },
-    .{ .macro = "IPMI_INTF_DBUS", .symbol = "ipmi_dbus_intf" },
 };
 
 /// Number of enabled entries plus the terminating null, matching the size the

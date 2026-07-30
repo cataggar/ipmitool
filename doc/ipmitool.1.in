@@ -3660,33 +3660,6 @@ use the OpenIPMI device interface
 you can specify it on the command line:
 .PP
 > ipmitool \fB\-I\fR \fIopen\fP <\fIcommand\fP>
-.SH "BMC INTERFACE"
-The ipmitool bmc interface utilizes the \fIbmc\fP device driver as
-provided by Solaris 10 and higher.  In order to force ipmitool to make
-use of this interface you can specify it on the command line:
-.PP
-> ipmitool \fB\-I\fR \fIbmc\fP <\fIcommand\fP>
-
-The following files are associated with the bmc driver:
-
-.TP
-.B /platform/i86pc/kernel/drv/bmc
-32\-bit \fBELF\fR kernel module for the bmc driver.
-.TP
-.B /platform/i86pc/kernel/drv/amd64/bmc
-64\-bit \fBELF\fR kernel module for the bmc driver.
-.TP
-.B /dev/bmc
-Character device node used to communicate with the bmc driver.
-.SH "LIPMI INTERFACE"
-The
-.BR ipmitool
-\fIlipmi\fP interface uses the Solaris 9 IPMI kernel device driver.
-It has been superseded by the \fIbmc\fP interface on Solaris 10.  You can tell
-.BR ipmitool
-to use this interface by specifying it on the command line.
-
-> ipmitool \fB\-I\fR \fIlipmi\fP <\fIexpression\fP>
 .SH "LAN INTERFACE"
 The
 .BR ipmitool
@@ -3779,33 +3752,6 @@ on the cipher suite ID found in the IPMIv2.0 specification in table
 RAKP\-HMAC\-SHA256 authentication, HMAC\-SHA256\-128 integrity, and
 AES\-CBC\-128 encryption algorithms.
 
-.SH "FREE INTERFACE"
-.LP
-The
-.BR ipmitool
-\fIfree\fP interface utilizes the FreeIPMI libfreeipmi
-drivers.
-.LP
-You can tell
-.BR ipmitool
-to use the FreeIPMI interface with the \-I option:
-.PP
-> ipmitool \fB\-I\fR \fIfree\fP <\fIcommand\fP>
-
-
-.SH "IMB INTERFACE"
-.LP
-The
-.BR ipmitool
-\fIimb\fP interface supports the Intel IMB (Intel
-Inter-module Bus) Interface through the /dev/imb device.
-.LP
-You can tell
-.BR ipmitool
-to use the IMB interface with the \-I option:
-.PP
-> ipmitool \fB\-I\fR \fIimb\fP <\fIcommand\fP>
-
 .SH "EXAMPLES"
 .TP
 \fIExample 1\fP: Listing remote sensors
@@ -3884,6 +3830,3 @@ http://www.intel.com/design/servers/ipmi
 .TP
 OpenIPMI Homepage
 http://openipmi.sourceforge.net
-.TP
-FreeIPMI Homepage
-http://www.gnu.org/software/freeipmi/
