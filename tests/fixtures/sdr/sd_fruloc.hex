@@ -1,0 +1,18 @@
+# SDR Type 11h - FRU Device Locator Record (logical FRU).
+
+68 24                        # Record ID = 0x2468
+51                           # SDR version 0x51
+11                           # Record type 0x11
+14                           # Record length = 20 bytes follow
+20                           # Device access address 0x20
+07                           # FRU device ID / slave address 0x07
+93                           # logical=1 lun=2 bus=3
+60                           # Channel number 6
+00                           # Reserved
+10                           # Device type 0x10
+02                           # Device type modifier 0x02
+0b                           # Entity ID 0x0b
+05                           # Entity instance 0x05
+00                           # OEM 0x00
+c9                           # ID string type/length 0xc9
+46 52 55 20 42 6f 61 72 64   # ID string 'FRU Board'

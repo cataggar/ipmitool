@@ -1,0 +1,9 @@
+# A file whose last record is truncated: ipmi_sdr_read_records()
+# reports `SDR from ... truncated' and abandons the whole queue.
+
+@sdr/sd_full_temp.hex
+78 56        # record ID 0x5678
+51           # SDR version
+02           # record type 02h
+1f           # declares 31 body bytes ...
+20 00 1c 1d  # ... but only four are present

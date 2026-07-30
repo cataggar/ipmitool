@@ -1,0 +1,17 @@
+# FRU Device Locator truncated immediately after id_code.
+
+06 21                        # Record ID = 0x2106
+51                           # SDR version 0x51
+11                           # Record type 0x11
+0b                           # Record length = 11 bytes follow
+20                           # Device access address 0x20
+07                           # FRU device ID / slave address 0x07
+93                           # logical=1 lun=2 bus=3
+60                           # Channel number 6
+00                           # Reserved
+10                           # Device type 0x10
+02                           # Device type modifier 0x02
+0b                           # Entity ID 0x0b
+01                           # Entity instance 0x01
+00                           # OEM 0x00
+c7                           # ID string type/length 0xc7

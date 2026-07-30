@@ -1,0 +1,19 @@
+# Lookup fixture: eventonly record 'DIMM A1'.
+
+06 31                        # Record ID = 0x3106
+51                           # SDR version 0x51
+03                           # Record type 0x03
+13                           # Record length = 19 bytes follow
+20                           # Sensor owner ID 0x20
+00                           # Owner LUN / channel 0x00
+16                           # Sensor number 22
+20                           # Entity ID 0x20
+01                           # Entity instance 0x01
+0c                           # Sensor type 0x0c
+6f                           # Event/reading type 0x6f
+00                           # Record sharing: count/mod_type 0x00
+00                           # Record sharing: mod_offset/entity_inst 0x00
+00                           # Reserved
+00                           # OEM 0x00
+c7                           # ID string type/length 0xc7
+44 49 4d 4d 20 41 31         # ID string 'DIMM A1'

@@ -1,0 +1,290 @@
+# lib/ipmi_sdr.c - the `sdr get', `sdr type' and `sdr entity' lookups, plus
+# every argument-parsing arm of ipmi_sdr_main().
+
+[sd_get_byname]
+desc: `sdr get' by exact sensor ID string
+args: -I dummy sdr get "CPU1 Temp"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_multi]
+desc: `sdr get' with several sensor IDs at once
+args: -I dummy sdr get "CPU1 Temp" "FAN1 Tach" "DIMM A1"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_dup]
+desc: `sdr get' where two records share a name - only the first match is printed
+args: -I dummy sdr get "Dup Name"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_missing]
+desc: `sdr get' for a name that is not in the repository
+args: -I dummy sdr get "No Such Sensor"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_mixed]
+desc: `sdr get' with one good and one bad name
+args: -I dummy sdr get "CPU2 Temp" "Nope"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_noargs]
+desc: `sdr get' with no sensor ID at all
+args: -I dummy sdr get
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_empty_name]
+desc: `sdr get ""' - the empty sensor ID
+args: -I dummy sdr get ""
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_locator]
+desc: `sdr get' for a FRU locator record
+args: -I dummy sdr get "FRU Board"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_mcloc]
+desc: `sdr get' for an MC locator record
+args: -I dummy sdr get "BMC 24h"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_genloc]
+desc: `sdr get' for a generic locator record
+args: -I dummy sdr get "GenDev A"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_get_eventonly]
+desc: `sdr get' for an event-only record
+args: -I dummy sdr get "DIMM A1"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_name]
+desc: `sdr type Temperature' - lookup by type name
+args: -I dummy sdr type Temperature
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_name_case]
+desc: `sdr type tEmPeRaTuRe' - the match is case-insensitive
+args: -I dummy sdr type tEmPeRaTuRe
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_hex]
+desc: `sdr type 0x04' - lookup by hex type code
+args: -I dummy sdr type 0x04
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_hex_zero]
+desc: `sdr type 0x00' - the reserved type code
+args: -I dummy sdr type 0x00
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_hex_max]
+desc: `sdr type 0x2c' - the last named sensor type
+args: -I dummy sdr type 0x2c
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_hex_oem]
+desc: `sdr type 0xc5' - an OEM sensor type code
+args: -I dummy sdr type 0xc5
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_hex_range]
+desc: `sdr type 0x1ff' - out of range for str2uchar
+args: -I dummy sdr type 0x1ff
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_hex_bad]
+desc: `sdr type 0xzz' - not parseable as hex
+args: -I dummy sdr type 0xzz
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_unknown]
+desc: `sdr type Bogus' - unknown name, prints the type table
+args: -I dummy sdr type Bogus
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_list]
+desc: `sdr type list' - the two-column sensor type table
+args: -I dummy sdr type list
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_help]
+desc: `sdr type help' - same table
+args: -I dummy sdr type help
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_type_noarg]
+desc: `sdr type' with no argument at all
+args: -I dummy sdr type
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_id]
+desc: `sdr entity 3' - all instances of entity 3
+args: -I dummy sdr entity 3
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_id_inst]
+desc: `sdr entity 3.2' - one instance
+args: -I dummy sdr entity 3.2
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_fan]
+desc: `sdr entity 29' - the fan entity
+args: -I dummy sdr entity 29
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_nomatch]
+desc: `sdr entity 3.99' - no record matches
+args: -I dummy sdr entity 3.99
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_string]
+desc: `sdr entity Processor' - the entity_id_vals scan has no break and 0x41 is also named `Processor', so the last match wins and nothing is found
+args: -I dummy sdr entity Processor
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_str_uniq]
+desc: `sdr entity "Add-in Card"' - a name that appears only once in entity_id_vals
+args: -I dummy sdr entity "Add-in Card"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_str_case]
+desc: `sdr entity aDD-IN cARD' - the name match is case-insensitive
+args: -I dummy sdr entity "aDD-IN cARD"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_65]
+desc: `sdr entity 65' - entity 0x41, the duplicate `Processor' name `sdr entity Processor' actually resolves to
+args: -I dummy sdr entity 65
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_sysboard]
+desc: `sdr entity "System Board"' - matches the MC locator's entity
+args: -I dummy sdr entity "System Board"
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_bad]
+desc: `sdr entity Bogus' - unknown entity name
+args: -I dummy sdr entity Bogus
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_list]
+desc: `sdr entity list' - the entity ID table
+args: -I dummy sdr entity list
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_help]
+desc: `sdr entity help' - same table
+args: -I dummy sdr entity help
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_noarg]
+desc: `sdr entity' with no argument
+args: -I dummy sdr entity
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_hex_id]
+desc: `sdr entity 0x03' - sscanf("%u") stops at the `x', so this is entity 0
+args: -I dummy sdr entity 0x03
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_255]
+desc: `sdr entity 255' - the top of the entity ID range
+args: -I dummy sdr entity 255
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_entity_huge]
+desc: `sdr entity 99999' - truncated into a uint8_t
+args: -I dummy sdr entity 99999
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_lookup_list_all]
+desc: `sdr list all' over the lookup repository
+args: -I dummy sdr list all
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_lookup_elist_all]
+desc: `sdr elist all' over the lookup repository
+args: -I dummy sdr elist all
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_lookup_dump]
+desc: `sdr dump' over the lookup repository
+args: -I dummy sdr dump {work}/look.bin
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_bad_command]
+desc: `sdr bogus' - an unknown sdr subcommand
+args: -I dummy sdr bogus
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_dump_noargs]
+desc: `sdr dump' with no file name
+args: -I dummy sdr dump
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_fill_noargs]
+desc: `sdr fill' with no option
+args: -I dummy sdr fill
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_fill_bad]
+desc: `sdr fill bogus' - unknown fill option
+args: -I dummy sdr fill bogus
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_fill_file_noarg]
+desc: `sdr fill file' with no file name
+args: -I dummy sdr fill file
+transcript: sd_lookup.tr
+covers: sdr
+
+[sd_fill_range_noarg]
+desc: `sdr fill range' with no range
+args: -I dummy sdr fill range
+transcript: sd_lookup.tr
+covers: sdr

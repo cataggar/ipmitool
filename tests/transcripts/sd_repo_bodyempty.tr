@@ -1,0 +1,37 @@
+# A body read that succeeds with completion code 0 but returns no data at all.
+# The `rsp->data_len == 0' guard in ipmi_sdr_get_record() must catch it.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_hdr
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  data ff ff 34 12 51 01 34
+end
+
+respond get_sdr_body_empty
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 34 12
+  # a zero-length success response
+  data 
+end

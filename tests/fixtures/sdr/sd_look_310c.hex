@@ -1,0 +1,18 @@
+# Lookup fixture: genloc record 'GenDev A'.
+
+0c 31                        # Record ID = 0x310c
+51                           # SDR version 0x51
+10                           # Record type 0x10
+13                           # Record length = 19 bytes follow
+20                           # Device access address 0x20
+42                           # Device slave address 0x42
+b3                           # channel=5 lun=2 bus=3
+04                           # Address span 4
+00                           # Reserved
+08                           # Device type 0x08
+01                           # Device type modifier 0x01
+1d                           # Entity ID 0x1d
+03                           # Entity instance 0x03
+00                           # OEM 0x00
+c8                           # ID string type/length 0xc8
+47 65 6e 44 65 76 20 41      # ID string 'GenDev A'

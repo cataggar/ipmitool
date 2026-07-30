@@ -1,0 +1,42 @@
+# A BMC with an empty SDR repository.  Every case here supplies the records
+# through `-S <file>' instead, so the only SDR traffic that can appear is
+# whatever the command does *after* the cache is exhausted - the request log
+# proves the cached records were served from the file.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 3c c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
+
+respond get_sdr_repository_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 00 00 00 00 00 e3 0b 5e 00 00 00 00 02
+end

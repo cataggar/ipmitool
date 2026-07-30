@@ -1,0 +1,91 @@
+#!golden 1
+#!case sd_cache_sensor_get
+#!section exit
+0
+#!section stdout
+Locating sensor record...
+Sensor ID              : FAN1 Tach (0x14)
+ Entity ID             : 29.1
+ Sensor Type (Threshold)  : Fan
+ Sensor Reading        : 0x3c\x20
+ Status                : ok
+ Positive Hysteresis   : 0x02
+ Negative Hysteresis   : 0x02
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+#!section stderr
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 27
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 5
+msg.cmd: 27
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=14
+< rule=get_sensor_reading ccode=0x00 len=4 data=3c c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=14
+< rule=get_sensor_thresholds ccode=0x00 len=7 data=3f 0f 0a 05 4b 55 5f
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=14
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=14
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+bye

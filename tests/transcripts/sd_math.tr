@@ -1,0 +1,285 @@
+# Full Sensor Records that exercise every arm of sdr_convert_sensor_reading(),
+# sdr_convert_sensor_hysterisis() and sdr_convert_sensor_tolerance().
+#
+# All of them share the same reading factors:
+#
+#     M = 17, tolerance = 42, B = -321, Bexp = -2, Rexp = -3, raw = 0xb7 (183)
+#
+# so the linear result is ((17 * 183) + (-321 * 10^-2)) * 10^-3 = 3.10779, a
+# value whose third decimal place rounds.  Every linearization arm then maps
+# that to a distinct printed number, so a mutation that picks the wrong arm,
+# the wrong exponent or the wrong association order changes the output.
+#
+# M and B are stored as 10-bit two's-complement fields split across two bytes;
+# the negative-M and negative-B records below make the sign extension and the
+# `MS 2 bits' placement observable.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 17 00 68 24 00 e3 0b 5e 08 19 2a 3b 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  data 02 11
+  partial 4 1 5
+  blob @sdr/sd_math_41.hex
+end
+
+respond get_sdr_1101
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 01 11
+  data 02 11
+  partial 4 1 5
+  blob @sdr/sd_math_41.hex
+end
+
+respond get_sdr_1102
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 02 11
+  data 03 11
+  partial 4 1 5
+  blob @sdr/sd_math_42.hex
+end
+
+respond get_sdr_1103
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 03 11
+  data 04 11
+  partial 4 1 5
+  blob @sdr/sd_math_43.hex
+end
+
+respond get_sdr_1104
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 04 11
+  data 05 11
+  partial 4 1 5
+  blob @sdr/sd_math_44.hex
+end
+
+respond get_sdr_1105
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 05 11
+  data 06 11
+  partial 4 1 5
+  blob @sdr/sd_math_45.hex
+end
+
+respond get_sdr_1106
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 06 11
+  data 07 11
+  partial 4 1 5
+  blob @sdr/sd_math_46.hex
+end
+
+respond get_sdr_1107
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 07 11
+  data 08 11
+  partial 4 1 5
+  blob @sdr/sd_math_47.hex
+end
+
+respond get_sdr_1108
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 08 11
+  data 09 11
+  partial 4 1 5
+  blob @sdr/sd_math_48.hex
+end
+
+respond get_sdr_1109
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 09 11
+  data 0a 11
+  partial 4 1 5
+  blob @sdr/sd_math_49.hex
+end
+
+respond get_sdr_110a
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0a 11
+  data 0b 11
+  partial 4 1 5
+  blob @sdr/sd_math_4a.hex
+end
+
+respond get_sdr_110b
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0b 11
+  data 0c 11
+  partial 4 1 5
+  blob @sdr/sd_math_4b.hex
+end
+
+respond get_sdr_110c
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0c 11
+  data 0d 11
+  partial 4 1 5
+  blob @sdr/sd_math_4c.hex
+end
+
+respond get_sdr_110d
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0d 11
+  data 0e 11
+  partial 4 1 5
+  blob @sdr/sd_math_4d.hex
+end
+
+respond get_sdr_110e
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0e 11
+  data 0f 11
+  partial 4 1 5
+  blob @sdr/sd_math_4e.hex
+end
+
+respond get_sdr_110f
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0f 11
+  data 10 11
+  partial 4 1 5
+  blob @sdr/sd_math_4f.hex
+end
+
+respond get_sdr_1110
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 10 11
+  data 11 11
+  partial 4 1 5
+  blob @sdr/sd_math_50.hex
+end
+
+respond get_sdr_1111
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 11 11
+  data 12 11
+  partial 4 1 5
+  blob @sdr/sd_math_51.hex
+end
+
+respond get_sdr_1112
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 12 11
+  data 13 11
+  partial 4 1 5
+  blob @sdr/sd_math_52.hex
+end
+
+respond get_sdr_1113
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 13 11
+  data 14 11
+  partial 4 1 5
+  blob @sdr/sd_math_53.hex
+end
+
+respond get_sdr_1114
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 14 11
+  data 15 11
+  partial 4 1 5
+  blob @sdr/sd_math_54.hex
+end
+
+respond get_sdr_1115
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 15 11
+  data 16 11
+  partial 4 1 5
+  blob @sdr/sd_math_55.hex
+end
+
+respond get_sdr_1116
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 16 11
+  data 17 11
+  partial 4 1 5
+  blob @sdr/sd_math_56.hex
+end
+
+respond get_sdr_1117
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 17 11
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_math_57.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  # raw reading 0xb7 for every sensor
+  data b7 c0 c0 00
+end
+
+respond get_sensor_factors
+  netfn 0x04
+  cmd 0x23
+  # Get Sensor Reading Factors: next reading 0x00,
+  # M = 0x12d = 301, tol = 6, B = 0x111 = 273,
+  # acc/accexp/dir, Rexp = -2 / Bexp = -1
+  data 00 2d 86 11 84 21 e7
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 36 25 14 c3 d2 e1
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 1b 2c
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

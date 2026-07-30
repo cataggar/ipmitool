@@ -1,0 +1,8 @@
+# Record type 0x15 = BMC Message Channel Info; also `not
+# implemented'.
+
+44 21                        # Record ID = 0x2144
+51                           # SDR version 0x51
+15                           # Record type 0x15
+04                           # Record length = 4 bytes follow
+20 01 02 03                  # Opaque body

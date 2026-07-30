@@ -1,0 +1,17 @@
+# Generic Device Locator truncated immediately after id_code.
+
+07 21                        # Record ID = 0x2107
+51                           # SDR version 0x51
+10                           # Record type 0x10
+0b                           # Record length = 11 bytes follow
+20                           # Device access address 0x20
+42                           # Device slave address 0x42
+b3                           # channel=5 lun=2 bus=3
+04                           # Address span 4
+00                           # Reserved
+08                           # Device type 0x08
+01                           # Device type modifier 0x01
+0b                           # Entity ID 0x0b
+01                           # Entity instance 0x01
+00                           # OEM 0x00
+c7                           # ID string type/length 0xc7

@@ -1,0 +1,6 @@
+# A cache file whose trailing header is short: fread() returns 2, so
+# the C reports `header read 2 bytes, expected 5' and stops - but the
+# records already queued stay in the cache.
+
+@sdr/sd_look_3101.hex
+78 56  # a trailing fragment: only two of the five header bytes

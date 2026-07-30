@@ -1,0 +1,164 @@
+# A repository built for the lookup commands: several sensors sharing an
+# entity ID with different instances, several sensor types, and locator
+# records that carry entities of their own.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 0c 00 2c 7a 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  data 02 31
+  partial 4 1 5
+  blob @sdr/sd_look_3101.hex
+end
+
+respond get_sdr_3101
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 01 31
+  data 02 31
+  partial 4 1 5
+  blob @sdr/sd_look_3101.hex
+end
+
+respond get_sdr_3102
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 02 31
+  data 03 31
+  partial 4 1 5
+  blob @sdr/sd_look_3102.hex
+end
+
+respond get_sdr_3103
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 03 31
+  data 04 31
+  partial 4 1 5
+  blob @sdr/sd_look_3103.hex
+end
+
+respond get_sdr_3104
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 04 31
+  data 05 31
+  partial 4 1 5
+  blob @sdr/sd_look_3104.hex
+end
+
+respond get_sdr_3105
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 05 31
+  data 06 31
+  partial 4 1 5
+  blob @sdr/sd_look_3105.hex
+end
+
+respond get_sdr_3106
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 06 31
+  data 07 31
+  partial 4 1 5
+  blob @sdr/sd_look_3106.hex
+end
+
+respond get_sdr_3107
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 07 31
+  data 08 31
+  partial 4 1 5
+  blob @sdr/sd_look_3107.hex
+end
+
+respond get_sdr_3108
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 08 31
+  data 09 31
+  partial 4 1 5
+  blob @sdr/sd_look_3108.hex
+end
+
+respond get_sdr_3109
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 09 31
+  data 0a 31
+  partial 4 1 5
+  blob @sdr/sd_look_3109.hex
+end
+
+respond get_sdr_310a
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0a 31
+  data 0b 31
+  partial 4 1 5
+  blob @sdr/sd_look_310a.hex
+end
+
+respond get_sdr_310b
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0b 31
+  data 0c 31
+  partial 4 1 5
+  blob @sdr/sd_look_310b.hex
+end
+
+respond get_sdr_310c
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 0c 31
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_look_310c.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 3c c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end
