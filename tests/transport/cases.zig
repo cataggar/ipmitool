@@ -762,4 +762,132 @@ pub const all: []const Case = &.{
     },
 
     // -- RMCP+ (lanplus) ----------------------------------------------------
+
+    .{
+        .name = "lanplus/rakp4-error",
+        .desc = "the tool aborts when RAKP 4 carries a non-zero status code",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .rakp4_status = 0x12 },
+    },
+
+    .{
+        .name = "lanplus/rakp4-bad-authcode",
+        .desc = "the tool rejects a RAKP 4 integrity check value that does not verify",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .corrupt_rakp4 = true },
+    },
+
+    .{
+        .name = "lanplus/cipher0-mc-info",
+        .desc = "cipher suite 0: no RAKP authcode, no integrity, no confidentiality",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "0",
+            "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .extra = canned },
+    },
+
+    .{
+        .name = "lanplus/cipher3-bridged",
+        .desc = "a bridged RMCP+ request: Send Message inside an encrypted payload",
+        .args = &.{
+            "-I",   "lanplus", "-H",  "127.0.0.1", "-p",   "${port}",
+            "-U",   user,      "-P",  pass,        "-C",   "3",
+            "-t",   "0x82",    "-b",  "6",         "-N",   "1",
+            "-R",   "1",       "raw", "0x2e",      "0x99", "0x11",
+            "0x22",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{
+                device_id,
+                .{ .netfn = 0x2e, .cmd = 0x99, .data = &.{ 0x71, 0x72, 0x73 } },
+            },
+        },
+    },
+
+    .{
+        .name = "lanplus/cipher3-double-bridged",
+        .desc = "two nested Send Message wrappers inside an encrypted RMCP+ payload",
+        .args = &.{
+            "-I",  "lanplus", "-H",   "127.0.0.1", "-p",   "${port}",
+            "-U",  user,      "-P",   pass,        "-C",   "3",
+            "-t",  "0x82",    "-b",   "6",         "-T",   "0x84",
+            "-B",  "7",       "-N",   "1",         "-R",   "1",
+            "raw", "0x2e",    "0x9b", "0x33",      "0x44",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{
+                device_id,
+                .{ .netfn = 0x2e, .cmd = 0x9b, .data = &.{ 0x5e, 0x5f } },
+            },
+        },
+    },
+
+    .{
+        .name = "lanplus/authcap-v2-retry",
+        .desc = "Get Channel Auth Cap fails for v2.0 data, so the tool asks again without it",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .authcap_v2_ccode = 0xc1 },
+    },
+
+    .{
+        .name = "lanplus/privlvl-error",
+        .desc = "Set Session Privilege Level fails after the session is up",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "-N", "1",       "-R", "1",         "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .privlvl_ccode = 0x81 },
+    },
+
+    .{
+        .name = "lanplus/cipher-auto-best",
+        .desc = "no -C: the tool lists the channel cipher suites and prefers 17 over 3",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-N", "1",
+            "-R", "1",       "mc", "info",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            // Deliberately in ascending id order, so "first match in the list"
+            // and "best of the preferred list" give different answers.
+            .cipher_suites = &.{
+                .{ .id = 1, .auth = 0x01, .integrity = 0x40, .crypt = 0x80 },
+                .{ .id = 3, .auth = 0x01, .integrity = 0x41, .crypt = 0x81 },
+                .{ .id = 17, .auth = 0x03, .integrity = 0x44, .crypt = 0x81 },
+            },
+            .extra = canned,
+        },
+    },
+
+    .{
+        .name = "lanplus/cipher-auto-fallback",
+        .desc = "no -C and no Get Channel Cipher Suites support: falls back to suite 3",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-N", "1",
+            "-R", "1",       "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .extra = canned },
+    },
 };

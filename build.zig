@@ -220,6 +220,16 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/lan/lan.c",
         .implementation = "src/zig/intf/lan.zig",
     },
+    .{
+        .name = "lanplus",
+        .replaces = "src/plugins/lanplus/lanplus.c",
+        .implementation = "src/zig/intf/lanplus.zig",
+    },
+    .{
+        .name = "lanplus-dump",
+        .replaces = "src/plugins/lanplus/lanplus_dump.c",
+        .implementation = "src/zig/intf/lanplus_dump.zig",
+    },
 };
 
 /// Root of the Zig source tree.

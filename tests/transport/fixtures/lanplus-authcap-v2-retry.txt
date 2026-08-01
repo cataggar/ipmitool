@@ -1,0 +1,30 @@
+# case  lanplus/authcap-v2-retry
+# desc  Get Channel Auth Cap fails for v2.0 data, so the tool asks again without it
+# args  ipmitool -I lanplus -H 127.0.0.1 -p ${port} -U opuser -P op-password -C 3 -N 1 -R 1 mc info
+001 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 00 38 8e 04 b5
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=00 lun=0 cmd=38 csum2=b5:ok
+  dat 8e 04
+002 <-- 22 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 08 81 1c
+  raw 63 20 00 38 c1 e7
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=00 lun=0 cmd=38 csum2=e7:ok
+  ccc c1
+  dat -
+003 --> 23 ipmi.v15 rq
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18
+  raw c8 81 00 38 0e 04 35
+  ssn authtype=00 seq=00000000 id=00000000 msglen=09
+  req rsaddr=20 netfn=06 lun=0 csum1=c8:ok rqaddr=81 rqseq=00 lun=0 cmd=38 csum2=35:ok
+  dat 0e 04
+004 <-- 30 ipmi.v15 rs
+  raw 06 00 ff 07 00 00 00 00 00 00 00 00 00 10 81 1c
+  raw 63 20 00 38 00 01 05 04 01 00 00 00 00 9d
+  rsp rqaddr=81 netfn=07 lun=0 csum1=63:ok rsaddr=20 rqseq=00 lun=0 cmd=38 csum2=9d:ok
+  ccc 00
+  dat 01 05 04 01 00 00 00 00
+exit 1
+out -
+err |Error: Unable to establish IPMI v2 / RMCP+ session

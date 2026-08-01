@@ -85,6 +85,12 @@ comptime {
     if (selected("lan")) {
         @import("intf/lan.zig").exportSymbols();
     }
+    if (selected("lanplus")) {
+        @import("intf/lanplus.zig").exportSymbols();
+    }
+    if (selected("lanplus-dump")) {
+        @import("intf/lanplus_dump.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {
