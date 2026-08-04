@@ -1,0 +1,96 @@
+# The Clear SDR Repository command reports the erase as still in progress
+# once; the C polls with the erasure-action byte set to 0 until bit 0 comes
+# back set.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond sdr_repo_clear_busy
+  netfn 0x0a
+  cmd 0x27
+  match 5a a5 43 4c 52 aa
+  times 1
+  # erasure still in progress: the C prints `Wait for SDRR
+  # erasure completed...', sleeps a second and re-sends the
+  # command with the last byte zeroed
+  data 00
+end
+
+respond sdr_repo_clear_poll
+  netfn 0x0a
+  cmd 0x27
+  match 5a a5 43 4c 52 00
+  data 01
+end
+
+respond sdr_repo_clear
+  netfn 0x0a
+  cmd 0x27
+  match 5a a5 43 4c 52 aa
+  # Clear SDR Repository with 'CLR' + 0xaa: bit 0 of the
+  # erasure-status byte set means the erase is complete
+  data 01
+end
+
+respond get_dev_sdr_info
+  netfn 0x04
+  cmd 0x20
+  data 02 01
+end
+
+respond reserve_dev_sdr
+  netfn 0x04
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_dev_sdr_first
+  netfn 0x04
+  cmd 0x21
+  match 5a a5 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_dev_sdr_1234
+  netfn 0x04
+  cmd 0x21
+  match 5a a5 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_dev_sdr_5678
+  netfn 0x04
+  cmd 0x21
+  match 5a a5 78 56
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_compact_fan.hex
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond add_partial_sdr
+  netfn 0x0a
+  cmd 0x25
+  # Add SDR Record returns the assigned record ID 0x4b3c
+  data 3c 4b
+end

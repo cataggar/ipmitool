@@ -1,0 +1,139 @@
+# lib/ipmi_sdr.c - repository iterator, reservation handling and error paths.
+#
+# Reservation cancellation mid-walk, the 0xca shrink-and-retry, the Device SDR
+# (use_built_in) path, and every failure arm of ipmi_sdr_start(),
+# ipmi_sdr_get_header() and ipmi_sdr_get_record().
+
+[sd_repo_rescancel]
+desc: reservation cancelled on the first header read - the walk re-reserves and retries with the new ID
+args: -I dummy sdr list all
+transcript: sd_repo_rescancel.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_repo_rescancel_v]
+desc: same, with the debug trace that names the stale reservation
+args: -I dummy -vvv sdr list all
+transcript: sd_repo_rescancel.tr
+timeout_ms: 30000
+covers: sdr
+
+[sd_repo_shrink]
+desc: 0xca on a body read shrinks sdr_max_read_len and the smaller chunk size persists for the rest of the walk
+args: -I dummy sdr list all
+transcript: sd_repo_shrink.tr
+covers: sdr
+
+[sd_repo_shrink_v]
+desc: same, with the `Getting N bytes from SDR at offset' debug trace
+args: -I dummy -vvv sdr list all
+transcript: sd_repo_shrink.tr
+covers: sdr
+
+[sd_repo_nores]
+desc: Reserve SDR Repository refused
+args: -I dummy sdr list all
+transcript: sd_repo_nores.tr
+covers: sdr
+
+[sd_repo_infoerr]
+desc: Get SDR Repository Info refused with 0xd5
+args: -I dummy sdr list all
+transcript: sd_repo_infoerr.tr
+covers: sdr
+
+[sd_repo_infoerr_info]
+desc: `sdr info' against the same failing BMC
+args: -I dummy sdr info
+transcript: sd_repo_infoerr.tr
+covers: sdr
+
+[sd_repo_deviderr]
+desc: Get Device ID refused, no iterator can be built
+args: -I dummy sdr list all
+transcript: sd_repo_deviderr.tr
+covers: sdr
+
+[sd_repo_badver]
+desc: unknown SDR repository version 0x99 warns but proceeds
+args: -I dummy sdr list all
+transcript: sd_repo_badver.tr
+covers: sdr
+
+[sd_repo_badver_info]
+desc: `sdr info' reports the unknown version
+args: -I dummy sdr info
+transcript: sd_repo_badver.tr
+covers: sdr
+
+[sd_repo_empty]
+desc: zero-record repository triggers the rebuild-from-sensors path
+args: -I dummy sdr list all
+transcript: sd_repo_empty.tr
+covers: sdr
+
+[sd_repo_empty_v]
+desc: same with the `Rebuilding SDRR...' debug trace
+args: -I dummy -vvv sdr list all
+transcript: sd_repo_empty.tr
+covers: sdr
+
+[sd_devsdr_list]
+desc: Device SDR path: netfn 0x04 Get Device SDR walk
+args: -I dummy sdr list all
+transcript: sd_devsdr.tr
+covers: sdr
+
+[sd_devsdr_list_v]
+desc: Device SDR path with the `Using Device SDRs' trace
+args: -I dummy -vvv sdr list all
+transcript: sd_devsdr.tr
+covers: sdr
+
+[sd_devsdr_info]
+desc: `sdr info' over the Device SDR path
+args: -I dummy sdr info
+transcript: sd_devsdr.tr
+covers: sdr
+
+[sd_devsdr_none]
+desc: neither Device SDRs nor a repository is advertised
+args: -I dummy sdr list all
+transcript: sd_devsdr_none.tr
+covers: sdr
+
+[sd_repo_zerolen]
+desc: a header declaring a zero-length record
+args: -I dummy sdr list all
+transcript: sd_repo_zerolen.tr
+covers: sdr
+
+[sd_repo_idfixup]
+desc: a BMC that returns the wrong record ID in the header
+args: -I dummy sdr list all
+transcript: sd_repo_idfixup.tr
+covers: sdr
+
+[sd_repo_idfixup_v]
+desc: same, with the `SDR record id mismatch' trace
+args: -I dummy -vvv sdr list all
+transcript: sd_repo_idfixup.tr
+covers: sdr
+
+[sd_repo_hdrfail]
+desc: every header read fails - five retries then give up
+args: -I dummy sdr list all
+transcript: sd_repo_hdrfail.tr
+covers: sdr
+
+[sd_repo_bodyfail]
+desc: header succeeds, body read refused
+args: -I dummy sdr list all
+transcript: sd_repo_bodyfail.tr
+covers: sdr
+
+[sd_repo_bodyempty]
+desc: body read succeeds with a zero-length response
+args: -I dummy sdr list all
+transcript: sd_repo_bodyempty.tr
+covers: sdr

@@ -1,0 +1,87 @@
+# A BMC that returns a record ID different from the one requested.  The C
+# notices and puts the requested ID back so the following body read does not
+# fail with 0xcb; the request log pins that fixup.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  # record ID 0x0000 requested: the mismatch fixup is
+  # explicitly skipped for 0x0000, so the record keeps its
+  # own ID 0x1234
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_5678_mismatch
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 78 56 00 05
+  # the header for 0x5678 reports its own ID as 0xbc9a;
+  # the C overwrites it with the requested ID so the body
+  # read still asks for 0x5678
+  data ff ff 9a bc 51 02 1f
+end
+
+respond get_sdr_5678_body
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 78 56
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_compact_fan.hex
+end
+
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 2a c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

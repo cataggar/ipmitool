@@ -1,0 +1,273 @@
+#!golden 1
+#!case sd_math_elist
+#!section exit
+0
+#!section stdout
+Lin Linear       | 41h | ok  |  3.65 | 3.11 Volts
+Lin Ln           | 42h | ok  |  3.66 | 1.13 Volts
+Lin Log10        | 43h | ok  |  3.67 | 0.49 Volts
+Lin Log2         | 44h | ok  |  3.68 | 1.64 Volts
+Lin E            | 45h | ok  |  3.69 | 22.37 Volts
+Lin Exp10        | 46h | ok  |  3.70 | 1281.71 Volts
+Lin Exp2         | 47h | ok  |  3.71 | 8.62 Volts
+Lin 1 X          | 48h | ok  |  3.72 | 0.32 Volts
+Lin Sqr          | 49h | ok  |  3.73 | 9.66 Volts
+Lin Cube         | 4Ah | ok  |  3.74 | 30.02 Volts
+Lin Sqrt         | 4Bh | ok  |  3.75 | 1.76 Volts
+Lin Cubert       | 4Ch | ok  |  3.76 | 1.46 Volts
+Lin HighBit      | 4Dh | ok  |  3.77 | 0.49 Volts
+Lin Rsvd0C       | 4Eh | ok  |  3.78 | 3.11 Volts
+Neg M            | 4Fh | ok  |  3.79 | -54.90 Volts
+Neg B            | 50h | ok  |  3.80 | 3.11 Volts
+Max M B          | 51h | ok  |  3.81 | 93.52 Volts
+Pos Exp          | 52h | ok  |  3.82 | -28989000 Volts
+Ones Compl       | 53h | ok  |  3.83 | -1.23 Volts
+Twos Compl       | 54h | ok  |  3.84 | -1.24 Volts
+Not Analog       | 55h | ok  |  3.85 | Upper Non-critical going low , Upper Non-critical going high
+Zero M           | 56h | ok  |  3.86 | -0.00 Volts
+Nonlinear        | 57h | ok  |  3.87 | -49500854.61 Vo
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 17 00 68 24 00 e3 0b 5e 08 19 2a 3b 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=02 11 01 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 11 05 17
+< rule=get_sdr_1101 ccode=0x00 len=25 data=02 11 20 00 41 03 41 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 11 1c 17
+< rule=get_sdr_1101 ccode=0x00 len=25 data=02 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 11 33 07
+< rule=get_sdr_1101 ccode=0x00 len=9 data=02 11 20 4c 69 6e 65 61 72
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=41
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 00 05
+< rule=get_sdr_1102 ccode=0x00 len=7 data=03 11 02 11 51 01 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 05 17
+< rule=get_sdr_1102 ccode=0x00 len=25 data=03 11 20 00 42 03 42 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 01 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 1c 17
+< rule=get_sdr_1102 ccode=0x00 len=25 data=03 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c6 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 33 03
+< rule=get_sdr_1102 ccode=0x00 len=5 data=03 11 20 4c 6e
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=42
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 00 05
+< rule=get_sdr_1103 ccode=0x00 len=7 data=04 11 03 11 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 05 17
+< rule=get_sdr_1103 ccode=0x00 len=25 data=04 11 20 00 43 03 43 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 02 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 1c 17
+< rule=get_sdr_1103 ccode=0x00 len=25 data=04 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c9 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 33 06
+< rule=get_sdr_1103 ccode=0x00 len=8 data=04 11 20 4c 6f 67 31 30
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=43
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 00 05
+< rule=get_sdr_1104 ccode=0x00 len=7 data=05 11 04 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 05 17
+< rule=get_sdr_1104 ccode=0x00 len=25 data=05 11 20 00 44 03 44 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 03 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 1c 17
+< rule=get_sdr_1104 ccode=0x00 len=25 data=05 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 33 05
+< rule=get_sdr_1104 ccode=0x00 len=7 data=05 11 20 4c 6f 67 32
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=44
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 00 05
+< rule=get_sdr_1105 ccode=0x00 len=7 data=06 11 05 11 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 05 17
+< rule=get_sdr_1105 ccode=0x00 len=25 data=06 11 20 00 45 03 45 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 04 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 1c 17
+< rule=get_sdr_1105 ccode=0x00 len=25 data=06 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c5 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 33 02
+< rule=get_sdr_1105 ccode=0x00 len=4 data=06 11 20 45
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=45
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 00 05
+< rule=get_sdr_1106 ccode=0x00 len=7 data=07 11 06 11 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 05 17
+< rule=get_sdr_1106 ccode=0x00 len=25 data=07 11 20 00 46 03 46 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 05 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 1c 17
+< rule=get_sdr_1106 ccode=0x00 len=25 data=07 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c9 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 33 06
+< rule=get_sdr_1106 ccode=0x00 len=8 data=07 11 20 45 78 70 31 30
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=46
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 00 05
+< rule=get_sdr_1107 ccode=0x00 len=7 data=08 11 07 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 05 17
+< rule=get_sdr_1107 ccode=0x00 len=25 data=08 11 20 00 47 03 47 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 06 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 1c 17
+< rule=get_sdr_1107 ccode=0x00 len=25 data=08 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 33 05
+< rule=get_sdr_1107 ccode=0x00 len=7 data=08 11 20 45 78 70 32
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=47
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 00 05
+< rule=get_sdr_1108 ccode=0x00 len=7 data=09 11 08 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 05 17
+< rule=get_sdr_1108 ccode=0x00 len=25 data=09 11 20 00 48 03 48 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 07 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 1c 17
+< rule=get_sdr_1108 ccode=0x00 len=25 data=09 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 33 04
+< rule=get_sdr_1108 ccode=0x00 len=6 data=09 11 20 31 20 58
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=48
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 00 05
+< rule=get_sdr_1109 ccode=0x00 len=7 data=0a 11 09 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 05 17
+< rule=get_sdr_1109 ccode=0x00 len=25 data=0a 11 20 00 49 03 49 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 08 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 1c 17
+< rule=get_sdr_1109 ccode=0x00 len=25 data=0a 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 33 04
+< rule=get_sdr_1109 ccode=0x00 len=6 data=0a 11 20 53 71 72
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=49
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 00 05
+< rule=get_sdr_110a ccode=0x00 len=7 data=0b 11 0a 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 05 17
+< rule=get_sdr_110a ccode=0x00 len=25 data=0b 11 20 00 4a 03 4a 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 09 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 1c 17
+< rule=get_sdr_110a ccode=0x00 len=25 data=0b 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 33 05
+< rule=get_sdr_110a ccode=0x00 len=7 data=0b 11 20 43 75 62 65
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4a
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 00 05
+< rule=get_sdr_110b ccode=0x00 len=7 data=0c 11 0b 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 05 17
+< rule=get_sdr_110b ccode=0x00 len=25 data=0c 11 20 00 4b 03 4b 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 0a 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 1c 17
+< rule=get_sdr_110b ccode=0x00 len=25 data=0c 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 33 05
+< rule=get_sdr_110b ccode=0x00 len=7 data=0c 11 20 53 71 72 74
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4b
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 00 05
+< rule=get_sdr_110c ccode=0x00 len=7 data=0d 11 0c 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 05 17
+< rule=get_sdr_110c ccode=0x00 len=25 data=0d 11 20 00 4c 03 4c 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 0b 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 1c 17
+< rule=get_sdr_110c ccode=0x00 len=25 data=0d 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 33 07
+< rule=get_sdr_110c ccode=0x00 len=9 data=0d 11 20 43 75 62 65 72 74
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4c
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 00 05
+< rule=get_sdr_110d ccode=0x00 len=7 data=0e 11 0d 11 51 01 36
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 05 17
+< rule=get_sdr_110d ccode=0x00 len=25 data=0e 11 20 00 4d 03 4d 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 82 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 1c 17
+< rule=get_sdr_110d ccode=0x00 len=25 data=0e 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 cb 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 33 08
+< rule=get_sdr_110d ccode=0x00 len=10 data=0e 11 20 48 69 67 68 42 69 74
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4d
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 00 05
+< rule=get_sdr_110e ccode=0x00 len=7 data=0f 11 0e 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 05 17
+< rule=get_sdr_110e ccode=0x00 len=25 data=0f 11 20 00 4e 03 4e 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 0c 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 1c 17
+< rule=get_sdr_110e ccode=0x00 len=25 data=0f 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 33 07
+< rule=get_sdr_110e ccode=0x00 len=9 data=0f 11 20 52 73 76 64 30 43
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4e
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 00 05
+< rule=get_sdr_110f ccode=0x00 len=7 data=10 11 0f 11 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 05 17
+< rule=get_sdr_110f ccode=0x00 len=25 data=10 11 20 00 4f 03 4f 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 d4 aa bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 1c 17
+< rule=get_sdr_110f ccode=0x00 len=25 data=10 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c5 4e 65 67
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 33 02
+< rule=get_sdr_110f ccode=0x00 len=4 data=10 11 20 4d
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4f
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 00 05
+< rule=get_sdr_1110 ccode=0x00 len=7 data=11 11 10 11 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 05 17
+< rule=get_sdr_1110 ccode=0x00 len=25 data=11 11 20 00 50 03 50 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 11 2a 00 ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 1c 17
+< rule=get_sdr_1110 ccode=0x00 len=25 data=11 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c5 4e 65 67
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 33 02
+< rule=get_sdr_1110 ccode=0x00 len=4 data=11 11 20 42
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=50
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 00 05
+< rule=get_sdr_1111 ccode=0x00 len=7 data=12 11 11 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 05 17
+< rule=get_sdr_1111 ccode=0x00 len=25 data=12 11 20 00 51 03 51 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 ff 6a ff 6b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 1c 17
+< rule=get_sdr_1111 ccode=0x00 len=25 data=12 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 4d 61 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 33 04
+< rule=get_sdr_1111 ccode=0x00 len=6 data=12 11 20 4d 20 42
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=51
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 00 05
+< rule=get_sdr_1112 ccode=0x00 len=7 data=13 11 12 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 05 17
+< rule=get_sdr_1112 ccode=0x00 len=25 data=13 11 20 00 52 03 52 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 1c 17
+< rule=get_sdr_1112 ccode=0x00 len=25 data=13 11 a9 32 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 50 6f 73
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 33 04
+< rule=get_sdr_1112 ccode=0x00 len=6 data=13 11 20 45 78 70
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=52
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 00 05
+< rule=get_sdr_1113 ccode=0x00 len=7 data=14 11 13 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 05 17
+< rule=get_sdr_1113 ccode=0x00 len=25 data=14 11 20 00 53 03 53 7f 68 01 01 ff 3f ff 3f 3f 3f 40 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 1c 17
+< rule=get_sdr_1113 ccode=0x00 len=25 data=14 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4f 6e 65
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 33 07
+< rule=get_sdr_1113 ccode=0x00 len=9 data=14 11 73 20 43 6f 6d 70 6c
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=53
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 00 05
+< rule=get_sdr_1114 ccode=0x00 len=7 data=15 11 14 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 05 17
+< rule=get_sdr_1114 ccode=0x00 len=25 data=15 11 20 00 54 03 54 7f 68 01 01 ff 3f ff 3f 3f 3f 80 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 1c 17
+< rule=get_sdr_1114 ccode=0x00 len=25 data=15 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 54 77 6f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 33 07
+< rule=get_sdr_1114 ccode=0x00 len=9 data=15 11 73 20 43 6f 6d 70 6c
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=54
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 00 05
+< rule=get_sdr_1115 ccode=0x00 len=7 data=16 11 15 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 05 17
+< rule=get_sdr_1115 ccode=0x00 len=25 data=16 11 20 00 55 03 55 7f 68 01 01 ff 3f ff 3f 3f 3f c0 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 1c 17
+< rule=get_sdr_1115 ccode=0x00 len=25 data=16 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4e 6f 74
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 33 07
+< rule=get_sdr_1115 ccode=0x00 len=9 data=16 11 20 41 6e 61 6c 6f 67
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=55
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 00 05
+< rule=get_sdr_1116 ccode=0x00 len=7 data=17 11 16 11 51 01 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 05 17
+< rule=get_sdr_1116 ccode=0x00 len=25 data=17 11 20 00 56 03 56 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 00 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 1c 17
+< rule=get_sdr_1116 ccode=0x00 len=25 data=17 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c6 5a 65 72
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 33 03
+< rule=get_sdr_1116 ccode=0x00 len=5 data=17 11 6f 20 4d
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=56
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 00 05
+< rule=get_sdr_1117 ccode=0x00 len=7 data=ff ff 17 11 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 05 17
+< rule=get_sdr_1117 ccode=0x00 len=25 data=ff ff 20 00 57 03 57 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 71 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 1c 17
+< rule=get_sdr_1117 ccode=0x00 len=25 data=ff ff a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c9 4e 6f 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 33 06
+< rule=get_sdr_1117 ccode=0x00 len=8 data=ff ff 6c 69 6e 65 61 72
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=57
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x23 target_cmd=0x00 data=57 b7
+< rule=get_sensor_factors ccode=0x00 len=7 data=00 2d 86 11 84 21 e7
+bye

@@ -104,6 +104,11 @@ const ZigModule = struct {
     name: []const u8,
     /// C translation unit it replaces, relative to the build root.
     replaces: []const u8,
+    /// Further C translation units the same Zig module replaces, relative to
+    /// the build root.  Only `sdr` has any: `lib/ipmi_sdradd.c` is a second
+    /// file over the same `sdr` command and shares its file statics, so the
+    /// two have to be swapped as a unit.
+    also_replaces: []const []const u8 = &.{},
     /// Zig implementation, for documentation and `zig build --help`.
     implementation: []const u8,
     /// C files the Zig implementation needs alongside it, relative to the
@@ -199,6 +204,12 @@ const zig_modules = [_]ZigModule{
         .name = "sel",
         .replaces = "lib/ipmi_sel.c",
         .implementation = "src/zig/cmd/sel.zig",
+    },
+    .{
+        .name = "sdr",
+        .replaces = "lib/ipmi_sdr.c",
+        .also_replaces = &.{"lib/ipmi_sdradd.c"},
+        .implementation = "src/zig/cmd/sdr.zig",
     },
     .{
         .name = "intf",
@@ -1312,7 +1323,11 @@ fn withLibcrypto(
 
 fn replacedByZig(path: []const u8, zig_selection: []const bool) bool {
     for (zig_modules, 0..) |module, i| {
-        if (zig_selection[i] and std.mem.eql(u8, module.replaces, path)) return true;
+        if (!zig_selection[i]) continue;
+        if (std.mem.eql(u8, module.replaces, path)) return true;
+        for (module.also_replaces) |extra| {
+            if (std.mem.eql(u8, extra, path)) return true;
+        }
     }
     return false;
 }

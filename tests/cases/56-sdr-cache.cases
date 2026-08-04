@@ -1,0 +1,136 @@
+# `-S <file>' hands ipmi_sdr_list_cache_fromfile() a binary SDR dump and
+# pre-seeds the global record list, so every lookup command answers out of
+# the file without a single Get SDR exchange.  The transcript deliberately
+# advertises an *empty* repository, which means any SDR traffic in the
+# request log would be a bug.
+#
+# The file parser is a second, independent SDR reader (ipmi_sdradd.c has the
+# other one) with its own length, version and record-type validation, so it
+# gets its own adversarial fixtures: a short trailing header, a zero-length
+# header, an unsupported version, a truncated body, an unfiled record type
+# and an empty file.
+
+[sd_cache_list]
+desc: sdr list served entirely from an -S cache file
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_elist]
+desc: sdr elist from an -S cache file
+args: -I dummy -S {work}/cache.bin sdr elist
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_get_name]
+desc: sdr get by name from an -S cache file
+args: -I dummy -S {work}/cache.bin sdr get "CPU1 Temp"
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_get_num]
+desc: sdr get by sensor number from an -S cache
+args: -I dummy -S {work}/cache.bin sdr get 0x11
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_type]
+desc: sdr type Temperature from an -S cache file
+args: -I dummy -S {work}/cache.bin sdr type Temperature
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_entity]
+desc: sdr entity 29 from an -S cache file
+args: -I dummy -S {work}/cache.bin sdr entity 29
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_info]
+desc: sdr info still talks to the BMC with -S set
+args: -I dummy -S {work}/cache.bin sdr info
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr
+
+[sd_cache_sensor_list]
+desc: sensor list reads the -S cache
+args: -I dummy -S {work}/cache.bin sensor list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sensor
+
+[sd_cache_sensor_get]
+desc: sensor get reads the -S cache
+args: -I dummy -S {work}/cache.bin sensor get "FAN1 Tach"
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sensor
+
+[sd_cache_hdrshort]
+desc: -S cache file with a short trailing header
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_hdrshort.hex
+covers: sdr
+
+[sd_cache_zerolen]
+desc: -S cache file with a zero-length header
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_zerolen.hex
+covers: sdr
+
+[sd_cache_badver]
+desc: -S cache file with an unsupported SDR version
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_badver.hex
+covers: sdr
+
+[sd_cache_ver01]
+desc: -S cache file using SDR versions 0x01 and 0x02
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_ver01.hex
+covers: sdr
+
+[sd_cache_bodyshort]
+desc: -S cache file with a truncated record body
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_bodyshort.hex
+covers: sdr
+
+[sd_cache_unktype]
+desc: -S cache file holding an unfiled record type
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_unktype.hex
+covers: sdr
+
+[sd_cache_empty]
+desc: -S cache file that is empty
+args: -I dummy -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_empty.hex
+covers: sdr
+
+[sd_cache_missing]
+desc: -S naming a file that does not exist
+args: -I dummy -S {work}/nosuch.bin sdr list
+transcript: sd_cache.tr
+covers: sdr
+
+[sd_cache_dbg]
+desc: -S cache file parsed with debug logging on
+args: -I dummy -S {work}/cache.bin -v -v -v sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_all.hex
+covers: sdr

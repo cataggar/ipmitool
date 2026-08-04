@@ -1,0 +1,5 @@
+# Two complete SDR records back to back, the format `sdr dump'
+# produces and `sdr fill file' consumes.
+
+@sdr/sd_full_temp.hex
+@sdr/sd_compact_fan.hex

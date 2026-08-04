@@ -1,0 +1,162 @@
+# A BMC whose SDR repository holds one record of every type lib/ipmi_sdr.c
+# knows about, plus an OEM record and a reserved record type.
+#
+# Every 16-bit quantity here is deliberately built from two distinct non-zero
+# bytes so that a byte-order or short-read mutation is observable: the
+# reservation is 0xa55a, the record IDs are 0x1234/0x5678/... and the
+# repository timestamps are 0x5e0be300 and 0x3b2a1908.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  # 10 records, 0x1234 free bytes, add/erase timestamps
+  # chosen with four distinct non-zero bytes each.
+  data 51 0a 00 34 12 00 e3 0b 5e 08 19 2a 3b 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_5678
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 78 56
+  data bc 9a
+  partial 4 1 5
+  blob @sdr/sd_compact_fan.hex
+end
+
+respond get_sdr_9abc
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 bc 9a
+  data d4 c3
+  partial 4 1 5
+  blob @sdr/sd_eventonly.hex
+end
+
+respond get_sdr_c3d4
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 d4 c3
+  data 68 24
+  partial 4 1 5
+  blob @sdr/sd_genloc.hex
+end
+
+respond get_sdr_2468
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 68 24
+  data 57 13
+  partial 4 1 5
+  blob @sdr/sd_fruloc.hex
+end
+
+respond get_sdr_1357
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 57 13
+  data 1b 7a
+  partial 4 1 5
+  blob @sdr/sd_mcloc.hex
+end
+
+respond get_sdr_7a1b
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 1b 7a
+  data 5e 3c
+  partial 4 1 5
+  blob @sdr/sd_entassoc.hex
+end
+
+respond get_sdr_3c5e
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 5e 3c
+  data 81 6f
+  partial 4 1 5
+  blob @sdr/sd_entassoc_dev.hex
+end
+
+respond get_sdr_6f81
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 81 6f
+  data d3 b2
+  partial 4 1 5
+  blob @sdr/sd_oem.hex
+end
+
+respond get_sdr_b2d3
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 d3 b2
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_unknown_type.hex
+end
+
+respond get_sensor_reading_0b
+  netfn 0x04
+  cmd 0x2d
+  match 0b
+  # full sensor 0x0b: raw reading 0x2a
+  data 2a c0 c0 00
+end
+
+respond get_sensor_reading_1c
+  netfn 0x04
+  cmd 0x2d
+  match 1c
+  # compact sensor 0x1c: raw reading 0x7b
+  data 7b c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

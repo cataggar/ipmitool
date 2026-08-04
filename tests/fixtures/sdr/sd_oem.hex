@@ -1,0 +1,10 @@
+# SDR Type C0h - OEM Record. ipmi_sdr_print_sdr() drops these
+# (the record-type switch has no OEM arm), so they are visible
+# only through `sdr dump'.
+
+81 6f                        # Record ID = 0x6f81
+51                           # SDR version 0x51
+c0                           # Record type 0xc0
+09                           # Record length = 9 bytes follow
+a2 02 00                     # Manufacturer ID (3 bytes LE)
+11 22 33 44 55 66            # OEM data

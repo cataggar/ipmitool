@@ -1,0 +1,8 @@
+# A header declaring a zero-length record: malloc(0) succeeds and
+# read() of 0 bytes returns 0, so the record is queued with a
+# zero-length body and ipmi_sdr_add_record() rejects it.
+
+34 12        # record ID 0x1234
+51           # SDR version
+01           # record type 01h
+00           # declared length 0

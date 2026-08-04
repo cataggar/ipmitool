@@ -1,0 +1,19 @@
+# SDR Type 03h - Event-Only Sensor Record.
+
+bc 9a                        # Record ID = 0x9abc
+51                           # SDR version 0x51
+03                           # Record type 0x03
+14                           # Record length = 20 bytes follow
+20                           # Sensor owner ID 0x20
+00                           # Owner LUN / channel 0x00
+2d                           # Sensor number 45
+15                           # Entity ID 0x15
+03                           # Entity instance 0x03
+09                           # Sensor type 0x09
+6f                           # Event/reading type 0x6f
+12                           # Record sharing: count/mod_type 0x12
+41                           # Record sharing: mod_offset/entity_inst 0x41
+00                           # Reserved
+00                           # OEM 0x00
+c8                           # ID string type/length 0xc8
+50 57 52 20 55 6e 69 74      # ID string 'PWR Unit'

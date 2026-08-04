@@ -1,0 +1,4 @@
+# A file too short to hold even one five-byte header.  The read loop
+# never runs, so the record queue stays empty.
+
+01 00 51

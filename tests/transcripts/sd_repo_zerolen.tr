@@ -1,0 +1,30 @@
+# A header that declares a zero-length record.  ipmi_sdr_get_header() rejects
+# it with `invalid length 0' and the walk stops.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_zerolen
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  # a header whose record length is 0
+  data 78 56 34 12 51 01 00
+end

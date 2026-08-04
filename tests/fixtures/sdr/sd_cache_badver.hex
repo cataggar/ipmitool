@@ -1,0 +1,10 @@
+# A record announcing an unsupported SDR version.  The C warns and
+# breaks out of the read loop, so the first record is cached and the
+# third is never seen.
+
+@sdr/sd_look_3101.hex
+bc 9a  # record ID 0x9abc
+77     # SDR version 0x77: not 0x51, 0x01 or 0x02
+01     # record type 01h
+34     # declared length 52
+@sdr/sd_look_3104.hex

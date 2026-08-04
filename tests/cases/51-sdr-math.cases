@@ -1,0 +1,107 @@
+# lib/ipmi_sdr.c - sensor reading conversion math.
+#
+# Every linearization arm, both signed analog formats, negative and maximal
+# 10-bit M/B fields, positive and negative exponents, and the non-linear
+# Get Sensor Reading Factors path.
+
+[sd_math_list]
+desc: `sdr list all' over the conversion battery - the one-line reading column for every linearization arm
+args: -I dummy sdr list all
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_elist]
+desc: `sdr elist all' over the conversion battery
+args: -I dummy sdr elist all
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_csv]
+desc: `-c sdr list all' - CSV prints the converted value with %.3f, so the third decimal is pinned
+args: -I dummy -c sdr list all
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_csv_elist]
+desc: `-c sdr elist all' - CSV extended form
+args: -I dummy -c sdr elist all
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_verbose]
+desc: `-v sdr list all' - full verbose dump including hysteresis, tolerance and the min/max sensor range conversions
+args: -I dummy -v sdr list all
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_lin_linear]
+desc: `sdr get "Lin Linear"' - verbose single-sensor output
+args: -I dummy sdr get "Lin Linear"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_lin_log2]
+desc: `sdr get "Lin Log2"' - verbose single-sensor output
+args: -I dummy sdr get "Lin Log2"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_lin_highbit]
+desc: `sdr get "Lin HighBit"' - verbose single-sensor output
+args: -I dummy sdr get "Lin HighBit"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_neg_m]
+desc: `sdr get "Neg M"' - verbose single-sensor output
+args: -I dummy sdr get "Neg M"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_neg_b]
+desc: `sdr get "Neg B"' - verbose single-sensor output
+args: -I dummy sdr get "Neg B"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_max_m_b]
+desc: `sdr get "Max M B"' - verbose single-sensor output
+args: -I dummy sdr get "Max M B"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_pos_exp]
+desc: `sdr get "Pos Exp"' - verbose single-sensor output
+args: -I dummy sdr get "Pos Exp"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_ones_compl]
+desc: `sdr get "Ones Compl"' - verbose single-sensor output
+args: -I dummy sdr get "Ones Compl"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_twos_compl]
+desc: `sdr get "Twos Compl"' - verbose single-sensor output
+args: -I dummy sdr get "Twos Compl"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_not_analog]
+desc: `sdr get "Not Analog"' - verbose single-sensor output
+args: -I dummy sdr get "Not Analog"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_zero_m]
+desc: `sdr get "Zero M"' - verbose single-sensor output
+args: -I dummy sdr get "Zero M"
+transcript: sd_math.tr
+covers: sdr
+
+[sd_math_get_nonlinear]
+desc: `sdr get "Nonlinear"' - verbose single-sensor output
+args: -I dummy sdr get "Nonlinear"
+transcript: sd_math.tr
+covers: sdr

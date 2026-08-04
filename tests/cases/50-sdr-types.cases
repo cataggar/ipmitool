@@ -1,0 +1,143 @@
+# lib/ipmi_sdr.c - record-type coverage.
+#
+# One record of every SDR type the C renders differently, walked under every
+# `sdr list'/`elist' filter and at three verbosity levels.  Generated against
+# the unmodified C build; see doc/zig-migration/golden-harness.md.
+
+[sd_list_default]
+desc: `sdr list' with no filter - only full and compact records (type 0xfe)
+args: -I dummy sdr list
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_all]
+desc: `sdr list all' - every record type the switch accepts
+args: -I dummy sdr list all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_full]
+desc: `sdr list full' - Full Sensor Records only
+args: -I dummy sdr list full
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_compact]
+desc: `sdr list compact' - Compact Sensor Records only
+args: -I dummy sdr list compact
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_event]
+desc: `sdr list event' - Event-Only Records only
+args: -I dummy sdr list event
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_mcloc]
+desc: `sdr list mcloc' - Management Controller Locators
+args: -I dummy sdr list mcloc
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_fru]
+desc: `sdr list fru' - FRU Device Locators
+args: -I dummy sdr list fru
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_generic]
+desc: `sdr list generic' - Generic Device Locators
+args: -I dummy sdr list generic
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_bad_filter]
+desc: `sdr list bogus' - unknown filter, usage on stderr
+args: -I dummy sdr list bogus
+transcript: sd_types.tr
+covers: sdr
+
+[sd_list_help]
+desc: `sdr list help' - the list sub-usage
+args: -I dummy sdr list help
+transcript: sd_types.tr
+covers: sdr
+
+[sd_elist_default]
+desc: `sdr elist' - extended output, no filter
+args: -I dummy sdr elist
+transcript: sd_types.tr
+covers: sdr
+
+[sd_elist_all]
+desc: `sdr elist all' - extended output, every record type
+args: -I dummy sdr elist all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_elist_bad_filter]
+desc: `sdr elist bogus' - unknown filter under elist
+args: -I dummy sdr elist bogus
+transcript: sd_types.tr
+covers: sdr
+
+[sd_elist_help]
+desc: `sdr elist help' - the elist sub-usage
+args: -I dummy sdr elist help
+transcript: sd_types.tr
+covers: sdr
+
+[sd_noargs_gallery]
+desc: `sdr' with no arguments over the full gallery
+args: -I dummy sdr
+transcript: sd_types.tr
+covers: sdr
+
+[sd_csv_list_all]
+desc: `-c sdr list all' - CSV output for every record type
+args: -I dummy -c sdr list all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_csv_elist_all]
+desc: `-c sdr elist all' - CSV extended output
+args: -I dummy -c sdr elist all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_verbose_list_all]
+desc: `-v sdr list all' - verbose record dump
+args: -I dummy -v sdr list all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_vv_list_all]
+desc: `-vv sdr list all' - very verbose record dump
+args: -I dummy -vv sdr list all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_vvv_list_all]
+desc: `-vvv sdr list all' - includes the SDR walk debug trace
+args: -I dummy -vvv sdr list all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_verbose_elist_all]
+desc: `-v sdr elist all' - verbose extended dump
+args: -I dummy -v sdr elist all
+transcript: sd_types.tr
+covers: sdr
+
+[sd_info_gallery]
+desc: `sdr info' - repository info with distinct byte values
+args: -I dummy sdr info
+transcript: sd_types.tr
+covers: sdr
+
+[sd_dump_gallery]
+desc: `sdr dump' writes every raw record, including the OEM and reserved types the printers drop
+args: -I dummy sdr dump {work}/sdr.bin
+transcript: sd_types.tr
+covers: sdr
