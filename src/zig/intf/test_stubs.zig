@@ -110,3 +110,68 @@ fn hpm2DetectMaxPayloadSize(intf: ?*anyopaque) callconv(.c) c_int {
     _ = intf;
     return -1;
 }
+
+// ---------------------------------------------------------------------------
+// lanplus extras
+// ---------------------------------------------------------------------------
+//
+// `src/plugins/lanplus/lanplus_strings.c` stays C, so its two tables have no
+// definition in this binary.  Everything else `lanplus.zig` looks up --
+// `completion_code_vals`, `ipmi_privlvl_vals`, `ipmi_authtype_session_vals`,
+// `ipmi_auth_algorithms`, `ipmi_integrity_algorithms` and
+// `ipmi_encryption_algorithms` -- comes from `util/strings_tables.zig`, which
+// `root.zig` already pulls in, so stubbing those here would be a duplicate
+// definition.
+
+/// `struct valstr`.  Declared locally rather than imported from the bridge so
+/// this file stays free of `ipmi_c`, like the rest of `test_stubs.zig`.
+const ValStr = extern struct {
+    val: u32,
+    str: ?[*:0]const u8,
+};
+
+var rakp_return_codes = [_]ValStr{.{ .val = 0, .str = null }};
+var priv_levels = [_]ValStr{.{ .val = 0, .str = null }};
+
+/// What `ipmi_get_channel_cipher_suites()` should answer.
+pub var cipher_suites_result: c_int = -1;
+
+/// How many times `ipmi_intf_session_set_cipher_suite_id()` was called, and
+/// with what.  `open()` is the only caller and no unit test reaches it, but a
+/// test that did would see the effect rather than a plausible-looking nothing.
+pub var set_cipher_suite_calls: usize = 0;
+pub var set_cipher_suite_last: c_uint = 0;
+
+comptime {
+    @export(&rakp_return_codes, .{ .name = "ipmi_rakp_return_codes", .linkage = .strong });
+    @export(&priv_levels, .{ .name = "ipmi_priv_levels", .linkage = .strong });
+    @export(&ipmiGetChannelCipherSuites, .{
+        .name = "ipmi_get_channel_cipher_suites",
+        .linkage = .strong,
+    });
+    @export(&ipmiIntfSessionSetCipherSuiteId, .{
+        .name = "ipmi_intf_session_set_cipher_suite_id",
+        .linkage = .strong,
+    });
+}
+
+fn ipmiGetChannelCipherSuites(
+    intf: ?*anyopaque,
+    payload_type: [*c]const u8,
+    channel: u8,
+    suites: ?*anyopaque,
+    count: *usize,
+) callconv(.c) c_int {
+    _ = intf;
+    _ = payload_type;
+    _ = channel;
+    _ = suites;
+    count.* = 0;
+    return cipher_suites_result;
+}
+
+fn ipmiIntfSessionSetCipherSuiteId(intf: ?*anyopaque, id: c_uint) callconv(.c) void {
+    _ = intf;
+    set_cipher_suite_calls += 1;
+    set_cipher_suite_last = id;
+}

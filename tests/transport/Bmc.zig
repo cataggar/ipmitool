@@ -62,6 +62,11 @@ const off_sequence_num = 0x0a;
 const off_payload_size = 0x0e;
 const off_payload = 0x10;
 
+/// `MAX_CIPHER_SUITE_RECORD_OFFSET` / `MAX_CIPHER_SUITE_DATA_LEN` in
+/// include/ipmitool/ipmi_channel.h.
+const MAX_CIPHER_SUITE_RECORD_OFFSET = 0x40;
+const MAX_CIPHER_SUITE_DATA_LEN = 0x10;
+
 const payload_type_ipmi = 0x00;
 const payload_type_open_request = 0x10;
 const payload_type_open_response = 0x11;
@@ -155,6 +160,16 @@ pub const Personality = struct {
     /// Completion code to answer a Get Channel Authentication Capabilities
     /// request with.  Non-zero exercises the session-setup failure path.
     authcap_ccode: u8 = 0,
+    /// Completion code to answer a Get Channel Authentication Capabilities
+    /// request with *only when it asks for the IPMI v2.0 extended data*, i.e.
+    /// when bit 7 of the channel byte is set.
+    ///
+    /// `lanplus` asks for v2.0 data first and, on any failure, clears bit 7 of
+    /// the *same* request buffer and asks again.  Failing only the first
+    /// attempt is the only way to pin that retry: it distinguishes `&= 0x7f`
+    /// from every other way of clearing the bit, and it distinguishes a
+    /// genuine retry from a mutant that simply reuses the first response.
+    authcap_v2_ccode: u8 = 0,
     /// Completion code for Get Session Challenge.  0x81 and 0x82 have their own
     /// messages in `ipmi_get_session_challenge_cmd`.
     challenge_ccode: u8 = 0,
@@ -180,8 +195,24 @@ pub const Personality = struct {
     open_session_status: u8 = 0,
     /// RAKP 2 status code.
     rakp2_status: u8 = 0,
+    /// RAKP 4 status code.
+    rakp4_status: u8 = 0,
     /// When set, corrupt the RAKP 2 authentication code so the tool rejects it.
     corrupt_rakp2: bool = false,
+    /// When set, corrupt the RAKP 4 integrity check value so the tool rejects
+    /// it.  The byte disturbed is the *last* one of the check value, which is
+    /// what makes the fixture pin the compared length: `read_rakp4_message`
+    /// copies a per-algorithm number of bytes, and a mutant that copies too
+    /// few would still match on a corruption placed at the front.
+    corrupt_rakp4: bool = false,
+
+    /// Cipher suites to report from Get Channel Cipher Suites, or `null` to
+    /// answer that command "invalid command" the way an IPMI v1.5 BMC would.
+    ///
+    /// `lanplus` only issues this command when no `-C` was given, and then
+    /// picks the best suite it recognises.  Both outcomes need a fixture: the
+    /// list-driven one and the "discovery failed, fall back to 3" one.
+    cipher_suites: ?[]const CipherSuite = null,
 
     /// Extra (netfn, cmd) responses beyond the ones the model implements.
     /// Anything not matched answers 0xC1, "invalid command".
@@ -200,6 +231,9 @@ pub const Personality = struct {
 };
 
 pub const Deaf = struct { netfn: u8, cmd: u8 };
+
+/// One `struct std_cipher_suite_record_t` from table 22-18.
+pub const CipherSuite = struct { id: u8, auth: u8, integrity: u8, crypt: u8 };
 
 pub const Canned = struct {
     netfn: u8,
@@ -654,7 +688,11 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
         // Get Channel Authentication Capabilities.
         0x38 => {
             if (b.p.authcap_ccode != 0) return .{ .ccode = b.p.authcap_ccode };
-            const want_v20 = m.data.len >= 1 and (m.data[0] & 0x80) != 0 and b.p.v20;
+            const asked_v20 = m.data.len >= 1 and (m.data[0] & 0x80) != 0;
+            if (asked_v20 and b.p.authcap_v2_ccode != 0) {
+                return .{ .ccode = b.p.authcap_v2_ccode };
+            }
+            const want_v20 = asked_v20 and b.p.v20;
             buf[0] = 0x01; // channel number
             buf[1] = b.p.auth_types | (if (want_v20) @as(u8, 0x80) else 0x00);
             buf[2] = 0x04; // per-message auth enabled, non-null users
@@ -709,6 +747,31 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
             if (b.p.privlvl_ccode != 0) return .{ .ccode = b.p.privlvl_ccode };
             buf[0] = if (m.data.len >= 1) m.data[0] else 0x04;
             return .{ .data = buf[0..1] };
+        },
+        // Get Channel Cipher Suites.  Answered only when the personality lists
+        // suites; otherwise it falls through to "invalid command", which is
+        // the interesting case in its own right because it is what makes
+        // `ipmi_find_best_cipher_suite` take its fall-back path.
+        0x54 => {
+            const list = b.p.cipher_suites orelse return .{ .ccode = 0xc1 };
+            if (m.data.len < 3) return .{ .ccode = 0xc7 };
+            var records: [MAX_CIPHER_SUITE_RECORD_OFFSET * MAX_CIPHER_SUITE_DATA_LEN]u8 = undefined;
+            var n: usize = 0;
+            for (list) |cs| {
+                records[n] = 0xc0; // STANDARD_CIPHER_SUITE
+                records[n + 1] = cs.id;
+                records[n + 2] = cs.auth;
+                records[n + 3] = cs.integrity;
+                records[n + 4] = cs.crypt;
+                n += 5;
+            }
+            const index: usize = m.data[2] & 0x3f;
+            const start = @min(n, index * MAX_CIPHER_SUITE_DATA_LEN);
+            const end = @min(n, start + MAX_CIPHER_SUITE_DATA_LEN);
+            buf[0] = m.data[0] & 0x0f; // channel number
+            @memcpy(buf[1..][0 .. end - start], records[start..end]);
+            try b.t.print("  csl index={d} bytes={d}\n", .{ index, end - start });
+            return .{ .data = buf[0 .. 1 + end - start] };
         },
         // Close Session.
         0x3c => {
@@ -1022,7 +1085,7 @@ fn rakp4(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) !void {
 
     var body: [64]u8 = @splat(0);
     body[0] = payload[0];
-    body[1] = 0x00;
+    body[1] = b.p.rakp4_status;
     std.mem.writeInt(u32, body[4..8], b.v2.console_id, .little);
     var len: usize = 8;
     if (crypto.Algorithm.fromAuthId(b.v2.auth_alg)) |a| {
@@ -1031,6 +1094,9 @@ fn rakp4(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) !void {
         const mac = crypto.hmac(a, b.v2.keys.sik[0..b.v2.keys.sik_len], inputs.rakp4Input(&scratch), &digest);
         const n = a.authcodeLength();
         @memcpy(body[8..][0..n], mac[0..n]);
+        // Disturb the *last* byte: a check that compares fewer bytes than the
+        // algorithm calls for would still reject a corruption at the front.
+        if (b.p.corrupt_rakp4) body[8 + n - 1] +%= 1;
         len += n;
     }
 
