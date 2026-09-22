@@ -30,6 +30,7 @@ on:
 # Read-only: no job here publishes anything back to the repository.
 permissions:
   contents: read
+  attestations: read
 
 concurrency:
   # One in-flight run per pull request / per branch. Superseded pull request
@@ -42,6 +43,10 @@ env:
   # The one place the toolchain version is pinned. build.zig.zon also declares
   # .minimum_zig_version = "0.16.0".
   ZIG_VERSION: '0.16.0'
+  # Keep Zig's global and local build caches together in the workspace so the
+  # build and test jobs can persist them explicitly.
+  ZIG_GLOBAL_CACHE_DIR: ${{ github.workspace }}/.zig-cache
+  ZIG_LOCAL_CACHE_DIR: ${{ github.workspace }}/.zig-cache
   # System packages required by the default `zig build` configuration:
   #   libssl-dev      -> libcrypto, for -Dopenssl (RMCP+ crypto, SHA256/MD5)
   #   libreadline-dev -> libreadline, for -Dipmishell (the `shell`/`exec` cmds)
@@ -56,13 +61,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.0.0
 
-      - name: Set up Zig ${{ env.ZIG_VERSION }}
-        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+      - name: Install Zig ${{ env.ZIG_VERSION }} via ghr
+        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
-          version: ${{ env.ZIG_VERSION }}
-          # Nothing is compiled in this job, so there is no build cache worth
-          # storing.
-          use-cache: false
+          ghr-version: v0.8.1
+          tools: >-
+            cataggar/zig@v${{ env.ZIG_VERSION }}
+            RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
+
+      - name: Verify Zig version
+        run: test "$(zig version)" = "${ZIG_VERSION}"
 
       - name: zig fmt --check
         run: |
@@ -104,15 +114,30 @@ jobs:
           # shellcheck disable=SC2086  # deliberate word splitting of the list
           sudo apt-get install -y --no-install-recommends ${BUILD_APT_PACKAGES}
 
-      - name: Set up Zig ${{ env.ZIG_VERSION }}
-        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+      - name: Install Zig ${{ env.ZIG_VERSION }} via ghr
+        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
-          version: ${{ env.ZIG_VERSION }}
-          # setup-zig points ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR at
-          # $GITHUB_WORKSPACE/.zig-cache and caches it. The key below adds the
-          # build definition, so a build.zig change starts a fresh entry while
-          # still restoring the previous one as a base.
-          cache-key: ${{ matrix.os }}-${{ hashFiles('build.zig', 'build.zig.zon') }}
+          ghr-version: v0.8.1
+          tools: >-
+            cataggar/zig@v${{ env.ZIG_VERSION }}
+            RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
+
+      - name: Verify Zig version
+        run: test "$(zig version)" = "${ZIG_VERSION}"
+
+      - name: Restore Zig build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .zig-cache
+          # A unique suffix lets each successful run save its refreshed cache.
+          # The restore prefix reuses the newest cache for this exact toolchain,
+          # platform, job, and build definition.
+          key: >-
+            zig-cache-v1-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.os }}-zig-${{ env.ZIG_VERSION }}-${{ hashFiles('build.zig', 'build.zig.zon') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            zig-cache-v1-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.os }}-zig-${{ env.ZIG_VERSION }}-${{ hashFiles('build.zig', 'build.zig.zon') }}-
 
       - name: zig build
         run: zig build --summary all
@@ -166,11 +191,27 @@ jobs:
           # shellcheck disable=SC2086  # deliberate word splitting of the list
           sudo apt-get install -y --no-install-recommends ${BUILD_APT_PACKAGES}
 
-      - name: Set up Zig ${{ env.ZIG_VERSION }}
-        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+      - name: Install Zig ${{ env.ZIG_VERSION }} via ghr
+        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
-          version: ${{ env.ZIG_VERSION }}
-          cache-key: ${{ matrix.os }}-${{ hashFiles('build.zig', 'build.zig.zon') }}
+          ghr-version: v0.8.1
+          tools: >-
+            cataggar/zig@v${{ env.ZIG_VERSION }}
+            RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
+
+      - name: Verify Zig version
+        run: test "$(zig version)" = "${ZIG_VERSION}"
+
+      - name: Restore Zig build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .zig-cache
+          key: >-
+            zig-cache-v1-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.os }}-zig-${{ env.ZIG_VERSION }}-${{ hashFiles('build.zig', 'build.zig.zon') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            zig-cache-v1-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.os }}-zig-${{ env.ZIG_VERSION }}-${{ hashFiles('build.zig', 'build.zig.zon') }}-
 
       - name: zig build test
         run: zig build test --summary all
