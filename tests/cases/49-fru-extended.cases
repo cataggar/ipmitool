@@ -252,6 +252,12 @@ args: -I dummy fru get 0 oem 12634 1
 transcript: fru_no_device.tr
 covers: fru
 
+[fru_helper_kontron_date]
+desc: Kontron's external FRU read/write helpers preserve source offsets and block boundaries
+args: -I dummy kontronoem setmfgdate
+transcript: fru_kontron_date.tr
+covers: kontronoem fru
+
 [fru_get_kontron]
 desc: fetch an end-marked Kontron OEM multirecord with bounded block traversal
 args: -I dummy fru get 0 oem 15000 3 0 name 0
