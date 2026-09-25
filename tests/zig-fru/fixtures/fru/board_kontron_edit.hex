@@ -1,0 +1,5 @@
+@../../fixtures/fru/common_header.hex
+@../../fixtures/fru/chassis_area.hex
+@../../fixtures/fru/board_area.hex
+@../../fixtures/fru/product_area.hex
+@fru/kontron_edit_multirecord.hex

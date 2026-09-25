@@ -91,6 +91,11 @@ enum ipmitool_abi_layout {
 		offsetof(struct hpm2_lan_channel_capabilities, max_inbound_pld_size),
 	ABI_OFFSETOF_hpm2_channel__max_outbound_pld_size =
 		offsetof(struct hpm2_lan_channel_capabilities, max_outbound_pld_size),
+	ABI_SIZEOF_fru_bloc = sizeof(t_ipmi_fru_bloc),
+	ABI_ALIGNOF_fru_bloc = _Alignof(t_ipmi_fru_bloc),
+	ABI_OFFSETOF_fru_bloc__start = offsetof(t_ipmi_fru_bloc, start),
+	ABI_OFFSETOF_fru_bloc__size = offsetof(t_ipmi_fru_bloc, size),
+	ABI_OFFSETOF_fru_bloc__blocId = offsetof(t_ipmi_fru_bloc, blocId),
 
 	/* struct ipmi_rq - opaque: `msg.netfn:6` / `msg.lun:2` are bitfields. */
 	ABI_SIZEOF_ipmi_rq = sizeof(struct ipmi_rq),

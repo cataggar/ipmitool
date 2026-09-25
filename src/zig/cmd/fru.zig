@@ -1,9 +1,6 @@
-//! Staged port of `lib/ipmi_fru.c`. Inventory reads, section-aware writes,
-//! print/list (including SDR discovery, area strings and multirecords), get,
-//! upgEkey and internal-use commands are implemented here. The PICMG
-//! OEM edits and public FRU helpers still use the original C code through
-//! `fru_legacy.c`, not placeholders. Keep the shim until all commands and
-//! exported helpers have been ported.
+//! Port of `lib/ipmi_fru.c`: inventory reads, section-aware writes, print/list
+//! (including SDR discovery, area strings, multirecords and PICMG), get,
+//! upgEkey, internal-use, field editing, OEM editing and the C helper ABI.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -21,6 +18,7 @@ const Info = struct {
     size: u16,
     access: bool,
     max_read: usize = 0,
+    max_write: usize = 0,
 };
 
 const ReadError = error{ OutOfRange, InvalidMaxSize, Failed, ShortResponse };
@@ -713,14 +711,15 @@ fn writeArea(intf: *Intf, id: u8, info: *Info, dest_offset: usize, source: []con
     const finish = dest_offset + source.len;
     var blocks = try buildBlocks(intf, id, info, allocator);
     defer blocks.deinit(allocator);
-    const max_request = c.ipmi_intf_get_max_request_data_size(cIntf(intf));
-    if (max_request <= 3) {
+    const max_request = if (info.max_write == 0) c.ipmi_intf_get_max_request_data_size(cIntf(intf)) else 0;
+    if (info.max_write == 0 and max_request <= 3) {
         c.lprintf(log.Level.@"error", "Maximum request size is too small to send a write request");
         return false;
     }
-    var max_write: usize = @min(@as(usize, max_request) - 3, 255);
+    var max_write: usize = if (info.max_write != 0) info.max_write else @min(@as(usize, max_request) - 3, 255);
     if (info.access) max_write &= ~@as(usize, 1);
     if (max_write == 0) return false;
+    info.max_write = max_write;
 
     var request_data: [258]u8 = undefined;
     var req = std.mem.zeroes(Request);
@@ -756,6 +755,7 @@ fn writeArea(intf: *Intf, id: u8, info: *Info, dest_offset: usize, source: []con
         const rsp = sendrecv(intf, &req) orelse break;
         if (isTooLarge(rsp.ccode) and max_write > 32) {
             max_write -= 8;
+            info.max_write = max_write;
             c.lprintf(log.Level.info, "Retrying FRU write with request size %d", @as(c_int, @intCast(max_write)));
             continue;
         }
@@ -1102,7 +1102,7 @@ fn upgradeEkey(intf: *Intf, id: u8, filename: [*c]u8, allocator: Allocator) c_in
     return 0;
 }
 
-fn upgradeEkeyHelp() void {
+fn upgradeEkeyHelp() callconv(.c) void {
     c.lprintf(log.Level.notice, "fru upgEkey <fru id> <fru file>");
     c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
     c.lprintf(log.Level.notice, "Example: ipmitool fru upgEkey 0 /root/fru.bin");
@@ -1213,7 +1213,192 @@ fn getMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator:
     return 0;
 }
 
-fn getHelp() void {
+fn queryNewValue(data: []u8) bool {
+    _ = c.printf("Would you like to change this value <y/n> ? ");
+    var answer: u8 = 0;
+    if (c.scanf("%c", &answer) != 1) return false;
+    if (answer != 'y' and answer != 'Y') {
+        _ = c.printf("Entered %c\n", @as(c_int, answer));
+        return false;
+    }
+    _ = c.printf("Enter hex values for each of the %d entries (lsb first), hit <enter> between entries\n", @as(c_int, @intCast(data.len)));
+    for (data) |*byte| {
+        var value: c_uint = 0;
+        if (c.scanf("%x", &value) != 1) return false;
+        byte.* = @truncate(value);
+    }
+    return true;
+}
+
+fn picmgEdit(body: []u8) bool {
+    if (body.len < 6) return false;
+    switch (body[3]) {
+        c.FRU_AMC_CURRENT => {
+            _ = c.printf("    FRU_AMC_CURRENT\n");
+            _ = c.printf("      Current draw(@12V): %.2f A (0x%02x)\n", @as(f64, @floatFromInt(body[5])) / 10, @as(c_uint, body[5]));
+            if (!queryNewValue(body[5..6])) return false;
+            _ = c.printf("      New Current draw(@12V): %.2f A (0x%02x)\n", @as(f64, @floatFromInt(body[5])) / 10, @as(c_uint, body[5]));
+            return true;
+        },
+        c.FRU_AMC_ACTIVATION => {
+            if (body.len < 9) return false;
+            const value = le16(body[5..7]);
+            _ = c.printf("    FRU_AMC_ACTIVATION\n");
+            _ = c.printf("      Maximum Internal Current(@12V): %.2f A (0x%02x)\n", @as(f64, @floatFromInt(value)) / 10, @as(c_uint, value));
+            const changed = queryNewValue(body[5..7]);
+            if (changed) {
+                const updated = le16(body[5..7]);
+                _ = c.printf("      New Maximum Internal Current(@12V): %.2f A (0x%02x)\n", @as(f64, @floatFromInt(updated)) / 10, @as(c_uint, updated));
+            }
+            _ = c.printf("      Module Activation Readiness:       %i sec.\n", @as(c_int, body[7]));
+            _ = c.printf("      Descriptor Count: %i\n\n", @as(c_int, body[8]));
+            var offset: usize = 9;
+            while (offset + 3 <= body.len) : (offset += 3) {
+                _ = c.printf("        IPMB-Address:         0x%x\n", @as(c_uint, body[offset]));
+                _ = c.printf("        Max. Module Current:  %.2f A\n\n", @as(f64, @floatFromInt(body[offset + 1])) / 10);
+            }
+            return changed;
+        },
+        else => return false,
+    }
+}
+
+fn kontronEdit(body: []u8, argc: c_int, argv: [*c][*c]u8) bool {
+    if (argc < 12) {
+        _ = c.printf("usage: oem <iana> <recordid> <format> <args...>\n");
+        _ = c.printf("usage: oem 15000 3 0 <name> <instance> <field1> <field2> <field3> <crc32>\n");
+        return false;
+    }
+    var record_id: u8 = 0;
+    if (c.str2uchar(argv[4], &record_id) != 0) {
+        c.lprintf(log.Level.err, "Record ID argument '%s' is either invalid or out of range.", argv[4]);
+        return false;
+    }
+    if (record_id != 3 or body.len < 6 or body[3] != 3) return false;
+    for (8..12) |index| {
+        const len = c.strlen(argv[index]);
+        if (len != 8 and len != 10) {
+            _ = c.printf("error: version fields must have 8 characters\n");
+            return false;
+        }
+    }
+    var format: u8 = 0;
+    if (c.str2uchar(argv[5], &format) != 0) {
+        c.lprintf(log.Level.err, "Format argument '%s' is either invalid or out of range.", argv[5]);
+        return false;
+    }
+    _ = c.printf("   Kontron OEM Information Record\n");
+    const version = body[4];
+    if (version != format) {
+        _ = c.printf("   Version: %d\n", @as(c_int, version));
+        return false;
+    }
+    var instance: u8 = 0;
+    if (c.str2uchar(argv[7], &instance) != 0) {
+        c.lprintf(log.Level.err, "Instance argument '%s' is either invalid or out of range.", argv[7]);
+        return false;
+    }
+    const count = body[5];
+    _ = c.printf("   blockCount: %d\n", @as(c_int, count));
+    var offset: usize = 6;
+    var matched: u8 = 0;
+    var changed = false;
+    for (0..count) |_| {
+        if (offset >= body.len) break;
+        const name_len: usize = body[offset] & 0x3f;
+        offset += 1;
+        if (name_len > body.len - offset) break;
+        const name = body[offset..][0..name_len];
+        offset += name_len;
+        const width: usize = if (version == 1) 10 else 8;
+        const record_size = width + 3 * 8 + 4;
+        if (version > 1 or record_size + 1 > body.len - offset) break;
+        const requested = std.mem.span(@as([*:0]const u8, @ptrCast(argv[6])));
+        const name_matches = requested.len >= name_len and std.mem.eql(u8, name, requested[0..name_len]);
+        if (name_matches and matched == instance) {
+            _ = c.printf("Found : %s\n", argv[6]);
+            var value_offset = offset;
+            for (8..12) |arg_index| {
+                value_offset += 1;
+                const value_length: usize = if (arg_index == 8) width else 8;
+                const replacement: [*]const u8 = @ptrCast(argv[arg_index]);
+                @memcpy(body[value_offset..][0..value_length], replacement[0..value_length]);
+                value_offset += value_length;
+            }
+            changed = true;
+            matched +%= 1;
+        } else if (name_matches) {
+            _ = c.printf("Skipped : %s  [instance %d]\n", argv[6], @as(c_uint, matched));
+            matched +%= 1;
+        }
+        offset += record_size + 1;
+    }
+    return changed;
+}
+
+fn editMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator: Allocator) c_int {
+    const location = multirecordLocation(intf, id) orelse return 0xffff;
+    c.lprintf(log.Level.debug, "FRU Size        : %lu\n", @as(c_ulong, @intCast(location.size)));
+    c.lprintf(log.Level.debug, "Multi Rec offset: %lu\n", @as(c_ulong, @intCast(location.offset)));
+    var info = getInfo(intf, id) orelse return -1;
+    c.lprintf(log.Level.debug, "fru.size = %d bytes (accessed by %s)", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    if (info.size == 0 or location.offset >= info.size) return -1;
+
+    const image = allocator.alloc(u8, info.size) catch {
+        c.lprintf(log.Level.err, " Out of memory!");
+        return -1;
+    };
+    defer allocator.free(image);
+    @memset(image, 0);
+    readArea(intf, id, &info, location.offset, image[location.offset..]) catch return -1;
+    var offset = location.offset;
+    while (offset + 5 <= info.size) {
+        const record = image[offset..];
+        const length: usize = record[2];
+        if (5 + length > record.len) return -1;
+        const final = (record[1] & 0x80) != 0;
+        if (record[0] == c.FRU_RECORD_TYPE_OEM_EXTENSION and length >= 5) {
+            const body = record[5..][0..length];
+            const iana = @as(u32, body[0]) | (@as(u32, body[1]) << 8) | (@as(u32, body[2]) << 16);
+            var supplied_iana: u32 = c.IPMI_OEM_PICMG;
+            if (argc > 2 and equals(argv[2], "oem")) {
+                if (argc <= 3) {
+                    c.lprintf(log.Level.err, "oem iana <record> <format> [<args>]");
+                    break;
+                }
+                if (c.str2uint(argv[3], &supplied_iana) != 0) {
+                    c.lprintf(log.Level.err, "Given IANA '%s' is invalid.", argv[3]);
+                    break;
+                }
+                c.lprintf(log.Level.debug, "using iana: %d", @as(c_int, @bitCast(supplied_iana)));
+            }
+            if (iana == supplied_iana) {
+                c.lprintf(log.Level.debug, "Matching record found");
+                const changed = if (iana == c.IPMI_OEM_PICMG)
+                    picmgEdit(body)
+                else if (iana == c.IPMI_OEM_KONTRON)
+                    kontronEdit(body, argc, argv)
+                else blk: {
+                    _ = c.printf("  OEM IANA (%s) Record not support in this mode\n", c.val2str(iana, c.ipmi_oem_info));
+                    break :blk false;
+                };
+                if (changed) {
+                    var sum: u8 = 0;
+                    for (body) |byte| sum +%= byte;
+                    record[3] = -%sum;
+                    record[4] = areaChecksum(record[0..5]);
+                    if (!(writeArea(intf, id, &info, offset, record[0 .. length + 5], allocator) catch false))
+                        return -1;
+                }
+            }
+        }
+        offset += 5 + length;
+        if (final) break;
+    }
+    return 0;
+}
+
+fn getHelp() callconv(.c) void {
     c.lprintf(log.Level.notice, "fru get <fruid> oem iana <record> <format> <args> - limited OEM support");
 }
 
@@ -1439,13 +1624,48 @@ fn editField(intf: *Intf, id: u8, kind: u8, field_index: u8, new_value: [*c]u8, 
     return 1;
 }
 
-fn editHelp() void {
+fn editHelp() callconv(.c) void {
     c.lprintf(log.Level.notice, "fru edit <fruid> field <section> <index> <string> - edit FRU string");
     c.lprintf(log.Level.notice, "fru edit <fruid> oem iana <record> <format> <args> - limited OEM support");
 }
 
+fn internalUseHelp() callconv(.c) void {
+    c.lprintf(log.Level.notice, "fru internaluse <fru id> info             - get internal use area size");
+    c.lprintf(log.Level.notice, "fru internaluse <fru id> print            - print internal use area in hex");
+    c.lprintf(log.Level.notice, "fru internaluse <fru id> read  <fru file> - read internal use area to file");
+    c.lprintf(log.Level.notice, "fru internaluse <fru id> write <fru file> - write internal use area from file");
+}
+
+fn readHelp() callconv(.c) void {
+    c.lprintf(log.Level.notice, "fru read <fru id> <fru file>");
+    c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
+    c.lprintf(log.Level.notice, "Example: ipmitool fru read 0 /root/fru.bin");
+}
+
+fn writeHelp() callconv(.c) void {
+    c.lprintf(log.Level.notice, "fru write <fru id> <fru file>");
+    c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
+    c.lprintf(log.Level.notice, "Example: ipmitool fru write 0 /root/fru.bin");
+}
+
+fn fruHelp() callconv(.c) void {
+    c.lprintf(log.Level.notice, "FRU Commands:  print read write upgEkey edit internaluse get");
+}
+
 fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     const in = intf orelse return -1;
+    if (argc >= 1 and equals(argv[0], "help")) {
+        fruHelp();
+        return 0;
+    }
+    if (argc >= 1 and equals(argv[0], "internaluse") and argc >= 2 and equals(argv[1], "help")) {
+        internalUseHelp();
+        return 0;
+    }
+    if (argc >= 1 and equals(argv[0], "edit") and argc >= 2 and equals(argv[1], "help")) {
+        editHelp();
+        return 0;
+    }
     if (argc >= 3 and equals(argv[0], "edit") and equals(argv[2], "field")) {
         if (argc != 6) {
             c.lprintf(log.Level.err, "Not enough parameters given.");
@@ -1456,6 +1676,22 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         if (c.is_fru_id(argv[1], &id) != 0) return -1;
         if (c.verbose != 0) _ = c.printf("FRU ID           : %d\n", @as(c_int, id));
         return editField(in, id, argv[3][0], argv[4][0], argv[5], std.heap.page_allocator);
+    }
+    if (argc >= 1 and equals(argv[0], "edit")) {
+        if (argc < 2) {
+            c.lprintf(log.Level.err, "Not enough parameters given.");
+            editHelp();
+            return -1;
+        }
+        var id: u8 = 0;
+        if (c.is_fru_id(argv[1], &id) != 0) return -1;
+        if (c.verbose != 0) _ = c.printf("FRU ID           : %d\n", @as(c_int, id));
+        if (argc >= 3 and !equals(argv[2], "oem")) {
+            c.lprintf(log.Level.err, "Invalid command: %s", argv[2]);
+            editHelp();
+            return -1;
+        }
+        return editMultirecord(in, id, argc, argv, std.heap.page_allocator);
     }
     if (argc >= 1 and equals(argv[0], "get")) {
         if (argc > 1 and equals(argv[1], "help")) {
@@ -1507,22 +1743,33 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         (equals(argv[0], "print") or equals(argv[0], "list")))
         return printAll(in, std.heap.page_allocator);
     if (argc > 1 and (equals(argv[0], "print") or equals(argv[0], "list"))) {
-        if (equals(argv[1], "help")) return c.ipmi_fru_main_legacy(cIntf(in), argc, argv);
+        if (equals(argv[1], "help")) {
+            c.lprintf(log.Level.notice, "fru print [fru id] - print information about FRU(s)");
+            return 0;
+        }
         var id: u8 = 0;
         if (c.is_fru_id(argv[1], &id) != 0) return -1;
         return printFru(in, id, std.heap.page_allocator);
     }
-    if (argc < 1 or (!equals(argv[0], "read") and !equals(argv[0], "write")))
-        return c.ipmi_fru_main_legacy(cIntf(in), argc, argv);
+    if (!equals(argv[0], "read") and !equals(argv[0], "write")) {
+        if (equals(argv[0], "internaluse")) {
+            c.lprintf(log.Level.err, "Either unknown command or not enough parameters given.");
+            internalUseHelp();
+        } else {
+            c.lprintf(log.Level.err, "Invalid FRU command: %s", argv[0]);
+            fruHelp();
+        }
+        return -1;
+    }
 
     const write = equals(argv[0], "write");
     if (argc > 1 and equals(argv[1], "help")) {
-        if (write) c.ipmi_fru_write_help() else c.ipmi_fru_read_help();
+        if (write) writeHelp() else readHelp();
         return 0;
     }
     if (argc < 3) {
         c.lprintf(log.Level.err, "Not enough parameters given.");
-        if (write) c.ipmi_fru_write_help() else c.ipmi_fru_read_help();
+        if (write) writeHelp() else readHelp();
         return -1;
     }
     var id: u8 = 0;
@@ -1536,9 +1783,221 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     return 0;
 }
 
+const CInfo = extern struct {
+    size: u16,
+    access_bits: u8,
+    max_read_size: u8,
+    max_write_size: u8,
+    padding: u8 = 0,
+
+    fn fromC(self: *const CInfo) Info {
+        return .{
+            .size = self.size,
+            .access = (self.access_bits & 1) != 0,
+            .max_read = self.max_read_size,
+            .max_write = self.max_write_size,
+        };
+    }
+
+    fn update(self: *CInfo, info: *const Info) void {
+        self.max_read_size = @intCast(@min(info.max_read, 255));
+        self.max_write_size = @intCast(@min(info.max_write, 255));
+    }
+};
+
+const CBloc = extern struct {
+    next: ?*CBloc,
+    start: u16,
+    size: u16,
+    blocId: [32]u8,
+};
+
+fn filenameStatus(filename: [*c]const u8) callconv(.c) c_int {
+    if (filename == null) {
+        c.lprintf(log.Level.err, "ERROR: NULL pointer passed.");
+        return -1;
+    }
+    const length = c.strlen(filename);
+    if (length < 1) {
+        c.lprintf(log.Level.err, "File/path is invalid.");
+        return -2;
+    }
+    if (length >= 512) {
+        c.lprintf(log.Level.err, "File/path must be shorter than 512 bytes.");
+        return -3;
+    }
+    return 0;
+}
+
+fn getAreaString(data: [*c]u8, offset: [*c]u32) callconv(.c) [*c]u8 {
+    if (data == null or offset == null) return null;
+    const pos: usize = offset[0];
+    const encoded_len: usize = data[pos] & 0x3f;
+    var cursor: usize = 0;
+    var storage: [128]u8 = undefined;
+    const value = field(data[pos..][0 .. 1 + encoded_len], &cursor, &storage);
+    offset[0] = @intCast(pos + cursor);
+    if (encoded_len == 0) return null;
+    const result = c.malloc(value.len + 1) orelse return null;
+    const text: [*]u8 = @ptrCast(result);
+    @memcpy(text[0..value.len], value);
+    text[value.len] = 0;
+    return @ptrCast(text);
+}
+
+fn freeFruBloc(start: [*c]c.t_ipmi_fru_bloc) callconv(.c) void {
+    var block: ?*CBloc = if (start == null) null else @ptrCast(@alignCast(start));
+    while (block) |node| {
+        const next = node.next;
+        c.free(node);
+        block = next;
+    }
+}
+
+fn buildFruBloc(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8) callconv(.c) [*c]c.t_ipmi_fru_bloc {
+    if (intf == null or fru == null) return null;
+    const in: *Intf = @ptrCast(@alignCast(intf));
+    const layout: *CInfo = @ptrCast(@alignCast(fru));
+    var info = layout.fromC();
+    var blocks = buildBlocks(in, id, &info, std.heap.page_allocator) catch return null;
+    defer blocks.deinit(std.heap.page_allocator);
+    defer layout.update(&info);
+    var first: ?*CBloc = null;
+    var tail: ?*CBloc = null;
+    for (blocks.items) |block| {
+        const memory = c.malloc(@sizeOf(CBloc)) orelse {
+            freeFruBloc(@ptrCast(first));
+            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            return null;
+        };
+        const node: *CBloc = @ptrCast(@alignCast(memory));
+        node.* = .{ .next = null, .start = @intCast(@min(block.start, 65535)), .size = @intCast(@min(block.end -| block.start, 65535)), .blocId = @splat(0) };
+        var storage: [32]u8 = undefined;
+        const name = std.mem.span(blockName(block, &storage));
+        @memcpy(node.blocId[0..@min(name.len, node.blocId.len - 1)], name[0..@min(name.len, node.blocId.len - 1)]);
+        if (tail) |previous| previous.next = node else first = node;
+        tail = node;
+    }
+    return @ptrCast(first);
+}
+
+fn readFruArea(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8, offset: u32, length: u32, data: [*c]u8) callconv(.c) c_int {
+    if (intf == null or fru == null or data == null) return -1;
+    const in: *Intf = @ptrCast(@alignCast(intf));
+    const layout: *CInfo = @ptrCast(@alignCast(fru));
+    var info = layout.fromC();
+    defer layout.update(&info);
+    if (offset > info.size) {
+        c.lprintf(log.Level.err, "Read FRU Area offset incorrect: %d > %d", @as(c_uint, offset), @as(c_uint, info.size));
+        return -1;
+    }
+    const count: usize = @min(@as(usize, length), @as(usize, info.size) - offset);
+    const buffer: [*]u8 = @ptrCast(data);
+    if (length > count) @memset(buffer[count..][0 .. @as(usize, length) - count], 0);
+    readArea(in, id, &info, offset, buffer[0..count]) catch return -1;
+    return 0;
+}
+
+var section_read_max: usize = 20;
+
+fn readFruAreaSection(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8, offset: u32, length: u32, data: [*c]u8) callconv(.c) c_int {
+    if (intf == null or fru == null or data == null) return -1;
+    const in: *Intf = @ptrCast(@alignCast(intf));
+    const layout: *CInfo = @ptrCast(@alignCast(fru));
+    var info = layout.fromC();
+    if (info.access and section_read_max > 16) section_read_max = 16;
+    info.max_read = section_read_max;
+    if (offset > info.size) {
+        c.lprintf(log.Level.err, "Read FRU Area offset incorrect: %d > %d", @as(c_uint, offset), @as(c_uint, info.size));
+        return -1;
+    }
+    const count: usize = @min(@as(usize, length), @as(usize, info.size) - offset);
+    const buffer: [*]u8 = @ptrCast(data);
+    if (length > count) @memset(buffer[count..][0 .. @as(usize, length) - count], 0);
+    defer section_read_max = info.max_read;
+    readArea(in, id, &info, offset, buffer[0..count]) catch return -1;
+    return 0;
+}
+
+fn writeFruArea(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8, source_offset: u16, destination_offset: u16, length: u16, data: [*c]u8) callconv(.c) c_int {
+    if (intf == null or fru == null or data == null) return -1;
+    const in: *Intf = @ptrCast(@alignCast(intf));
+    const layout: *CInfo = @ptrCast(@alignCast(fru));
+    var info = layout.fromC();
+    defer layout.update(&info);
+    if (destination_offset > info.size or length > info.size - destination_offset) {
+        c.lprintf(log.Level.@"error", "Return error");
+        return -1;
+    }
+    if (info.access and ((destination_offset | length) & 1) != 0) {
+        c.lprintf(log.Level.@"error", "Odd offset or length specified");
+        return -1;
+    }
+    const bytes: [*]u8 = @ptrCast(data);
+    const written = writeArea(in, id, &info, destination_offset, bytes[@as(usize, source_offset)..][0..length], std.heap.page_allocator) catch return -1;
+    return @intFromBool(written);
+}
+
+fn fruPrint(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_sdr_record_fru_locator) callconv(.c) c_int {
+    if (intf == null) return -1;
+    const in: *Intf = @ptrCast(@alignCast(intf));
+    if (fru == null) return printFru(in, 0, std.heap.page_allocator);
+    const bytes: [*]const u8 = @ptrCast(fru);
+    return printLocator(in, bytes[0..27], std.heap.page_allocator);
+}
+
+fn adjustSizeFromBuffer(data: [*c]u8, size: [*c]u32) callconv(.c) c_int {
+    if (data == null or size == null or size[0] == 0 or size[0] > 65536) return -1;
+    const bytes: [*]const u8 = @ptrCast(data);
+    const count = adjustMultirecordSize(bytes[0..size[0]]) orelse return -1;
+    size[0] = @intCast(count);
+    return 0;
+}
+
 pub fn exportSymbols() void {
     comptime {
+        abi.assertOpaqueLayout(CInfo, .{
+            .size = c.ABI_SIZEOF_fru_info,
+            .alignment = c.ABI_ALIGNOF_fru_info,
+            .fields = &.{
+                .{ .name = "max_read_size", .offset = c.ABI_OFFSETOF_fru_info__max_read_size },
+                .{ .name = "max_write_size", .offset = c.ABI_OFFSETOF_fru_info__max_write_size },
+            },
+        });
+        abi.assertLayout(CBloc, c.struct_ipmi_fru_bloc);
         abi.assertCallSignature(@TypeOf(fruMain), @TypeOf(c.ipmi_fru_main));
+        abi.assertCallSignature(@TypeOf(filenameStatus), @TypeOf(c.is_valid_filename));
+        abi.assertCallSignature(@TypeOf(getAreaString), @TypeOf(c.get_fru_area_str));
+        abi.assertCallSignature(@TypeOf(freeFruBloc), @TypeOf(c.free_fru_bloc));
+        abi.assertCallSignature(@TypeOf(buildFruBloc), @TypeOf(c.build_fru_bloc));
+        abi.assertCallSignature(@TypeOf(readFruArea), @TypeOf(c.read_fru_area));
+        abi.assertCallSignature(@TypeOf(readFruAreaSection), @TypeOf(c.read_fru_area_section));
+        abi.assertCallSignature(@TypeOf(writeFruArea), @TypeOf(c.write_fru_area));
+        abi.assertCallSignature(@TypeOf(fruPrint), @TypeOf(c.ipmi_fru_print));
+        abi.assertCallSignature(@TypeOf(adjustSizeFromBuffer), @TypeOf(c.ipmi_fru_get_adjust_size_from_buffer));
+        abi.assertCallSignature(@TypeOf(fruHelp), @TypeOf(c.ipmi_fru_help));
+        abi.assertCallSignature(@TypeOf(readHelp), @TypeOf(c.ipmi_fru_read_help));
+        abi.assertCallSignature(@TypeOf(writeHelp), @TypeOf(c.ipmi_fru_write_help));
+        abi.assertCallSignature(@TypeOf(editHelp), @TypeOf(c.ipmi_fru_edit_help));
+        abi.assertCallSignature(@TypeOf(getHelp), @TypeOf(c.ipmi_fru_get_help));
+        abi.assertCallSignature(@TypeOf(upgradeEkeyHelp), @TypeOf(c.ipmi_fru_upgekey_help));
+        abi.assertCallSignature(@TypeOf(internalUseHelp), @TypeOf(c.ipmi_fru_internaluse_help));
         @export(&fruMain, .{ .name = "ipmi_fru_main", .linkage = .strong });
+        @export(&filenameStatus, .{ .name = "is_valid_filename", .linkage = .strong });
+        @export(&getAreaString, .{ .name = "get_fru_area_str", .linkage = .strong });
+        @export(&freeFruBloc, .{ .name = "free_fru_bloc", .linkage = .strong });
+        @export(&buildFruBloc, .{ .name = "build_fru_bloc", .linkage = .strong });
+        @export(&readFruArea, .{ .name = "read_fru_area", .linkage = .strong });
+        @export(&readFruAreaSection, .{ .name = "read_fru_area_section", .linkage = .strong });
+        @export(&writeFruArea, .{ .name = "write_fru_area", .linkage = .strong });
+        @export(&fruPrint, .{ .name = "ipmi_fru_print", .linkage = .strong });
+        @export(&adjustSizeFromBuffer, .{ .name = "ipmi_fru_get_adjust_size_from_buffer", .linkage = .strong });
+        @export(&fruHelp, .{ .name = "ipmi_fru_help", .linkage = .strong });
+        @export(&readHelp, .{ .name = "ipmi_fru_read_help", .linkage = .strong });
+        @export(&writeHelp, .{ .name = "ipmi_fru_write_help", .linkage = .strong });
+        @export(&editHelp, .{ .name = "ipmi_fru_edit_help", .linkage = .strong });
+        @export(&getHelp, .{ .name = "ipmi_fru_get_help", .linkage = .strong });
+        @export(&upgradeEkeyHelp, .{ .name = "ipmi_fru_upgekey_help", .linkage = .strong });
+        @export(&internalUseHelp, .{ .name = "ipmi_fru_internaluse_help", .linkage = .strong });
     }
 }

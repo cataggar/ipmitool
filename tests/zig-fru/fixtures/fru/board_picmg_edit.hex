@@ -1,0 +1,6 @@
+@../../fixtures/fru/common_header.hex
+@../../fixtures/fru/chassis_area.hex
+@../../fixtures/fru/board_area.hex
+@../../fixtures/fru/product_area.hex
+c0 82 06 28 90 5a 31 00 16 00 37
+@pad 85 0x00

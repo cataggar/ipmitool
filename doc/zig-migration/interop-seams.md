@@ -39,8 +39,7 @@ Supporting files at the root of `src/zig/`:
 | `exports.zig`   | link-time root of `libipmitool_zig.a`; one guarded `@import` per port |
 
 `ipmi_c.h` and `abi_layout.h` are build-time scaffolding, never linked into
-the product, and are deleted with the last C translation unit. The staged FRU
-port additionally has `cmd/fru_legacy.c`, a temporary linked shim; see below.
+the product, and are deleted with the last C translation unit.
 
 ### SDR safety across the #53 port
 
@@ -223,21 +222,14 @@ Mechanics, all in `build.zig`:
 5. With no selection the Zig library is not built or linked at all, so the
    default build is bit-for-bit the pre-existing all-C build.
 
-**FRU is an incomplete migration.** Selecting `-Dzig-modules=fru` currently
-ports `fru read` (bounded inventory reads), `fru write` (bounded writes with
-section-aware protection), `fru print/list` (including SDR discovery and
-multirecords), `fru internaluse` (info/print/read/write), `fru get` (bounded
-Kontron OEM traversal), `fru upgEkey` (bounded source validation and target
-write), and `fru edit ... field` (same-size updates and area rebuild/resizing).
-PICMG extension records are decoded in Zig. OEM edits are still called
-through the shim; the external FRU helper ABIs also remain in C. None of this
-constitutes a full translation-unit port yet.
-The original `lib/ipmi_fru.c` is unchanged: `cmd/fru_legacy.c` includes it
-with its main entry point renamed to `ipmi_fru_main_legacy`, so commands not
-yet ported retain their complete implementation rather than returning dummy
-success. The `fru` selection must not be counted as a completed command
-module until the shim and its bridge declarations are removed. `-Dsanitize-c`
-also applies to C shims linked into the Zig replacement archive.
+Selecting `-Dzig-modules=fru` now replaces `lib/ipmi_fru.c` in its entirety:
+print/list with SDR discovery and PICMG records, read/write, internaluse,
+Kontron get, EKey upgrade, field edits and OEM edits. The `fru_legacy.c` shim
+has been removed. External consumers such as Kontron OEM commands, SEL FRU
+printing and Ekanalyzer link against the exported FRU helper ABIs in Zig.
+The Zig OEM editor intentionally fixes the original C code's zeroed FRU size
+before multirecord reads; the isolated `tests/zig-fru` fixtures exercise
+successful edits that the C oracle cannot perform.
 
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:
