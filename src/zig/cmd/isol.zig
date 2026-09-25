@@ -11,6 +11,9 @@
 //! return errors rather than dereferencing null pointers or indexing past
 //! `fd_set`. SOL output is clamped to the response buffer. An early select
 //! error also restores terminal mode before returning.
+//!
+//! Diagnostics use typed `log.print()` in the same selected archive that owns
+//! logger state; the C logger remains the fallback when `log` is not selected.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -72,19 +75,19 @@ fn getInfo(intf: *Intf) Error!Config {
         @memset(&data, 0);
         data[1] = f.selector;
         const rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(log.Level.err, "Error in Get ISOL Config Command");
+            log.print(log.Level.err, "Error in Get ISOL Config Command", .{});
             return error.NoResponse;
         };
         if (i == 0 and rsp.ccode == 0xc1) {
-            c.lprintf(log.Level.err, "IPMI v1.5 Serial Over Lan (ISOL) not supported!");
+            log.print(log.Level.err, "IPMI v1.5 Serial Over Lan (ISOL) not supported!", .{});
             return error.Unsupported;
         }
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Error in Get ISOL Config Command: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+            log.print(log.Level.err, "Error in Get ISOL Config Command: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
             return error.CompletionCode;
         }
         if (rsp.data_len < 2) {
-            c.lprintf(log.Level.err, "Error in Get ISOL Config Command: short response (%d)", rsp.data_len);
+            log.print(log.Level.err, "Error in Get ISOL Config Command: short response (%d)", .{rsp.data_len});
             return error.ShortResponse;
         }
         f.field.* = rsp.data[1];
@@ -127,8 +130,8 @@ fn setParam(intf: *Intf, param: [*:0]const u8, value: [*:0]const u8) Error!void 
         } else if (equals(value, "false")) {
             data[2] = 0;
         } else {
-            c.lprintf(log.Level.err, "Invalid value %s for parameter %s", value, param);
-            c.lprintf(log.Level.err, "Valid values are true and false");
+            log.print(log.Level.err, "Invalid value %s for parameter %s", .{ value, param });
+            log.print(log.Level.err, "Valid values are true and false", .{});
             return error.InvalidValue;
         }
     } else if (equals(param, "privilege-level")) {
@@ -142,8 +145,8 @@ fn setParam(intf: *Intf, param: [*:0]const u8, value: [*:0]const u8) Error!void 
         else if (equals(value, "oem"))
             5
         else {
-            c.lprintf(log.Level.err, "Invalid value %s for parameter %s", value, param);
-            c.lprintf(log.Level.err, "Valid values are user, operator, admin, and oem");
+            log.print(log.Level.err, "Invalid value %s for parameter %s", .{ value, param });
+            log.print(log.Level.err, "Valid values are user, operator, admin, and oem", .{});
             return error.InvalidValue;
         };
         data[2] |= params.privilege_level & 0x80;
@@ -160,21 +163,21 @@ fn setParam(intf: *Intf, param: [*:0]const u8, value: [*:0]const u8) Error!void 
         else if (equals(value, "115.2"))
             10
         else {
-            c.lprintf(log.Level.err, "ISOL - Unsupported baud rate: %s", value);
-            c.lprintf(log.Level.err, "Valid values are 9.6, 19.2, 38.4, 57.6 and 115.2");
+            log.print(log.Level.err, "ISOL - Unsupported baud rate: %s", .{value});
+            log.print(log.Level.err, "Valid values are 9.6, 19.2, 38.4, 57.6 and 115.2", .{});
             return error.InvalidValue;
         };
     } else {
-        c.lprintf(log.Level.err, "Error: invalid ISOL parameter %s", param);
+        log.print(log.Level.err, "Error: invalid ISOL parameter %s", .{param});
         return error.InvalidParameter;
     }
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error setting ISOL parameter '%s'", param);
+        log.print(log.Level.err, "Error setting ISOL parameter '%s'", .{param});
         return error.NoResponse;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error setting ISOL parameter '%s': %s", param, c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, "Error setting ISOL parameter '%s': %s", .{ param, c.val2str(rsp.ccode, c.completion_code_vals) });
         return error.SetFailed;
     }
 }
@@ -214,7 +217,7 @@ fn sendBreak(intf: *Intf) void {
     if (intf.send_sol) |send| {
         _ = send(intf, &payload);
     } else {
-        c.lprintf(log.Level.err, "Error sending SOL data: transport has no SOL callback");
+        log.print(log.Level.err, "Error sending SOL data: transport has no SOL callback", .{});
     }
 }
 
@@ -258,11 +261,11 @@ fn deactivate(intf: *Intf) Error!void {
     req.msg.data = &data;
     req.msg.data_len = 5;
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error deactivating ISOL");
+        log.print(log.Level.err, "Error deactivating ISOL", .{});
         return error.NoResponse;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error deactivating ISOL: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, "Error deactivating ISOL: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
         return error.CompletionCode;
     }
 }
@@ -324,11 +327,11 @@ fn processUserInput(intf: *Intf, input: []const u8) c_int {
         payload.payload.sol_packet.flush_outbound = 1;
         payload.payload.sol_packet.character_count = @intCast(len);
         const send = intf.send_sol orelse {
-            c.lprintf(log.Level.err, "Error sending SOL data");
+            log.print(log.Level.err, "Error sending SOL data", .{});
             return -1;
         };
         const rsp = send(intf, &payload) orelse {
-            c.lprintf(log.Level.err, "Error sending SOL data");
+            log.print(log.Level.err, "Error sending SOL data", .{});
             return -1;
         };
         if (rsp.session.payloadtype == @intFromEnum(ipmi.PayloadType.sol) and
@@ -339,14 +342,14 @@ fn processUserInput(intf: *Intf, input: []const u8) c_int {
 
 fn redPill(intf: *Intf) Error!void {
     const buffer = std.heap.c_allocator.alloc(u8, 255) catch {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return error.AllocationFailure;
     };
     defer std.heap.c_allocator.free(buffer);
     enterRawMode();
     defer leaveRawMode();
     if (!fd_set.valid(intf.fd)) {
-        c.lprintf(log.Level.err, "Error: invalid ISOL socket descriptor");
+        log.print(log.Level.err, "Error: invalid ISOL socket descriptor", .{});
         return error.InvalidDescriptor;
     }
     var should_exit = false;
@@ -366,7 +369,7 @@ fn redPill(intf: *Intf) Error!void {
             timedout += 1;
             if (timedout == 20) {
                 const keepalive = intf.keepalive orelse {
-                    c.lprintf(log.Level.err, "Error: ISOL transport has no keepalive callback");
+                    log.print(log.Level.err, "Error: ISOL transport has no keepalive callback", .{});
                     return error.NoTransport;
                 };
                 _ = keepalive(intf);
@@ -389,7 +392,7 @@ fn redPill(intf: *Intf) Error!void {
             }
         } else if (fd_set.isSet(intf.fd, &fds)) {
             const receive = intf.recv_sol orelse {
-                c.lprintf(log.Level.err, "Error: ISOL transport has no receive callback");
+                log.print(log.Level.err, "Error: ISOL transport has no receive callback", .{});
                 return error.NoTransport;
             };
             if (receive(intf)) |rsp| {
@@ -399,12 +402,12 @@ fn redPill(intf: *Intf) Error!void {
                 should_exit = true;
             }
         } else {
-            c.lprintf(log.Level.err, "Error: Select returned with nothing to read");
+            log.print(log.Level.err, "Error: Select returned with nothing to read", .{});
             should_exit = true;
         }
     }
     if (bmc_closed) {
-        c.lprintf(log.Level.err, "SOL session closed by BMC");
+        log.print(log.Level.err, "SOL session closed by BMC", .{});
     } else {
         deactivate(intf) catch {};
     }
@@ -413,11 +416,11 @@ fn redPill(intf: *Intf) Error!void {
 fn activate(intf: *Intf) Error!void {
     const params = try getInfo(intf);
     if (params.enabled & 1 == 0) {
-        c.lprintf(log.Level.err, "ISOL is not enabled!");
+        log.print(log.Level.err, "ISOL is not enabled!", .{});
         return error.Disabled;
     }
     const session = intf.session orelse {
-        c.lprintf(log.Level.err, "Error: No ISOL session available");
+        log.print(log.Level.err, "Error: No ISOL session available", .{});
         return error.NoSession;
     };
     session.sol_data.sol_input_handler = output;
@@ -429,50 +432,50 @@ fn activate(intf: *Intf) Error!void {
     req.msg.data = &data;
     req.msg.data_len = 5;
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error: No response activating ISOL");
+        log.print(log.Level.err, "Error: No response activating ISOL", .{});
         return error.NoResponse;
     };
     switch (rsp.ccode) {
         0 => if (rsp.data_len != 4) {
-            c.lprintf(log.Level.err, "Error: Unexpected data length (%d) received in ISOL activation response", rsp.data_len);
+            log.print(log.Level.err, "Error: Unexpected data length (%d) received in ISOL activation response", .{rsp.data_len});
             return error.InvalidResponse;
         },
         0x80 => {
-            c.lprintf(log.Level.err, "Info: ISOL already active on another session");
+            log.print(log.Level.err, "Info: ISOL already active on another session", .{});
             return error.ActivateFailed;
         },
         0x81 => {
-            c.lprintf(log.Level.err, "Info: ISOL disabled");
+            log.print(log.Level.err, "Info: ISOL disabled", .{});
             return error.ActivateFailed;
         },
         0x82 => {
-            c.lprintf(log.Level.err, "Info: ISOL activation limit reached");
+            log.print(log.Level.err, "Info: ISOL activation limit reached", .{});
             return error.ActivateFailed;
         },
         else => {
-            c.lprintf(log.Level.err, "Error activating ISOL: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+            log.print(log.Level.err, "Error activating ISOL: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
             return error.ActivateFailed;
         },
     }
     _ = c.printf("[SOL Session operational.  Use %c? for help]\n", @as(c_int, escape));
     redPill(intf) catch |err| {
-        c.lprintf(log.Level.err, "Error in SOL session");
+        log.print(log.Level.err, "Error in SOL session", .{});
         return err;
     };
 }
 
 fn printSetUsage() void {
-    c.lprintf(log.Level.notice, "\nISOL set parameters and values: \n");
-    c.lprintf(log.Level.notice, "  enabled                     true | false");
-    c.lprintf(log.Level.notice, "  privilege-level             user | operator | admin | oem");
-    c.lprintf(log.Level.notice, "  bit-rate                    9.6 | 19.2 | 38.4 | 57.6 | 115.2");
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "\nISOL set parameters and values: \n", .{});
+    log.print(log.Level.notice, "  enabled                     true | false", .{});
+    log.print(log.Level.notice, "  privilege-level             user | operator | admin | oem", .{});
+    log.print(log.Level.notice, "  bit-rate                    9.6 | 19.2 | 38.4 | 57.6 | 115.2", .{});
+    log.print(log.Level.notice, "", .{});
 }
 
 fn printUsage() void {
-    c.lprintf(log.Level.notice, "ISOL Commands: info");
-    c.lprintf(log.Level.notice, "               set <parameter> <setting>");
-    c.lprintf(log.Level.notice, "               activate");
+    log.print(log.Level.notice, "ISOL Commands: info", .{});
+    log.print(log.Level.notice, "               set <parameter> <setting>", .{});
+    log.print(log.Level.notice, "               activate", .{});
 }
 
 fn isolMain(intf: *Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {

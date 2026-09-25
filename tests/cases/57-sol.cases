@@ -20,6 +20,12 @@ args: -I dummy sol info
 transcript: sol_unsupported.tr
 covers: sol
 
+[sol_unsupported_log_diagnostic]
+desc: C logger formats unsupported channel 10 as padded hex and reports the missing payload-port session
+args: -I dummy sol info 10
+transcript: sol_unsupported.tr
+covers: sol
+
 [sol_info_bad_length]
 args: -I dummy sol info
 transcript: sol_bad_length.tr
