@@ -219,6 +219,10 @@ comptime {
 }
 
 pub fn exportSymbols() void {
+    // The all-Zig comparison build selects this port even when the lanplus
+    // interface (and its C-only lookup tables) is disabled.
+    if (!@hasDecl(c, "IPMI_INTF_LANPLUS")) return;
+
     abi.assertCallSignature(@TypeOf(dumpOpenSessionResponse), @TypeOf(c.lanplus_dump_open_session_response));
     abi.assertCallSignature(@TypeOf(dumpRakp2Message), @TypeOf(c.lanplus_dump_rakp2_message));
     abi.assertCallSignature(@TypeOf(dumpRakp4Message), @TypeOf(c.lanplus_dump_rakp4_message));
