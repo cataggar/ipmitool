@@ -1,0 +1,18 @@
+#!golden 1
+#!case sunoem_cli_force
+#!section exit
+0
+#!section stdout
+Connected. Use ^D to exit.
+OK
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x19 target_cmd=0x00 data=02 01 00 00 00 00 00 00 00
+< rule=cli_force ccode=0x00 len=9 data=02 00 00 00 12 34 56 78 00
+> netfn=0x2e lun=0x00 cmd=0x19 target_cmd=0x00 data=02 03 01 00 12 34 56 78 73 68 6f 77 0a 00
+< rule=cli_data ccode=0x00 len=12 data=02 01 00 00 12 34 56 78 4f 4b 0a 00
+bye

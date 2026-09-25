@@ -1,0 +1,18 @@
+#!golden 1
+#!case sunoem_getfile_bad_block
+#!section exit
+1
+#!section stdout
+#!section stderr
+Sun OEM getfile Incorrect Block Num Returned
+Expecting: 0 Received: 1000000
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x24 target_cmd=0x00 data=
+< rule=version ccode=0x00 len=80 data=01 03 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 33 2e 32 2e 30 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x44 target_cmd=0x00 data=0b 44 49 41 47 5f 50 41 53 53 45 44 00 00 00 00 00 00 00 00 00
+< rule=bad_block ccode=0x00 len=10 data=00 00 00 01 00 00 00 01 01 41
+bye

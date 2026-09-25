@@ -1,0 +1,91 @@
+default_ccode 0xc1
+
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+
+respond nacname
+  netfn 0x2e
+  cmd 0x29
+  data 00 2f 53 50 2f 73 79 73 74 65 6d 00
+  data @sunoem/nac_pad.hex
+end
+
+respond getval_request
+  netfn 0x2e
+  cmd 0x2a
+  match 01
+  data 01
+end
+respond getval_ready
+  netfn 0x2e
+  cmd 0x2a
+  match 02
+  data 03 65 6e 61 62 6c 65 64 00
+end
+
+respond setval_name
+  netfn 0x2e
+  cmd 0x2c
+  match 03 00
+  data 01 07
+end
+respond setval_value
+  netfn 0x2e
+  cmd 0x2c
+  match 03 01
+  data 01 07
+end
+respond setval_status
+  netfn 0x2e
+  cmd 0x2c
+  match 04
+  data 03 07
+end
+
+respond getfile
+  netfn 0x2e
+  cmd 0x44
+  match 0b
+  data 00 00 00 00 00 00 00 03 01 41 42 43
+end
+respond behavior
+  netfn 0x2e
+  cmd 0x44
+  match 0f
+  data 01
+end
+respond sshkey_del
+  netfn 0x2e
+  cmd 0x02
+end
+respond sshkey_set
+  netfn 0x2e
+  cmd 0x01
+end
+respond cli_open
+  netfn 0x2e
+  cmd 0x19
+  match 02 00
+  data 02 00 00 00 12 34 56 78 00
+end
+respond cli_force
+  netfn 0x2e
+  cmd 0x19
+  match 02 01
+  data 02 00 00 00 12 34 56 78 00
+end
+respond cli_poll
+  netfn 0x2e
+  cmd 0x19
+  match 02 04
+  data 02 01 00 00 12 34 56 78 4f 4b 0a 00
+end
+respond cli_data
+  netfn 0x2e
+  cmd 0x19
+  match 02 03
+  data 02 01 00 00 12 34 56 78 4f 4b 0a 00
+end

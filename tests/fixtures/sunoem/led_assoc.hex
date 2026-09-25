@@ -1,0 +1,5 @@
+03 00 51 08 0b # entity association record
+0b 81          # container 11/1 logical
+00             # list (not a range)
+0b 01          # physical child 11/1
+00 00 00 00 00 00 # remaining three empty associations

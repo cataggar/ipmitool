@@ -1,0 +1,27 @@
+#!golden 1
+#!case sunoem_led_get_short
+#!section exit
+1
+#!section stdout
+LED01            | na
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=repository ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=record ccode=0x00 len=7 data=ff ff 01 00 51 10 1b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 05 17
+< rule=record ccode=0x00 len=25 data=ff ff 20 42 00 00 00 08 00 0b 01 03 c5 4c 45 44 30 31 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 01 00 1c 04
+< rule=record ccode=0x00 len=6 data=ff ff 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x21 target_cmd=0x00 data=42 03 20 03 0b 01 00
+< rule=empty_get ccode=0x00 len=0 data=
+bye

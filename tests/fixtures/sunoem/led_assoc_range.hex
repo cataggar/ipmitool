@@ -1,0 +1,5 @@
+03 00 51 08 0b
+0b 81         # logical container
+80            # range association (isrange is bit 7)
+0b 01 0b 01   # one physical entity, instance range [1,1]
+00 00 00 00   # empty second range

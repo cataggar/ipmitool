@@ -1,0 +1,17 @@
+#!golden 1
+#!case sunoem_getbehavior_denied
+#!section exit
+1
+#!section stdout
+#!section stderr
+Sun OEM Get SP Version Failed: 212
+Unable to get ILOM version
+Command is not supported by this version of ILOM, required at least: 3.2.0.0
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x24 target_cmd=0x00 data=
+< rule=version ccode=0xd4 len=0 data=
+bye

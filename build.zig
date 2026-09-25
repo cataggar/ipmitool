@@ -155,6 +155,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/oem.zig",
     },
     .{
+        .name = "sunoem",
+        .replaces = "lib/ipmi_sunoem.c",
+        .implementation = "src/zig/cmd/sunoem.zig",
+    },
+    .{
         .name = "channel",
         .replaces = "lib/ipmi_channel.c",
         .implementation = "src/zig/cmd/channel.zig",
@@ -794,6 +799,7 @@ pub fn build(b: *std.Build) void {
     const flags = cflags.toOwnedSlice(b.allocator) catch @panic("OOM");
 
     const core_mod = b.createModule(.{
+        .root_source_file = emptyCoreRoot(b, zig_selection),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
@@ -1319,6 +1325,16 @@ pub fn build(b: *std.Build) void {
     dell_step.dependOn(&b.addRunArtifact(dell_tests).step);
     test_step.dependOn(dell_step);
 
+    const sunoem_test_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/sunoem_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    sunoem_test_mod.addImport("ipmi_c", bridge_mod);
+    const sunoem_tests = b.addRunArtifact(b.addTest(.{ .root_module = sunoem_test_mod }));
+    b.step("test-sunoem", "Run focused Sun OEM parser and ABI tests").dependOn(&sunoem_tests.step);
+
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.
     if (zig_lib) |lib| test_step.dependOn(&lib.step);
@@ -1833,6 +1849,7 @@ fn addSelectedTool(
     name: []const u8,
 ) *std.Build.Step.Compile {
     const core_mod = b.createModule(.{
+        .root_source_file = emptyCoreRoot(b, selection),
         .target = options.target,
         .optimize = options.optimize,
         .link_libc = true,
@@ -1845,7 +1862,6 @@ fn addSelectedTool(
         if (!options.plugins_enabled[i]) continue;
         addSources(b, core_mod, plugin.sources, options.flags, selection);
     }
-
     const core = b.addLibrary(.{
         .name = "ipmitool_core_zig",
         .linkage = .static,
@@ -2029,6 +2045,12 @@ fn addSources(
         .flags = flags,
         .language = .c,
     });
+}
+
+fn emptyCoreRoot(b: *std.Build, selection: []const bool) ?std.Build.LazyPath {
+    if (!allSelected(selection)) return null;
+    // The final C-to-Zig replacement can leave the core archive without an object.
+    return b.addWriteFiles().add("empty-core.zig", "pub export var ipmitool_zig_empty_core: u8 = 0;\n");
 }
 
 /// True when `path` is a C translation unit a selected Zig module replaces.

@@ -1,0 +1,26 @@
+default_ccode 0xc1
+respond cli_open
+  netfn 0x2e
+  cmd 0x19
+  match 02 00
+  data 02 00 00 00 12 34 56 78 00
+end
+respond cli_first_chunk
+  netfn 0x2e
+  cmd 0x19
+  match 02 03
+  times 1
+  data 02 00 00 00 12 34 56 78 00
+end
+respond cli_last_chunk
+  netfn 0x2e
+  cmd 0x19
+  match 02 03
+  data 02 01 00 00 12 34 56 78 4f 4b 00
+end
+respond cli_eof
+  netfn 0x2e
+  cmd 0x19
+  match 02 04
+  data 02 01 00 00 12 34 56 78 4f 4b 00
+end

@@ -1,0 +1,4 @@
+00 00 00 00   # block 0
+00 00 03 f7   # 1015 bytes, maximum in a 1024-byte dummy response
+01            # EOF
+@pad 1015 0x41

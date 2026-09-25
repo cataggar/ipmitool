@@ -1,0 +1,29 @@
+default_ccode 0xc1
+respond fragment1
+  netfn 0x2e
+  cmd 0x29
+  match 00
+  data 01
+  data @sunoem/nac64.hex
+end
+respond fragment2
+  netfn 0x2e
+  cmd 0x29
+  match 01
+  data 02
+  data @sunoem/nac64.hex
+end
+respond fragment3
+  netfn 0x2e
+  cmd 0x29
+  match 02
+  data 03
+  data @sunoem/nac64.hex
+end
+respond fragment4
+  netfn 0x2e
+  cmd 0x29
+  match 03
+  data 03
+  data @sunoem/nac64.hex
+end

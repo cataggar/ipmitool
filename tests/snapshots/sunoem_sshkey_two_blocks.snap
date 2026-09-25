@@ -1,0 +1,17 @@
+#!golden 1
+#!case sunoem_sshkey_two_blocks
+#!section exit
+0
+#!section stdout
+Setting SSH key for user id 1.....done
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 40 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41 41
+< rule=sshkey_set ccode=0x00 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x01 target_cmd=0x00 data=01 ff 01 41
+< rule=sshkey_set ccode=0x00 len=0 data=
+bye

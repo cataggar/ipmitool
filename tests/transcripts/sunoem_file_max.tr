@@ -1,0 +1,12 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+respond max_block
+  netfn 0x2e
+  cmd 0x44
+  match 0b
+  data @sunoem/file_max.hex
+end

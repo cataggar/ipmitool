@@ -1,0 +1,9 @@
+01 00              # record ID
+51 10 1b           # SDR 1.5, Generic Device Locator, 27-byte payload
+20 42              # access/slave address
+00 00 00           # local LUN, address span, reserved
+08 00              # device type, modifier
+0b 01              # physical entity 11/1
+03 c5              # OEM LED type (LOCATE), five-character ASCII name
+4c 45 44 30 31    # LED01
+@pad 11 0x00

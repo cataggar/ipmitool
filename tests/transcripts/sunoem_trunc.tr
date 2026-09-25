@@ -1,0 +1,36 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data 01
+end
+respond nacname
+  netfn 0x2e
+  cmd 0x29
+  data 00
+end
+respond getval
+  netfn 0x2e
+  cmd 0x2a
+  data 01
+end
+respond setval
+  netfn 0x2e
+  cmd 0x2c
+  data 01
+end
+respond tunnel
+  netfn 0x2e
+  cmd 0x44
+  data 00
+end
+respond cli
+  netfn 0x2e
+  cmd 0x19
+  data 02 01
+end
+respond echo
+  netfn 0x2e
+  cmd 0x23
+  data 00
+end

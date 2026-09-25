@@ -221,6 +221,7 @@ zig build -Dzig-modules=ekanalyzer # offline FRU/PICMG eKey analyzer
 zig build -Dzig-modules=cli      # use Zig for both the shared CLI and ipmitool main
 zig build test-cli               # diff C and Zig CLI, including PTY/SIGINT tests
 zig build -Dzig-modules=pef      # lib/ipmi_pef.c replaced by src/zig/cmd/pef.zig
+zig build -Dzig-modules=sunoem   # Sun/Oracle ILOM commands, including LED SDR lookups and CLI
 zig build --help                 # lists the available module names
 ```
 
@@ -255,7 +256,9 @@ Mechanics, all in `build.zig`:
 2. `parseZigModules` splits the option and exits with the list of valid names
    when it sees an unknown one.
 3. `addSources` skips any `.c` a selected module replaces, so there is never a
-   duplicate symbol; the swap is a substitution, not an override.
+   duplicate symbol; the swap is a substitution, not an override. When all
+   modules are selected, a generated Zig-only archive member keeps the core
+   archive linkable even if no C core translation units remain.
 4. When at least one module is selected, `src/zig/exports.zig` is compiled into
    `libipmitool_zig.a` and linked after `libipmitool_core.a`.
    For `cli`, `src/zig/cli/tool.zig` is also the `ipmitool` executable root;

@@ -1,0 +1,7 @@
+# Packed Sun OEM version: record version, 3.2.0.0, nano, revision,
+# 40-byte display string, 15 spare bytes.
+01 03 02 00 00
+@pad 20 0x00
+33 2e 32 2e 30 00
+@pad 34 0x00
+@pad 15 0x00

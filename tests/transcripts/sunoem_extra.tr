@@ -1,0 +1,73 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+respond nac_first
+  netfn 0x2e
+  cmd 0x29
+  match 00
+  data 01 2f 53 50 2f 00
+  times 1
+end
+respond nac_last
+  netfn 0x2e
+  cmd 0x29
+  match 01
+  data 01 73 79 73 74 65 6d 00
+end
+respond getval_start
+  netfn 0x2e
+  cmd 0x2a
+  match 01
+  data 01
+end
+respond getval_missing
+  netfn 0x2e
+  cmd 0x2a
+  match 02
+  data 05
+end
+respond set_name
+  netfn 0x2e
+  cmd 0x2c
+  match 03 00
+  data 01 09
+end
+respond set_value
+  netfn 0x2e
+  cmd 0x2c
+  match 03 01
+  data 01 09
+end
+respond set_status
+  netfn 0x2e
+  cmd 0x2c
+  match 04
+  data 03 09
+end
+respond getfile_first
+  netfn 0x2e
+  cmd 0x44
+  match 0b 44 49 41 47 5f 50 41 53 53 45 44 00 00 00 00 00 00 00 00 00
+  times 1
+  data 00 00 00 00 00 00 00 03 00 41 42 43
+end
+respond getfile_second
+  netfn 0x2e
+  cmd 0x44
+  match 0b
+  data 00 00 00 01 00 00 00 01 01 44
+end
+respond behavior_false
+  netfn 0x2e
+  cmd 0x44
+  match 0f
+  data 00
+end
+respond echo
+  netfn 0x2e
+  cmd 0x23
+  data @sunoem/echo_good.hex
+end

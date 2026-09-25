@@ -1,0 +1,16 @@
+#!golden 1
+#!case sunoem_ping_denied
+#!section exit
+1
+#!section stdout
+1 packets transmitted, 0 packets received
+#!section stderr
+Sun OEM echo command failed. Seq # 0
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x23 target_cmd=0x00 data=00 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f
+< rule=echo ccode=0xd4 len=0 data=
+bye

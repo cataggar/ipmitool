@@ -1,0 +1,46 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+respond nacname_empty
+  netfn 0x2e
+  cmd 0x29
+end
+respond getval_start
+  netfn 0x2e
+  cmd 0x2a
+  match 01
+  data 01
+end
+respond getval_short
+  netfn 0x2e
+  cmd 0x2a
+  match 02
+end
+respond setval_short
+  netfn 0x2e
+  cmd 0x2c
+end
+respond tunnel_short
+  netfn 0x2e
+  cmd 0x44
+end
+respond cli_open
+  netfn 0x2e
+  cmd 0x19
+  match 02 00
+  data 02 00 00 00 12 34 56 78 00
+end
+respond cli_poll_short
+  netfn 0x2e
+  cmd 0x19
+  match 02 03
+  data 02
+end
+respond echo_bad_sequence
+  netfn 0x2e
+  cmd 0x23
+  data 01 00
+end

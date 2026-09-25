@@ -541,7 +541,7 @@ fn executeCase(
 
     return .{
         .exit = exit_text,
-        .stdout = try normalize(gpa, result.stdout, work_abs, binary),
+        .stdout = try normalizePingTimes(gpa, c.name, try normalize(gpa, result.stdout, work_abs, binary)),
         .stderr = try normalize(gpa, result.stderr, work_abs, binary),
         .requests = try normalize(gpa, served.log, work_abs, binary),
         .files = if (c.capture) |name| blk: {
@@ -577,7 +577,7 @@ fn joinArgs(gpa: std.mem.Allocator, args: []const []const u8) ![]const u8 {
     return out.toOwnedSlice(gpa);
 }
 
-/// Scrub the only three things that are genuinely not reproducible between two
+/// Scrub the three things that are generally not reproducible between two
 /// runs or two machines. Everything else -- locale, time zone, the IANA PEN
 /// registry, the IPMI responses -- is *controlled* instead of scrubbed, so a
 /// real regression can never hide behind a normalizer.
@@ -595,6 +595,45 @@ fn normalize(gpa: std.mem.Allocator, text: []const u8, work_abs: []const u8, bin
         stage = try std.mem.replaceOwned(u8, gpa, stage, binary, binary_placeholder);
     }
     return stage;
+}
+
+/// The Sun OEM echo command prints wall-clock round-trip milliseconds.  Only
+/// its two success cases need this narrow stdout-only timer substitution.
+fn normalizePingTimes(gpa: std.mem.Allocator, name: []const u8, output: []const u8) ![]const u8 {
+    if (!std.mem.eql(u8, name, "sunoem_ping_success") and !std.mem.eql(u8, name, "sunoem_ping_quiet"))
+        return output;
+    var out: std.ArrayList(u8) = .empty;
+    var lines = std.mem.splitScalar(u8, output, '\n');
+    var first = true;
+    while (lines.next()) |line| {
+        if (!first) try out.append(gpa, '\n');
+        first = false;
+        if (std.mem.startsWith(u8, line, "Receive 66 Bytes - Seq. # 0 time=") and
+            std.mem.endsWith(u8, line, " ms") and
+            allDigits(line["Receive 66 Bytes - Seq. # 0 time=".len .. line.len - 3]))
+        {
+            try out.appendSlice(gpa, "Receive 66 Bytes - Seq. # 0 time=<ms> ms");
+        } else if (std.mem.startsWith(u8, line, "round-trip min/avg/max = ") and
+            std.mem.endsWith(u8, line, " ms"))
+        {
+            const times = line["round-trip min/avg/max = ".len .. line.len - 3];
+            var fields = std.mem.splitScalar(u8, times, '/');
+            if (fields.next()) |a| {
+                const b = fields.next() orelse "";
+                const c_field = fields.next() orelse "";
+                if (fields.next() == null and allDigits(a) and allDigits(b) and allDigits(c_field)) {
+                    try out.appendSlice(gpa, "round-trip min/avg/max = <ms>/<ms>/<ms> ms");
+                } else try out.appendSlice(gpa, line);
+            } else try out.appendSlice(gpa, line);
+        } else try out.appendSlice(gpa, line);
+    }
+    return out.toOwnedSlice(gpa);
+}
+
+fn allDigits(s: []const u8) bool {
+    if (s.len == 0) return false;
+    for (s) |byte| if (!std.ascii.isDigit(byte)) return false;
+    return true;
 }
 
 /// Replace the version token in "<progname> version 1.8.19" and nothing else.
