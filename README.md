@@ -107,8 +107,8 @@ defaults:
 | `-Dzig-modules=usb` | off | Replace `usb.c` with the Zig AMI USB transport; combine with `-Dintf-usb=true` |
 | `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
-| `-Dipmishell` | on | `ipmitool shell`/`exec`; requires `libreadline` |
-| `-Dreadline-libs` | autodetected | override the readline libraries to link |
+| `-Dipmishell` | on | expose `ipmitool shell` (and keep `exec`/`set`/`echo`) |
+| `-Dreadline-libs` | autodetected | override readline libraries for the C shell only |
 | `-Dall-options` | on | `ENABLE_ALL_OPTIONS` |
 | `-Dfile-security` | off | extra checks on files opened for read |
 | `-Dbuildcheck` | off | adds `-Werror` and stricter warnings |
@@ -122,11 +122,12 @@ their version, exit successfully for `-h`, and list exactly the interfaces
 that were enabled. The golden transcript suite is built on top of this.
 
 `-Dipmishell` is on by default so that the command table matches the autotools
-baseline. Readline is located with `pkg-config --libs readline`, falling back to
-a search for `readline/readline.h` under the usual prefixes. If it cannot be
-found the build fails with an explicit error rather than quietly dropping the
-`shell` command; install `readline-devel`/`libreadline-dev`, pass
-`-Dreadline-libs=readline,tinfo`, or build with `-Dipmishell=false`.
+baseline. Select `-Dzig-modules=ipmishell` for the native Zig line editor with
+history and editing keys; that build does not need readline headers or the
+readline library. Until the C shell is removed, builds without this selection
+still find readline via `pkg-config` or a header search, and need its development
+package (or `-Dreadline-libs=readline,tinfo`). See
+`doc/zig-migration/ipmishell.md` for editor behavior and parity tests.
 
 The autotools build (`./bootstrap && ./configure && make`) is still present and
 still works. It is kept as a cross-check while the code base is incrementally

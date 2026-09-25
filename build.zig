@@ -366,6 +366,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/usb/usb.c",
         .implementation = "src/zig/intf/usb.zig",
     },
+    .{
+        .name = "ipmishell",
+        .replaces = "src/ipmishell.c",
+        .implementation = "src/zig/frontend/ipmishell.zig",
+    },
 };
 
 /// Root of the Zig source tree.
@@ -559,7 +564,7 @@ pub fn build(b: *std.Build) void {
     const ipmishell = b.option(
         bool,
         "ipmishell",
-        "Enable the readline-based IPMI shell; requires libreadline [default=true]",
+        "Enable the interactive IPMI shell [default=true]",
     ) orelse true;
     const readline_libs_opt = b.option(
         []const u8,
@@ -636,10 +641,10 @@ pub fn build(b: *std.Build) void {
         enabled[lanplus_index] = false;
     }
 
-    // configure.ac errors out when --enable-ipmishell is requested without
-    // readline. Do the same instead of silently dropping the `shell` command,
-    // which would make the binary diverge from the autotools baseline.
-    const readline_libs: []const []const u8 = if (!ipmishell)
+    // Keep the readline dependency only while the C shell is being compiled.
+    // The Zig editor uses termios/poll and needs no readline headers or library.
+    const readline_libs: []const []const u8 = if (!ipmishell or
+        replacedByZig("src/ipmishell.c", zig_selection))
         &.{}
     else
         (if (readline_libs_opt) |list| nonEmpty(splitList(b, list)) else detectReadline(b)) orelse {
@@ -747,7 +752,8 @@ pub fn build(b: *std.Build) void {
         .IPMI_INTF_USB = flag(enabled[pluginIndex("usb")]),
         .ENABLE_INTF_OPEN_DUAL_BRIDGE = flag(false),
 
-        // Misc feature switches
+        // Misc feature switches. src/ipmitool.c uses HAVE_READLINE to expose
+        // "shell" in the command table, including with the Zig line editor.
         .ENABLE_ALL_OPTIONS = flag(all_options),
         .ENABLE_FILE_SECURITY = flag(file_security),
         .HAVE_READLINE = flag(ipmishell),
@@ -833,8 +839,12 @@ pub fn build(b: *std.Build) void {
     // System libraries are attached to the executables rather than to the
     // static archive: a `.a` cannot usefully carry shared objects.
     var system_libs: std.ArrayList([]const u8) = .empty;
+    var swapped_system_libs: std.ArrayList([]const u8) = .empty;
     // lib/Makefile.am: libipmitool_la_LIBADD = -lm
-    if (!is_windows) system_libs.append(b.allocator, "m") catch @panic("OOM");
+    if (!is_windows) {
+        system_libs.append(b.allocator, "m") catch @panic("OOM");
+        swapped_system_libs.append(b.allocator, "m") catch @panic("OOM");
+    }
     if (ipmishell) {
         for (readline_libs) |lib| system_libs.append(b.allocator, lib) catch @panic("OOM");
     }
@@ -843,15 +853,17 @@ pub fn build(b: *std.Build) void {
         for (plugin.system_libs) |lib| {
             if (std.mem.eql(u8, lib, "crypto")) continue;
             system_libs.append(b.allocator, lib) catch @panic("OOM");
+            swapped_system_libs.append(b.allocator, lib) catch @panic("OOM");
         }
     }
     const base_libs = system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+    const swapped_base_libs = swapped_system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
 
     // `-lcrypto` is added last and only if something still calls into it, so a
     // build with the crypto ports selected links no OpenSSL at all.
     const libs = withLibcrypto(b, base_libs, openssl, internal_md5, zig_selection);
     // The swapped binary the golden suite builds has every module selected.
-    const swapped_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &all_selected);
+    const swapped_libs = withLibcrypto(b, swapped_base_libs, openssl, internal_md5, &all_selected);
 
     // -- executables ---------------------------------------------------------
 
@@ -1213,6 +1225,17 @@ pub fn build(b: *std.Build) void {
     const ekanalyzer_step = b.step("test-ekanalyzer", "Run offline FRU/PICMG bounds tests");
     ekanalyzer_step.dependOn(&ekanalyzer_tests.step);
     test_step.dependOn(ekanalyzer_step);
+
+    if (replacedByZig("src/ipmishell.c", zig_selection)) {
+        const shell_pty = b.addSystemCommand(&.{
+            "python3",
+            b.pathFromRoot("tests/shell/pty.py"),
+        });
+        shell_pty.addArtifactArg(ipmitool);
+        const shell_test = b.step("test-shell", "Run native shell PTY and CLI tests");
+        shell_test.dependOn(&shell_pty.step);
+        test_step.dependOn(&shell_pty.step);
+    }
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.

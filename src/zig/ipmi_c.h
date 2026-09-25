@@ -137,6 +137,13 @@ extern int ipmi_set_dynamic_oem_lanp(void *priv, const struct ipmi_lanp *param,
 extern int ipmi_set_lanp(void *priv, int param_selector, const void *data);
 extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
 
+/* src/ipmitool.c declares these locally; use their original signatures for
+ * compile-time ABI checking of the optional Zig shell replacement. */
+int ipmi_shell_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_exec_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_set_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_echo_main(struct ipmi_intf *intf, int argc, char **argv);
+
 /*
  * Functions the C tree exports but no header declares.
  *
