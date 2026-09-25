@@ -57,6 +57,10 @@ IPMITOOL_ORACLE=/path/to/oracle/ipmitool ./tests/run.sh
 ./tests/run.sh --binary /path/to/oracle/ipmitool \
                --candidate ./zig-out/bin/ipmitool
 
+# SOL configuration, payload access, guarded writes, and command errors:
+./tests/run.sh --binary /path/to/C/ipmitool \
+               --candidate ./zig-out/bin/ipmitool --filter sol_
+
 # What is covered?
 ./tests/run.sh --coverage
 ```

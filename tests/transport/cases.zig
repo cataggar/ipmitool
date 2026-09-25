@@ -38,6 +38,8 @@ pub const Case = struct {
     /// Arguments after argv[0].
     args: []const []const u8,
     bmc: Bmc.Personality = .{},
+    /// Drive standard input through a pseudo-terminal after activation.
+    pty_input: ?[]const u8 = null,
     /// Wall clock budget.  Retry cases need room for the tool's own timeouts.
     timeout_ms: i64 = 30_000,
 
@@ -492,6 +494,146 @@ pub const all: []const Case = &.{
     },
 
     // -- RMCP+ (lanplus) ----------------------------------------------------
+
+    .{
+        .name = "lanplus/sol-deactivate",
+        .desc = "SOL Deactivate Payload request with a non-default instance",
+        .args = &.{
+            "-I",  "lanplus",    "-H",         "127.0.0.1", "-p", "${port}",
+            "-U",  user,         "-P",         pass,        "-C", "1",
+            "sol", "deactivate", "instance=9",
+        },
+        .bmc = .{ .username = user, .password = pass, .sol_enabled = true },
+    },
+    .{
+        .name = "lanplus/sol-activate-eof",
+        .desc = "SOL activation and cleanup when stdin closes (non-PTY path)",
+        .args = &.{
+            "-I",  "lanplus",  "-H",          "127.0.0.1",  "-p", "${port}",
+            "-U",  user,       "-P",          pass,         "-C", "1",
+            "sol", "activate", "nokeepalive", "instance=3",
+        },
+        .bmc = .{ .username = user, .password = pass, .sol_enabled = true },
+    },
+    .{
+        .name = "lanplus/sol-pty-escape",
+        .desc = "PTY input: serial data, help, break, literal escape and disconnect",
+        .args = &.{
+            "-I",  "lanplus",  "-H",          "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P",          pass,        "-C", "1",
+            "sol", "activate", "nokeepalive",
+        },
+        .bmc = .{ .username = user, .password = pass, .sol_enabled = true },
+        .pty_input = "hello\r~?\r~B\r~~\r~.\r",
+    },
+    .{
+        .name = "lanplus/sol-pty-custom-escape",
+        .desc = "a caller-selected escape character controls help and disconnect",
+        .args = &.{
+            "-I", "lanplus", "-H",  "127.0.0.1", "-p",          "${port}",
+            "-U", user,      "-P",  pass,        "-C",          "1",
+            "-e", "^",       "sol", "activate",  "nokeepalive",
+        },
+        .bmc = .{ .username = user, .password = pass, .sol_enabled = true },
+        .pty_input = "line\r^?^.\r",
+    },
+    .{
+        .name = "lanplus/sol-pty-bmc-data",
+        .desc = "BMC SOL data with an embedded NUL and ACK through the PTY",
+        .args = &.{
+            "-I",  "lanplus",  "-H",          "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P",          pass,        "-C", "1",
+            "sol", "activate", "nokeepalive",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .sol_enabled = true,
+            .sol_reply_data = &.{ 'R', 'e', 'a', 'd', 'y', 0, '\r', '\n' },
+        },
+        .pty_input = "ping\r\x1e~.\r",
+    },
+    .{
+        .name = "lanplus/sol-pty-cipher3",
+        .desc = "encrypted/authenticated SOL serial data, ACK and disconnect",
+        .args = &.{
+            "-I",  "lanplus",  "-H",          "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P",          pass,        "-C", "3",
+            "sol", "activate", "nokeepalive",
+        },
+        .bmc = .{ .username = user, .password = pass, .sol_enabled = true },
+        .pty_input = "encrypted\r~.\r",
+    },
+    .{
+        .name = "lanplus/sol-pty-timeout",
+        .desc = "lost SOL ACKs trigger send retries and close without deactivation",
+        .args = &.{
+            "-I",          "lanplus", "-H", "127.0.0.1", "-p",  "${port}",
+            "-U",          user,      "-P", pass,        "-C",  "1",
+            "-N",          "1",       "-R", "2",         "sol", "activate",
+            "nokeepalive",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .sol_enabled = true,
+            .sol_no_ack = true,
+        },
+        .pty_input = "ping\r~.\r",
+        .timeout_ms = 25_000,
+    },
+    .{
+        .name = "lanplus/sol-looptest",
+        .desc = "repeat activation/deactivation twice without waiting",
+        .args = &.{
+            "-I",  "lanplus",  "-H", "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P", pass,        "-C", "1",
+            "sol", "looptest", "2",  "0",         "7",
+        },
+        .bmc = .{ .username = user, .password = pass, .sol_enabled = true },
+    },
+    .{
+        .name = "lanplus/sol-activate-disabled",
+        .desc = "SOL payload activation completion code 0x81 is fatal",
+        .args = &.{
+            "-I",  "lanplus",  "-H", "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P", pass,        "-C", "1",
+            "sol", "activate",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x06, .cmd = 0x48, .ccode = 0x81 }},
+        },
+    },
+    .{
+        .name = "lanplus/sol-activate-short",
+        .desc = "SOL activation rejects a success response with no payload",
+        .args = &.{
+            "-I",  "lanplus",  "-H", "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P", pass,        "-C", "1",
+            "sol", "activate",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x06, .cmd = 0x48 }},
+        },
+    },
+    .{
+        .name = "lanplus/sol-activate-port",
+        .desc = "SOL activation rejects a different UDP port",
+        .args = &.{
+            "-I",  "lanplus",  "-H", "127.0.0.1", "-p", "${port}",
+            "-U",  user,       "-P", pass,        "-C", "1",
+            "sol", "activate",
+        },
+        .bmc = .{
+            .username = user,
+            .password = pass,
+            .extra = &.{.{ .netfn = 0x06, .cmd = 0x48, .data = &.{ 0, 0, 0, 0, 64, 0, 64, 0, 0x41, 0, 0, 0 } }},
+        },
+    },
 
     .{
         .name = "lanplus/cipher1-mc-info",

@@ -1,0 +1,16 @@
+#!golden 1
+#!case sol_set_busy
+#!section exit
+1
+#!section stdout
+#!section stderr
+Error setting SOL parameter 'set-in-progress': Attempt to set set-in-progress when not in set-complete state
+Error: set of parameter "enabled" failed
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x21 target_cmd=0x00 data=0e 00 01
+< rule=start_is_busy ccode=0x81 len=0 data=
+bye

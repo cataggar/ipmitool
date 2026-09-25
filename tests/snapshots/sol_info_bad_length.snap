@@ -1,0 +1,52 @@
+#!golden 1
+#!case sol_info_bad_length
+#!section exit
+0
+#!section stdout
+Set in progress                 : set-complete
+Enabled                         : false
+Force Encryption                : false
+Force Authentication            : false
+Privilege Level                 : Unknown (0x00)
+Character Accumulate Level (ms) : 0
+Character Send Threshold        : 0
+Retry Count                     : 0
+Retry Interval (ms)             : 0
+Volatile Bit Rate (kbps)        : IPMI-Over-Serial-Setting
+Non-Volatile Bit Rate (kbps)    : IPMI-Over-Serial-Setting
+Payload Channel                 : 0 (0x00)
+Payload Port                    : 0
+#!section stderr
+Error: Unexpected data length (1) received for SOL parameter 'Set In Progress (0)'
+Error: Unexpected data length (1) received for SOL parameter 'Enable (1)'
+Error: Unexpected data length (1) received for SOL parameter 'Authentication (2)'
+Error: Unexpected data length (1) received for SOL parameter 'Character Interval (3)'
+Error: Unexpected data length (1) received for SOL parameter 'Retry (4)'
+Error: Unexpected data length (1) received for SOL parameter 'Nonvolatile Bitrate (5)'
+Error: Unexpected data length (1) received for SOL parameter 'Volatile Bitrate (6)'
+Error: Unexpected data length (1) received for SOL parameter 'Payload Channel (7)'
+Error: Unexpected data length (1) received for SOL parameter 'Payload Port (8)'
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 00 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 01 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 02 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 03 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 04 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 05 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 06 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 07 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 08 00 00
+< rule=short_sol_parameters ccode=0x00 len=1 data=11
+bye

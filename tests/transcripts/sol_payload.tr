@@ -1,0 +1,10 @@
+default_ccode 0xc1
+respond set_payload_access
+  netfn 0x06
+  cmd 0x4c
+end
+respond get_payload_access
+  netfn 0x06
+  cmd 0x4d
+  data 02 00 00 00
+end

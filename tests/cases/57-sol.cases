@@ -1,0 +1,202 @@
+# C oracle cases recorded before replacing lib/ipmi_sol.c.  Every snapshot
+# pins stdout/stderr/status AND all requests, including guarded writes.
+
+[sol_help]
+args: -I dummy sol help
+covers: sol
+
+[sol_info]
+args: -I dummy sol info
+transcript: sol_config.tr
+covers: sol
+
+[sol_info_csv]
+args: -c -I dummy sol info
+transcript: sol_config.tr
+covers: sol
+
+[sol_info_unsupported]
+args: -I dummy sol info
+transcript: sol_unsupported.tr
+covers: sol
+
+[sol_info_bad_length]
+args: -I dummy sol info
+transcript: sol_bad_length.tr
+covers: sol
+
+[sol_info_error]
+args: -I dummy sol info
+covers: sol
+
+[sol_info_bad_channel]
+args: -I dummy sol info 12
+covers: sol
+
+[sol_info_bad_arity]
+args: -I dummy sol info 1 extra
+covers: sol
+
+[sol_payload_enable]
+args: -I dummy sol payload enable 1 63
+transcript: sol_payload.tr
+covers: sol
+
+[sol_payload_disable]
+args: -I dummy sol payload disable
+transcript: sol_payload.tr
+covers: sol
+
+[sol_payload_status]
+args: -I dummy sol payload status 4 2
+transcript: sol_payload.tr
+covers: sol
+
+[sol_payload_short]
+args: -I dummy sol payload status
+transcript: sol_payload_bad.tr
+covers: sol
+
+[sol_payload_error]
+args: -I dummy sol payload disable
+covers: sol
+
+[sol_payload_bad_channel]
+args: -I dummy sol payload status 12
+covers: sol
+
+[sol_payload_bad_user]
+args: -I dummy sol payload enable 1 64
+covers: sol
+
+[sol_payload_unknown]
+args: -I dummy sol payload unknown
+covers: sol
+
+[sol_set_enabled]
+args: -I dummy sol set enabled true
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_noguard]
+args: -I dummy sol set enabled false noguard
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_authentication]
+args: -I dummy sol set force-authentication false
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_encryption]
+args: -I dummy sol set force-encryption true
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_privilege]
+args: -I dummy sol set privilege-level operator
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_interval]
+args: -I dummy sol set character-accumulate-level 255
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_threshold]
+args: -I dummy sol set character-send-threshold 0
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_retry_count]
+args: -I dummy sol set retry-count 7
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_retry_interval]
+args: -I dummy sol set retry-interval 255
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_bitrate]
+args: -I dummy sol set non-volatile-bit-rate 115.2
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_volatile]
+args: -I dummy sol set volatile-bit-rate serial
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_in_progress]
+args: -I dummy sol set set-in-progress commit-write
+transcript: sol_config.tr
+covers: sol
+
+[sol_set_bad_value]
+args: -I dummy sol set retry-count 8
+covers: sol
+
+[sol_set_unknown]
+args: -I dummy sol set payload-port 623
+covers: sol
+
+[sol_set_error]
+args: -I dummy sol set enabled true
+covers: sol
+
+[sol_set_busy]
+args: -I dummy sol set enabled true
+transcript: sol_set_start_fail.tr
+covers: sol
+
+[sol_set_read_only]
+args: -I dummy sol set enabled true
+transcript: sol_set_write_fail.tr
+covers: sol
+
+[sol_set_commit_unsupported]
+args: -I dummy sol set enabled true
+transcript: sol_set_commit_fail.tr
+covers: sol
+
+[sol_set_invalid_interval]
+args: -I dummy sol set character-accumulate-level 0
+covers: sol
+
+[sol_set_invalid_bitrate]
+args: -I dummy sol set volatile-bit-rate 250
+covers: sol
+
+[sol_set_invalid_privilege]
+args: -I dummy sol set privilege-level maintainer
+covers: sol
+
+[sol_deactivate]
+args: -I dummy sol deactivate instance=15
+transcript: sol_deactivate.tr
+covers: sol
+
+[sol_deactivate_ccode]
+args: -I dummy sol deactivate
+covers: sol
+
+[sol_deactivate_invalid]
+args: -I dummy sol deactivate instance=0
+covers: sol
+
+[sol_activate_bad_intf]
+args: -I dummy sol activate
+covers: sol
+
+[sol_activate_bad_arg]
+args: -I dummy sol activate unknown
+covers: sol
+
+[sol_looptest_bad_intf]
+args: -I dummy sol looptest 1 0 1
+covers: sol
+
+[sol_unknown]
+args: -I dummy sol unknown
+covers: sol

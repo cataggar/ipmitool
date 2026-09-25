@@ -1,0 +1,31 @@
+#!golden 1
+#!case sol_info_csv
+#!section exit
+0
+#!section stdout
+commit-write,true,true,true,ADMINISTRATOR,65,23,3,250,115.2,19.2,6,623
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 00 00 00
+< rule=get_set_in_progress ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 01 00 00
+< rule=get_enabled ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 02 00 00
+< rule=get_auth ccode=0x00 len=2 data=11 c4
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 03 00 00
+< rule=get_intervals ccode=0x00 len=3 data=11 0d 17
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 04 00 00
+< rule=get_retry ccode=0x00 len=3 data=11 03 19
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 05 00 00
+< rule=get_nonvolatile_rate ccode=0x00 len=2 data=11 07
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 06 00 00
+< rule=get_volatile_rate ccode=0x00 len=2 data=11 0a
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 07 00 00
+< rule=get_payload_channel ccode=0x00 len=2 data=11 06
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 08 00 00
+< rule=get_payload_port ccode=0x00 len=3 data=11 6f 02
+bye

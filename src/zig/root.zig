@@ -73,6 +73,7 @@ pub const util = struct {
 test {
     _ = @import("cmd/channel.zig");
     _ = @import("cmd/lanp.zig");
+    _ = @import("cmd/sol.zig");
     _ = @import("cmd/vita.zig");
     _ = @import("cmd/lanp6.zig");
     std.testing.refAllDecls(@This());

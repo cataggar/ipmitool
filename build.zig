@@ -267,6 +267,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/kontronoem.zig",
     },
     .{
+        .name = "sol",
+        .replaces = "lib/ipmi_sol.c",
+        .implementation = "src/zig/cmd/sol.zig",
+    },
+    .{
         .name = "isol",
         .replaces = "lib/ipmi_isol.c",
         .implementation = "src/zig/cmd/isol.zig",

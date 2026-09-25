@@ -1,0 +1,17 @@
+default_ccode 0xc1
+respond start
+  netfn 0x0c
+  cmd 0x21
+  match 0e 00 01
+end
+respond read_only
+  netfn 0x0c
+  cmd 0x21
+  match 0e 01
+  ccode 0x82
+end
+respond cleanup
+  netfn 0x0c
+  cmd 0x21
+  match 0e 00 00
+end

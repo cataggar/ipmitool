@@ -1,0 +1,69 @@
+default_ccode 0xc1
+
+respond get_set_in_progress
+  netfn 0x0c
+  cmd 0x22
+  match 0e 00
+  data 11 02
+end
+
+respond get_enabled
+  netfn 0x0c
+  cmd 0x22
+  match 0e 01
+  data 11 01
+end
+
+respond get_auth
+  netfn 0x0c
+  cmd 0x22
+  match 0e 02
+  data 11 c4
+end
+
+respond get_intervals
+  netfn 0x0c
+  cmd 0x22
+  match 0e 03
+  data 11 0d 17
+end
+
+respond get_retry
+  netfn 0x0c
+  cmd 0x22
+  match 0e 04
+  data 11 03 19
+end
+
+respond get_nonvolatile_rate
+  netfn 0x0c
+  cmd 0x22
+  match 0e 05
+  data 11 07
+end
+
+respond get_volatile_rate
+  netfn 0x0c
+  cmd 0x22
+  match 0e 06
+  data 11 0a
+end
+
+respond get_payload_channel
+  netfn 0x0c
+  cmd 0x22
+  match 0e 07
+  data 11 06
+end
+
+respond get_payload_port
+  netfn 0x0c
+  cmd 0x22
+  match 0e 08
+  data 11 6f 02
+end
+
+respond set_config
+  netfn 0x0c
+  cmd 0x21
+end
