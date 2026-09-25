@@ -1092,6 +1092,27 @@ pub fn build(b: *std.Build) void {
 
     const log_step = b.step("test-log", "Check native Zig logging against the C oracle and C ABI");
     const log_compile_step = b.step("test-log-compile", "Compile both logging ABI fixtures without executing them");
+    const frontend_log_step = b.step("test-log-frontends", "Check the frontend logging ABI with C and Zig logger state");
+    const log_prefix =
+        "lazy 3\n" ++
+        "7: 0x002a left      +3 %\n";
+    const log_tail =
+        "ABI 11\n" ++
+        "errno native: No such file or directory\n" ++
+        "ABI errno 5: Permission denied\n" ++
+        ": Invalid or incomplete multibyte or wide character\n" ++
+        ("x" ** 1023) ++ "\n" ++
+        "openlog:parity-daemon\n" ++
+        "syslog:6:daemon yes  -2\n" ++
+        "syslog:5:ABI daemon 12\n" ++
+        "syslog:3:daemon error: No such file or directory\n" ++
+        "closelog\n" ++
+        "reset\n";
+    const log_expected = log_prefix ++
+        "  Allocating     42 entries\n" ++
+        "  [    42]       -3 | Acme\n" ++
+        "  42\t0x2a\tAcme\n" ++ log_tail;
+    const frontend_log_expected = log_prefix ++ log_tail;
     inline for (.{ false, true }) |zig_log| {
         const log_options = b.addOptions();
         log_options.addOption([]const []const u8, "zig_modules", if (zig_log) &.{"log"} else &.{});
@@ -1130,27 +1151,64 @@ pub fn build(b: *std.Build) void {
         const log_run = b.addRunArtifact(log_exe);
         log_run.setEnvironmentVariable("LC_ALL", "C");
         log_run.expectStdOutEqual("");
-        log_run.expectStdErrEqual(
-            "lazy 3\n" ++
-                "7: 0x002a left      +3 %\n" ++
-                "  Allocating     42 entries\n" ++
-                "  [    42]       -3 | Acme\n" ++
-                "  42\t0x2a\tAcme\n" ++
-                "ABI 11\n" ++
-                "errno native: No such file or directory\n" ++
-                "ABI errno 5: Permission denied\n" ++
-                ": Invalid or incomplete multibyte or wide character\n" ++
-                ("x" ** 1023) ++ "\n" ++
-                "openlog:parity-daemon\n" ++
-                "syslog:6:daemon yes  -2\n" ++
-                "syslog:5:ABI daemon 12\n" ++
-                "syslog:3:daemon error: No such file or directory\n" ++
-                "closelog\n" ++
-                "reset\n",
-        );
+        log_run.expectStdErrEqual(log_expected);
         log_step.dependOn(&log_run.step);
+
+        const frontend_mod = b.createModule(.{
+            .root_source_file = b.path("tests/frontend_logging.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        frontend_mod.addImport("ipmi_c", bridge_mod);
+        frontend_mod.addImport("build_options", log_options_mod);
+        const frontend_logger_mod = b.createModule(.{
+            .root_source_file = b.path("src/zig/frontend/logging.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        frontend_logger_mod.addImport("ipmi_c", bridge_mod);
+        frontend_logger_mod.addImport("build_options", log_options_mod);
+        frontend_mod.addImport("frontend_log", frontend_logger_mod);
+        configure(b, frontend_mod, config_h, default_intf);
+        frontend_mod.addCSourceFiles(.{
+            .root = b.path("."),
+            .files = if (zig_log)
+                &.{ "src/zig/util/log_varargs.c", "tests/logging_syslog.c" }
+            else
+                &.{ "lib/log.c", "tests/logging_syslog.c" },
+            .flags = flags,
+        });
+        if (zig_log) {
+            const exports_mod = b.createModule(.{
+                .root_source_file = b.path(zig_root ++ "/exports.zig"),
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+            });
+            exports_mod.addImport("ipmi_c", bridge_mod);
+            exports_mod.addImport("build_options", log_options_mod);
+            const exports_lib = b.addLibrary(.{
+                .name = "frontend_log_exports",
+                .linkage = .static,
+                .root_module = exports_mod,
+            });
+            frontend_mod.linkLibrary(exports_lib);
+        }
+        const frontend_exe = b.addExecutable(.{
+            .name = if (zig_log) "frontend-logging-zig" else "frontend-logging-c",
+            .root_module = frontend_mod,
+        });
+        log_compile_step.dependOn(&frontend_exe.step);
+        const frontend_run = b.addRunArtifact(frontend_exe);
+        frontend_run.setEnvironmentVariable("LC_ALL", "C");
+        frontend_run.expectStdOutEqual("");
+        frontend_run.expectStdErrEqual(frontend_log_expected);
+        frontend_log_step.dependOn(&frontend_run.step);
     }
     test_step.dependOn(log_step);
+    test_step.dependOn(frontend_log_step);
 
     const spd_unit = b.addTest(.{
         .root_module = abi_mod,
@@ -1731,6 +1789,28 @@ pub fn build(b: *std.Build) void {
         run.addFileArg(candidate.getEmittedBin());
         run.addFileArg(oracle.getEmittedBin());
         cutover_step.dependOn(&run.step);
+
+        const shell_and_log: [zig_modules.len]bool = blk: {
+            var selected = shell_only;
+            selected[moduleIndex("log")] = true;
+            break :blk selected;
+        };
+        const shell_log_oracle = addSelectedTool(b, cutover_options, &shell_only, "ipmitool-shell-log-c");
+        const shell_log_candidate = addSelectedTool(b, cutover_options, &shell_and_log, "ipmitool-shell-log-zig");
+        const shell_log_step = b.step("test-shell-log", "Compare C and Zig logger state through the selected shell");
+        shell_log_step.dependOn(frontend_log_step);
+        const shell_log_compare = addGolden(b, golden_exe, shell_log_oracle, b.pathFromRoot(".shell-log-golden"), false, false);
+        shell_log_compare.addArg("--candidate");
+        shell_log_compare.addFileArg(shell_log_candidate.getEmittedBin());
+        shell_log_step.dependOn(&shell_log_compare.step);
+
+        inline for (.{ true, false }) |zig_logger| {
+            const shell_run = b.addSystemCommand(&.{ "python3", "-B" });
+            shell_run.addFileArg(b.path("tests/shell/pty.py"));
+            shell_run.addFileArg(if (zig_logger) shell_log_candidate.getEmittedBin() else shell_log_oracle.getEmittedBin());
+            shell_run.addFileArg(if (zig_logger) shell_log_oracle.getEmittedBin() else shell_log_candidate.getEmittedBin());
+            shell_log_step.dependOn(&shell_run.step);
+        }
     }
 
     // -- `zig build test-transport` / `gen-transport-fixtures` ---------------

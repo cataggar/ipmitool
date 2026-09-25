@@ -225,6 +225,31 @@ fn lvperror(level: c_int, format: [*:0]const u8, args: VaList) callconv(.c) void
     }
 }
 
+// These nonvariadic exports let separate Zig executable roots log through the
+// state owned by exports.zig, rather than instantiating another logpriv.
+fn frontendEnabled(level: c_int) callconv(.c) c_int {
+    return @intFromBool(enabled(level));
+}
+
+fn frontendMessage(level: c_int, message: [*:0]const u8) callconv(.c) void {
+    if (!enabled(level)) return;
+    if (logpriv.?.daemon) {
+        c.syslog(level, "%s", message);
+    } else {
+        _ = c.fprintf(c.stderr, "%s\n", message);
+    }
+}
+
+fn frontendError(level: c_int, message: [*:0]const u8, errnum: c_int) callconv(.c) void {
+    if (!enabled(level)) return;
+    const reason = c.strerror(errnum);
+    if (logpriv.?.daemon) {
+        c.syslog(level, "%s: %s", message, reason);
+    } else {
+        _ = c.fprintf(c.stderr, "%s: %s\n", message, reason);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // C ABI surface
 //
@@ -260,6 +285,9 @@ pub fn exportSymbols() void {
     @export(&logLevelSetAbi, .{ .name = "log_level_set", .linkage = .strong });
     @export(&lvprintf, .{ .name = "ipmitool_zig_lvprintf", .linkage = .strong });
     @export(&lvperror, .{ .name = "ipmitool_zig_lvperror", .linkage = .strong });
+    @export(&frontendEnabled, .{ .name = "ipmitool_zig_log_enabled", .linkage = .strong });
+    @export(&frontendMessage, .{ .name = "ipmitool_zig_log_message", .linkage = .strong });
+    @export(&frontendError, .{ .name = "ipmitool_zig_log_error", .linkage = .strong });
 }
 
 test "level aliases match log.h" {
