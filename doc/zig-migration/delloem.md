@@ -21,6 +21,8 @@ identifies the already-connected dummy socket as `open` for vFlash fixtures;
 no local IPMI device is opened. The C oracle initializes request fields and
 padding that were previously indeterminate, so its recorded request log is
 stable across processes and platforms.
+The `delloem_` filter runs 122 Dell command cases plus three registry/MC cases
+from the broader suite, 125 cases per binary.
 
 Successful responses preserve C's requests, stdout, stderr, and exit status.
 Nine adversarial cases have both `<case>.snap` (original C) and

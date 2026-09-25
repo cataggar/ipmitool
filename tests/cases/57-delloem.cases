@@ -123,6 +123,11 @@ args: -I dummy delloem lcd set lcdqualifier watt
 transcript: delloem_12g.tr
 covers: delloem
 
+[delloem_lcd_qualifier_btuphr]
+args: -I dummy delloem lcd set lcdqualifier btuphr
+transcript: delloem_12g.tr
+covers: delloem
+
 [delloem_lcd_qualifier_celsius]
 args: -I dummy delloem lcd set lcdqualifier celsius
 transcript: delloem_12g.tr
@@ -285,6 +290,11 @@ args: -I dummy delloem lan set shared with lom1
 transcript: delloem_12g.tr
 covers: delloem
 
+[delloem_lan_set_lom2]
+args: -I dummy delloem lan set shared with lom2
+transcript: delloem_12g.tr
+covers: delloem
+
 [delloem_lan_set_lom4]
 args: -I dummy delloem lan set shared with lom4
 transcript: delloem_12g.tr
@@ -342,6 +352,11 @@ covers: delloem
 
 [delloem_power_clear_cumulative]
 args: -I dummy delloem powermonitor clear cumulativepower
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_clear_bad]
+args: -I dummy delloem powermonitor clear unexpected
 transcript: delloem_12g.tr
 covers: delloem
 
