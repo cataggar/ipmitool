@@ -287,7 +287,10 @@ retains the default shell, LAN+ and crypto features. The selected Zig
 implementations need neither readline nor OpenSSL libraries, but both
 configurations still link musl libc. The fully selected tool omits the
 logging C shim, while selections combining the Zig logger with C modules
-retain it. This is not a libc-free build or a pure-Zig release.
+retain it. The all-selected build rejects any remaining C source for either
+tool, and `test-no-log-varargs` checks the two production archives for C
+objects as well as the C logger ABI. This is not a libc-free build or a
+pure-Zig release.
 
 `src/zig/cli/main.zig` is linked through `exports.zig` into the shared Zig
 archive, unlike the separate `cli/tool.zig` executable root. Its diagnostics

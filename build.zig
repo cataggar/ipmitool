@@ -1022,9 +1022,10 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run the build smoke tests");
 
     if (allSelected(zig_selection) and is_linux) {
-        const no_varargs_step = b.step("test-no-log-varargs", "Check the all-selected archive has no C variadic logger");
+        const no_varargs_step = b.step("test-no-log-varargs", "Check the all-selected archives have no project C objects or C variadic logger");
         const check = b.addSystemCommand(&.{ "python3", "-B", "tests/logging_no_varargs.py" });
         check.addArtifactArg(zig_lib.?);
+        check.addArtifactArg(core);
         no_varargs_step.dependOn(&check.step);
         test_step.dependOn(no_varargs_step);
     }
@@ -2363,6 +2364,10 @@ fn addSources(
     for (set.files) |file| {
         const path = b.fmt("{s}/{s}", .{ set.dir, file });
         if (replacedByZig(path, zig_selection)) continue;
+        if (allSelected(zig_selection)) {
+            std.debug.print("error: all-selected tool still compiles {s}\n", .{path});
+            std.process.exit(1);
+        }
         files.append(b.allocator, file) catch @panic("OOM");
     }
     if (files.items.len == 0) return;
