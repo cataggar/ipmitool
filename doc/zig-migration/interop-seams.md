@@ -258,6 +258,14 @@ registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. The C
 oracle retains its original `malloc`/`free` behavior; registry file I/O and
 error reporting still call libc.
 
+The selected `helper.zig` now scans the six width-two MAC fields in Zig and
+formats the `Unknown (0x...)` fallback with `std.fmt`. Its MAC scanner retains
+`sscanf`'s whitespace, sign, incomplete `0x` prefix, literal-colon, range and
+trailing-text behavior. Unit tests keep libc `sscanf`/`snprintf` as oracles,
+including every two-byte pair in each field and the full 16-bit fallback
+range; the invalid-MAC diagnostic and value fallbacks remain golden-tested.
+General numeric parsers and printf-style formatting paths still use libc.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or
