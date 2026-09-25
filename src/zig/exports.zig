@@ -132,6 +132,9 @@ comptime {
     if (selected("hpmfwupg")) {
         @import("cmd/hpmfwupg.zig").exportSymbols();
     }
+    if (selected("ime")) {
+        @import("cmd/ime.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

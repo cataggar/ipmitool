@@ -1,0 +1,130 @@
+#!golden 1
+#!case ime_info_verbose
+#!section exit
+0
+#!section stdout
+Manufacturer Name          : Intel Corporation
+Product ID                 : 2816 (0x0b00)
+Product Name               : Unknown (0xB00)
+Intel ME Firmware Revision : 12.03.04.456.7
+SPS FW IPMI cmd version    : 2.1
+Current Image Type         : Operational Image 1
+
+Supported Area
+   Operation Code          : Supported
+   PIA                     : Supported
+   SDR                     : Supported
+
+Special Capabilities
+   Rollback                : Supported
+   Recovery                : Supported
+
+Image Status
+   Staging (new)           : Valid
+   Rollback                : Valid
+   Running Image Area      : CODE3
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+ipmi_ime_main()
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Device ID                 : 0
+Device Revision           : 0
+Flags: 1h
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 30
+msg.cmd: a6
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 13
+msg.netfn: 31
+msg.cmd: a6
+msg.seq: 0
+msg.lun: 0
+<<<
+UpdatePrepare command succeed
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 30
+msg.cmd: a7
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 31
+msg.cmd: a7
+msg.seq: 0
+msg.lun: 0
+<<<
+UpdatePrepare command succeed
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=intel_me ccode=0x00 len=15 data=00 00 12 34 51 bf 57 01 00 00 0b 21 45 67 01
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=update_status ccode=0x00 len=13 data=1e 00 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa7 target_cmd=0x00 data=
+< rule=update_capabilities ccode=0x00 len=2 data=0e 03
+bye

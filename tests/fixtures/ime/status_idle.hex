@@ -1,0 +1,3 @@
+# Packed status: image flags, 32-bit little-endian state, four status bytes,
+# four free-area bytes.
+1e 00 00 00 00 11 22 33 44 10 20 30 40

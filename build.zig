@@ -307,6 +307,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/hpmfwupg.zig",
     },
     .{
+        .name = "ime",
+        .replaces = "lib/ipmi_ime.c",
+        .implementation = "src/zig/cmd/ime.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
@@ -1175,6 +1180,17 @@ pub fn build(b: *std.Build) void {
     support_step.dependOn(&b.addRunArtifact(support_c).step);
     support_step.dependOn(&b.addRunArtifact(support_zig).step);
     test_step.dependOn(support_step);
+
+    const ime_test_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/ime_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    ime_test_mod.addImport("ipmi_c", bridge_mod);
+    const ime_tests = b.addTest(.{ .root_module = ime_test_mod });
+    b.step("test-ime", "Run isolated Intel ME firmware update unit tests")
+        .dependOn(&b.addRunArtifact(ime_tests).step);
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.

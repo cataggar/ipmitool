@@ -67,6 +67,7 @@
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_fwum.h>
 #include <ipmitool/ipmi_hpmfwupg.h>
+#include <ipmitool/ipmi_ime.h>
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_isol.h>

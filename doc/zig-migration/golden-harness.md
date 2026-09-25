@@ -27,6 +27,7 @@ log is what catches it.
 * [Writing a byte-level fixture](#writing-a-byte-level-fixture)
 * [Snapshots](#snapshots)
 * [Differential mode](#differential-mode)
+* [Intel ME firmware update parity](#intel-me-firmware-update-parity)
 * [Determinism: what is controlled, what is normalized](#determinism-what-is-controlled-what-is-normalized)
 * [Command coverage check](#command-coverage-check)
 * [How it is wired into `zig build`](#how-it-is-wired-into-zig-build)
@@ -576,6 +577,20 @@ link was uninitialized). The updated snapshots now require a clean rejection
 completion for the two-record file. The empty-file case still intentionally
 clears the repository. A failed Add now stays failed even when a subsequent
 record is accepted.
+
+## Intel ME firmware update parity
+
+`tests/cases/49-ime.cases` records the C `ime` command's `info`, `rollback` and
+`update` paths, including 1-, 22- and 23-byte firmware images. The request
+snapshots capture each Prepare/Open/Write/Close/Register command, sequence
+number, CRC8 checksum and status poll. Intel and generic device IDs, capability
+bits, invalid states, completion errors and short responses are covered
+separately. The C oracle now rejects short IME responses before reading packed
+structures and fails rather than continuing an update on a missing status;
+the Zig port makes the same checks. Empty and missing images send no update
+commands, and the Zig unit test covers the `uint32_t` image-size boundary.
+Run `zig build test-ime` to run that unit test independently of the full
+crypto and transport suites.
 
 ## Determinism: what is controlled, what is normalized
 

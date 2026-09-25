@@ -1,0 +1,3 @@
+@mark id
+@ime/intel_id.hex
+@poke id 14 03

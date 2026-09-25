@@ -1,0 +1,10 @@
+respond intel_me
+  netfn 0x06
+  cmd 0x01
+  data @ime/intel_id.hex
+end
+respond rejected_status
+  netfn 0x30
+  cmd 0xa6
+  ccode 0xc1
+end

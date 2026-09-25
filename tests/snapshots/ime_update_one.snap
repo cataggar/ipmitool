@@ -1,0 +1,38 @@
+#!golden 1
+#!case ime_update_one
+#!section exit
+0
+#!section stdout
+Percent: 100,  Elapsed time 00:00\x0d
+UpdateCompleted, Activate now
+Update Completed in 00:00
+#!section stderr
+Update using file: <WORK>/fw.bin
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=initial_status ccode=0x00 len=13 data=1e 00 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa0 target_cmd=0x00 data=
+< rule=prepare ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=prepared_status ccode=0x00 len=13 data=1e 01 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa1 target_cmd=0x00 data=01 00
+< rule=open_area ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=writing_status ccode=0x00 len=13 data=1e 02 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa2 target_cmd=0x00 data=00 01
+< rule=write_first ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=writing_status ccode=0x00 len=13 data=1e 02 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa3 target_cmd=0x00 data=01 00 00 00 07 00
+< rule=close_area ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=closed_status ccode=0x00 len=13 data=1e 01 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa4 target_cmd=0x00 data=01 00
+< rule=activate ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=completed_status ccode=0x00 len=13 data=1e 03 00 00 00 11 22 33 44 10 20 30 40
+bye

@@ -1,0 +1,15 @@
+respond idle
+  netfn 0x30
+  cmd 0xa6
+  times 1
+  data @ime/status_idle.hex
+end
+respond prepare
+  netfn 0x30
+  cmd 0xa0
+end
+respond wrong_prepared_state
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_progress.hex
+end

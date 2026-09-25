@@ -1,0 +1,15 @@
+respond intel_operational_2
+  netfn 0x06
+  cmd 0x01
+  data @ime/intel_oper2.hex
+end
+respond no_images
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_no_images.hex
+end
+respond no_capabilities
+  netfn 0x30
+  cmd 0xa7
+  data 00 00
+end
