@@ -692,7 +692,7 @@ ipmi_chassis_get_bootparam(struct ipmi_intf * intf,
 			lprintf(LOG_ERR,
 				"Invalid argument '%s' given to"
 				" bootparam %" PRIu8,
-				argv[0], msg_data[1]);
+				argv[0], msg_data[0]);
 			goto out;
 		}
 	}
@@ -1398,6 +1398,18 @@ chassis_set_bootmailbox(struct ipmi_intf *intf, int16_t block, bool use_text,
 		         * CHASSIS_BOOT_MBOX_MAX_BLOCKS)
 		        - CHASSIS_BOOT_MBOX_IANA_SZ);
 		goto out;
+	}
+
+	/* Check all byte arguments before writing any mailbox block. */
+	if (!use_text) {
+		for (int i = 0; i < argc; ++i) {
+			uint8_t byte;
+
+			if (str2uchar(argv[i], &byte)) {
+				lprintf(LOG_ERR, "Bad byte value: %s", argv[i]);
+				goto out;
+			}
+		}
 	}
 
 	/* Indicate that we're touching the boot parameters */

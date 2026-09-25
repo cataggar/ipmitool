@@ -478,7 +478,7 @@ transcript: chassis.tr
 covers: chassis
 
 [chassis_bootparam_bad_selector]
-desc: a non-numeric set selector; the message misreports the parameter number
+desc: a non-numeric set selector; the message names the requested parameter
 args: -I dummy chassis bootparam get 5 xyz
 transcript: chassis.tr
 covers: chassis
@@ -1430,8 +1430,50 @@ transcript: chassis.tr
 covers: chassis
 
 [chassis_bootmbox_set_bad_byte]
-desc: a bad byte value is reported but does not stop the write
+desc: a bad byte is rejected before any mailbox write starts
 args: -I dummy chassis bootmbox set 343 1 zz 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_first]
+desc: an invalid first byte is rejected without starting a mailbox write
+args: -I dummy chassis bootmbox set 343 zz 2 3
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_mid]
+desc: an invalid byte in the middle of block zero prevents all writes
+args: -I dummy chassis bootmbox set 343 1 2 3 4 5 6 zz 8 9 10 11 12 13
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_later_block]
+desc: an invalid byte in the second block prevents the first block write
+args: -I dummy chassis bootmbox set 343 1 2 3 4 5 6 7 8 9 10 11 12 13 14 zz 16
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_byte_range]
+desc: a byte above 255 is rejected before starting a mailbox write
+args: -I dummy chassis bootmbox set 343 0 256
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_byte_bounds]
+desc: minimum and maximum valid byte values are written unchanged
+args: -I dummy chassis bootmbox set 343 0 255
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_block1_full]
+desc: sixteen valid bytes, including 0 and 255, fill an explicit block
+args: -I dummy chassis bootmbox set block 1 343 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 255
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_set_bad_extra_byte]
+desc: even an invalid argument past an explicit block's capacity is rejected
+args: -I dummy chassis bootmbox set block 1 343 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 zz
 transcript: chassis.tr
 covers: chassis
 
