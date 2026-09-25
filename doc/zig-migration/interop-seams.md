@@ -261,6 +261,13 @@ and calling C `lprintf` when it is not. The `cli_transit_hex_channel` golden
 case pins the C stderr formatting for `%#x` addresses and channels. Do not
 import the logger into `cli/tool.zig` without sharing its state first.
 
+The archive-selected `raw`, `channel`, `user` and `event` command ports also
+use `util/log.zig`'s typed logger. When `log` is selected they share its state
+and preserve libc printf formatting with their original argument widths;
+otherwise the wrapper calls C `lprintf`. The default C-oracle fixtures
+`raw_log_ccode_hex` and `chan_log_priv_bad_numeric` pin hexadecimal completion
+codes and `%hhu` privilege bounds without changing existing snapshots.
+
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator

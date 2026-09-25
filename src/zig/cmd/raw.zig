@@ -9,12 +9,11 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **Formatting and parsing stay in libc.**  `printf`, `lprintf`, `printbuf`
-//!   and `sscanf` are called through the `ipmi_c` bridge rather than
-//!   reimplemented, for the same reason `util/helper.zig` does it: `%2.2x`,
-//!   `%02Xh` and what exactly `sscanf("%u")` accepts are observable, and the
-//!   acceptance criterion for this port is that the bytes ipmitool writes -
-//!   and the IPMI request bytes it sends - do not change.
+//! * **Formatting and parsing keep libc behavior.** `printf`, `printbuf` and
+//!   `sscanf` are called through `ipmi_c`; diagnostics use `util/log.zig`'s
+//!   typed logger, backed by libc `snprintf` when selected and C `lprintf`
+//!   otherwise. `%2.2x`, `%02Xh` and what exactly `sscanf("%u")` accepts
+//!   remain observable, as do the IPMI request bytes.
 //! * **`netfn` and `lun` are bit fields.**  `struct ipmi_rq` packs `netfn:6`
 //!   and `lun:2` into one byte, so `raw 0xff ...` reaches the wire as net
 //!   function 0x3f and `-l 7` as LUN 3.  `core/ipmi.zig` mirrors that with
@@ -57,12 +56,12 @@ const chan_kw = "chan=";
 /// Returns 0 when `input_param` parses as a `uint8_t`, -1 otherwise.
 fn isValidParam(input_param: ?[*:0]const u8, uchr_ptr: *u8, label: ?[*:0]const u8) c_int {
     if (input_param == null or label == null) {
-        c.lprintf(log.Level.@"error", "ERROR: NULL pointer passed.");
+        log.print(log.Level.@"error", "ERROR: NULL pointer passed.", .{});
         return -1;
     }
     if (c.str2uchar(input_param, uchr_ptr) == 0) return 0;
 
-    c.lprintf(log.Level.err, "Given %s \"%s\" is invalid.", label, input_param);
+    log.print(log.Level.err, "Given %s \"%s\" is invalid.", .{ label, input_param });
     return -1;
 }
 
@@ -82,18 +81,18 @@ fn masterWriteRead(
     var rqdata: [i2c_master_max_size + 3]u8 = undefined;
 
     if (rsize > i2c_master_max_size) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Master Write-Read: Too many bytes (%d) to read",
-            @as(c_int, rsize),
+            .{@as(c_int, rsize)},
         );
         return null;
     }
     if (wsize > i2c_master_max_size) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Master Write-Read: Too many bytes (%d) to write",
-            @as(c_int, wsize),
+            .{@as(c_int, wsize)},
         );
         return null;
     }
@@ -117,49 +116,51 @@ fn masterWriteRead(
         // Copy in data to write.
         @memcpy(rqdata[3..][0..wsize], wdata.?[0..wsize]);
         req.msg.data_len += wsize;
-        c.lprintf(
+        log.print(
             log.Level.debug,
             "Writing %d bytes to i2cdev %02Xh",
-            @as(c_int, wsize),
-            @as(c_uint, addr),
+            .{ @as(c_int, wsize), @as(c_uint, addr) },
         );
     }
 
     if (rsize > 0) {
-        c.lprintf(
+        log.print(
             log.Level.debug,
             "Reading %d bytes from i2cdev %02Xh",
-            @as(c_int, rsize),
-            @as(c_uint, addr),
+            .{ @as(c_int, rsize), @as(c_uint, addr) },
         );
     }
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "I2C Master Write-Read command failed");
+        log.print(log.Level.err, "I2C Master Write-Read command failed", .{});
         return null;
     };
     if (rsp.ccode != 0) {
         switch (rsp.ccode) {
-            0x81 => c.lprintf(
+            0x81 => log.print(
                 log.Level.err,
                 "I2C Master Write-Read command failed: Lost Arbitration",
+                .{},
             ),
-            0x82 => c.lprintf(
+            0x82 => log.print(
                 log.Level.err,
                 "I2C Master Write-Read command failed: Bus Error",
+                .{},
             ),
-            0x83 => c.lprintf(
+            0x83 => log.print(
                 log.Level.err,
                 "I2C Master Write-Read command failed: NAK on Write",
+                .{},
             ),
-            0x84 => c.lprintf(
+            0x84 => log.print(
                 log.Level.err,
                 "I2C Master Write-Read command failed: Truncated Read",
+                .{},
             ),
-            else => c.lprintf(
+            else => log.print(
                 log.Level.err,
                 "I2C Master Write-Read command failed: %s",
-                c.val2str(rsp.ccode, c.completion_code_vals),
+                .{c.val2str(rsp.ccode, c.completion_code_vals)},
             ),
         }
         return null;
@@ -182,7 +183,7 @@ fn rawspdMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     @memset(spd_data[0..raw_spd_size], 0);
 
     if (argc < 2 or std.mem.eql(u8, std.mem.span(argv[0]), "help")) {
-        c.lprintf(log.Level.notice, "usage: spd <i2cbus> <i2caddr> [channel] [maxread]");
+        log.print(log.Level.notice, "usage: spd <i2cbus> <i2caddr> [channel] [maxread]", .{});
         return 0;
     }
 
@@ -198,10 +199,10 @@ fn rawspdMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     }
 
     if (msize == 0 or msize > i2c_master_max_size) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "SPD maxread must be between 1 and %d bytes",
-            @as(c_int, i2c_master_max_size),
+            .{@as(c_int, i2c_master_max_size)},
         );
         return -1;
     }
@@ -215,17 +216,19 @@ fn rawspdMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         // which is the low byte of the offset on a little endian target.
         const offset: [*]u8 = @ptrCast(&i);
         const rsp = masterWriteRead(intf, i2cbus, i2caddr, offset, 1, chunk) orelse {
-            c.lprintf(log.Level.err, "Unable to perform I2C Master Write-Read");
+            log.print(log.Level.err, "Unable to perform I2C Master Write-Read", .{});
             return -1;
         };
 
         if (rsp.data_len < @as(c_int, chunk)) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "SPD read at offset %d returned %d bytes, expected %d",
-                i,
-                rsp.data_len,
-                @as(c_int, chunk),
+                .{
+                    i,
+                    rsp.data_len,
+                    @as(c_int, chunk),
+                },
             );
             return -1;
         }
@@ -240,18 +243,21 @@ fn rawspdMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
 
 /// `rawi2c_usage()`.
 fn rawi2cUsage() void {
-    c.lprintf(
+    log.print(
         log.Level.notice,
         "usage: i2c [bus=public|# [chan=#] <i2caddr> <read bytes> [write data]",
+        .{},
     );
-    c.lprintf(log.Level.notice, "            bus=public is default");
-    c.lprintf(
+    log.print(log.Level.notice, "            bus=public is default", .{});
+    log.print(
         log.Level.notice,
         "            chan=0 is default, bus= must be specified to use chan=",
+        .{},
     );
-    c.lprintf(
+    log.print(
         log.Level.notice,
         "            i2caddr is an 8-bit I2C address, only even numbers are accepted",
+        .{},
     );
 }
 
@@ -290,10 +296,10 @@ fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         rawi2cUsage();
         return 0;
     } else if (argc - i - 2 > @as(c_int, i2c_master_max_size)) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Raw command input limit (%d bytes) exceeded",
-            @as(c_int, i2c_master_max_size),
+            .{@as(c_int, i2c_master_max_size)},
         );
         return -1;
     }
@@ -304,7 +310,7 @@ fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     i += 1;
 
     if (i2caddr == 0 or (i2caddr & 1) != 0) {
-        c.lprintf(log.Level.err, "Invalid I2C address");
+        log.print(log.Level.err, "Invalid I2C address", .{});
         rawi2cUsage();
         return -1;
     }
@@ -319,17 +325,19 @@ fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         wsize += 1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.info,
         "RAW I2C REQ (i2caddr=%x readbytes=%d writebytes=%d)",
-        @as(c_uint, i2caddr),
-        @as(c_int, rsize),
-        @as(c_int, wsize),
+        .{
+            @as(c_uint, i2caddr),
+            @as(c_int, rsize),
+            @as(c_int, wsize),
+        },
     );
     c.printbuf(&wdata, @as(c_int, wsize), "WRITE DATA");
 
     const rsp = masterWriteRead(intf, bus, i2caddr, &wdata, wsize, rsize) orelse {
-        c.lprintf(log.Level.err, "Unable to perform I2C Master Write-Read");
+        log.print(log.Level.err, "Unable to perform I2C Master Write-Read", .{});
         return -1;
     };
 
@@ -381,9 +389,9 @@ fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
 
 /// `ipmi_raw_help()` - print the `raw` help text.
 fn rawHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "RAW Commands:  raw <netfn> <cmd> [data]");
+    log.print(log.Level.notice, "RAW Commands:  raw <netfn> <cmd> [data]", .{});
     c.print_valstr(c.ipmi_netfn_vals, "Network Function Codes", log.Level.notice);
-    c.lprintf(log.Level.notice, "(can also use raw hex values)");
+    log.print(log.Level.notice, "(can also use raw hex values)", .{});
 }
 
 /// `ipmi_raw_main()` - the `raw` command.
@@ -398,11 +406,11 @@ fn rawMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         rawHelp();
         return 0;
     } else if (argc < 2) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         rawHelp();
         return -1;
     } else if (@as(usize, @intCast(argc)) > data.len) {
-        c.lprintf(log.Level.notice, "Raw command input limit (256 bytes) exceeded");
+        log.print(log.Level.notice, "Raw command input limit (256 bytes) exceeded", .{});
         return -1;
     }
 
@@ -412,7 +420,7 @@ fn rawMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         if (isValidParam(argv[0], &netfn, "netfn") != 0) return -1;
     } else {
         if (netfn_tmp >= std.math.maxInt(u8)) {
-            c.lprintf(log.Level.err, "Given netfn \"%s\" is out of range.", argv[0]);
+            log.print(log.Level.err, "Given netfn \"%s\" is out of range.", .{argv[0]});
             return -1;
         }
         netfn = @truncate(netfn_tmp);
@@ -437,44 +445,50 @@ fn rawMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         req.msg.data_len += 1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.info,
         "RAW REQ (channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x data_len=%d)",
-        @as(c_uint, intf.target_channel & 0x0f),
-        @as(c_uint, req.msg.netfn_lun.netfn),
-        @as(c_uint, req.msg.netfn_lun.lun),
-        @as(c_uint, req.msg.cmd),
-        @as(c_int, req.msg.data_len),
+        .{
+            @as(c_uint, intf.target_channel & 0x0f),
+            @as(c_uint, req.msg.netfn_lun.netfn),
+            @as(c_uint, req.msg.netfn_lun.lun),
+            @as(c_uint, req.msg.cmd),
+            @as(c_int, req.msg.data_len),
+        },
     );
 
     c.printbuf(req.msg.data, @as(c_int, req.msg.data_len), "RAW REQUEST");
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Unable to send RAW command (channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x)",
-            @as(c_uint, intf.target_channel & 0x0f),
-            @as(c_uint, req.msg.netfn_lun.netfn),
-            @as(c_uint, req.msg.netfn_lun.lun),
-            @as(c_uint, req.msg.cmd),
+            .{
+                @as(c_uint, intf.target_channel & 0x0f),
+                @as(c_uint, req.msg.netfn_lun.netfn),
+                @as(c_uint, req.msg.netfn_lun.lun),
+                @as(c_uint, req.msg.cmd),
+            },
         );
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Unable to send RAW command (channel=0x%x netfn=0x%x lun=0x%x cmd=0x%x rsp=0x%x): %s",
-            @as(c_uint, intf.target_channel & 0x0f),
-            @as(c_uint, req.msg.netfn_lun.netfn),
-            @as(c_uint, req.msg.netfn_lun.lun),
-            @as(c_uint, req.msg.cmd),
-            @as(c_uint, rsp.ccode),
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{
+                @as(c_uint, intf.target_channel & 0x0f),
+                @as(c_uint, req.msg.netfn_lun.netfn),
+                @as(c_uint, req.msg.netfn_lun.lun),
+                @as(c_uint, req.msg.cmd),
+                @as(c_uint, rsp.ccode),
+                c.val2str(rsp.ccode, c.completion_code_vals),
+            },
         );
         return -1;
     }
 
-    c.lprintf(log.Level.info, "RAW RSP (%d bytes)", rsp.data_len);
+    log.print(log.Level.info, "RAW RSP (%d bytes)", .{rsp.data_len});
 
     // Print the raw response buffer.
     i = 0;

@@ -107,6 +107,12 @@ args: -I dummy raw 0x06 0x26
 transcript: raw.tr
 covers: raw
 
+[raw_log_ccode_hex]
+desc: C-oracle RAW failure prints hexadecimal command and unknown completion code
+args: -I dummy raw 0x06 0x2b
+transcript: raw_log_hex.tr
+covers: raw
+
 [raw_verbose]
 desc: -v adds the RAW REQ/RAW RSP notes and the printbuf() dump on stderr
 args: -I dummy -v raw 0x06 0x22 0x0a 0x0b 0x0c 0x0d
