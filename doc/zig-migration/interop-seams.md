@@ -34,6 +34,16 @@ Supporting files at the root of `src/zig/`:
 are build-time scaffolding, never linked into the product, and they are deleted
 together with the last C translation unit.
 
+### SDR safety across the #53 port
+
+The #53 Zig SDR port originally preceded the issue #42 checks in
+`lib/ipmi_sdr.c`. Both `src/zig/cmd/sdr.zig` and the C reader now reject short
+Get SDR header/body replies and validate fixed fields and declared name lengths
+before returning or caching a record. The checks allow short but complete
+names, including a 16-byte name with no in-record NUL. When changing either
+reader, rerun the `sen_` golden cases with `-Dzig-modules=sdr,sensor`; C-only
+validation cannot protect a swapped SDR build.
+
 ## Naming conventions
 
 Same as the sibling project `azure-sdk-for-zig`:

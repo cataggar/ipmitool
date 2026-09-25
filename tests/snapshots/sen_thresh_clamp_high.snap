@@ -39,8 +39,6 @@ Setting sensor "DiscU" Upper Non-Recoverable threshold to 300.000
 < rule=get_sdr_9abc ccode=0x00 len=25 data=f0 de 2b 31 07 28 50 0a ff 00 e1 d2 c3 14 25 36 04 06 00 00 00 c5 44 69 73
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a bc 9a 33 02
 < rule=get_sdr_9abc ccode=0x00 len=4 data=f0 de 63 55
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=33
-< rule=reading_33 ccode=0x00 len=4 data=4c c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=33
 < rule=thresh_33 ccode=0x00 len=7 data=3f 36 25 14 c3 d2 e1
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=33 20 00 00 00 00 00 ff

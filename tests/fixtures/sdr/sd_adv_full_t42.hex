@@ -1,6 +1,5 @@
-# Full Sensor Record truncated to 42 bytes: the record ends one
-# byte before id_code, so the C reads the buffer's NUL terminator
-# as the ID string type/length and prints no name at all.
+# Full Sensor Record truncated to 42 bytes: it ends before id_code,
+# so the record is rejected before its fixed fields can be read.
 
 01 21                        # Record ID = 0x2101
 51                           # SDR version 0x51

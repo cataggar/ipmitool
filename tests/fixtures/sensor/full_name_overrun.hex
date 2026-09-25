@@ -1,0 +1,6 @@
+# The fixed fields and five name bytes are present, but id_code claims six.
+@mark rec
+@sensor/full_analog.hex
+@poke rec 0 0x02
+@poke rec 1 0x10
+@poke rec 47 0xc6

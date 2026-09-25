@@ -41,8 +41,6 @@ Setting sensor "Clx18" Upper Critical threshold to 81.000
 < rule=get_sdr_56c7 ccode=0x00 len=25 data=d9 78 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a c7 56 33 02
 < rule=get_sdr_56c7 ccode=0x00 len=4 data=d9 78 31 38
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=c3
-< rule=reading_c3 ccode=0x00 len=4 data=27 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=c3
 < rule=thresh_c3 ccode=0x00 len=7 data=18 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=c3 10 00 00 00 00 51 00

@@ -6,7 +6,7 @@
 06 00        # [1:2]  Record ID = 0x0006
 51           # [3]    SDR version 1.5
 03           # [4]    Record type 03h = Event-Only Record
-14           # [5]    Record length = 20 bytes follow
+10           # [5]    Record length = 16 bytes follow
 
 20           # [6]    Sensor owner ID
 00           # [7]    Owner LUN 0, channel 0

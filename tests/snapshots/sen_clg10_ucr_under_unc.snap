@@ -89,8 +89,6 @@ Setting sensor "Clg10" Upper Critical threshold to 75.000
 < rule=get_sdr_4d6e ccode=0x00 len=25 data=81 6f 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 67
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 6e 4d 33 02
 < rule=get_sdr_4d6e ccode=0x00 len=4 data=81 6f 31 30
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=79
-< rule=reading_79 ccode=0x00 len=4 data=39 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=79
 < rule=thresh_79 ccode=0x00 len=7 data=10 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=79 10 00 00 00 00 4b 00

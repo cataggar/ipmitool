@@ -57,8 +57,6 @@ Setting sensor "Clx03" Lower Critical threshold to 5.000
 < rule=get_sdr_9aeb ccode=0x00 len=25 data=fd bc 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a eb 9a 33 02
 < rule=get_sdr_9aeb ccode=0x00 len=4 data=fd bc 30 33
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=e5
-< rule=reading_e5 ccode=0x00 len=4 data=2d c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=e5
 < rule=thresh_e5 ccode=0x00 len=7 data=03 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=e5 02 00 05 00 00 00 00

@@ -81,8 +81,6 @@ Setting sensor "Clg20" Upper Non-Recoverable threshold to 75.000
 < rule=get_sdr_2b4c ccode=0x00 len=25 data=6e 4d 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 67
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 4c 2b 33 02
 < rule=get_sdr_2b4c ccode=0x00 len=4 data=6e 4d 32 30
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=88
-< rule=reading_88 ccode=0x00 len=4 data=36 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=88
 < rule=thresh_88 ccode=0x00 len=7 data=20 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=88 20 00 00 00 00 00 4b

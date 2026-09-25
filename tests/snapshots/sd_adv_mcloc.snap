@@ -1,10 +1,25 @@
 #!golden 1
 #!case sd_adv_mcloc
 #!section exit
-0
+1
 #!section stdout
-                 | Static MC @ 24h   | ok
 #!section stderr
+Invalid SDR record length or name for record 0x2101
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2102
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2103
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2104
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2105
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2106
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2107
+ipmitool: ipmi_sdr_get_record() failed
+Invalid SDR record length or name for record 0x2112
+ipmitool: ipmi_sdr_get_record() failed
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
 < rule=default ccode=0xc1 len=0 data=
@@ -17,53 +32,11 @@
 > netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
 < rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 00 00 00 05
-< rule=get_sdr_first ccode=0x00 len=7 data=02 21 01 21 51 01 2a
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 21 05 17
-< rule=get_sdr_2101 ccode=0x00 len=25 data=02 21 20 00 61 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 21 1c 13
-< rule=get_sdr_2101 ccode=0x00 len=21 data=02 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 21 00 05
-< rule=get_sdr_2102 ccode=0x00 len=7 data=03 21 02 21 51 01 2b
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 21 05 17
-< rule=get_sdr_2102 ccode=0x00 len=25 data=03 21 20 00 62 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 21 1c 14
-< rule=get_sdr_2102 ccode=0x00 len=22 data=03 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 21 00 05
-< rule=get_sdr_2103 ccode=0x00 len=7 data=04 21 03 21 51 02 1b
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 21 05 17
-< rule=get_sdr_2103 ccode=0x00 len=25 data=04 21 20 00 63 1d 01 7f 68 04 01 ff 3f ff 3f 3f 3f 00 12 00 00 00 02 02 00
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 21 1c 04
-< rule=get_sdr_2103 ccode=0x00 len=6 data=04 21 00 00 00 c4
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 21 00 05
-< rule=get_sdr_2104 ccode=0x00 len=7 data=05 21 04 21 51 03 0c
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 21 05 0c
-< rule=get_sdr_2104 ccode=0x00 len=14 data=05 21 20 00 64 15 01 09 6f 00 00 00 00 c6
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 21 00 05
-< rule=get_sdr_2105 ccode=0x00 len=7 data=06 21 05 21 51 12 0b
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 21 05 0b
-< rule=get_sdr_2105 ccode=0x00 len=13 data=06 21 24 07 ab bf 00 00 00 07 02 00 c7
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 21 00 05
-< rule=get_sdr_2106 ccode=0x00 len=7 data=07 21 06 21 51 11 0b
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 21 05 0b
-< rule=get_sdr_2106 ccode=0x00 len=13 data=07 21 20 07 93 60 00 10 02 0b 01 00 c7
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 21 00 05
-< rule=get_sdr_2107 ccode=0x00 len=7 data=11 21 07 21 51 10 0b
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 21 05 0b
-< rule=get_sdr_2107 ccode=0x00 len=13 data=11 21 20 42 b3 04 00 08 01 0b 01 00 c7
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 21 00 05
-< rule=get_sdr_2111 ccode=0x00 len=7 data=12 21 11 21 51 01 2b
+< rule=get_sdr_first ccode=0x00 len=7 data=13 21 11 21 51 01 2b
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 21 05 17
-< rule=get_sdr_2111 ccode=0x00 len=25 data=12 21 20 00 71 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+< rule=get_sdr_2111 ccode=0x00 len=25 data=13 21 20 00 71 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 21 1c 14
-< rule=get_sdr_2111 ccode=0x00 len=22 data=12 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 00 05
-< rule=get_sdr_2112 ccode=0x00 len=7 data=13 21 12 21 51 01 2f
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 05 17
-< rule=get_sdr_2112 ccode=0x00 len=25 data=13 21 20 00 72 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 1c 17
-< rule=get_sdr_2112 ccode=0x00 len=25 data=13 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 df 41 62 63
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 33 01
-< rule=get_sdr_2112 ccode=0x00 len=3 data=13 21 64
+< rule=get_sdr_2111 ccode=0x00 len=22 data=13 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 21 00 05
 < rule=get_sdr_2113 ccode=0x00 len=7 data=14 21 13 21 51 01 37
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 21 05 17
@@ -251,7 +224,49 @@
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 47 21 05 03
 < rule=get_sdr_2147 ccode=0x00 len=5 data=48 21 8a 00 00
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 48 21 00 05
-< rule=get_sdr_2148 ccode=0x00 len=7 data=ff ff 48 21 51 c0 02
+< rule=get_sdr_2148 ccode=0x00 len=7 data=01 21 48 21 51 c0 02
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 48 21 05 02
-< rule=get_sdr_2148 ccode=0x00 len=4 data=ff ff 02 00
+< rule=get_sdr_2148 ccode=0x00 len=4 data=01 21 02 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 21 00 05
+< rule=get_sdr_2101 ccode=0x00 len=7 data=02 21 01 21 51 01 2a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 21 05 17
+< rule=get_sdr_2101 ccode=0x00 len=25 data=02 21 20 00 61 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 21 1c 13
+< rule=get_sdr_2101 ccode=0x00 len=21 data=02 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 21 00 05
+< rule=get_sdr_2102 ccode=0x00 len=7 data=03 21 02 21 51 01 2b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 21 05 17
+< rule=get_sdr_2102 ccode=0x00 len=25 data=03 21 20 00 62 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 21 1c 14
+< rule=get_sdr_2102 ccode=0x00 len=22 data=03 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 21 00 05
+< rule=get_sdr_2103 ccode=0x00 len=7 data=04 21 03 21 51 02 1b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 21 05 17
+< rule=get_sdr_2103 ccode=0x00 len=25 data=04 21 20 00 63 1d 01 7f 68 04 01 ff 3f ff 3f 3f 3f 00 12 00 00 00 02 02 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 21 1c 04
+< rule=get_sdr_2103 ccode=0x00 len=6 data=04 21 00 00 00 c4
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 21 00 05
+< rule=get_sdr_2104 ccode=0x00 len=7 data=05 21 04 21 51 03 0c
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 21 05 0c
+< rule=get_sdr_2104 ccode=0x00 len=14 data=05 21 20 00 64 15 01 09 6f 00 00 00 00 c6
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 21 00 05
+< rule=get_sdr_2105 ccode=0x00 len=7 data=06 21 05 21 51 12 0b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 21 05 0b
+< rule=get_sdr_2105 ccode=0x00 len=13 data=06 21 24 07 ab bf 00 00 00 07 02 00 c7
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 21 00 05
+< rule=get_sdr_2106 ccode=0x00 len=7 data=07 21 06 21 51 11 0b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 21 05 0b
+< rule=get_sdr_2106 ccode=0x00 len=13 data=07 21 20 07 93 60 00 10 02 0b 01 00 c7
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 21 00 05
+< rule=get_sdr_2107 ccode=0x00 len=7 data=12 21 07 21 51 10 0b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 21 05 0b
+< rule=get_sdr_2107 ccode=0x00 len=13 data=12 21 20 42 b3 04 00 08 01 0b 01 00 c7
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 00 05
+< rule=get_sdr_2112 ccode=0x00 len=7 data=ff ff 12 21 51 01 2f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 05 17
+< rule=get_sdr_2112 ccode=0x00 len=25 data=ff ff 20 00 72 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 1c 17
+< rule=get_sdr_2112 ccode=0x00 len=25 data=ff ff 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 df 41 62 63
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 21 33 01
+< rule=get_sdr_2112 ccode=0x00 len=3 data=ff ff 64
 bye

@@ -1,8 +1,8 @@
 # lib/ipmi_sdr.c - adversarial and edge-case records.
 #
-# Truncated records, ID strings whose declared length disagrees with the data,
-# every ID string type code, out-of-range unit / sensor-type / entity codes,
-# reserved record types and empty OEM records.
+# Rejected truncated records and names whose declared length disagrees with
+# the data; valid records exercise every ID string type code, out-of-range
+# unit / sensor-type / entity codes, reserved record types and empty OEM records.
 
 [sd_adv_list]
 desc: `sdr list all' over the whole adversarial repository
@@ -29,7 +29,7 @@ transcript: sd_adversarial.tr
 covers: sdr
 
 [sd_adv_verbose]
-desc: `-v sdr list all' - the verbose printers on malformed records
+desc: `-v sdr list all' - verbose printers only receive valid records
 args: -I dummy -v sdr list all
 transcript: sd_adversarial.tr
 covers: sdr
@@ -41,7 +41,7 @@ transcript: sd_adversarial.tr
 covers: sdr
 
 [sd_adv_full]
-desc: `sdr list full' - the truncated full sensor records
+desc: `sdr list full' - truncated full sensor records are skipped
 args: -I dummy sdr list full
 transcript: sd_adversarial.tr
 covers: sdr
@@ -77,7 +77,7 @@ transcript: sd_adversarial.tr
 covers: sdr
 
 [sd_adv_dump]
-desc: `sdr dump' over the adversarial repository - every raw record, including the reserved types
+desc: `sdr dump' aborts rather than writing the first malformed record
 args: -I dummy sdr dump {work}/adv.bin
 transcript: sd_adversarial.tr
 covers: sdr

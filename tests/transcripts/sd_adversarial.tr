@@ -1,12 +1,11 @@
-# Malformed and edge-case SDR records.  The BMC supplies these bytes, so they
-# are untrusted input; the C's behaviour is the specification even where it is
-# wrong (see the upstream defects issue linked from the PR).
+# Malformed and edge-case SDR records. The BMC supplies these untrusted bytes.
+# Truncated fixed/name fields must be rejected before a printer sees them;
+# subsequent valid records and unusual but legal ID encodings remain printable.
 #
-# Every truncation here stops at a byte the C is still allowed to read: the
-# record buffer is malloc(len + 1) and memset to zero, so index `len' is a
-# guaranteed NUL.  Truncations that would read past index `len' are genuine
-# out-of-bounds reads whose result is heap-dependent and therefore cannot be
-# snapshotted; they are reported as an upstream defect instead.
+# These truncations previously read the buffer's spare NUL byte. Keep them
+# as explicit rejection cases rather than normalizing their declared lengths.
+# Visit valid records first so verbose listing and dumping still exercise the
+# printers and writer before rejecting the malformed tail.
 
 default_ccode 0xc1
 
@@ -32,9 +31,9 @@ respond get_sdr_first
   netfn 0x0a
   cmd 0x23
   match 5a a5 00 00
-  data 02 21
+  data 13 21
   partial 4 1 5
-  blob @sdr/sd_adv_full_t42.hex
+  blob @sdr/sd_adv_id_zero.hex
 end
 
 respond get_sdr_2101
@@ -95,7 +94,7 @@ respond get_sdr_2107
   netfn 0x0a
   cmd 0x23
   match 5a a5 07 21
-  data 11 21
+  data 12 21
   partial 4 1 5
   blob @sdr/sd_adv_gen_t11.hex
 end
@@ -104,7 +103,7 @@ respond get_sdr_2111
   netfn 0x0a
   cmd 0x23
   match 5a a5 11 21
-  data 12 21
+  data 13 21
   partial 4 1 5
   blob @sdr/sd_adv_id_zero.hex
 end
@@ -113,7 +112,7 @@ respond get_sdr_2112
   netfn 0x0a
   cmd 0x23
   match 5a a5 12 21
-  data 13 21
+  data ff ff
   partial 4 1 5
   blob @sdr/sd_adv_id_over.hex
 end
@@ -356,7 +355,7 @@ respond get_sdr_2148
   netfn 0x0a
   cmd 0x23
   match 5a a5 48 21
-  data ff ff
+  data 01 21
   partial 4 1 5
   blob @sdr/sd_adv_oem_short.hex
 end

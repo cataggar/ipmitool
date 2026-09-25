@@ -77,19 +77,19 @@ transcript: sensor_edge.tr
 covers: sensor
 
 [sen_list_trunc]
-desc: sensor list over an over-long record, a reserved type and a good record
+desc: sensor list rejects a truncated SDR body then skips reserved type and prints good record
 args: -I dummy sensor list
 transcript: sensor_trunc.tr
 covers: sensor
 
 [sen_list_trunc_verbose]
-desc: verbose list where Get Sensor Thresholds returns only three bytes
+desc: verbose list marks three-byte Get Sensor Thresholds reply unavailable
 args: -I dummy -v sensor list
 transcript: sensor_trunc.tr
 covers: sensor
 
 [sen_list_trunc_csv]
-desc: csv list where Get Sensor Thresholds returns only three bytes
+desc: csv list marks three-byte Get Sensor Thresholds reply unavailable
 args: -I dummy -c sensor list
 transcript: sensor_trunc.tr
 covers: sensor
@@ -265,15 +265,52 @@ transcript: sensor_edge.tr
 covers: sensor
 
 [sen_get_trunc_short_thresh]
-desc: sensor get where Get Sensor Thresholds is three bytes short
+desc: sensor get rejects short thresholds instead of printing stale bytes
 args: -I dummy sensor get TempA
 transcript: sensor_trunc.tr
 covers: sensor
 
 [sen_get_trunc_overlong]
-desc: sensor get on the record whose declared length exceeds its data
+desc: sensor get cannot find a truncated SDR body (no stale record)
 args: -I dummy sensor get Long
 transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_get_trunc_valid_after]
+desc: valid record after a truncated body can still be found
+args: -I dummy sensor get TempA
+transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_sdr_short_header]
+desc: a success reply with a partial Get SDR header is not reused
+args: -I dummy sensor list
+transcript: sensor_header_short.tr
+covers: sensor
+
+[sen_sdr_name_bounds_list]
+desc: malformed fixed/name lengths are skipped, legitimate short and 16-byte names are printed
+args: -I dummy sensor list
+transcript: sensor_sdr_bounds.tr
+covers: sensor
+
+[sen_sdr_name_bounds_get]
+desc: truncated names do not match; the valid short-name SDR is found
+args: -I dummy sensor get TempA
+transcript: sensor_sdr_bounds.tr
+covers: sensor
+
+[sen_sdr_max_name_get]
+desc: a complete 16-byte name without an embedded NUL can be found
+args: -I dummy sensor get TempAAAAAAAAAAAA
+transcript: sensor_sdr_bounds.tr
+covers: sensor
+
+[sen_cache_name_bounds_get]
+desc: malformed cached SDRs are skipped while a valid short name is usable
+args: -I dummy -S {work}/cache.bin sensor get TempA
+transcript: sensor.tr
+blob: cache.bin sensor/sdr_cache_bounds.hex
 covers: sensor
 
 [sen_get_no_sdr]
@@ -599,13 +636,13 @@ transcript: sensor_edge.tr
 covers: sensor
 
 [sen_thresh_upper_set_fails]
-desc: the bulk upper path reports each failed set but returns the last one
+desc: bulk upper path reports each failed set and returns an error
 args: -I dummy sensor thresh DiscU upper 100 150 200
 transcript: sensor_edge.tr
 covers: sensor
 
 [sen_thresh_lower_set_fails]
-desc: the bulk lower path reports each failed set but returns the last one
+desc: bulk lower path reports each failed set and returns an error
 args: -I dummy sensor thresh DiscU lower 60 40 20
 transcript: sensor_edge.tr
 covers: sensor
@@ -617,9 +654,33 @@ transcript: sensor_nosdr.tr
 covers: sensor
 
 [sen_thresh_trunc_short]
-desc: sensor thresh validating against a three-byte thresholds response
+desc: sensor thresh rejects a short reply without sending Set Sensor Thresholds
 args: -I dummy sensor thresh TempA unr 200
 transcript: sensor_trunc.tr
+covers: sensor
+
+[sen_thresh_bulk_upper_early_fails]
+desc: first and middle upper sets fail; final succeeds, exit remains failure
+args: -I dummy sensor thresh DiscU upper 100 150 200
+transcript: sensor_bulk_fail.tr
+covers: sensor
+
+[sen_thresh_bulk_lower_early_fails]
+desc: first and middle lower sets fail; final succeeds, exit remains failure
+args: -I dummy sensor thresh DiscU lower 60 40 20
+transcript: sensor_bulk_fail.tr
+covers: sensor
+
+[sen_factors_short_get]
+desc: six-byte factors response invalidates sensor reading without using stale factors
+args: -I dummy sensor get NonLin
+transcript: sensor_factors_short.tr
+covers: sensor
+
+[sen_factors_short_reading]
+desc: short factor response leaves analog reading unavailable
+args: -I dummy sensor reading NonLin
+transcript: sensor_factors_short.tr
 covers: sensor
 
 # --- sensors reached over a non-zero LUN and channel -----------------------

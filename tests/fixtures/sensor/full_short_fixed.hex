@@ -1,0 +1,4 @@
+# Full Sensor with a declared body shorter than its fixed fields.
+01 10 51 01 12
+20 00 77
+@pad 15 0x00

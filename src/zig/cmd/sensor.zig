@@ -35,20 +35,11 @@
 //!   `lib/ipmi_sdr.c`'s; this module only drives them.  So is every `printf`
 //!   format: the threshold printer takes its format string as a parameter and
 //!   passes it to libc unchanged, exactly as the C does.
-//! * **Upstream defects are reproduced deliberately.**  See issue #42:
-//!   - `ipmi_sensor_get_sensor_reading_factors()` copies six bytes out of the
-//!     response without checking `rsp->data_len`, so a short Get Sensor
-//!     Reading Factors reply silently seeds the reading factors from whatever
-//!     the transport buffer held before.
-//!   - The single-threshold path of `ipmi_sensor_set_threshold()` calls
-//!     `ipmi_sdr_get_sensor_reading_ipmb()` and immediately overwrites the
-//!     result with `ipmi_sdr_get_sensor_thresholds()`.  The request still goes
-//!     on the wire; the answer is discarded.
-//!   - The same path indexes `rsp->data[1..6]` without checking
-//!     `rsp->data_len`, so a short Get Sensor Thresholds reply validates the
-//!     new setting against stale bytes.
-//!   - The `upper` and `lower` bulk paths assign to `ret` three times, so only
-//!     the third Set Sensor Thresholds result is returned.
+//! * **Safety fixes from issue #42 apply to both implementations.**  Short
+//!   factor/threshold replies are rejected before indexing, single sets do
+//!   not issue a discarded Get Sensor Reading, and bulk sets retain failures.
+//!   `lib/ipmi_sdr.c` validates SDR body and name lengths before returning a
+//!   record to this module.
 //!
 //! Everything this module needs from C - `printf`, `lprintf`, `val2str`,
 //! `str2double`, the SDR helpers and the sensor-type table - is reached
@@ -226,8 +217,8 @@ fn csvOutput() bool {
 /// M/B/exponent factors for the raw value about to be converted.
 ///
 /// The response layout is byte-for-byte the SDR's own, so the C copies it in
-/// with two `memcpy()`s and this port does the same.  Neither checks
-/// `rsp->data_len` first - see issue #42.
+/// with two `memcpy()`s and this port does the same after checking the
+/// complete seven-byte response.
 fn getSensorReadingFactors(
     intf: ?*Intf,
     sensor: ?*FullSensor,
@@ -241,7 +232,8 @@ fn getSensorReadingFactors(
     const in = intf orelse return -1;
     const rec = recordBytes(sensor orelse return -1);
 
-    @memcpy(id[0..16], rec[full_sensor.id_string..][0..16]);
+    const idlen = @min(@as(usize, rec[full_sensor.id_string - 1] & 0x1f), 16);
+    @memcpy(id[0..idlen], rec[full_sensor.id_string..][0..idlen]);
 
     req_data[0] = rec[common.sensor_num];
     req_data[1] = reading;
@@ -262,6 +254,15 @@ fn getSensorReadingFactors(
         return -1;
     };
     if (rsp.ccode != 0) return -1;
+    if (rsp.data_len < 1 + mtol_size + bacc_size) {
+        c.lprintf(
+            log.Level.err,
+            "Short reading factors response for sensor %s (#%02x)",
+            &id,
+            @as(c_int, rec[common.sensor_num]),
+        );
+        return -1;
+    }
 
     // Note: rsp->data[0] points at the next valid entry in the sampling table.
     @memcpy(rec[full_sensor.mtol..][0..mtol_size], rsp.data[1..][0..mtol_size]);
@@ -768,7 +769,7 @@ fn printFcThreshold(
     ));
 
     var thresh_available: c_int = 1;
-    if (rsp == null or rsp.?.ccode != 0 or rsp.?.data_len == 0) thresh_available = 0;
+    if (rsp == null or rsp.?.ccode != 0 or rsp.?.data_len < 7) thresh_available = 0;
 
     if (csvOutput()) {
         dumpThresholdCsv(thresh_available, thresh_status, rsp, sr);
@@ -928,6 +929,24 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         }
     }
 
+    // The CLI supplies exactly one of these bits for a single set. Fail
+    // closed if the parser ever changes rather than sending an invalid mask.
+    if (!all_upper and !all_lower) {
+        switch (setting_mask) {
+            upper_non_recov_specified,
+            upper_crit_specified,
+            upper_non_crit_specified,
+            lower_non_crit_specified,
+            lower_crit_specified,
+            lower_non_recov_specified,
+            => {},
+            else => {
+                c.lprintf(log.Level.err, invalid_threshold);
+                return -1;
+            },
+        }
+    }
+
     _ = c.printf("Locating sensor record '%s'...\n", id);
 
     // lookup by sensor name
@@ -961,8 +980,6 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     const id_string = record + full_sensor.id_string;
 
     if (all_upper) {
-        // The C assigns to `ret` three times, so only the third result is
-        // returned; see issue #42.
         for ([3]u8{
             upper_non_crit_specified,
             upper_crit_specified,
@@ -974,7 +991,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 c.val2str(mask, &threshold_vals),
                 setting,
             );
-            ret = setThresholdOne(
+            if (setThresholdOne(
                 intf,
                 num,
                 mask,
@@ -982,7 +999,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 owner,
                 lun,
                 channel,
-            );
+            ) != 0) ret = -1;
         }
     } else if (all_lower) {
         for ([3]u8{
@@ -996,7 +1013,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 c.val2str(mask, &threshold_vals),
                 setting,
             );
-            ret = setThresholdOne(
+            if (setThresholdOne(
                 intf,
                 num,
                 mask,
@@ -1004,16 +1021,12 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 owner,
                 lun,
                 channel,
-            );
+            ) != 0) ret = -1;
         }
     } else {
         // The current implementation reads back every threshold and validates
         // the requested value against its neighbours.
         //
-        // The result of this first request is discarded immediately - the C
-        // overwrites `rsp` on the very next line.  The request still goes on
-        // the wire; see issue #42.
-        _ = c.ipmi_sdr_get_sensor_reading_ipmb(cIntf(intf), num, owner, lun, channel);
         const rsp: ?*Response = @ptrCast(c.ipmi_sdr_get_sensor_thresholds(
             cIntf(intf),
             num,
@@ -1021,13 +1034,11 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
             lun,
             channel,
         ));
-        if (rsp == null or rsp.?.ccode != 0) {
+        if (rsp == null or rsp.?.ccode != 0 or rsp.?.data_len < 7) {
             c.lprintf(log.Level.err, "Sensor data record not found!");
             return -1;
         }
         const data = &rsp.?.data;
-        // No `data_len' check: a short response is validated against whatever
-        // the transport buffer held before.  See issue #42.
         for (1..7) |i| {
             val[i] = c.sdr_convert_sensor_reading(full, data[i]);
             if (val[i] < 0) val[i] = 0;
@@ -1083,11 +1094,6 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 c.lprintf(log.Level.err, invalid_threshold);
                 return -1;
             }
-        } else {
-            // Unreachable: every path above either set `setting_mask' to one of
-            // the six bits or returned.  Kept because the C keeps it.
-            c.lprintf(log.Level.err, invalid_threshold);
-            return -1;
         }
 
         _ = c.printf(
