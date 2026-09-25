@@ -120,7 +120,6 @@ int ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring,
  */
 #include "../plugins/dummy/dummy.h"
 #include "../plugins/lan/rmcp.h"
-#include "../plugins/lan/md5.h"
 #include "../plugins/lan/auth.h"
 /*
  * ipmitool's own copy of the OpenIPMI driver ABI.  `src/plugins/open/open.c`
