@@ -1,0 +1,44 @@
+# The default C shell command handlers are the oracle for the selectable
+# Zig exec/set/echo replacements.  PTY editing/history live in tests/shell/.
+
+[shellcmd_echo_words]
+desc: echo retains trailing spaces before its newline
+args: -I dummy echo first second
+covers: echo
+
+[shellcmd_set_localaddr]
+desc: set writes a valid local IPMB address
+args: -I dummy set localaddr 0x20
+covers: set
+
+[shellcmd_set_bad_targetaddr]
+desc: set rejects an address outside the byte range
+args: -I dummy set targetaddr 0x100
+covers: set
+
+[shellcmd_set_bad_port]
+desc: set rejects a port beyond the RMCP range
+args: -I dummy set port 65536
+covers: set
+
+[shellcmd_set_bad_privlvl]
+desc: set rejects unknown privilege levels
+args: -I dummy set privlvl INVALID
+covers: set
+
+[shellcmd_exec_script]
+desc: script quotes and comments, keeps executing after a bad set
+args: -I dummy exec {work}/shell-script.txt
+blob: shell-script.txt shell/commands.hex
+covers: exec
+
+[shellcmd_exec_request]
+desc: script dispatches a BMC request and continues after its failure
+args: -I dummy exec {work}/shell-request.txt
+blob: shell-request.txt shell/request.hex
+covers: exec
+
+[shellcmd_exec_missing]
+desc: exec reports a missing script without running commands
+args: -I dummy exec {work}/missing-shell-script.txt
+covers: exec

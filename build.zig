@@ -1066,6 +1066,13 @@ pub fn build(b: *std.Build) void {
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
 
+    const shell_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"quoted shell words"},
+    });
+    b.step("test-shell-unit", "Run shared shell and script word parser tests")
+        .dependOn(&b.addRunArtifact(shell_unit).step);
+
     const fwum_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/fwum_test.zig"),
         .target = target,
