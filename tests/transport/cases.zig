@@ -398,6 +398,99 @@ pub const all: []const Case = &.{
         },
     },
 
+    .{
+        .name = "lan/sensor-bridged-get",
+        .desc = "sensor get routes the full SDR's owner 2c/LUN 1 through channel 45",
+        .args = &.{
+            "-I",    "lan", "-H", "127.0.0.1", "-p",     "${port}",
+            "-U",    user,  "-P", pass,        "sensor", "get",
+            "BrdgS",
+        },
+        .bmc = .{ .username = user, .password = pass, .sensor = .{
+            .addr = 0x2c,
+            .channel = 0x45,
+            .lun = 1,
+            .depth = 1,
+            .readings = 1,
+            .thresholds = 1,
+            .sets = 0,
+        } },
+    },
+    .{
+        .name = "lan/sensor-bridged-thresh",
+        .desc = "sensor thresh checks and sets owner 2c/LUN 1 via channel 45 without a discarded read",
+        .args = &.{
+            "-I",    "lan", "-H", "127.0.0.1", "-p",     "${port}",
+            "-U",    user,  "-P", pass,        "sensor", "thresh",
+            "BrdgS", "unr", "30",
+        },
+        .bmc = .{ .username = user, .password = pass, .sensor = .{
+            .addr = 0x2c,
+            .channel = 0x45,
+            .lun = 1,
+            .depth = 1,
+            .readings = 0,
+            .thresholds = 1,
+            .sets = 1,
+        } },
+    },
+    .{
+        .name = "lan/sensor-local-get",
+        .desc = "BMC-owned channel-zero sensor needs no Send Message wrapper",
+        .args = &.{
+            "-I",    "lan", "-H", "127.0.0.1", "-p",     "${port}",
+            "-U",    user,  "-P", pass,        "sensor", "get",
+            "BrdgS",
+        },
+        .bmc = .{ .username = user, .password = pass, .sensor = .{
+            .local = true,
+            .addr = 0x20,
+            .channel = 0,
+            .lun = 0,
+            .depth = 0,
+            .readings = 1,
+            .thresholds = 1,
+            .sets = 0,
+        } },
+    },
+    .{
+        .name = "lan/sensor-targeted-get",
+        .desc = "already targeted owner and channel require no additional retarget",
+        .args = &.{
+            "-I", "lan", "-H",     "127.0.0.1", "-p",    "${port}",
+            "-U", user,  "-P",     pass,        "-t",    "0x2c",
+            "-b", "5",   "sensor", "get",       "BrdgS",
+        },
+        .bmc = .{ .username = user, .password = pass, .sensor = .{
+            .addr = 0x2c,
+            .channel = 0x45,
+            .lun = 1,
+            .depth = 1,
+            .readings = 1,
+            .thresholds = 1,
+            .sets = 0,
+        } },
+    },
+    .{
+        .name = "lan/sensor-channel-retarget",
+        .desc = "matching owner but different channel must retarget before setting, without a discarded read",
+        .args = &.{
+            "-I", "lan", "-H",     "127.0.0.1", "-p",    "${port}",
+            "-U", user,  "-P",     pass,        "-t",    "0x2c",
+            "-b", "6",   "sensor", "thresh",    "BrdgS", "unr",
+            "30",
+        },
+        .bmc = .{ .username = user, .password = pass, .sensor = .{
+            .addr = 0x2c,
+            .channel = 0x45,
+            .lun = 1,
+            .depth = 1,
+            .readings = 0,
+            .thresholds = 1,
+            .sets = 1,
+        } },
+    },
+
     // -- RMCP+ (lanplus) ----------------------------------------------------
 
     .{

@@ -53,6 +53,7 @@ const remote_swid = 0x81;
 
 const netfn_app = 0x06;
 const netfn_storage = 0x0a;
+const netfn_sensor = 0x04;
 
 /// `IPMI_LANPLUS_OFFSET_*` in src/plugins/lanplus/lanplus.h.
 const off_authtype = 0x04;
@@ -221,19 +222,36 @@ pub const Personality = struct {
     /// When set, the BMC serves this image as FRU device 0 through
     /// Get FRU Inventory Area Info and Read FRU Data.
     ///
-    /// This is the only stateful, request-dependent responder the model has,
-    /// and it exists for one reason: `read_fru_area()` sizes every Read FRU
+    /// This responder exists because `read_fru_area()` sizes every Read FRU
     /// Data chunk from `ipmi_intf_get_max_response_data_size()`, so the
     /// requested byte count lands on the wire.  That makes the payload size
     /// arithmetic in `src/plugins/ipmi_intf.c` — including the per bridging
     /// level adjustments — transcript visible, which nothing else reaches.
     fru: ?[]const u8 = null,
+
+    /// A full sensor SDR and its expected route, independently checked after
+    /// decoding the nested Send Message envelopes.  Call counts also guard
+    /// against silently skipping a request when fixtures are regenerated.
+    sensor: ?Sensor = null,
 };
 
 pub const Deaf = struct { netfn: u8, cmd: u8 };
 
 /// One `struct std_cipher_suite_record_t` from table 22-18.
 pub const CipherSuite = struct { id: u8, auth: u8, integrity: u8, crypt: u8 };
+
+pub const Sensor = struct {
+    record: []const u8 = &.{},
+    /// For the local control, rewrite just the owner and keys in the shared SDR.
+    local: bool = false,
+    addr: u8,
+    channel: u8,
+    lun: u2,
+    depth: u8,
+    readings: u32,
+    thresholds: u32,
+    sets: u32,
+};
 
 pub const Canned = struct {
     netfn: u8,
@@ -286,6 +304,11 @@ v15: V15 = .{},
 v2: V2 = .{},
 /// Send Message nesting depth, so a bridged request cannot recurse forever.
 bridge_depth: u8 = 0,
+/// Channel in the innermost Send Message envelope.
+bridge_channel: u8 = 0,
+sensor_readings: u32 = 0,
+sensor_thresholds: u32 = 0,
+sensor_sets: u32 = 0,
 /// Whether `Personality.dup_once` has already fired.
 dup_fired: bool = false,
 hex_scratch: [2]u8 = undefined,
@@ -340,6 +363,20 @@ fn isDeaf(b: *const Bmc, m: Message) bool {
 fn fail(b: *Bmc, comptime fmt: []const u8, args: anytype) !void {
     b.violations += 1;
     try b.t.print("  !!! " ++ fmt ++ "\n", args);
+}
+
+pub fn checkSensor(b: *Bmc) !void {
+    const sensor = b.p.sensor orelse return;
+    try b.t.print("sensor calls reading={d} thresholds={d} set={d}\n", .{
+        b.sensor_readings, b.sensor_thresholds, b.sensor_sets,
+    });
+    if (b.sensor_readings != sensor.readings or
+        b.sensor_thresholds != sensor.thresholds or b.sensor_sets != sensor.sets)
+    {
+        try b.fail("sensor calls expected reading={d} thresholds={d} set={d}", .{
+            sensor.readings, sensor.thresholds, sensor.sets,
+        });
+    }
 }
 
 // -- entry point ------------------------------------------------------------
@@ -650,6 +687,11 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
     for (b.p.extra) |c| {
         if (c.netfn == m.netfn and c.cmd == m.cmd) return .{ .ccode = c.ccode, .data = c.data };
     }
+    if (b.p.sensor) |sensor| {
+        if (m.netfn == netfn_sensor or m.netfn == netfn_storage) {
+            if (try b.dispatchSensor(sensor, m, buf)) |r| return r;
+        }
+    }
     if (m.netfn != netfn_app) {
         if (b.p.fru) |image| if (m.netfn == netfn_storage) switch (m.cmd) {
             // Get FRU Inventory Area Info.
@@ -798,9 +840,12 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
                 });
             }
 
+            const saved_channel = b.bridge_channel;
             b.bridge_depth += 1;
+            b.bridge_channel = m.data[0];
             var inner_buf: [512]u8 = undefined;
             const r = try b.dispatch(inner, &inner_buf);
+            b.bridge_channel = saved_channel;
             b.bridge_depth -= 1;
 
             var n: usize = 0;
@@ -826,6 +871,75 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
             return .{ .data = buf[0..n] };
         },
         else => return .{ .ccode = 0xc1 },
+    }
+}
+
+fn dispatchSensor(b: *Bmc, sensor: Sensor, m: Message, buf: []u8) !?Response {
+    if (m.netfn == netfn_storage) {
+        switch (m.cmd) {
+            0x20 => return .{ .data = &.{
+                0x51, 0x01, 0x00, 0xff, 0xff, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+            } },
+            0x22 => return .{ .data = &.{ 0xa5, 0x5a } },
+            0x23 => {
+                if (m.data.len != 6 or !std.mem.eql(u8, m.data[0..2], &.{ 0xa5, 0x5a })) {
+                    try b.fail("Get SDR needs the issued reservation and six request bytes", .{});
+                    return .{ .ccode = 0xc7 };
+                }
+                const id = std.mem.readInt(u16, m.data[2..4], .little);
+                const record_id = std.mem.readInt(u16, sensor.record[0..2], .little);
+                if (id != 0 and id != record_id) {
+                    try b.fail("Get SDR id {x:0>4}, expected 0000 or {x:0>4}", .{ id, record_id });
+                    return .{ .ccode = 0xcb };
+                }
+                const off = m.data[4];
+                const len = m.data[5];
+                if (@as(usize, off) + len > sensor.record.len) {
+                    try b.fail("Get SDR range {d}+{d} exceeds record", .{ off, len });
+                    return .{ .ccode = 0xc7 };
+                }
+                buf[0] = 0xff;
+                buf[1] = 0xff;
+                @memcpy(buf[2..][0..len], sensor.record[off..][0..len]);
+                return .{ .data = buf[0 .. 2 + @as(usize, len)] };
+            },
+            else => return null,
+        }
+    }
+    if (m.rs_addr != sensor.addr or m.rs_lun != sensor.lun or
+        b.bridge_depth != sensor.depth or
+        (sensor.depth != 0 and b.bridge_channel != sensor.channel))
+    {
+        try b.fail(
+            "sensor route addr={x:0>2} channel={x:0>2} lun={d} depth={d}; expected {x:0>2}/{x:0>2}/{d}/{d}",
+            .{ m.rs_addr, b.bridge_channel, m.rs_lun, b.bridge_depth, sensor.addr, sensor.channel, sensor.lun, sensor.depth },
+        );
+    }
+    if (m.data.len == 0 or m.data[0] != sensor.record[7]) {
+        try b.fail("sensor number absent or different from SDR", .{});
+        return .{ .ccode = 0xcb };
+    }
+    try b.t.print("  sen target_addr={x:0>2} target_channel={x:0>2} lun={d} depth={d} cmd={x:0>2}\n", .{
+        m.rs_addr, b.bridge_channel, m.rs_lun, b.bridge_depth, m.cmd,
+    });
+    switch (m.cmd) {
+        0x2d => {
+            b.sensor_readings += 1;
+            return .{ .data = &.{ 0x1a, 0xc0, 0xc0, 0x00 } };
+        },
+        0x27 => {
+            b.sensor_thresholds += 1;
+            return .{ .data = &.{ 0x3f, 0x11, 0x0b, 0x03, 0x2f, 0x3d, 0x4d } };
+        },
+        0x24 => return .{ .data = &.{ 0x07, 0x0d } },
+        0x29 => return .{ .data = &.{ 0xc0, 0xff, 0x3f, 0xff, 0x3f } },
+        0x26 => {
+            b.sensor_sets += 1;
+            if (m.data.len != 8) try b.fail("Set Sensor Thresholds has {d} bytes, expected 8", .{m.data.len});
+            return .{};
+        },
+        else => return null,
     }
 }
 
@@ -1242,4 +1356,42 @@ fn sendV2Masked(
     std.mem.sort(Transcript.Span, spans.items, {}, Transcript.Span.lessThan);
     try b.t.frame(b.frame, .out, reply.items, spans.items, name);
     if (encrypt) try b.t.hexField("  pln", payload, &.{});
+}
+
+test "sensor route checks all four decoded bridge fields" {
+    var t: Transcript = .init(std.testing.allocator);
+    defer t.deinit();
+    var record: [53]u8 = @splat(0);
+    record[7] = 0x77;
+    const sensor: Sensor = .{
+        .record = &record,
+        .addr = 0x2c,
+        .channel = 0x45,
+        .lun = 1,
+        .depth = 1,
+        .readings = 1,
+        .thresholds = 0,
+        .sets = 0,
+    };
+    var b: Bmc = .init(std.testing.allocator, &t, .{ .sensor = sensor });
+    b.bridge_depth = 1;
+    b.bridge_channel = 0x45;
+    var req = [_]u8{ 0x2c, 0x11, 0, 0x20, 0x04, 0x2d, 0x77, 0 };
+    var reply: [512]u8 = undefined;
+    const good = (try b.dispatchSensor(sensor, parseMessage(&req).?, &reply)).?;
+    try std.testing.expectEqual(@as(u8, 0x1a), good.data[0]);
+    try std.testing.expectEqual(@as(u32, 0), b.violations);
+
+    req[0] = 0x2e;
+    _ = try b.dispatchSensor(sensor, parseMessage(&req).?, &reply);
+    req[0] = 0x2c;
+    b.bridge_channel = 0x4b;
+    _ = try b.dispatchSensor(sensor, parseMessage(&req).?, &reply);
+    b.bridge_channel = 0x45;
+    req[1] = 0x10;
+    _ = try b.dispatchSensor(sensor, parseMessage(&req).?, &reply);
+    req[1] = 0x11;
+    b.bridge_depth = 0;
+    _ = try b.dispatchSensor(sensor, parseMessage(&req).?, &reply);
+    try std.testing.expectEqual(@as(u32, 4), b.violations);
 }

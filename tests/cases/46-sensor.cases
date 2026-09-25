@@ -685,9 +685,9 @@ covers: sensor
 
 # --- sensors reached over a non-zero LUN and channel -----------------------
 # tests/transcripts/sensor_bridge.tr owns record 0xa39c: owner 2Ch, LUN 1,
-# channel 5.  These cases are what pins `keys.lun` (& 0x03) and `keys.channel`
-# (>> 4 & 0x0f); every other sensor in the suite sits at LUN 0 / channel 0,
-# where a wrong mask or a wrong shift is invisible.
+# channel 5.  These cases pin `keys.lun` (& 0x03); the dummy interface cannot
+# observe the bridge decision or `keys.channel` (>> 4 & 0x0f).  The
+# `lan/sensor-*` transport cases pin that channel and the target address.
 
 [sen_bridged_list]
 desc: sensor list for a sensor owned by a non-BMC controller on channel 5
