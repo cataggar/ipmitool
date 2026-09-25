@@ -221,3 +221,15 @@ desc: OEM lookup rejects a missing FRU before scanning any multirecords
 args: -I dummy fru get 0 oem 12634 1
 transcript: fru_no_device.tr
 covers: fru
+
+[fru_get_kontron]
+desc: fetch an end-marked Kontron OEM multirecord with bounded block traversal
+args: -I dummy fru get 0 oem 15000 3 0 name 0
+transcript: fru_kontron_get.tr
+covers: fru
+
+[fru_get_kontron_fields]
+desc: parse a full Kontron OEM v0 record's name, version, dates and checksum
+args: -I dummy fru get 0 oem 15000 3 0 TEST 0
+transcript: fru_kontron_get_fields.tr
+covers: fru
