@@ -1618,6 +1618,59 @@ pub fn build(b: *std.Build) void {
         cli_step.dependOn(&runtime.step);
     }
 
+    if (is_linux and ipmishell) {
+        const shell_only: [zig_modules.len]bool = blk: {
+            var selected: [zig_modules.len]bool = @splat(false);
+            selected[moduleIndex("ipmishell")] = true;
+            break :blk selected;
+        };
+        const cli_and_shell: [zig_modules.len]bool = blk: {
+            var selected = shell_only;
+            selected[moduleIndex("cli")] = true;
+            break :blk selected;
+        };
+        const cutover_options = SwappedOptions{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .system_libs = withLibcrypto(b, swapped_base_libs, openssl, internal_md5, &shell_only),
+        };
+        const oracle = addSelectedTool(b, cutover_options, &shell_only, "ipmitool-cli-cutover-c");
+        const candidate = addSelectedTool(b, cutover_options, &cli_and_shell, "ipmitool-cli-cutover-zig");
+        const daemon_oracle = addSelectedTool(b, cutover_options, &shell_only, "ipmievd-cli-cutover-c");
+        const daemon_candidate = addSelectedTool(b, cutover_options, &cli_and_shell, "ipmievd-cli-cutover-zig");
+        const cutover_step = b.step("test-cli-cutover", "Compare C and Zig shared CLI through C daemon and Zig shell callers");
+        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-cutover-golden"), false, false);
+        compare.addArg("--candidate");
+        compare.addFileArg(candidate.getEmittedBin());
+        cutover_step.dependOn(&compare.step);
+
+        const runtime = b.addSystemCommand(&.{"python3"});
+        runtime.addFileArg(b.path("tests/cli/runtime.py"));
+        runtime.addArg("--oracle");
+        runtime.addFileArg(oracle.getEmittedBin());
+        runtime.addArg("--candidate");
+        runtime.addFileArg(candidate.getEmittedBin());
+        runtime.addArg("--daemon-oracle");
+        runtime.addFileArg(daemon_oracle.getEmittedBin());
+        runtime.addArg("--daemon-candidate");
+        runtime.addFileArg(daemon_candidate.getEmittedBin());
+        runtime.addArg("--work-dir");
+        runtime.addDirectoryArg(b.tmpPath());
+        cutover_step.dependOn(&runtime.step);
+
+        const run = b.addSystemCommand(&.{ "python3", "-B" });
+        run.addFileArg(b.path("tests/shell/pty.py"));
+        run.addFileArg(candidate.getEmittedBin());
+        run.addFileArg(oracle.getEmittedBin());
+        cutover_step.dependOn(&run.step);
+    }
+
     // -- `zig build test-transport` / `gen-transport-fixtures` ---------------
     //
     // The transport fixture harness (issues #10 and #26).  The golden suite
