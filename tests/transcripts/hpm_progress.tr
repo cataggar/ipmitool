@@ -1,0 +1,24 @@
+# Activation is a long-duration command. The BMC answers 80h, then reports
+# successful completion through Get Upgrade Status (34h).
+default_ccode 0xc1
+respond picmg_discover
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 23
+end
+respond activation_pending
+  netfn 0x2c
+  cmd 0x35
+  ccode 0x80
+end
+respond target_caps
+  netfn 0x2c
+  cmd 0x2e
+  data 00 00 17 05 05 05 05 01
+end
+respond upgrade_finished
+  netfn 0x2c
+  cmd 0x34
+  data 00 35 00
+end

@@ -59,6 +59,12 @@ args: -I dummy hpm activate
 transcript: hpm_flow.tr
 covers: hpm
 
+[hpm_activate_pending]
+desc: Long-duration activation waits on Get Upgrade Status instead of failing
+args: -I dummy hpm activate
+transcript: hpm_progress.tr
+covers: hpm
+
 [hpm_abort]
 desc: Abort outstanding HPM upgrade
 args: -I dummy hpm abort
@@ -130,6 +136,13 @@ covers: hpm
 desc: Reduce upload block after c7, retry a transient 83, then complete (dummy only)
 args: -I dummy hpm upgrade {work}/fw.img
 transcript: hpm_retry.tr
+blob: fw.img hpm/image_64.hex
+covers: hpm
+
+[hpm_upgrade_offset]
+desc: Optional upload response moves to another section and finish counts sent bytes
+args: -I dummy hpm upgrade {work}/fw.img
+transcript: hpm_offset.tr
 blob: fw.img hpm/image_64.hex
 covers: hpm
 
