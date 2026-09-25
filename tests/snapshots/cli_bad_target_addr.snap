@@ -1,0 +1,8 @@
+#!golden 1
+#!case cli_bad_target_addr
+#!section exit
+1
+#!section stdout
+#!section stderr
+Invalid parameter given or out of range for '-t'.
+#!section requests

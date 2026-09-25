@@ -24,18 +24,23 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <paths.h>
 #include <poll.h>
 #include <signal.h>
-#include <termios.h>
-#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/un.h>
+#include <termios.h>
+#include <time.h>
 #include <unistd.h>
+#include <config.h>
 
 /*
  * Sockets.  `src/plugins/ipmi_intf.c` resolves the BMC address with
@@ -67,17 +72,22 @@
 #include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_fwum.h>
-#include <ipmitool/ipmi_hpmfwupg.h>
-#include <ipmitool/ipmi_ime.h>
-#include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_gendev.h>
+#include <ipmitool/ipmi_hpmfwupg.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_isol.h>
+#include <ipmitool/ipmi_ime.h>
+#include <ipmitool/ipmi_ekanalyzer.h>
+#include <ipmitool/ipmi_delloem.h>
+#include <ipmitool/ipmi_dcmi.h>
+#include <ipmitool/ipmi_firewall.h>
+#include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_lanp6.h>
 #include <ipmitool/ipmi_main.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
+#include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_raw.h>
@@ -85,9 +95,12 @@
 #include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_sel_supermicro.h>
 #include <ipmitool/ipmi_sensor.h>
+#include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sdradd.h>
 #include <ipmitool/ipmi_strings.h>
+#include <ipmitool/ipmi_sol.h>
+#include <ipmitool/ipmi_sunoem.h>
 #include <ipmitool/ipmi_time.h>
 #include <ipmitool/ipmi_tsol.h>
 #include <ipmitool/ipmi_user.h>
@@ -359,6 +372,16 @@ int ipmi_picmg_clk_set(struct ipmi_intf *, int, char **);
  */
 void ipmi_intf_set_max_request_data_size(struct ipmi_intf *intf, uint16_t size);
 void ipmi_intf_set_max_response_data_size(struct ipmi_intf *intf, uint16_t size);
+
+/* src/ipmitool.c declares these command functions locally. */
+#ifdef HAVE_READLINE
+int ipmi_shell_main(struct ipmi_intf *intf, int argc, char **argv);
+#endif
+int ipmi_echo_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_set_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_exec_main(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
+void ipmi_catch_sigint(void);
 
 /*
  * The transport instances.

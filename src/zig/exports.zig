@@ -22,6 +22,9 @@ comptime {
     if (selected("gendev")) {
         @import("cmd/gendev.zig").exportSymbols();
     }
+    if (selected("cli")) {
+        @import("cli/main.zig").exportSymbols();
+    }
     if (selected("oem")) {
         _ = @import("cmd/oem.zig");
     }

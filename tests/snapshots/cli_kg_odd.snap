@@ -1,0 +1,8 @@
+#!golden 1
+#!case cli_kg_odd
+#!section exit
+1
+#!section stdout
+#!section stderr
+Number of Kg key characters is not even
+#!section requests

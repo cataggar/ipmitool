@@ -44,6 +44,7 @@ zig build test
 zig build test-golden
 zig build test-golden -- --filter fru_
 zig build test-golden -- --update
+zig build test-cli                    # diff the C and Zig frontends directly
 
 # Standalone, without the build system, against the baseline oracle
 # (see baseline-oracle.md).
@@ -110,6 +111,12 @@ Lanplus can instead remain enabled without OpenSSL when
 `zig run tests/golden/main.zig`. The harness needs nothing from `build.zig`, so
 it also works against an autotools build, against an archived oracle, and on a
 tree where `zig build` is broken.
+
+`zig build test-cli` builds a same-configuration all-C oracle and a candidate
+with only `-Dzig-modules=cli` selected, then compares all golden cases
+(streams, exits and dummy requests) without relying on local snapshot feature
+flags. It also checks failed devices and transports, terminal password/key
+prompts and SIGINT handling in `tests/cli/runtime.py`.
 
 The binary under test is picked in this order: `--binary`, `$IPMITOOL_BINARY`,
 `$IPMITOOL_ORACLE`, `tests/oracle/ipmitool`.

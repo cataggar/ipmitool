@@ -1,0 +1,8 @@
+#!golden 1
+#!case cli_port_overflow
+#!section exit
+1
+#!section stdout
+#!section stderr
+Port number 65536 is out of range.
+#!section requests
