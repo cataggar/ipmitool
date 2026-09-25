@@ -35,6 +35,7 @@ pub const intf = struct {
     pub const open = @import("intf/open.zig");
     pub const lan = @import("intf/lan.zig");
     pub const lanplus = @import("intf/lanplus.zig");
+    pub const lanplus_strings = @import("intf/lanplus_strings.zig");
     pub const lanplus_dump = @import("intf/lanplus_dump.zig");
     pub const serial_basic = @import("intf/serial_basic.zig");
     pub const serial_terminal = @import("intf/serial_terminal.zig");
@@ -104,6 +105,7 @@ test {
     _ = intf.open;
     _ = intf.lan;
     _ = intf.lanplus;
+    _ = intf.lanplus_strings;
     _ = intf.lanplus_dump;
     _ = intf.serial_basic;
     _ = intf.serial_terminal;

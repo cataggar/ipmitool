@@ -216,12 +216,18 @@ zig build -Dzig-modules=vita     # lib/ipmi_vita.c replaced by src/zig/cmd/vita.
 zig build -Dzig-modules=oem,raw  # several at once
 zig build -Dzig-modules=lanp,channel,user  # LAN configuration and its helpers
 zig build -Dzig-modules=lanp6    # IPv6 LAN configuration (see lanp6.md)
+zig build -Dzig-modules=lanplus-strings # LAN+ lookup tables, no C table object
 zig build -Dzig-modules=ekanalyzer # offline FRU/PICMG eKey analyzer
 zig build -Dzig-modules=cli      # use Zig for both the shared CLI and ipmitool main
 zig build test-cli               # diff C and Zig CLI, including PTY/SIGINT tests
 zig build -Dzig-modules=pef      # lib/ipmi_pef.c replaced by src/zig/cmd/pef.zig
 zig build --help                 # lists the available module names
 ```
+
+`lanplus-strings` exports the exact RAKP status and privilege lookup arrays
+used by both C and Zig LAN+ transports. The C tables remain the default oracle;
+`zig build test-lanplus-strings` checks every value, string and terminator
+against both implementations, including the `struct valstr` ABI.
 
 `lanp` replaces `lib/ipmi_lanp.c` and exports both `ipmi_lanp_main` and
 `find_lan_channel`. The latter is also used by the separate IPv6 `lan6` command
