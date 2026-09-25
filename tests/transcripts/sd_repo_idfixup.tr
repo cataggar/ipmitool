@@ -41,7 +41,7 @@ respond get_sdr_5678_mismatch
   # the header for 0x5678 reports its own ID as 0xbc9a;
   # the C overwrites it with the requested ID so the body
   # read still asks for 0x5678
-  data ff ff 9a bc 51 02 1f
+  data ff ff 9a bc 51 02 24
 end
 
 respond get_sdr_5678_body

@@ -133,7 +133,7 @@ transcript: sd_repo_bodyfail.tr
 covers: sdr
 
 [sd_repo_bodyempty]
-desc: body read succeeds with a zero-length response
+desc: a successful Get SDR body response with no bytes is rejected
 args: -I dummy sdr list all
 transcript: sd_repo_bodyempty.tr
 covers: sdr

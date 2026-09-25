@@ -1,6 +1,5 @@
 # id_code 0xdf claims 31 characters but only four are present.
-# snprintf("%.*s", (id_code & 0x1f) + 1, ...) stops at the
-# buffer's NUL terminator.
+# Neither the declared record body nor the 16-byte name field can hold it.
 
 12 21                        # Record ID = 0x2112
 51                           # SDR version 0x51

@@ -4,6 +4,7 @@
 1
 #!section stdout
 #!section stderr
+Short Get SDR response for record 0x1234
 ipmitool: ipmi_sdr_get_record() failed
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00

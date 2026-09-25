@@ -1,6 +1,5 @@
-# Full Sensor Record truncated to 43 bytes: id_code says nine
-# characters follow but the record ends, so id_string starts on
-# the NUL terminator.
+# Full Sensor Record truncated to 43 bytes: id_code claims nine
+# name bytes that are not present, so the record is rejected.
 
 02 21                        # Record ID = 0x2102
 51                           # SDR version 0x51

@@ -30,6 +30,8 @@
 //!   are 10 bits wide with their top two bits carried in a *different* byte.
 //!
 //! * **Upstream defects are reproduced deliberately** - see issue #50.
+//!   Issue #42's SDR reply and record-length checks are applied to both the
+//!   C reader and this port.
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sdr` is selected.
@@ -1758,6 +1760,11 @@ fn getHeader(intf: *Intf, itr: *SdrIterator) ?*SdrGetRs {
 
     if (tries == 5) return null;
     const reply = rsp orelse return null;
+
+    if (reply.data_len < 2 + 5) {
+        c.lprintf(c.LOG_ERR, "Short Get SDR header response for record 0x%04x", itr.next);
+        return null;
+    }
 
     c.lprintf(c.LOG_DEBUG, "SDR record ID   : 0x%04x", itr.next);
 
@@ -3580,6 +3587,29 @@ fn ipmi24toh(m: *const [3]u8) u32 {
 }
 
 /// `ipmi_sdr_get_record()`: read one record body with partial reads.
+fn namedRecordLengthValid(comptime T: type, data: []const u8) bool {
+    const code_offset = @offsetOf(T, "id_code");
+    const name_offset = @offsetOf(T, "id_string");
+    if (data.len < name_offset) return false;
+
+    const name_len: usize = data[code_offset] & 0x1f;
+    return name_len <= @sizeOf(@TypeOf(@as(T, undefined).id_string)) and
+        name_len <= data.len - name_offset;
+}
+
+fn recordLengthValid(kind: u8, data: []const u8) bool {
+    return switch (kind) {
+        SDR_RECORD_TYPE_FULL_SENSOR => namedRecordLengthValid(FullSensor, data),
+        SDR_RECORD_TYPE_COMPACT_SENSOR => namedRecordLengthValid(CompactSensor, data),
+        SDR_RECORD_TYPE_EVENTONLY_SENSOR => namedRecordLengthValid(EventonlySensor, data),
+        SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR => namedRecordLengthValid(GenericLocator, data),
+        SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR => namedRecordLengthValid(FruLocator, data),
+        SDR_RECORD_TYPE_MC_DEVICE_LOCATOR => namedRecordLengthValid(McLocator, data),
+        SDR_RECORD_TYPE_ENTITY_ASSOC => data.len >= @sizeOf(EntityAssoc),
+        else => true,
+    };
+}
+
 fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*]u8 {
     var i: c_int = 0;
     const len: c_int = header.length;
@@ -3659,13 +3689,22 @@ fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*
 
         const rsp = rsp_opt.?;
         // The special completion codes are handled above.
-        if (rsp.ccode != 0 or rsp.data_len == 0) {
+        if (rsp.ccode != 0 or rsp.data_len < 2 + @as(c_int, sdr_rq.length)) {
+            if (rsp.ccode == 0) {
+                c.lprintf(c.LOG_ERR, "Short Get SDR response for record 0x%04x", @as(c_uint, header.id));
+            }
             c.free(data);
             return null;
         }
 
         @memcpy(data[@intCast(i)..][0..sdr_rq.length], rsp.data[2..][0..sdr_rq.length]);
         i += sdr_rq.length;
+    }
+
+    if (!recordLengthValid(header.type, data[0..@intCast(len)])) {
+        c.lprintf(c.LOG_ERR, "Invalid SDR record length or name for record 0x%04x", @as(c_uint, header.id));
+        c.free(data);
+        return null;
     }
 
     return data;
@@ -4286,6 +4325,14 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
             c.free(sdrr);
             c.free(rec);
             break;
+        }
+
+        if (!recordLengthValid(header.type, rec[0..header.length])) {
+            c.lprintf(c.LOG_ERR, "Invalid SDR record length or name for record 0x%04x", @as(c_uint, header.id));
+            ret = -1;
+            c.free(sdrr);
+            c.free(rec);
+            continue;
         }
 
         if (!isCachedRecordType(header.type)) {
