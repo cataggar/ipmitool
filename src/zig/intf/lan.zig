@@ -156,7 +156,7 @@ var bridge_possible: u8 = 0;
 
 fn reqAddEntry(intf: *Intf, req: *ipmi.Request, req_seq: u8) ?*Entry {
     const e: *Entry = @ptrCast(@alignCast(c.malloc(@sizeOf(Entry)) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     }));
 
@@ -173,11 +173,10 @@ fn reqAddEntry(intf: *Intf, req: *ipmi.Request, req_seq: u8) ?*Entry {
     }
 
     req_entries_tail = e;
-    c.lprintf(
+    log.print(
         log.Level.debug + 3,
         "added list entry seq=0x%02x cmd=0x%02x",
-        @as(c_int, e.rq_seq),
-        @as(c_int, e.req.msg.cmd),
+        .{ @as(c_int, e.rq_seq), @as(c_int, e.req.msg.cmd) },
     );
     return e;
 }
@@ -203,11 +202,10 @@ fn reqRemoveEntry(seq: u8, cmd: u8) void {
         e = cur.next;
     }
     if (e) |cur| {
-        c.lprintf(
+        log.print(
             log.Level.debug + 3,
             "removed list entry seq=0x%02x cmd=0x%02x",
-            @as(c_int, seq),
-            @as(c_int, cmd),
+            .{ @as(c_int, seq), @as(c_int, cmd) },
         );
         const saved_next_entry = cur.next;
         // `p` is `e` itself when the match is the head, so this writes through
@@ -239,11 +237,10 @@ fn reqRemoveEntry(seq: u8, cmd: u8) void {
 fn reqClearEntries() void {
     var e = req_entries;
     while (e) |cur| {
-        c.lprintf(
+        log.print(
             log.Level.debug + 3,
             "cleared list entry seq=0x%02x cmd=0x%02x",
-            @as(c_int, cur.rq_seq),
-            @as(c_int, cur.req.msg.cmd),
+            .{ @as(c_int, cur.rq_seq), @as(c_int, cur.req.msg.cmd) },
         );
         if (cur.next) |next| {
             c.free(cur);
@@ -353,7 +350,7 @@ fn handlePong(rsp: ?*ipmi.Response) c_int {
     // and the layout is byte-identical either way.
     const pong: *align(1) const RmcpPong = @ptrCast(&r.data);
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Received IPMI/RMCP response packet: \n" ++
             "  IPMI%s Supported\n" ++
@@ -361,11 +358,13 @@ fn handlePong(rsp: ?*ipmi.Response) c_int {
             "  RMCP Version %s\n" ++
             "  RMCP Sequence %d\n" ++
             "  IANA Enterprise %ld\n",
-        pick((pong.sup_entities & 0x80) != 0, "", " NOT"),
-        pick((pong.sup_entities & 0x01) != 0, "1.0", "unknown"),
-        pick(pong.rmcp.ver == 6, "1.0", "unknown"),
-        @as(c_int, pong.rmcp.seq),
-        @as(c_long, std.mem.bigToNative(u32, pong.iana)),
+        .{
+            pick((pong.sup_entities & 0x80) != 0, "", " NOT"),
+            pick((pong.sup_entities & 0x01) != 0, "1.0", "unknown"),
+            pick(pong.rmcp.ver == 6, "1.0", "unknown"),
+            @as(c_int, pong.rmcp.seq),
+            @as(c_long, std.mem.bigToNative(u32, pong.iana)),
+        },
     );
 
     return if ((pong.sup_entities & 0x80) != 0) 1 else 0;
@@ -389,21 +388,21 @@ fn lanPing(intf: *Intf) c_int {
     const len = @sizeOf(RmcpHdr) + @sizeOf(AsfHdr);
 
     const data: [*]u8 = @ptrCast(c.malloc(len) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return -1;
     });
     @memset(data[0..len], 0);
     @memcpy(data[0..@sizeOf(RmcpHdr)], std.mem.asBytes(&rmcp_ping));
     @memcpy(data[@sizeOf(RmcpHdr)..][0..@sizeOf(AsfHdr)], std.mem.asBytes(&asf_ping));
 
-    c.lprintf(log.Level.debug, "Sending IPMI/RMCP presence ping packet");
+    log.print(log.Level.debug, "Sending IPMI/RMCP presence ping packet", .{});
 
     const rv = sendPacket(intf, data, len);
 
     c.free(data);
 
     if (rv < 0) {
-        c.lprintf(log.Level.err, "Unable to send IPMI presence ping packet");
+        log.print(log.Level.err, "Unable to send IPMI presence ping packet", .{});
         return -1;
     }
 
@@ -448,7 +447,7 @@ fn pollRecv(intf: *Intf) ?*ipmi.Response {
             const rv = handlePong(r);
             return if (rv <= 0) null else r;
         } else if (rmcp_rsp.class != rmcp_class_ipmi) {
-            c.lprintf(log.Level.debug, "Invalid RMCP class: %x", @as(c_int, rmcp_rsp.class));
+            log.print(log.Level.debug, "Invalid RMCP class: %x", .{@as(c_int, rmcp_rsp.class)});
             rsp = recvPacket(intf);
             continue :outer;
         }
@@ -527,7 +526,7 @@ fn pollRecv(intf: *Intf) ?*ipmi.Response {
                 r.payload.ipmi_response.cmd,
             );
             if (entry) |e| {
-                c.lprintf(log.Level.debug + 2, "IPMI Request Match found");
+                log.print(log.Level.debug + 2, "IPMI Request Match found", .{});
                 if (intf.target_addr != @as(u32, our_address) and bridge_possible != 0) {
                     if (r.data_len != 0 and r.payload.ipmi_response.netfn == 7 and
                         r.payload.ipmi_response.cmd != 0x34)
@@ -568,10 +567,10 @@ fn pollRecv(intf: *Intf) ?*ipmi.Response {
                         }
                     } else {
                         if (r.data[@intCast(x - 1)] != 0) {
-                            c.lprintf(
+                            log.print(
                                 log.Level.debug,
                                 "WARNING: Bridged cmd ccode = 0x%02x",
-                                @as(c_int, r.data[@intCast(x - 1)]),
+                                .{@as(c_int, r.data[@intCast(x - 1)])},
                             );
                         }
                     }
@@ -581,7 +580,7 @@ fn pollRecv(intf: *Intf) ?*ipmi.Response {
                     r.payload.ipmi_response.cmd,
                 );
             } else {
-                c.lprintf(log.Level.info, "IPMI Request Match NOT FOUND");
+                log.print(log.Level.info, "IPMI Request Match NOT FOUND", .{});
                 rsp = recvPacket(intf);
                 continue :outer;
             }
@@ -609,14 +608,14 @@ fn pollRecv(intf: *Intf) ?*ipmi.Response {
 
 fn solDebug(r: *ipmi.Response) void {
     const p = &r.payload.sol_packet;
-    c.lprintf(log.Level.debug, "SOL sequence number     : 0x%02x", @as(c_int, p.packet_sequence_number));
-    c.lprintf(log.Level.debug, "SOL acked packet        : 0x%02x", @as(c_int, p.acked_packet_number));
-    c.lprintf(log.Level.debug, "SOL accepted char count : 0x%02x", @as(c_int, p.accepted_character_count));
-    c.lprintf(log.Level.debug, "SOL is nack             : %s", boolStr(p.is_nack));
-    c.lprintf(log.Level.debug, "SOL xfer unavailable    : %s", boolStr(p.transfer_unavailable));
-    c.lprintf(log.Level.debug, "SOL inactive            : %s", boolStr(p.sol_inactive));
-    c.lprintf(log.Level.debug, "SOL transmit overrun    : %s", boolStr(p.transmit_overrun));
-    c.lprintf(log.Level.debug, "SOL break detected      : %s", boolStr(p.break_detected));
+    log.print(log.Level.debug, "SOL sequence number     : 0x%02x", .{@as(c_int, p.packet_sequence_number)});
+    log.print(log.Level.debug, "SOL acked packet        : 0x%02x", .{@as(c_int, p.acked_packet_number)});
+    log.print(log.Level.debug, "SOL accepted char count : 0x%02x", .{@as(c_int, p.accepted_character_count)});
+    log.print(log.Level.debug, "SOL is nack             : %s", .{boolStr(p.is_nack)});
+    log.print(log.Level.debug, "SOL xfer unavailable    : %s", .{boolStr(p.transfer_unavailable)});
+    log.print(log.Level.debug, "SOL inactive            : %s", .{boolStr(p.sol_inactive)});
+    log.print(log.Level.debug, "SOL transmit overrun    : %s", .{boolStr(p.transmit_overrun)});
+    log.print(log.Level.debug, "SOL break detected      : %s", .{boolStr(p.break_detected)});
 }
 
 fn boolStr(v: u8) [*:0]const u8 {
@@ -629,24 +628,24 @@ fn pick(cond: bool, a: [*:0]const u8, b: [*:0]const u8) [*:0]const u8 {
 }
 
 fn responseDebug(r: *ipmi.Response) void {
-    c.lprintf(log.Level.debug + 1, "<< IPMI Response Session Header");
-    c.lprintf(
+    log.print(log.Level.debug + 1, "<< IPMI Response Session Header", .{});
+    log.print(
         log.Level.debug + 1,
         "<<   Authtype   : %s",
-        c.val2str(r.session.authtype, c.ipmi_authtype_session_vals),
+        .{c.val2str(r.session.authtype, c.ipmi_authtype_session_vals)},
     );
-    c.lprintf(log.Level.debug + 1, "<<   Sequence   : 0x%08lx", @as(c_long, r.session.seq));
-    c.lprintf(log.Level.debug + 1, "<<   Session ID : 0x%08lx", @as(c_long, r.session.id));
-    c.lprintf(log.Level.debug + 1, "<< IPMI Response Message Header");
+    log.print(log.Level.debug + 1, "<<   Sequence   : 0x%08lx", .{@as(c_long, r.session.seq)});
+    log.print(log.Level.debug + 1, "<<   Session ID : 0x%08lx", .{@as(c_long, r.session.id)});
+    log.print(log.Level.debug + 1, "<< IPMI Response Message Header", .{});
     const p = &r.payload.ipmi_response;
-    c.lprintf(log.Level.debug + 1, "<<   Rq Addr    : %02x", @as(c_int, p.rq_addr));
-    c.lprintf(log.Level.debug + 1, "<<   NetFn      : %02x", @as(c_int, p.netfn));
-    c.lprintf(log.Level.debug + 1, "<<   Rq LUN     : %01x", @as(c_int, p.rq_lun));
-    c.lprintf(log.Level.debug + 1, "<<   Rs Addr    : %02x", @as(c_int, p.rs_addr));
-    c.lprintf(log.Level.debug + 1, "<<   Rq Seq     : %02x", @as(c_int, p.rq_seq));
-    c.lprintf(log.Level.debug + 1, "<<   Rs Lun     : %01x", @as(c_int, p.rs_lun));
-    c.lprintf(log.Level.debug + 1, "<<   Command    : %02x", @as(c_int, p.cmd));
-    c.lprintf(log.Level.debug + 1, "<<   Compl Code : 0x%02x", @as(c_int, r.ccode));
+    log.print(log.Level.debug + 1, "<<   Rq Addr    : %02x", .{@as(c_int, p.rq_addr)});
+    log.print(log.Level.debug + 1, "<<   NetFn      : %02x", .{@as(c_int, p.netfn)});
+    log.print(log.Level.debug + 1, "<<   Rq LUN     : %01x", .{@as(c_int, p.rq_lun)});
+    log.print(log.Level.debug + 1, "<<   Rs Addr    : %02x", .{@as(c_int, p.rs_addr)});
+    log.print(log.Level.debug + 1, "<<   Rq Seq     : %02x", .{@as(c_int, p.rq_seq)});
+    log.print(log.Level.debug + 1, "<<   Rs Lun     : %01x", .{@as(c_int, p.rs_lun)});
+    log.print(log.Level.debug + 1, "<<   Command    : %02x", .{@as(c_int, p.cmd)});
+    log.print(log.Level.debug + 1, "<<   Compl Code : 0x%02x", .{@as(c_int, r.ccode)});
 }
 
 // ---------------------------------------------------------------------------
@@ -698,7 +697,7 @@ fn buildCmd(intf: *Intf, req: *ipmi.Request, is_retry: c_int) ?*Entry {
     if (intf.transit_addr != intf.my_addr and intf.transit_addr != 0) len += 8;
     const msg: [*]u8 = @ptrCast(c.malloc(@intCast(len)) orelse {
         // Note 7: the entry is already on the list at this point.
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     });
     @memset(msg[0..@intCast(len)], 0);
@@ -879,26 +878,26 @@ fn buildCmd(intf: *Intf, req: *ipmi.Request, is_retry: c_int) ?*Entry {
 }
 
 fn requestDebug(intf: *Intf, req: *ipmi.Request, s: *Session, entry: *Entry) void {
-    c.lprintf(
+    log.print(
         log.Level.debug + 1,
         ">> IPMI Request Session Header (level %d)",
-        entry.bridging_level,
+        .{entry.bridging_level},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug + 1,
         ">>   Authtype   : %s",
-        c.val2str(s.authtype, c.ipmi_authtype_session_vals),
+        .{c.val2str(s.authtype, c.ipmi_authtype_session_vals)},
     );
-    c.lprintf(log.Level.debug + 1, ">>   Sequence   : 0x%08lx", @as(c_long, s.in_seq));
-    c.lprintf(log.Level.debug + 1, ">>   Session ID : 0x%08lx", @as(c_long, s.session_id));
-    c.lprintf(log.Level.debug + 1, ">> IPMI Request Message Header");
-    c.lprintf(log.Level.debug + 1, ">>   Rs Addr    : %02x", intf.target_addr);
-    c.lprintf(log.Level.debug + 1, ">>   NetFn      : %02x", @as(c_int, req.msg.netfn_lun.netfn));
-    c.lprintf(log.Level.debug + 1, ">>   Rs LUN     : %01x", @as(c_int, 0));
-    c.lprintf(log.Level.debug + 1, ">>   Rq Addr    : %02x", @as(c_int, ipmi.remote_swid));
-    c.lprintf(log.Level.debug + 1, ">>   Rq Seq     : %02x", @as(c_int, entry.rq_seq));
-    c.lprintf(log.Level.debug + 1, ">>   Rq Lun     : %01x", @as(c_int, 0));
-    c.lprintf(log.Level.debug + 1, ">>   Command    : %02x", @as(c_int, req.msg.cmd));
+    log.print(log.Level.debug + 1, ">>   Sequence   : 0x%08lx", .{@as(c_long, s.in_seq)});
+    log.print(log.Level.debug + 1, ">>   Session ID : 0x%08lx", .{@as(c_long, s.session_id)});
+    log.print(log.Level.debug + 1, ">> IPMI Request Message Header", .{});
+    log.print(log.Level.debug + 1, ">>   Rs Addr    : %02x", .{intf.target_addr});
+    log.print(log.Level.debug + 1, ">>   NetFn      : %02x", .{@as(c_int, req.msg.netfn_lun.netfn)});
+    log.print(log.Level.debug + 1, ">>   Rs LUN     : %01x", .{@as(c_int, 0)});
+    log.print(log.Level.debug + 1, ">>   Rq Addr    : %02x", .{@as(c_int, ipmi.remote_swid)});
+    log.print(log.Level.debug + 1, ">>   Rq Seq     : %02x", .{@as(c_int, entry.rq_seq)});
+    log.print(log.Level.debug + 1, ">>   Rq Lun     : %01x", .{@as(c_int, 0)});
+    log.print(log.Level.debug + 1, ">>   Command    : %02x", .{@as(c_int, req.msg.cmd)});
 }
 
 fn sendCmd(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
@@ -906,26 +905,25 @@ fn sendCmd(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     var tries: c_int = 0;
     var is_retry: c_int = 0;
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "ipmi_lan_send_cmd:opened=[%d], open=[%d]",
-        intf.opened,
-        intf.open,
+        .{ intf.opened, intf.open },
     );
 
     if (intf.opened == 0 and intf.open != null) {
         if (intf.open.?(intf) < 0) {
-            c.lprintf(log.Level.debug, "Failed to open LAN interface");
+            log.print(log.Level.debug, "Failed to open LAN interface", .{});
             return null;
         }
-        c.lprintf(log.Level.debug, "\topened=[%d], open=[%d]", intf.opened, intf.open);
+        log.print(log.Level.debug, "\topened=[%d], open=[%d]", .{ intf.opened, intf.open });
     }
 
     while (true) {
         is_retry = if (tries > 0) 1 else 0;
 
         const entry = buildCmd(intf, req, is_retry) orelse {
-            c.lprintf(log.Level.err, "Aborting send command, unable to build");
+            log.print(log.Level.err, "Aborting send command, unable to build", .{});
             return null;
         };
 
@@ -958,7 +956,7 @@ fn sendCmd(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
         _ = c.usleep(5000);
         tries += 1;
         if (tries >= intf.ssn_params.retry) {
-            c.lprintf(log.Level.debug, "  No response from remote controller");
+            log.print(log.Level.debug, "  No response from remote controller", .{});
             break;
         }
     }
@@ -992,7 +990,7 @@ fn buildSolMsg(intf: *Intf, payload: *ipmi.V2Payload, llen: *c_int) callconv(.c)
         + @as(c_int, payload.payload.sol_packet.character_count);
 
     const msg: [*]u8 = @ptrCast(c.malloc(@intCast(len)) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     });
     @memset(msg[0..@intCast(len)], 0);
@@ -1086,12 +1084,12 @@ fn sendSolPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
 
     const msg = buildSolMsg(intf, payload, &len);
     if (len <= 0 or msg == null) {
-        c.lprintf(log.Level.err, "Invalid SOL payload packet");
+        log.print(log.Level.err, "Invalid SOL payload packet", .{});
         if (msg) |m| c.free(m);
         return null;
     }
 
-    c.lprintf(log.Level.debug, ">> SENDING A SOL MESSAGE\n");
+    log.print(log.Level.debug, ">> SENDING A SOL MESSAGE\n", .{});
 
     while (true) {
         if (sendPacket(intf, msg.?, len) < 0) {
@@ -1123,7 +1121,7 @@ fn sendSolPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
         _ = c.usleep(5000);
         tries += 1;
         if (tries >= intf.ssn_params.retry) {
-            c.lprintf(log.Level.debug, "  No response from remote controller");
+            log.print(log.Level.debug, "  No response from remote controller", .{});
             break;
         }
     }
@@ -1300,16 +1298,16 @@ fn getAuthCapabilitiesCmd(intf: *Intf) c_int {
     req.msg.data_len = 2;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.info, "Get Auth Capabilities command failed");
+        log.print(log.Level.info, "Get Auth Capabilities command failed", .{});
         return -1;
     };
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "get_auth_capabilities");
 
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.info,
             "Get Auth Capabilities command failed: %s",
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{c.val2str(rsp.ccode, c.completion_code_vals)},
         );
         return -1;
     }
@@ -1346,22 +1344,22 @@ fn getAuthCapabilitiesCmd(intf: *Intf) c_int {
         s.authtype = c.IPMI_SESSION_AUTHTYPE_NONE;
     } else {
         if (!authTypeBit(types, p.authtype_set)) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Authentication type %s not supported",
-                c.val2str(p.authtype_set, c.ipmi_authtype_session_vals),
+                .{c.val2str(p.authtype_set, c.ipmi_authtype_session_vals)},
             );
         } else {
-            c.lprintf(log.Level.err, "No supported authtypes found");
+            log.print(log.Level.err, "No supported authtypes found", .{});
         }
 
         return -1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Proceeding with AuthType %s",
-        c.val2str(s.authtype, c.ipmi_authtype_session_vals),
+        .{c.val2str(s.authtype, c.ipmi_authtype_session_vals)},
     );
 
     return 0;
@@ -1374,47 +1372,49 @@ fn authTypeBit(bits: u8, t: u8) bool {
 }
 
 fn authCapabilitiesDebug(req: *ipmi.Request, rsp: *ipmi.Response) void {
-    c.lprintf(log.Level.debug, "Channel %02x Authentication Capabilities:", @as(c_int, rsp.data[0]));
-    c.lprintf(
+    log.print(log.Level.debug, "Channel %02x Authentication Capabilities:", .{@as(c_int, rsp.data[0])});
+    log.print(
         log.Level.debug,
         "  Privilege Level : %s",
-        c.val2str(req.msg.data.?[1], c.ipmi_privlvl_vals),
+        .{c.val2str(req.msg.data.?[1], c.ipmi_privlvl_vals)},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Auth Types      : %s%s%s%s%s",
-        pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_NONE) != 0, "NONE ", ""),
-        pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_MD2) != 0, "MD2 ", ""),
-        pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_MD5) != 0, "MD5 ", ""),
-        pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_PASSWORD) != 0, "PASSWORD ", ""),
-        pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_OEM) != 0, "OEM ", ""),
+        .{
+            pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_NONE) != 0, "NONE ", ""),
+            pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_MD2) != 0, "MD2 ", ""),
+            pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_MD5) != 0, "MD5 ", ""),
+            pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_PASSWORD) != 0, "PASSWORD ", ""),
+            pick((rsp.data[1] & 1 << c.IPMI_SESSION_AUTHTYPE_OEM) != 0, "OEM ", ""),
+        },
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Per-msg auth    : %sabled",
-        pick((rsp.data[2] & c.IPMI_AUTHSTATUS_PER_MSG_DISABLED) != 0, "dis", "en"),
+        .{pick((rsp.data[2] & c.IPMI_AUTHSTATUS_PER_MSG_DISABLED) != 0, "dis", "en")},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  User level auth : %sabled",
-        pick((rsp.data[2] & c.IPMI_AUTHSTATUS_PER_USER_DISABLED) != 0, "dis", "en"),
+        .{pick((rsp.data[2] & c.IPMI_AUTHSTATUS_PER_USER_DISABLED) != 0, "dis", "en")},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Non-null users  : %sabled",
-        pick((rsp.data[2] & c.IPMI_AUTHSTATUS_NONNULL_USERS_ENABLED) != 0, "en", "dis"),
+        .{pick((rsp.data[2] & c.IPMI_AUTHSTATUS_NONNULL_USERS_ENABLED) != 0, "en", "dis")},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Null users      : %sabled",
-        pick((rsp.data[2] & c.IPMI_AUTHSTATUS_NULL_USERS_ENABLED) != 0, "en", "dis"),
+        .{pick((rsp.data[2] & c.IPMI_AUTHSTATUS_NULL_USERS_ENABLED) != 0, "en", "dis")},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Anonymous login : %sabled",
-        pick((rsp.data[2] & c.IPMI_AUTHSTATUS_ANONYMOUS_USERS_ENABLED) != 0, "en", "dis"),
+        .{pick((rsp.data[2] & c.IPMI_AUTHSTATUS_ANONYMOUS_USERS_ENABLED) != 0, "en", "dis")},
     );
-    c.lprintf(log.Level.debug, "");
+    log.print(log.Level.debug, "", .{});
 }
 
 /// Get Session Challenge: returns a temporary session id and a 16 byte
@@ -1434,19 +1434,19 @@ fn getSessionChallengeCmd(intf: *Intf) c_int {
     req.msg.data_len = 17;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Session Challenge command failed");
+        log.print(log.Level.err, "Get Session Challenge command failed", .{});
         return -1;
     };
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "get_session_challenge");
 
     if (rsp.ccode != 0) {
         switch (rsp.ccode) {
-            0x81 => c.lprintf(log.Level.err, "Invalid user name"),
-            0x82 => c.lprintf(log.Level.err, "NULL user name not enabled"),
-            else => c.lprintf(
+            0x81 => log.print(log.Level.err, "Invalid user name", .{}),
+            0x82 => log.print(log.Level.err, "NULL user name not enabled", .{}),
+            else => log.print(
                 log.Level.err,
                 "Get Session Challenge command failed: %s",
-                c.val2str(rsp.ccode, c.completion_code_vals),
+                .{c.val2str(rsp.ccode, c.completion_code_vals)},
             ),
         }
         return -1;
@@ -1455,9 +1455,9 @@ fn getSessionChallengeCmd(intf: *Intf) c_int {
     @memcpy(std.mem.asBytes(&s.session_id), rsp.data[0..4]);
     @memcpy(s.challenge[0..16], rsp.data[4..20]);
 
-    c.lprintf(log.Level.debug, "Opening Session");
-    c.lprintf(log.Level.debug, "  Session ID      : %08lx", @as(c_long, s.session_id));
-    c.lprintf(log.Level.debug, "  Challenge       : %s", c.buf2str(&s.challenge, 16));
+    log.print(log.Level.debug, "Opening Session", .{});
+    log.print(log.Level.debug, "  Session ID      : %08lx", .{@as(c_long, s.session_id)});
+    log.print(log.Level.debug, "  Challenge       : %s", .{c.buf2str(&s.challenge, 16)});
 
     return 0;
 }
@@ -1478,7 +1478,7 @@ fn activateSessionCmd(intf: *Intf) c_int {
         const special = c.ipmi_auth_special(@ptrCast(s));
         @memcpy(s.authcode[0..16], special[0..16]);
         @memset(msg_data[2..18], 0);
-        c.lprintf(log.Level.debug, "  OEM Auth        : %s", c.buf2str(special, 16));
+        log.print(log.Level.debug, "  OEM Auth        : %s", .{c.buf2str(special, 16)});
     } else {
         @memcpy(msg_data[2..18], s.challenge[0..16]);
     }
@@ -1491,19 +1491,19 @@ fn activateSessionCmd(intf: *Intf) c_int {
 
     s.active = 1;
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Privilege Level : %s",
-        c.val2str(msg_data[1], c.ipmi_privlvl_vals),
+        .{c.val2str(msg_data[1], c.ipmi_privlvl_vals)},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Auth Type       : %s",
-        c.val2str(s.authtype, c.ipmi_authtype_session_vals),
+        .{c.val2str(s.authtype, c.ipmi_authtype_session_vals)},
     );
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Activate Session command failed");
+        log.print(log.Level.err, "Activate Session command failed", .{});
         s.active = 0;
         return -1;
     };
@@ -1512,23 +1512,25 @@ fn activateSessionCmd(intf: *Intf) c_int {
     if (rsp.ccode != 0) {
         _ = c.fprintf(c.stderr, "Activate Session error:");
         switch (rsp.ccode) {
-            0x81 => c.lprintf(log.Level.err, "\tNo session slot available"),
-            0x82 => c.lprintf(
+            0x81 => log.print(log.Level.err, "\tNo session slot available", .{}),
+            0x82 => log.print(
                 log.Level.err,
                 "\tNo slot available for given user - limit reached",
+                .{},
             ),
-            0x83 => c.lprintf(
+            0x83 => log.print(
                 log.Level.err,
                 "\tNo slot available to support user due to maximum privilege capacity",
+                .{},
             ),
-            0x84 => c.lprintf(log.Level.err, "\tSession sequence out of range"),
-            0x85 => c.lprintf(log.Level.err, "\tInvalid session ID in request"),
-            0x86 => c.lprintf(log.Level.err, "\tRequested privilege level exceeds limit"),
-            0xd4 => c.lprintf(log.Level.err, "\tInsufficient privilege level"),
-            else => c.lprintf(
+            0x84 => log.print(log.Level.err, "\tSession sequence out of range", .{}),
+            0x85 => log.print(log.Level.err, "\tInvalid session ID in request", .{}),
+            0x86 => log.print(log.Level.err, "\tRequested privilege level exceeds limit", .{}),
+            0xd4 => log.print(log.Level.err, "\tInsufficient privilege level", .{}),
+            else => log.print(
                 log.Level.err,
                 "\t%s",
-                c.val2str(rsp.ccode, c.completion_code_vals),
+                .{c.val2str(rsp.ccode, c.completion_code_vals)},
             ),
         }
         return -1;
@@ -1542,27 +1544,27 @@ fn activateSessionCmd(intf: *Intf) c_int {
     if ((s.authstatus & c.IPMI_AUTHSTATUS_PER_MSG_DISABLED) != 0) {
         s.authtype = c.IPMI_SESSION_AUTHTYPE_NONE;
     } else if (s.authtype != (rsp.data[0] & 0xf)) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Invalid Session AuthType %s in response",
-            c.val2str(s.authtype, c.ipmi_authtype_session_vals),
+            .{c.val2str(s.authtype, c.ipmi_authtype_session_vals)},
         );
         return -1;
     }
 
-    c.lprintf(log.Level.debug, "\nSession Activated");
-    c.lprintf(
+    log.print(log.Level.debug, "\nSession Activated", .{});
+    log.print(
         log.Level.debug,
         "  Auth Type       : %s",
-        c.val2str(rsp.data[0], c.ipmi_authtype_session_vals),
+        .{c.val2str(rsp.data[0], c.ipmi_authtype_session_vals)},
     );
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "  Max Priv Level  : %s",
-        c.val2str(rsp.data[9], c.ipmi_privlvl_vals),
+        .{c.val2str(rsp.data[9], c.ipmi_privlvl_vals)},
     );
-    c.lprintf(log.Level.debug, "  Session ID      : %08lx", @as(c_long, s.session_id));
-    c.lprintf(log.Level.debug, "  Inbound Seq     : %08lx\n", @as(c_long, s.in_seq));
+    log.print(log.Level.debug, "  Session ID      : %08lx", .{@as(c_long, s.session_id)});
+    log.print(log.Level.debug, "  Inbound Seq     : %08lx\n", .{@as(c_long, s.in_seq)});
 
     return 0;
 }
@@ -1585,29 +1587,28 @@ fn setSessionPrivlvlCmd(intf: *Intf) c_int {
     bridge_possible = backup_bridge_possible;
 
     if (rsp == null) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set Session Privilege Level to %s failed",
-            c.val2str(privlvl, c.ipmi_privlvl_vals),
+            .{c.val2str(privlvl, c.ipmi_privlvl_vals)},
         );
         return -1;
     }
     if (c.verbose > 2) c.printbuf(&rsp.?.data, rsp.?.data_len, "set_session_privlvl");
 
     if (rsp.?.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set Session Privilege Level to %s failed: %s",
-            c.val2str(privlvl, c.ipmi_privlvl_vals),
-            c.val2str(rsp.?.ccode, c.completion_code_vals),
+            .{ c.val2str(privlvl, c.ipmi_privlvl_vals), c.val2str(rsp.?.ccode, c.completion_code_vals) },
         );
         return -1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Set Session Privilege Level to %s\n",
-        c.val2str(rsp.?.data[0], c.ipmi_privlvl_vals),
+        .{c.val2str(rsp.?.data[0], c.ipmi_privlvl_vals)},
     );
 
     return 0;
@@ -1632,29 +1633,29 @@ fn closeSessionCmd(intf: *Intf) c_int {
     req.msg.data_len = 4;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Close Session command failed");
+        log.print(log.Level.err, "Close Session command failed", .{});
         return -1;
     };
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "close_session");
 
     if (rsp.ccode == 0x87) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Failed to Close Session: invalid session ID %08lx",
-            @as(c_long, session_id),
+            .{@as(c_long, session_id)},
         );
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Close Session command failed: %s",
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{c.val2str(rsp.ccode, c.completion_code_vals)},
         );
         return -1;
     }
 
-    c.lprintf(log.Level.debug, "Closed Session %08lx\n", @as(c_long, session_id));
+    log.print(log.Level.debug, "Closed Session %08lx\n", .{@as(c_long, session_id)});
 
     return 0;
 }
@@ -1685,7 +1686,7 @@ fn activateSession(intf: *Intf) c_int {
 }
 
 fn activateFail() c_int {
-    c.lprintf(log.Level.err, "Error: Unable to establish LAN session");
+    log.print(log.Level.err, "Error: Unable to establish LAN session", .{});
     return -1;
 }
 
@@ -1716,18 +1717,18 @@ fn open(intf: *Intf) callconv(.c) c_int {
     if (p.retry == 0) p.retry = lan_retry;
 
     if (p.hostname == null or std.mem.len(p.hostname.?) == 0) {
-        c.lprintf(log.Level.err, "No hostname specified!");
+        log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     }
 
     if (c.ipmi_intf_socket_connect(@ptrCast(intf)) == -1) {
-        c.lprintf(log.Level.err, "Could not open socket!");
+        log.print(log.Level.err, "Could not open socket!", .{});
         return -1;
     }
 
     // Note 10: the `s` read from `intf->session` above is overwritten here.
     const s: *Session = @ptrCast(@alignCast(c.malloc(@sizeOf(Session)) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return openFail(intf);
     }));
 
@@ -1762,7 +1763,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
 }
 
 fn openFail(intf: *Intf) c_int {
-    c.lprintf(log.Level.err, "Error: Unable to establish IPMI v1.5 / RMCP session");
+    log.print(log.Level.err, "Error: Unable to establish IPMI v1.5 / RMCP session", .{});
     intf.close.?(intf);
     return -1;
 }

@@ -195,6 +195,8 @@ pub const Personality = struct {
     tolerate_junk: bool = false,
     /// RMCP+ Open Session Response status code (0 = no errors).
     open_session_status: u8 = 0,
+    /// Override the negotiated authentication algorithm to exercise rejection.
+    open_session_auth_alg: ?u8 = null,
     /// RAKP 2 status code.
     rakp2_status: u8 = 0,
     /// RAKP 4 status code.
@@ -1148,7 +1150,7 @@ fn openSessionResponse(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) 
     std.mem.writeInt(u32, body[8..12], b.p.bmc_id, .little);
     body[12] = 0x00;
     body[15] = 0x08;
-    body[16] = b.v2.auth_alg;
+    body[16] = b.p.open_session_auth_alg orelse b.v2.auth_alg;
     body[20] = 0x01;
     body[23] = 0x08;
     body[24] = b.v2.integrity_alg;
