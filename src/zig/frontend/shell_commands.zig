@@ -4,6 +4,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const frontend_log = @import("logging.zig");
 const shell = @import("ipmishell.zig");
 
@@ -45,8 +46,7 @@ fn writeOutput(writer: *std.Io.Writer, output: Output) std.Io.Writer.Error!void 
 }
 
 fn emitOutput(output: Output) (error{CStdoutFlushFailed} || std.Io.Writer.Error)!void {
-    // The surrounding C commands may have pending printf output on stdout.
-    if (c.fflush(c.stdout) != 0) return error.CStdoutFlushFailed;
+    try stdout_io.trySyncC();
     var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
     try writeOutput(&stdout.interface, output);
     try stdout.interface.flush();

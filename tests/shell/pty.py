@@ -360,6 +360,16 @@ class ShellTests(unittest.TestCase):
                 self.assertNotEqual(run.returncode, 0, run.stderr)
                 self.assertIn(b": stdout WriteFailed", run.stderr)
 
+    def test_shell_stdout_libc_flush_failure_is_not_success(self):
+        SCRIPT.write_text("sdr entity list\necho after\n", encoding="utf-8")
+        with open("/dev/full", "wb") as full:
+            run = subprocess.run(
+                [ZIG, "-I", "dummy", "exec", str(SCRIPT)], stdout=full,
+                stderr=subprocess.PIPE, env=env(), timeout=5, check=False,
+            )
+        self.assertNotEqual(run.returncode, 0, run.stderr)
+        self.assertIn(b"echo: stdout CStdoutFlushFailed", run.stderr)
+
     def test_redirected_input_eof_and_status(self):
         run = subprocess.run(
             [ZIG, "-I", "dummy", "shell"], input=b"echo piped\nnot-a-command\n",

@@ -16,12 +16,13 @@ uses `src/ipmishell.c` for all three commands.
 Successful `echo` and output-producing `set` commands use a Zig 0.16
 streaming stdout writer, with the same trailing space for each echoed word,
 the same stored session value/decimal port/two-digit lowercase hex address
-formats, and the same final newlines as C. A checked libc `fflush(stdout)`
-drains output from preceding C commands before any Zig writes. A failed C
-flush, Zig write, or final Zig flush reports an error and returns -1 rather
-than returning success; session setters and the global `verbose`/CSV state
-retain their existing behavior. Script `FILE` ownership and reading remain
-unchanged.
+formats, and the same final newlines as C. The shared
+`util/stdout.zig` `trySyncC` drains output from preceding C commands before
+any Zig writes; unlike the CLI/helper's `syncC` wrapper it returns a checked
+error instead of panicking. A failed C flush, Zig write, or final Zig flush
+reports an error and returns -1 rather than success; session setters and the
+global `verbose`/CSV state retain their existing behavior. Script `FILE`
+ownership and reading remain unchanged.
 
 The interactive editor uses a PTY's termios raw mode and a native Zig history
 list (up/down arrows). Left/right arrows, Home/End, Delete, Backspace,
@@ -61,11 +62,13 @@ compares both the selected Zig binary and the all-Zig binary against thirteen
 `shellcmd_exec_stdout_order` snapshot and PTY test sandwich C-buffered SDR
 stdout between Zig echo and set responses. `zig build test-shell-stdout-unit`
 checks echo and every successful set response against libc `snprintf`, with
-early and late failing writers. The dummy interface has no live session, so
-CLI goldens cannot reach successful hostname, username, password, authtype,
-privlvl, or port setters; their message formats have unit differential
-coverage, not successful CLI golden coverage. With reduced local flags
-`-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`, use
+early and late failing writers. The PTY suite forces both a failed C pre-flush
+and failed Zig writes through `/dev/full`, requiring a nonzero exit and an
+error diagnostic instead of a shell panic. The dummy interface has no live
+session, so CLI goldens cannot reach successful hostname, username, password,
+authtype, privlvl, or port setters; their message formats have unit
+differential coverage, not successful CLI golden coverage. With reduced local
+flags `-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`, use
 `-Dipmishell=false` for the unit and CLI goldens; `test-shell` needs
 `-Dipmishell=true` to enable the interactive command even when Zig supplies
 the readline-free frontend.

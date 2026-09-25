@@ -1,8 +1,12 @@
 const std = @import("std");
 const c = @import("ipmi_c");
 
+pub fn trySyncC() error{CStdoutFlushFailed}!void {
+    if (c.fflush(c.stdout) != 0) return error.CStdoutFlushFailed;
+}
+
 pub fn syncC(context: []const u8) void {
-    if (c.fflush(c.stdout) != 0)
+    trySyncC() catch
         std.debug.panic("{s}: libc stdout flush failed: {d}", .{ context, std.c._errno().* });
 }
 

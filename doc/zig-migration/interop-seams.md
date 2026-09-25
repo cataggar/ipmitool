@@ -347,6 +347,9 @@ output and propagates Zig write and flush failures. The helper's value-table
 stdout path reuses that pre-flush. SIGINT diagnostics still use the legacy
 C stdio path pending the signal-handler cutover.
 
+The shell echo/set stdout paths call its checked `trySyncC` variant and return
+`-1` with a log diagnostic on flush failure; CLI/helper keep `syncC`'s panic.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or
