@@ -1,0 +1,5 @@
+# 24C1024, 131072 bytes; span zero cannot supply a second address bank.
+67 45 51 10 1b
+20 ae 62 00 00 c3 20 0b 31 5d c6
+54 6f 6f 42 69 67
+@pad 10 00

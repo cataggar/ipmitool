@@ -1,0 +1,160 @@
+#!golden 1
+#!case gd_write_wide
+#!section exit
+0
+#!section stdout
+Locating sensor record 'EepWide'...
+\x0d0 percent completed\x0d1 percent completed\x0d3 percent completed\x0d4 percent completed\x0d6 percent completed\x0d7 percent completed\x0d9 percent completed\x0d10 percent completed\x0d12 percent completed\x0d14 percent completed\x0d15 percent completed\x0d17 percent completed\x0d18 percent completed\x0d20 percent completed\x0d21 percent completed\x0d23 percent completed\x0d25 percent completed\x0d26 percent completed\x0d28 percent completed\x0d29 percent completed\x0d31 percent completed\x0d32 percent completed\x0d34 percent completed\x0d35 percent completed\x0d37 percent completed\x0d39 percent completed\x0d40 percent completed\x0d42 percent completed\x0d43 percent completed\x0d45 percent completed\x0d46 percent completed\x0d48 percent completed\x0d50 percent completed\x0d51 percent completed\x0d53 percent completed\x0d54 percent completed\x0d56 percent completed\x0d57 percent completed\x0d59 percent completed\x0d60 percent completed\x0d62 percent completed\x0d64 percent completed\x0d65 percent completed\x0d67 percent completed\x0d68 percent completed\x0d70 percent completed\x0d71 percent completed\x0d73 percent completed\x0d75 percent completed\x0d76 percent completed\x0d78 percent completed\x0d79 percent completed\x0d81 percent completed\x0d82 percent completed\x0d84 percent completed\x0d85 percent completed\x0d87 percent completed\x0d89 percent completed\x0d90 percent completed\x0d92 percent completed\x0d93 percent completed\x0d95 percent completed\x0d96 percent completed\x0d98 percent completed\x0d%100 percent completed
+#!section stderr
+Rx gendev command: write
+Gendev write sdr name : EepWide
+Gendev write file name: <WORK>/in.bin
+File   Size: 512
+Eeprom Size: 512
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=repository ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=first ccode=0x00 len=7 data=ff ff 78 56 51 10 1b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 78 56 05 17
+< rule=wide ccode=0x00 len=25 data=ff ff 20 a4 cf 20 00 0a 21 0b 45 7d c7 45 65 70 57 69 64 65 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 78 56 1c 04
+< rule=wide ccode=0x00 len=6 data=ff ff 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 00 00 a1 b2 c3 d4 e5 f6 17 28
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 08 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 10 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 18 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 20 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 28 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 30 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 38 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 40 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 48 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 50 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 58 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 60 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 68 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 70 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 78 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 80 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 88 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 90 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 98 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 a0 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 a8 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 b0 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 b8 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 c0 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 c8 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 d0 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 d8 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 e0 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 e8 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 f0 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 f8 00 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 00 01 91 82 73 64 55 46 37 28
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 08 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 10 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 18 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 20 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 28 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 30 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 38 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 40 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 48 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 50 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 58 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 60 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 68 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 70 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 78 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 80 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 88 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 90 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 98 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 a0 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 a8 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 b0 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 b8 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 c0 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 c8 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 d0 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 d8 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 e0 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 e8 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 f0 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=6f a4 00 f8 01 a5 a5 a5 a5 a5 a5 a5 a5
+< rule=write ccode=0x00 len=0 data=
+bye
+#!section files

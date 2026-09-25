@@ -135,6 +135,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/front/ipmievd.zig",
     },
     .{
+        .name = "gendev",
+        .replaces = "lib/ipmi_gendev.c",
+        .implementation = "src/zig/cmd/gendev.zig",
+    },
+    .{
         .name = "oem",
         .replaces = "lib/ipmi_oem.c",
         .implementation = "src/zig/cmd/oem.zig",
@@ -1259,7 +1264,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const golden_step = b.step("test-golden", "Run the golden CLI test suite");
-    golden_step.dependOn(&addGolden(b, golden_exe, ipmitool).step);
+    golden_step.dependOn(&addGolden(b, golden_exe, ipmitool, replacedByZig("lib/ipmi_gendev.c", zig_selection)).step);
     const fru_oem_step = b.step("test-fru-oem", "Run fixed Zig-only OEM edit cases");
     if (zig_selection[fruIndex()]) {
         fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, ipmitool).step);
@@ -1284,7 +1289,7 @@ pub fn build(b: *std.Build) void {
             .bridge_mod = bridge_mod,
             .system_libs = swapped_libs,
         });
-        golden_step.dependOn(&addGolden(b, golden_exe, swapped).step);
+        golden_step.dependOn(&addGolden(b, golden_exe, swapped, true).step);
         if (!zig_selection[fruIndex()])
             fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, swapped).step);
     }
@@ -1451,6 +1456,7 @@ fn addGolden(
     b: *std.Build,
     golden_exe: *std.Build.Step.Compile,
     exe: *std.Build.Step.Compile,
+    zig_gendev: bool,
 ) *std.Build.Step.Run {
     const run = b.addRunArtifact(golden_exe);
     run.setName(b.fmt("golden {s}", .{exe.name}));
@@ -1468,6 +1474,7 @@ fn addGolden(
     // time.  `tmpPath` lives in the cache and is cleaned up on success.
     run.addArg("--work-dir");
     run.addDirectoryArg(b.tmpPath());
+    if (zig_gendev) run.addArg("--zig-gendev");
     if (b.args) |args| run.addArgs(args);
     run.expectExitCode(0);
     return run;

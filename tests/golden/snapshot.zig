@@ -1,9 +1,8 @@
 //! Snapshot file format.
 //!
-//! One `tests/snapshots/<case>.snap` file per case, holding the four things a
-//! case asserts on: exit status, stdout, stderr and the IPMI request/response
-//! log seen by the dummy BMC. Keeping them in one file makes review and
-//! `git diff` of a port PR readable.
+//! One `tests/snapshots/<case>.snap` file per case, holding exit status,
+//! stdout, stderr, IPMI requests/responses, and optionally a generated-file
+//! digest. Keeping them in one file makes review and `git diff` readable.
 //!
 //!     #!golden 1
 //!     #!case mc_info
@@ -30,6 +29,7 @@ pub const Snapshot = struct {
     stdout: []const u8 = "",
     stderr: []const u8 = "",
     requests: []const u8 = "",
+    files: []const u8 = "",
 
     pub fn get(s: Snapshot, section: Section) []const u8 {
         return switch (section) {
@@ -37,6 +37,7 @@ pub const Snapshot = struct {
             .stdout => s.stdout,
             .stderr => s.stderr,
             .requests => s.requests,
+            .files => s.files,
         };
     }
 
@@ -46,6 +47,7 @@ pub const Snapshot = struct {
             .stdout => s.stdout = value,
             .stderr => s.stderr = value,
             .requests => s.requests = value,
+            .files => s.files = value,
         }
     }
 };
@@ -55,8 +57,9 @@ pub const Section = enum {
     stdout,
     stderr,
     requests,
+    files,
 
-    pub const all = [_]Section{ .exit, .stdout, .stderr, .requests };
+    pub const all = [_]Section{ .exit, .stdout, .stderr, .requests, .files };
 };
 
 pub const Error = error{BadSnapshot} || std.mem.Allocator.Error;

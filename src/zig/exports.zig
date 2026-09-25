@@ -19,6 +19,9 @@ comptime {
     if (selected("tsol")) {
         @import("cmd/tsol.zig").exportSymbols();
     }
+    if (selected("gendev")) {
+        @import("cmd/gendev.zig").exportSymbols();
+    }
     if (selected("oem")) {
         _ = @import("cmd/oem.zig");
     }

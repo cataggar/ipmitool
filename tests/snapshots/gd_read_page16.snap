@@ -1,0 +1,287 @@
+#!golden 1
+#!case gd_read_page16
+#!section exit
+0
+#!section stdout
+Locating sensor record 'Page16'...
+\x0d0 percent completed\x0d1 percent completed\x0d2 percent completed\x0d3 percent completed\x0d4 percent completed\x0d5 percent completed\x0d6 percent completed\x0d7 percent completed\x0d8 percent completed\x0d9 percent completed\x0d10 percent completed\x0d11 percent completed\x0d12 percent completed\x0d13 percent completed\x0d14 percent completed\x0d15 percent completed\x0d16 percent completed\x0d17 percent completed\x0d18 percent completed\x0d19 percent completed\x0d20 percent completed\x0d21 percent completed\x0d22 percent completed\x0d23 percent completed\x0d24 percent completed\x0d25 percent completed\x0d26 percent completed\x0d27 percent completed\x0d28 percent completed\x0d29 percent completed\x0d30 percent completed\x0d31 percent completed\x0d32 percent completed\x0d33 percent completed\x0d34 percent completed\x0d35 percent completed\x0d36 percent completed\x0d37 percent completed\x0d38 percent completed\x0d39 percent completed\x0d40 percent completed\x0d41 percent completed\x0d42 percent completed\x0d43 percent completed\x0d44 percent completed\x0d45 percent completed\x0d46 percent completed\x0d47 percent completed\x0d48 percent completed\x0d49 percent completed\x0d50 percent completed\x0d51 percent completed\x0d52 percent completed\x0d53 percent completed\x0d54 percent completed\x0d55 percent completed\x0d56 percent completed\x0d57 percent completed\x0d58 percent completed\x0d59 percent completed\x0d60 percent completed\x0d61 percent completed\x0d62 percent completed\x0d63 percent completed\x0d64 percent completed\x0d65 percent completed\x0d66 percent completed\x0d67 percent completed\x0d68 percent completed\x0d69 percent completed\x0d70 percent completed\x0d71 percent completed\x0d72 percent completed\x0d73 percent completed\x0d74 percent completed\x0d75 percent completed\x0d76 percent completed\x0d77 percent completed\x0d78 percent completed\x0d79 percent completed\x0d80 percent completed\x0d81 percent completed\x0d82 percent completed\x0d83 percent completed\x0d84 percent completed\x0d85 percent completed\x0d86 percent completed\x0d87 percent completed\x0d88 percent completed\x0d89 percent completed\x0d90 percent completed\x0d91 percent completed\x0d92 percent completed\x0d93 percent completed\x0d94 percent completed\x0d95 percent completed\x0d96 percent completed\x0d97 percent completed\x0d98 percent completed\x0d99 percent completed\x0d%100 percent completed
+#!section stderr
+Rx gendev command: read
+Gendev read sdr name : Page16
+Gendev read file name: <WORK>/out.bin
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=repository ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=first ccode=0x00 len=7 data=ff ff 97 53 51 10 1b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 97 53 05 17
+< rule=page ccode=0x00 len=25 data=ff ff 20 ac c2 00 00 0c 20 0b 31 5d c6 50 61 67 65 31 36 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 97 53 1c 04
+< rule=page ccode=0x00 len=6 data=ff ff 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 00
+< rule=read ccode=0x00 len=16 data=01 23 45 67 89 ab cd ef b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 00
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 01
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 02
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 03
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 04
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 05
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 06
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 00 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 10 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 20 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 30 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 40 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 50 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 60 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 70 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 80 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 90 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 a0 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 b0 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 c0 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 d0 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 e0 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7 b7
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=65 ac 10 f0 07
+< rule=read ccode=0x00 len=16 data=b7 b7 b7 b7 b7 b7 b7 b7 f1 e2 d3 c4 b5 a6 97 88
+bye
+#!section files
+out.bin: 2048 bytes sha256=3f8197c0f7f4e8bc5e6b4869c1737143f242b729b18f60e25192fa05f4856250

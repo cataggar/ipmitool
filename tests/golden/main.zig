@@ -2,7 +2,8 @@
 //!
 //! Runs a declarative list of cases against an ipmitool binary, feeding the
 //! `dummy` interface from recorded transcripts and comparing stdout, stderr,
-//! the exit status and the IPMI request log against committed snapshots.
+//! the exit status, optional generated files, and the IPMI request log against
+//! committed snapshots.
 //!
 //! See doc/zig-migration/golden-harness.md for the full description.
 //!
@@ -26,6 +27,7 @@
 //!     --work-dir <path>    scratch root (default: <repo>/.golden-work)
 //!     --keep               keep the scratch directories
 //!     --allow-uncovered    do not fail when a C command has no case
+//!     --zig-gendev         use .zig.snap for intentional gendev safety fixes
 //!     -v, --verbose        print each case as it runs
 //!
 //! The report goes to stdout on success and to stderr on failure, so a failing
@@ -59,6 +61,7 @@ const Options = struct {
     work_dir: ?[]const u8 = null,
     keep: bool = false,
     allow_uncovered: bool = false,
+    zig_gendev: bool = false,
     verbose: bool = false,
 };
 
@@ -121,6 +124,8 @@ fn dispatch(gpa: std.mem.Allocator, io: Io, init: std.process.Init, out: *Io.Wri
             opts.keep = true;
         } else if (std.mem.eql(u8, arg, "--allow-uncovered")) {
             opts.allow_uncovered = true;
+        } else if (std.mem.eql(u8, arg, "--zig-gendev")) {
+            opts.zig_gendev = true;
         } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--verbose")) {
             opts.verbose = true;
         } else if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
@@ -254,6 +259,7 @@ const usage_text =
     \\  --work-dir <path>    scratch root
     \\  --keep               keep scratch directories
     \\  --allow-uncovered    do not fail on uncovered commands
+    \\  --zig-gendev         use safety-fix snapshots for gendev Zig cases
     \\  -v, --verbose        trace each case
     \\
 ;
@@ -284,6 +290,7 @@ const Run = struct {
     stdout: []const u8,
     stderr: []const u8,
     requests: []const u8,
+    files: []const u8,
     server_error: ?[]const u8,
 
     fn snap(r: Run) snapshot.Snapshot {
@@ -292,6 +299,7 @@ const Run = struct {
             .stdout = r.stdout,
             .stderr = r.stderr,
             .requests = r.requests,
+            .files = r.files,
         };
     }
 };
@@ -305,7 +313,9 @@ fn runCase(
     c: Case,
     report: *std.ArrayList(u8),
 ) !Outcome {
-    const snapshot_path = try std.fmt.allocPrint(gpa, "{s}/snapshots/{s}.snap", .{ opts.tests_dir, c.name });
+    const snapshot_path = try std.fmt.allocPrint(gpa, "{s}/snapshots/{s}{s}.snap", .{
+        opts.tests_dir, c.name, if (opts.zig_gendev and c.zig_diff) ".zig" else "",
+    });
     const root_abs = try realPath(gpa, io, work_root);
     const directory_name = try scratchName(gpa, root_abs, c.name, opts.candidate != null);
 
@@ -528,6 +538,15 @@ fn executeCase(
         .stdout = try normalize(gpa, result.stdout, work_abs, binary),
         .stderr = try normalize(gpa, result.stderr, work_abs, binary),
         .requests = try normalize(gpa, served.log, work_abs, binary),
+        .files = if (c.capture) |name| blk: {
+            const path = try std.fs.path.join(gpa, &.{ work_abs, name });
+            const content = cwd.readFileAlloc(io, path, gpa, .unlimited) catch
+                break :blk try std.fmt.allocPrint(gpa, "{s}: missing\n", .{name});
+            defer gpa.free(content);
+            var digest: [32]u8 = undefined;
+            std.crypto.hash.sha2.Sha256.hash(content, &digest, .{});
+            break :blk try std.fmt.allocPrint(gpa, "{s}: {d} bytes sha256={s}\n", .{ name, content.len, std.fmt.bytesToHex(digest, .lower) });
+        } else "",
         .server_error = served.err,
     };
 }

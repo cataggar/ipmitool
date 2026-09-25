@@ -1,0 +1,63 @@
+#!golden 1
+#!case gd_read_small
+#!section exit
+0
+#!section stdout
+Locating sensor record 'EepOne'...
+\x0d0 percent completed\x0d6 percent completed\x0d12 percent completed\x0d18 percent completed\x0d25 percent completed\x0d31 percent completed\x0d37 percent completed\x0d43 percent completed\x0d50 percent completed\x0d56 percent completed\x0d62 percent completed\x0d68 percent completed\x0d75 percent completed\x0d81 percent completed\x0d87 percent completed\x0d93 percent completed\x0d%100 percent completed
+#!section stderr
+Rx gendev command: read
+Gendev read sdr name : EepOne
+Gendev read file name: <WORK>/out.bin
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=repository ccode=0x00 len=14 data=51 03 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=first ccode=0x00 len=7 data=bc 9a 34 12 51 10 1b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 34 12 05 17
+< rule=small ccode=0x00 len=25 data=bc 9a 20 a6 b5 00 00 08 12 0b 23 5d c6 45 65 70 4f 6e 65 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 34 12 1c 04
+< rule=small ccode=0x00 len=6 data=bc 9a 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 00
+< rule=read ccode=0x00 len=8 data=a1 b2 c3 d4 e5 f6 17 28
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 08
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 10
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 18
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 20
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 28
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 30
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 38
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 40
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 48
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 50
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 58
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 60
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 68
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 70
+< rule=read ccode=0x00 len=8 data=5a 5a 5a 5a 5a 5a 5a 5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=5b a6 08 78
+< rule=read ccode=0x00 len=8 data=91 82 73 64 55 46 37 28
+bye
+#!section files
+out.bin: 128 bytes sha256=0f3b59237844bcf7dae12a345dce43026a19d9983aaa922cb260c58fb6cb9d5d

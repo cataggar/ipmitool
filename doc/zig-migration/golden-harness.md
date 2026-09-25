@@ -5,7 +5,7 @@ issue #2. Every module that gets ported has to keep producing **byte identical**
 CLI output, and this harness is what proves it.
 
 It works by running an `ipmitool` binary against the built-in `dummy` interface,
-feeding that interface from committed transcripts, and comparing four things
+feeding that interface from committed transcripts, and comparing five things
 against a committed snapshot:
 
 * stdout, byte for byte,
@@ -13,6 +13,7 @@ against a committed snapshot:
 * the process exit status,
 * the **IPMI request log** - every request the binary sent and every response the
   harness gave it.
+* for cases with `capture:`, the generated file's byte length and SHA-256 digest.
 
 The request log matters as much as the printed output. A port that prints the
 right thing while sending different IPMI traffic is still a regression, and the
@@ -310,6 +311,8 @@ covers: fru
 | `env`        | `NAME=VALUE`, repeatable, added to the fixed environment                   |
 | `fixed_time` | mock `time()` in the CLI process with this epoch second (for `now` cases)   |
 | `blob`       | `<dest> <fixture.hex>` - materialize a binary file in the scratch dir      |
+| `capture`    | `<dest>` - snapshot length and SHA-256 of an output file (or its absence)   |
+| `zig_diff`   | `true` - use a separate `.zig.snap` for a documented Zig safety fix        |
 | `text`       | `<dest> <fixture.txt>` - materialize a text file in the scratch dir        |
 | `registry`   | `default` (plant the IANA PEN fixture) or `none` (test the lookup failure) |
 | `timeout_ms` | per-case wall-clock budget, default 10000                                  |
@@ -319,6 +322,12 @@ For `fixed_time`, the harness compiles `tests/golden/fixed_time.c` into the
 case's scratch directory and preloads it **only in the ipmitool child**. This
 pins `sel time set now` without affecting the harness's timeouts or depending
 on the real host clock.
+
+`zig_diff: true` is reserved for intentional C-to-Zig error-handling fixes.
+Capture the C oracle's ordinary snapshot first, then capture the Zig
+replacement with `--zig-gendev --update`. `zig build test-golden` selects the
+appropriate expectation for its C and Zig builds automatically; all cases
+without this flag must retain byte-for-byte C parity.
 
 `{work}` in `args` expands to the case's scratch directory, and is scrubbed back
 out of the captured output, so file-based commands are stable:
@@ -481,7 +490,8 @@ that malformed image instead, with a focused parser unit test.
 
 ## Snapshots
 
-A snapshot is a text file with four sections:
+A snapshot is a text file with five sections (the `files` section is empty
+unless the case requests `capture:`):
 
 ```
 #!golden 1
@@ -496,6 +506,7 @@ Device ID                 : 32
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
 bye
+#!section files
 ```
 
 Because output has to be compared byte for byte, the format escapes what a text
@@ -530,6 +541,9 @@ scratch directory, and their outputs are diffed **against each other** rather
 than against the snapshots. This is the mode future port PRs should use: it
 answers "does the Zig build behave exactly like the C build *right now*",
 without needing the snapshots to be up to date.
+For cases marked `zig_diff: true`, differential mode intentionally reports
+the error-path behavior changes; snapshot mode uses the two reviewed
+expectations instead.
 
 It exits non-zero on the first differing case and prints the same diff format as
 snapshot mode:

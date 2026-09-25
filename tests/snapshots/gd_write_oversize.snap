@@ -1,0 +1,32 @@
+#!golden 1
+#!case gd_write_oversize
+#!section exit
+0
+#!section stdout
+Locating sensor record 'TooBig'...
+#!section stderr
+Rx gendev command: write
+Gendev write sdr name : TooBig
+Gendev write file name: <WORK>/in.bin
+File   Size: 128
+Eeprom Size: 131072
+File size does not fit Eeprom Size
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=repository ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=first ccode=0x00 len=7 data=ff ff 67 45 51 10 1b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 67 45 05 17
+< rule=oversize ccode=0x00 len=25 data=ff ff 20 ae 62 00 00 c3 20 0b 31 5d c6 54 6f 6f 42 69 67 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 67 45 1c 04
+< rule=oversize ccode=0x00 len=6 data=ff ff 00 00 00 00
+bye
+#!section files

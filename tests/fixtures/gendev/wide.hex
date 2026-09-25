@@ -1,0 +1,5 @@
+# 24C04: 512 bytes, eight-byte pages, two address bytes, address span 1.
+78 56 51 10 1b
+20 a4 cf 20 00 0a 21 0b 45 7d c7
+45 65 70 57 69 64 65
+@pad 9 00
