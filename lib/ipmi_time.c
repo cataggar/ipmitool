@@ -47,10 +47,8 @@ bool time_in_utc; /* Set by '-Z' command line option */
 time_t
 ipmi_localtime2utc(time_t local)
 {
-	struct tm tm;
-	gmtime_r(&local, &tm);
-	tm.tm_isdst = (-1);
-	return mktime(&tm);
+	/* time_t already denotes a UTC instant, even when obtained via mktime(). */
+	return local;
 }
 
 /**
@@ -91,21 +89,16 @@ ipmi_strftime(char *s, size_t max, const char *format, time_t stamp)
 	if (IPMI_TIME_UNSPECIFIED == stamp) {
 		return snprintf(s, max, "Unknown");
 	}
-	else if (stamp <= IPMI_TIME_INIT_DONE) {
+	else if (ipmi_timestamp_is_special(stamp)) {
 		/* Timestamp is relative to BMC start, no GMT offset */
 		gmtime_r(&stamp, &tm);
 
 		return wrapstrftime(s, max, format, &tm);
 	}
 
-	if (time_in_utc || ipmi_timestamp_is_special(stamp)) {
-		/*
-		 * The user wants the time reported in UTC or the stamp represents the
-		 * number of seconds since system power on. In any case, don't apply
-		 * the timezone offset.
-		 */
+	if (time_in_utc) {
+		/* The user wants the time reported in UTC. */
 		gmtime_r(&stamp, &tm);
-		daylight = -1;
 	} else {
 		/*
 		 * The user wants the time reported in local time zone.
@@ -142,6 +135,7 @@ ipmi_asctime_r(const time_t stamp, ipmi_datebuf_t outbuf)
 		else {
 			ipmi_strftime(outbuf, IPMI_ASCTIME_SZ, "S+%yy %jd %H:%M:%S", stamp);
 		}
+		return outbuf;
 	}
 
 	ipmi_strftime(outbuf, IPMI_ASCTIME_SZ, "%c %Z", stamp);

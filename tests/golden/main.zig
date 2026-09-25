@@ -434,6 +434,27 @@ fn executeCase(
     try env.put("IPMI_DUMMY_SOCK", sock_path);
     for (c.env) |e| try env.put(e.name, e.value);
 
+    if (c.fixed_time) |instant| {
+        const source = try realPath(
+            gpa,
+            io,
+            try std.fs.path.join(gpa, &.{ opts.tests_dir, "golden", "fixed_time.c" }),
+        );
+        const library = try std.fmt.allocPrint(gpa, "{s}/fixed_time.so", .{work_abs});
+        const compile = try std.process.run(gpa, io, .{
+            .argv = &.{ "zig", "cc", "-shared", "-fPIC", source, "-o", library },
+        });
+        switch (compile.term) {
+            .exited => |code| if (code != 0) {
+                std.log.err("fixed clock fixture: {s}", .{compile.stderr});
+                return error.ClockShimCompilationFailed;
+            },
+            else => return error.ClockShimCompilationFailed,
+        }
+        try env.put("LD_PRELOAD", library);
+        try env.put("IPMI_GOLDEN_TIME", try std.fmt.allocPrint(gpa, "{d}", .{instant}));
+    }
+
     // ipmitool derives `progname` from basename(argv[0]) (lib/ipmi_main.c) and
     // prints it in usage and getopt errors. Invoke every binary through a
     // symlink named `ipmitool` so a differently named candidate (a wrapper
