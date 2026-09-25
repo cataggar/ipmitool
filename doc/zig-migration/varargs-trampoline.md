@@ -41,9 +41,10 @@ void lprintf(int level, const char *format, ...)
 }
 ```
 
-Zig implements `ipmitool_zig_lvprintf` and calls `vfprintf` through the
-`ipmi_c` bridge.  Passing an already-created `va_list` around is fine on every
-target; only *creating* one in Zig is broken.
+Zig implements `ipmitool_zig_lvprintf` and formats through the `ipmi_c`
+bridge's `vsnprintf`, then sends the result to Zig stderr I/O or libc syslog.
+Passing an already-created `va_list` around is fine on every target; only
+*creating* one in Zig is broken.
 
 Two details matter when you copy this:
 
@@ -66,11 +67,13 @@ Two details matter when you copy this:
 
 `util/log.zig` also offers typed `print`/`perror` functions to Zig callers.
 When `log` is selected, they call libc `snprintf` with a compile-time argument
-tuple, then call libc `syslog` for daemon output or `fprintf` for stderr, using
-the **same Zig logger state** as the exported C ABI. This avoids the C
-`lprintf`/`lperror` trampoline for those callers; it is **not** pure Zig or
-libc-free logging. When `log` is not selected, they call the C logger instead,
-avoiding separate verbosity, daemon and lifecycle state. The dummy transport,
+tuple, then call libc `syslog` for daemon output or Zig streaming I/O for
+stderr, using the **same Zig logger state** as the exported C ABI. This avoids
+the C `lprintf`/`lperror` trampoline for those callers; it is **not** pure Zig
+or libc-free logging. Failed stderr writes now terminate explicitly rather
+than being discarded by `fprintf`. When `log` is not selected, they call the
+C logger instead, avoiding separate verbosity, daemon and lifecycle state.
+The dummy transport,
 selected utility/crypto callers in `helper.zig`, `strings_registry.zig`,
 `lanplus_crypt.zig` and `lanplus_crypt_impl.zig`, and commands in
 `cmd/{nm,ime,gendev,fwum,vita,ekanalyzer}.zig` now use this path. Their libc
