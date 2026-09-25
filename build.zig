@@ -241,6 +241,16 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/lanplus/lanplus_dump.c",
         .implementation = "src/zig/intf/lanplus_dump.zig",
     },
+    .{
+        .name = "serial-basic",
+        .replaces = "src/plugins/serial/serial_basic.c",
+        .implementation = "src/zig/intf/serial_basic.zig",
+    },
+    .{
+        .name = "serial-terminal",
+        .replaces = "src/plugins/serial/serial_terminal.c",
+        .implementation = "src/zig/intf/serial_terminal.zig",
+    },
 };
 
 /// Root of the Zig source tree.
@@ -869,6 +879,12 @@ pub fn build(b: *std.Build) void {
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
     test_step.dependOn(unit_step);
+    const serial_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"serial "},
+    });
+    b.step("test-serial-unit", "Run Zig serial framing and ABI unit tests")
+        .dependOn(&b.addRunArtifact(serial_unit).step);
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.
@@ -1014,6 +1030,44 @@ pub fn build(b: *std.Build) void {
     }
 
     test_step.dependOn(transport_step);
+
+    // Drive both serial modes through a real PTY and compare the CLI and
+    // request bytes to the C implementations, independently of LAN fixtures.
+    if (enabled[pluginIndex("serial")] and target.result.os.tag == .linux) {
+        const serial_c = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+        const serial_zig = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+        inline for ([_][]const u8{ "serial-basic", "serial-terminal" }) |name| {
+            serial_c[moduleIndex(name)] = false;
+            serial_zig[moduleIndex(name)] = true;
+        }
+        var variant_options: SwappedOptions = .{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .system_libs = undefined,
+        };
+        const oracle = if (!zig_selection[moduleIndex("serial-basic")] and
+            !zig_selection[moduleIndex("serial-terminal")]) ipmitool else blk: {
+            variant_options.system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, serial_c);
+            break :blk addSerialVariant(b, variant_options, serial_c, "ipmitool-serial-c");
+        };
+        const zig_tool = if (zig_selection[moduleIndex("serial-basic")] and
+            zig_selection[moduleIndex("serial-terminal")]) ipmitool else blk: {
+            variant_options.system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, serial_zig);
+            break :blk addSerialVariant(b, variant_options, serial_zig, "ipmitool-serial-zig");
+        };
+        const serial_run = b.addSystemCommand(&.{ "python3", "tests/transport/serial_test.py" });
+        serial_run.addFileArg(oracle.getEmittedBin());
+        serial_run.addFileArg(zig_tool.getEmittedBin());
+        const serial_step = b.step("test-serial", "PTY parity tests for both serial modes");
+        serial_step.dependOn(&serial_run.step);
+        test_step.dependOn(serial_step);
+    }
 }
 
 /// One run of the golden CLI suite against `exe`.
@@ -1192,6 +1246,7 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         if (!options.plugins_enabled[i]) continue;
         addSources(b, core_mod, plugin.sources, options.flags, selection);
     }
+
     const core = b.addLibrary(.{
         .name = "ipmitool_core_zig",
         .linkage = .static,
@@ -1236,6 +1291,63 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .zig_selection = selection,
         .system_libs = options.system_libs,
     });
+}
+
+fn addSerialVariant(b: *std.Build, options: SwappedOptions, selection: []const bool, name: []const u8) *std.Build.Step.Compile {
+    const core_mod = b.createModule(.{
+        .target = options.target,
+        .optimize = options.optimize,
+        .link_libc = true,
+        .sanitize_c = if (options.sanitize_c) .full else .off,
+    });
+    configure(b, core_mod, options.config_h, options.default_intf);
+    addSources(b, core_mod, lib_sources, options.flags, selection);
+    addSources(b, core_mod, intf_sources, options.flags, selection);
+    for (plugins, 0..) |plugin, i| {
+        if (options.plugins_enabled[i]) addSources(b, core_mod, plugin.sources, options.flags, selection);
+    }
+    const core = b.addLibrary(.{
+        .name = "ipmitool_core_serial_variant",
+        .linkage = .static,
+        .root_module = core_mod,
+    });
+    const zig_lib: ?*std.Build.Step.Compile = if (anySelected(selection)) blk: {
+        const zig_options = b.addOptions();
+        zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
+        const mod = b.createModule(.{
+            .root_source_file = b.path(zig_root ++ "/exports.zig"),
+            .target = options.target,
+            .optimize = options.optimize,
+            .link_libc = true,
+        });
+        mod.addImport("ipmi_c", options.bridge_mod);
+        mod.addImport("build_options", zig_options.createModule());
+        addZigCShims(b, mod, options.config_h, options.default_intf, options.flags, selection);
+        break :blk b.addLibrary(.{ .name = "ipmitool_serial_variant_zig", .linkage = .static, .root_module = mod });
+    } else null;
+    return addTool(b, .{
+        .name = name,
+        .sources = ipmitool_sources,
+        .target = options.target,
+        .optimize = options.optimize,
+        .sanitize_c = options.sanitize_c,
+        .config_h = options.config_h,
+        .default_intf = options.default_intf,
+        .flags = options.flags,
+        .core = core,
+        .zig_lib = zig_lib,
+        .zig_selection = selection,
+        .system_libs = options.system_libs,
+    });
+}
+
+fn moduleIndex(comptime name: []const u8) usize {
+    return comptime blk: {
+        for (zig_modules, 0..) |module, i| {
+            if (std.mem.eql(u8, module.name, name)) break :blk i;
+        }
+        @compileError("unknown Zig module");
+    };
 }
 
 // ---------------------------------------------------------------------------

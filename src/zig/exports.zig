@@ -94,6 +94,12 @@ comptime {
     if (selected("lanplus-dump")) {
         @import("intf/lanplus_dump.zig").exportSymbols();
     }
+    if (selected("serial-basic")) {
+        @import("intf/serial_basic.zig").exportSymbols();
+    }
+    if (selected("serial-terminal")) {
+        @import("intf/serial_terminal.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

@@ -41,6 +41,13 @@ comptime {
         .name = "array_letoh",
         .linkage = .strong,
     });
+    @export(&bridgingLevel, .{ .name = "ipmi_intf_get_bridging_level", .linkage = .strong });
+}
+
+fn bridgingLevel(intf: *const @import("intf.zig").Intf) callconv(.c) u8 {
+    if (intf.target_addr == 0 or intf.target_addr == intf.my_addr) return 0;
+    return if (intf.transit_addr != 0 and
+        (intf.transit_addr != intf.target_addr or intf.transit_channel != intf.target_channel)) 2 else 1;
 }
 
 /// `ipmi_csum()` is not a stub in the usual sense.  The transports call it
