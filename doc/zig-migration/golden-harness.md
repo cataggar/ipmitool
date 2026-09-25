@@ -82,17 +82,23 @@ the C oracle: short BMC responses read past meaningful data, files over 512 KiB
 overwrite C's global buffer, and a BMC that never finishes can loop forever.
 The Zig port also stops if the FWUM capability query fails before an upload;
 C ignores that failure and continues with stale/uninitialized transfer state.
-After building with `-Dzig-modules=fwum`, run:
+Without the optional readline and OpenSSL development packages, build the
+FWUM port with the bundled MD5 implementation and lanplus disabled, then run:
 
 ```sh
+zig build -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
+  -Dintf-lanplus=false -Dzig-modules=fwum
 tests/run.sh --binary zig-out/bin/ipmitool --filter fwum_ --allow-uncovered
 tests/run.sh --tests-dir tests/fwum --repo . \
   --binary zig-out/bin/ipmitool --allow-uncovered
-zig build test-fwum-unit -Dipmishell=false -Dopenssl=false -Dzig-modules=fwum
+zig build test-fwum-unit -Dipmishell=false -Dopenssl=false \
+  -Dinternal-md5=true -Dintf-lanplus=false -Dzig-modules=fwum
 ```
 
 The focused unit tests use a null-reply interface to verify that both local
 and LAN save retries, and finish retries, terminate without sending forever.
+Lanplus can instead remain enabled without OpenSSL when
+`-Dzig-modules=fwum,lanplus-crypt-impl -Dintf-lanplus=true` is selected.
 
 `tests/run.sh` is a thin POSIX shell wrapper around
 `zig run tests/golden/main.zig`. The harness needs nothing from `build.zig`, so
