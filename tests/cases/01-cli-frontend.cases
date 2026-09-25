@@ -72,6 +72,11 @@ desc: transit without a bridge target fails after opening the interface
 args: -I dummy -T 0x82 mc info
 transcript: mc_info.tr
 
+[cli_transit_hex_channel]
+desc: C-oracle transit diagnosis retains alternate-form hexadecimal address and channel
+args: -I dummy -T 0xab -B 0x0f mc info
+transcript: mc_info.tr
+
 [cli_kg_odd]
 desc: odd-length hexadecimal Kg key
 args: -I dummy -y abc mc info

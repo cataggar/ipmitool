@@ -254,6 +254,13 @@ that neither executable has an ELF interpreter or `NEEDED` library. This
 reduced-feature gate disables readline and OpenSSL/LAN+, and still links musl
 libc and the logging C shim; it is not a pure-Zig or libc-free build.
 
+`src/zig/cli/main.zig` is linked through `exports.zig` into the shared Zig
+archive, unlike the separate `cli/tool.zig` executable root. Its diagnostics
+use the typed logger in that archive, sharing its state when `log` is selected
+and calling C `lprintf` when it is not. The `cli_transit_hex_channel` golden
+case pins the C stderr formatting for `%#x` addresses and channels. Do not
+import the logger into `cli/tool.zig` without sharing its state first.
+
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator
