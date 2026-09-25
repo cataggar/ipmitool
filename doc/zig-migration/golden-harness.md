@@ -200,6 +200,13 @@ stdin), run `python3 tests/transport/sunoem_cli_pty.py C_BINARY ZIG_BINARY`.
 That comparison uses a real pseudo-terminal and a project-local dummy BMC
 socket, and checks the requests, stdout, stderr and exit code.
 
+`sunoem_getfile_bad_block_hex` records a C-oracle error from the second file
+block: `Expecting: 1000000 Received: 78563412`. Both hexadecimal values are
+nonzero and preserve the original `%x` formatting and C argument widths.
+Run `zig build test-golden -Dzig-modules=sunoem,log -- --filter sunoem_`
+to check Sun diagnostics against the selected Zig logger; select only `sunoem`
+to check the same module through the C logger fallback.
+
 ## How the dummy interface is driven
 
 `src/plugins/dummy/dummy.c` is the interface the harness uses, because it is the

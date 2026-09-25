@@ -184,6 +184,11 @@ args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
 transcript: sunoem_badfile.tr
 covers: sunoem
 
+[sunoem_getfile_bad_block_hex]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_badblock_hex.tr
+covers: sunoem
+
 [sunoem_getfile_oversize]
 args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
 transcript: sunoem_badsize.tr

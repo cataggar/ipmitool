@@ -130,23 +130,23 @@ fn usage() void {
         "          REQUIRES_SIGNED_PACKAGES",
         "",
     };
-    for (lines) |line| c.lprintf(log.Level.notice, "%s", line);
+    for (lines) |line| log.print(log.Level.notice, "%s", .{line});
 }
 
 fn getVersion(intf: *Intf) ?*Response {
     const rsp = send(intf, version_cmd, &.{}) orelse {
-        c.lprintf(log.Level.err, "Sun OEM Get SP Version Failed.");
+        log.print(log.Level.err, "Sun OEM Get SP Version Failed.", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Sun OEM Get SP Version Failed: %d", @as(c_int, rsp.ccode));
+        log.print(log.Level.err, "Sun OEM Get SP Version Failed: %d", .{@as(c_int, rsp.ccode)});
         return null;
     }
     return rsp;
 }
 fn checkVersion(intf: *Intf) c_int {
     const rsp = getVersion(intf) orelse {
-        c.lprintf(log.Level.err, "Unable to get ILOM version");
+        log.print(log.Level.err, "Unable to get ILOM version", .{});
         return -1;
     };
     const data = bytes(rsp);
@@ -173,7 +173,7 @@ fn version(intf: *Intf) c_int {
 fn nacname(intf: *Intf, name: [*:0]u8) c_int {
     const name_slice = text(name);
     if (name_slice.len > 16) {
-        c.lprintf(log.Level.err, "Sun OEM nacname command failed: Max size on IPMI name");
+        log.print(log.Level.err, "Sun OEM nacname command failed: Max size on IPMI name", .{});
         return -1;
     }
     var request: [65]u8 = @splat(0);
@@ -183,22 +183,22 @@ fn nacname(intf: *Intf, name: [*:0]u8) c_int {
     var iterations: usize = 0;
     while (iterations < 256) : (iterations += 1) {
         const rsp = send(intf, 0x29, &request) orelse {
-            c.lprintf(log.Level.err, "Sun OEM nacname command failed.");
+            log.print(log.Level.err, "Sun OEM nacname command failed.", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Sun OEM nacname command failed: %d", @as(c_int, rsp.ccode));
+            log.print(log.Level.err, "Sun OEM nacname command failed: %d", .{@as(c_int, rsp.ccode)});
             return -1;
         }
         const reply = bytes(rsp);
         if (reply.len < 1) {
-            c.lprintf(log.Level.err, "Sun OEM nacname command failed.");
+            log.print(log.Level.err, "Sun OEM nacname command failed.", .{});
             return -1;
         }
         const fragment = if (reply.len > 1) reply[1..@min(reply.len, 65)] else &.{};
         const len = std.mem.indexOfScalar(u8, fragment, 0) orelse fragment.len;
         if (len > 256 - total) {
-            c.lprintf(log.Level.err, "Sun OEM nacname command failed: invalid path length");
+            log.print(log.Level.err, "Sun OEM nacname command failed: invalid path length", .{});
             return -1;
         }
         @memcpy(full[total..][0..len], fragment[0..len]);
@@ -209,17 +209,17 @@ fn nacname(intf: *Intf, name: [*:0]u8) c_int {
         }
         request[0] = reply[0];
         if (@as(usize, request[0]) * 64 > 256) {
-            c.lprintf(log.Level.err, "Sun OEM nacname command failed: invalid path length");
+            log.print(log.Level.err, "Sun OEM nacname command failed: invalid path length", .{});
             return -1;
         }
     }
-    c.lprintf(log.Level.err, "Sun OEM nacname command failed: invalid path length");
+    log.print(log.Level.err, "Sun OEM nacname command failed: invalid path length", .{});
     return -1;
 }
 
 fn getval(intf: *Intf, path: [*:0]u8) c_int {
     if (text(path).len > 79) {
-        c.lprintf(log.Level.err, "Sun OEM get value command failed: Max size on IPMI name");
+        log.print(log.Level.err, "Sun OEM get value command failed: Max size on IPMI name", .{});
         return -1;
     }
     const old = checkVersion(intf) < 0;
@@ -231,26 +231,26 @@ fn getval(intf: *Intf, path: [*:0]u8) c_int {
     @memcpy(data[1..][0..text(path).len], text(path));
     data[0] = 1;
     const start = send(intf, 0x2a, &data) orelse {
-        c.lprintf(log.Level.err, "Sun OEM getval1 command failed.");
+        log.print(log.Level.err, "Sun OEM getval1 command failed.", .{});
         return -1;
     };
     if (start.ccode != 0) {
-        c.lprintf(log.Level.err, "Sun OEM getval1 command failed: %d", @as(c_int, start.ccode));
+        log.print(log.Level.err, "Sun OEM getval1 command failed: %d", .{@as(c_int, start.ccode)});
         return -1;
     }
     for (0..5) |_| {
         data[0] = 2;
         const rsp = send(intf, 0x2a, &data) orelse {
-            c.lprintf(log.Level.err, "Sun OEM getval2 command failed.");
+            log.print(log.Level.err, "Sun OEM getval2 command failed.", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Sun OEM getval2 command failed: %d", @as(c_int, rsp.ccode));
+            log.print(log.Level.err, "Sun OEM getval2 command failed: %d", .{@as(c_int, rsp.ccode)});
             return -1;
         }
         const result = bytes(rsp);
         if (result.len == 0) {
-            c.lprintf(log.Level.err, "Sun OEM getval2 command failed.");
+            log.print(log.Level.err, "Sun OEM getval2 command failed.", .{});
             return -1;
         }
         if (result[0] == 3) {
@@ -261,12 +261,12 @@ fn getval(intf: *Intf, path: [*:0]u8) c_int {
             return 0;
         }
         if (result[0] == 5) {
-            c.lprintf(log.Level.err, "Target: %s not found", path);
+            log.print(log.Level.err, "Target: %s not found", .{path});
             return -1;
         }
         _ = c.sleep(1);
     }
-    c.lprintf(log.Level.err, "Unable to retrieve target value.");
+    log.print(log.Level.err, "Unable to retrieve target value.", .{});
     return -1;
 }
 
@@ -282,26 +282,26 @@ fn setvalPart(intf: *Intf, input: [*:0]u8, param: u8, tid: *u8) c_int {
         if (param == 1 and src.len - offset <= 56) data[3] = 1;
         @memcpy(data[4..][0..n], src[offset..][0..n]);
         const rsp = send(intf, 0x2c, &data) orelse {
-            c.lprintf(log.Level.err, if (param == 0) "Sun OEM setval prop name: response is NULL" else "Sun OEM setval prop value: response is NULL");
+            log.print(log.Level.err, if (param == 0) "Sun OEM setval prop name: response is NULL" else "Sun OEM setval prop value: response is NULL", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
             if (param == 0)
-                c.lprintf(log.Level.err, "Sun OEM setval prop name: request failed: %d", @as(c_int, rsp.ccode))
+                log.print(log.Level.err, "Sun OEM setval prop name: request failed: %d", .{@as(c_int, rsp.ccode)})
             else
-                c.lprintf(log.Level.err, "Sun OEM setval prop value: request failed: %d", @as(c_int, rsp.ccode));
+                log.print(log.Level.err, "Sun OEM setval prop value: request failed: %d", .{@as(c_int, rsp.ccode)});
             return -1;
         }
         const result = bytes(rsp);
         if (result.len == 0 or result[0] != 1) {
             if (param == 0)
-                c.lprintf(log.Level.err, "Sun OEM setval prop name: invalid status code: %d", @as(c_int, if (result.len == 0) @as(u8, 0) else result[0]))
+                log.print(log.Level.err, "Sun OEM setval prop name: invalid status code: %d", .{@as(c_int, if (result.len == 0) @as(u8, 0) else result[0])})
             else
-                c.lprintf(log.Level.err, "Sun OEM setval prop value: invalid status code: %d", @as(c_int, if (result.len == 0) @as(u8, 0) else result[0]));
+                log.print(log.Level.err, "Sun OEM setval prop value: invalid status code: %d", .{@as(c_int, if (result.len == 0) @as(u8, 0) else result[0])});
             return -1;
         }
         if (param == 0 and result.len < 2) {
-            c.lprintf(log.Level.err, "Sun OEM setval prop name: invalid status code: %d", @as(c_int, result[0]));
+            log.print(log.Level.err, "Sun OEM setval prop name: invalid status code: %d", .{@as(c_int, result[0])});
             return -1;
         }
         if (param == 0 and result.len >= 2) tid.* = result[1];
@@ -310,17 +310,17 @@ fn setvalPart(intf: *Intf, input: [*:0]u8, param: u8, tid: *u8) c_int {
 }
 fn setval(intf: *Intf, name: [*:0]u8, value: [*:0]u8, timeout: ?[*:0]u8) c_int {
     if (text(name).len > 256) {
-        c.lprintf(log.Level.err, "Sun OEM set value command failed: Max size on property name");
+        log.print(log.Level.err, "Sun OEM set value command failed: Max size on property name", .{});
         return -1;
     }
     if (text(value).len > 1024) {
-        c.lprintf(log.Level.err, "Sun OEM set value command failed: Max size on property value");
+        log.print(log.Level.err, "Sun OEM set value command failed: Max size on property value", .{});
         return -1;
     }
     var retries: c_int = 5;
     if (timeout) |s| {
         if (c.str2int(s, &retries) != 0 or retries < 0) {
-            c.lprintf(log.Level.err, "Invalid input given or out of range for time-out parameter.");
+            log.print(log.Level.err, "Invalid input given or out of range for time-out parameter.", .{});
             return -1;
         }
     }
@@ -332,11 +332,11 @@ fn setval(intf: *Intf, name: [*:0]u8, value: [*:0]u8, timeout: ?[*:0]u8) c_int {
     var i: c_int = 0;
     while (i < retries) : (i += 1) {
         const rsp = send(intf, 0x2c, &data) orelse {
-            c.lprintf(log.Level.err, "Sun OEM setval command failed.");
+            log.print(log.Level.err, "Sun OEM setval command failed.", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Sun OEM setval command failed: %d", @as(c_int, rsp.ccode));
+            log.print(log.Level.err, "Sun OEM setval command failed: %d", .{@as(c_int, rsp.ccode)});
             return -1;
         }
         const result = bytes(rsp);
@@ -346,12 +346,12 @@ fn setval(intf: *Intf, name: [*:0]u8, value: [*:0]u8, timeout: ?[*:0]u8) c_int {
             return 0;
         }
         if (result[0] != 4) {
-            c.lprintf(log.Level.err, "Sun OEM setval command failed.");
+            log.print(log.Level.err, "Sun OEM setval command failed.", .{});
             return -1;
         }
         _ = c.sleep(1);
     }
-    c.lprintf(log.Level.err, "Sun OEM setval command failed: Command Timed Out");
+    log.print(log.Level.err, "Sun OEM setval command failed: Command Timed Out", .{});
     return -1;
 }
 
@@ -366,19 +366,19 @@ fn fileBlock(reply: []const u8, requested_block: []const u8) FileReplyError![]co
 
 fn getfile(intf: *Intf, file_id: [*:0]u8, destination: [*:0]u8) c_int {
     if (checkVersion(intf) < 0) {
-        c.lprintf(log.Level.err, "Command is not supported by this version of ILOM, required at least: 3.2.0.0");
+        log.print(log.Level.err, "Command is not supported by this version of ILOM, required at least: 3.2.0.0", .{});
         return -1;
     }
     const id = text(file_id);
     if (id.len >= 1024) {
-        c.lprintf(log.Level.err, "File ID >= %d characters", @as(c_int, 16));
+        log.print(log.Level.err, "File ID >= %d characters", .{@as(c_int, 16)});
         return -1;
     }
     var data: [21]u8 = @splat(0);
     @memcpy(data[1..][0..@min(id.len, 15)], id[0..@min(id.len, 15)]);
     data[0] = 11;
     const fp = c.ipmi_open_file_write(destination) orelse {
-        c.lprintf(log.Level.err, "Unable to open file: %s", destination);
+        log.print(log.Level.err, "Unable to open file: %s", .{destination});
         return -1;
     };
     defer _ = c.fclose(fp);
@@ -387,27 +387,30 @@ fn getfile(intf: *Intf, file_id: [*:0]u8, destination: [*:0]u8) c_int {
         const be = std.mem.nativeToBig(u32, block);
         @memcpy(data[17..21], std.mem.asBytes(&be));
         const rsp = send(intf, tunnel_cmd, &data) orelse {
-            c.lprintf(log.Level.err, "Sun OEM getfile command failed.");
+            log.print(log.Level.err, "Sun OEM getfile command failed.", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Sun OEM getfile command failed: %d", @as(c_int, rsp.ccode));
+            log.print(log.Level.err, "Sun OEM getfile command failed: %d", .{@as(c_int, rsp.ccode)});
             return -1;
         }
         const reply = bytes(rsp);
         const block_data = fileBlock(reply, data[17..21]) catch |err| {
             switch (err) {
-                error.ShortReply => c.lprintf(log.Level.err, "Sun OEM getfile invalid data size: %d", @as(c_int, 0)),
-                error.InvalidSize => c.lprintf(log.Level.err, "Sun OEM getfile invalid data size: %d", @as(c_int, @bitCast(std.mem.readInt(u32, reply[4..8], .big)))),
+                error.ShortReply => log.print(log.Level.err, "Sun OEM getfile invalid data size: %d", .{@as(c_int, 0)}),
+                error.InvalidSize => log.print(log.Level.err, "Sun OEM getfile invalid data size: %d", .{@as(c_int, @bitCast(std.mem.readInt(u32, reply[4..8], .big)))}),
                 error.IncorrectBlock => {
-                    c.lprintf(log.Level.err, "Sun OEM getfile Incorrect Block Num Returned");
-                    c.lprintf(log.Level.err, "Expecting: %x Received: %x", std.mem.readInt(u32, data[17..21], .little), std.mem.readInt(u32, reply[0..4], .little));
+                    log.print(log.Level.err, "Sun OEM getfile Incorrect Block Num Returned", .{});
+                    log.print(log.Level.err, "Expecting: %x Received: %x", .{
+                        @as(c_uint, std.mem.readInt(u32, data[17..21], .little)),
+                        @as(c_uint, std.mem.readInt(u32, reply[0..4], .little)),
+                    });
                 },
             }
             return -1;
         };
         if (c.fwrite(block_data.ptr, 1, block_data.len, fp) != block_data.len) {
-            c.lprintf(log.Level.err, "Sun OEM getfile write failed: %d", @as(c_int, rsp.ccode));
+            log.print(log.Level.err, "Sun OEM getfile write failed: %d", .{@as(c_int, rsp.ccode)});
             return -1;
         }
         block +%= 1;
@@ -417,28 +420,28 @@ fn getfile(intf: *Intf, file_id: [*:0]u8, destination: [*:0]u8) c_int {
 }
 fn getbehavior(intf: *Intf, behavior: [*:0]u8) c_int {
     if (checkVersion(intf) < 0) {
-        c.lprintf(log.Level.err, "Command is not supported by this version of ILOM, required at least: 3.2.0.0");
+        log.print(log.Level.err, "Command is not supported by this version of ILOM, required at least: 3.2.0.0", .{});
         return -1;
     }
     const id = text(behavior);
     if (id.len >= 32) {
-        c.lprintf(log.Level.err, "Behavior ID >= %d characters", @as(c_int, 32));
+        log.print(log.Level.err, "Behavior ID >= %d characters", .{@as(c_int, 32)});
         return -1;
     }
     var data: [33]u8 = @splat(0);
     data[0] = 15;
     @memcpy(data[1..][0..id.len], id);
     const rsp = send(intf, tunnel_cmd, &data) orelse {
-        c.lprintf(log.Level.err, "Sun OEM getbehavior command failed.");
+        log.print(log.Level.err, "Sun OEM getbehavior command failed.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Sun OEM getbehavior command failed: %d", @as(c_int, rsp.ccode));
+        log.print(log.Level.err, "Sun OEM getbehavior command failed: %d", .{@as(c_int, rsp.ccode)});
         return -1;
     }
     const reply = bytes(rsp);
     if (reply.len == 0) {
-        c.lprintf(log.Level.err, "Sun OEM getbehavior command failed.");
+        log.print(log.Level.err, "Sun OEM getbehavior command failed.", .{});
         return -1;
     }
     _ = c.printf("ILOM behavior %s %s enabled\n", @as([*:0]const u8, @ptrCast(&data[1])), if (reply[0] != 0) @as([*:0]const u8, "is") else "is not");
@@ -447,11 +450,11 @@ fn getbehavior(intf: *Intf, behavior: [*:0]u8) c_int {
 fn sshDel(intf: *Intf, uid: u8) c_int {
     var data = [_]u8{uid};
     const rsp = send(intf, 0x02, &data) orelse {
-        c.lprintf(log.Level.err, "Unable to delete ssh key for UID %d", @as(c_int, uid));
+        log.print(log.Level.err, "Unable to delete ssh key for UID %d", .{@as(c_int, uid)});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Unable to delete ssh key for UID %d: %s", @as(c_int, uid), ccString(rsp.ccode));
+        log.print(log.Level.err, "Unable to delete ssh key for UID %d: %s", .{ @as(c_int, uid), ccString(rsp.ccode) });
         return -1;
     }
     _ = c.printf("Deleted SSH key for user id %d\n", @as(c_int, uid));
@@ -459,25 +462,25 @@ fn sshDel(intf: *Intf, uid: u8) c_int {
 }
 fn sshSet(intf: *Intf, uid: u8, filename: [*:0]u8) c_int {
     const fp = c.ipmi_open_file_read(filename) orelse {
-        c.lprintf(log.Level.err, "Unable to open file '%s' for reading.", filename);
+        log.print(log.Level.err, "Unable to open file '%s' for reading.", .{filename});
         return -1;
     };
     defer _ = c.fclose(fp);
     if (c.fseek(fp, 0, c.SEEK_END) != 0) {
-        c.lprintf(log.Level.err, "Failed to seek in file '%s'.", filename);
+        log.print(log.Level.err, "Failed to seek in file '%s'.", .{filename});
         return -1;
     }
     const size = c.ftell(fp);
     if (size < 0) {
-        c.lprintf(log.Level.err, "Failed to seek in file '%s'.", filename);
+        log.print(log.Level.err, "Failed to seek in file '%s'.", .{filename});
         return -1;
     }
     if (size == 0) {
-        c.lprintf(log.Level.err, "File '%s' is empty.", filename);
+        log.print(log.Level.err, "File '%s' is empty.", .{filename});
         return -1;
     }
     if (c.fseek(fp, 0, c.SEEK_SET) != 0) {
-        c.lprintf(log.Level.err, "Failed to seek in file '%s'.", filename);
+        log.print(log.Level.err, "Failed to seek in file '%s'.", .{filename});
         return -1;
     }
     _ = c.printf("Setting SSH key for user id %d...", @as(c_int, uid));
@@ -487,7 +490,7 @@ fn sshSet(intf: *Intf, uid: u8, filename: [*:0]u8) c_int {
         const count: usize = @intCast(@min(size - offset, 64));
         if (c.fseek(fp, offset, c.SEEK_SET) != 0 or c.fread(&data[3], 1, count, fp) != count) {
             _ = c.printf("failed\n");
-            c.lprintf(log.Level.err, "Unable to read %ld bytes from file '%s'.", @as(c_long, @intCast(count)), filename);
+            log.print(log.Level.err, "Unable to read %ld bytes from file '%s'.", .{ @as(c_long, @intCast(count)), filename });
             return -1;
         }
         _ = c.printf(".");
@@ -498,7 +501,7 @@ fn sshSet(intf: *Intf, uid: u8, filename: [*:0]u8) c_int {
         } else {
             if (@divTrunc(offset, 64) > 255) {
                 _ = c.printf("failed\n");
-                c.lprintf(log.Level.err, "Unable to pack byte %ld from file '%s'.", offset, filename);
+                log.print(log.Level.err, "Unable to pack byte %ld from file '%s'.", .{ @as(c_long, offset), filename });
                 return -1;
             }
             data[1] = @intCast(@divTrunc(offset, 64));
@@ -506,12 +509,12 @@ fn sshSet(intf: *Intf, uid: u8, filename: [*:0]u8) c_int {
         data[2] = @intCast(count);
         const rsp = send(intf, 0x01, data[0 .. count + 3]) orelse {
             _ = c.printf("failed\n");
-            c.lprintf(log.Level.err, "Unable to set ssh key for UID %d.", @as(c_int, uid));
+            log.print(log.Level.err, "Unable to set ssh key for UID %d.", .{@as(c_int, uid)});
             return -1;
         };
         if (rsp.ccode != 0) {
             _ = c.printf("failed\n");
-            c.lprintf(log.Level.err, "Unable to set ssh key for UID %d, %s.", @as(c_int, uid), ccString(rsp.ccode));
+            log.print(log.Level.err, "Unable to set ssh key for UID %d, %s.", .{ @as(c_int, uid), ccString(rsp.ccode) });
             return -1;
         }
         offset += @intCast(count);
@@ -526,16 +529,16 @@ fn echo(intf: *Intf, argc: c_int, argv: Args) c_int {
         if (arg(argv, 1)[0] == 'q') {
             quiet = true;
         } else {
-            c.lprintf(log.Level.err, "Unknown option '%s' given.", arg(argv, 1));
+            log.print(log.Level.err, "Unknown option '%s' given.", .{arg(argv, 1)});
             return -1;
         }
     } else if (argc > 2) {
-        c.lprintf(log.Level.err, "Too many parameters given. See help for more information.");
+        log.print(log.Level.err, "Too many parameters given. See help for more information.", .{});
         return -1;
     }
     var count: u16 = 0;
     if (c.str2ushort(arg(argv, 0), &count) != 0) {
-        c.lprintf(log.Level.err, "Given number of packets is either invalid or out of range.");
+        log.print(log.Level.err, "Given number of packets is either invalid or out of range.", .{});
         return -1;
     }
     var data: [66]u8 = undefined;
@@ -556,7 +559,7 @@ fn echo(intf: *Intf, argc: c_int, argv: Args) c_int {
         _ = c.gettimeofday(&end, null);
         const millis: u32 = @bitCast(@as(i32, @truncate((end.tv_sec - start.tv_sec) * 1000 + @divTrunc(end.tv_usec - start.tv_usec, 1000))));
         if (rsp == null or rsp.?.ccode != 0) {
-            c.lprintf(log.Level.err, "Sun OEM echo command failed. Seq # %d", @as(c_int, @intCast(i)));
+            log.print(log.Level.err, "Sun OEM echo command failed. Seq # %d", .{@as(c_int, @intCast(i))});
             rc = -2;
             break;
         }
@@ -690,9 +693,9 @@ fn ledRequest(intf: *Intf, dev: [*]const u8, ledtype: u8, mode: ?u8) ?*Response 
     const rsp = intf.sendrecv.?(intf, &req);
     if (mode != null) {
         if (rsp == null) {
-            c.lprintf(log.Level.err, "Sun OEM Set LED command failed.");
+            log.print(log.Level.err, "Sun OEM Set LED command failed.", .{});
         } else if (rsp.?.ccode != 0) {
-            c.lprintf(log.Level.err, "Sun OEM Set LED command failed: %s", ccString(rsp.?.ccode));
+            log.print(log.Level.err, "Sun OEM Set LED command failed: %s", .{ccString(rsp.?.ccode)});
             return null;
         }
     }
@@ -747,7 +750,7 @@ fn led(intf: *Intf, is_set: bool, argc: c_int, argv: Args) c_int {
         var n = c.str2val32(arg(argv, 1), &modes);
         if (n == 0xff) n = c.str2val32(arg(argv, 1), &alt_modes);
         if (n == 0xff) {
-            c.lprintf(log.Level.notice, "Invalid LED Mode: %s", arg(argv, 1));
+            log.print(log.Level.notice, "Invalid LED Mode: %s", .{arg(argv, 1)});
             return -1;
         }
         mode = @intCast(n);
@@ -756,7 +759,7 @@ fn led(intf: *Intf, is_set: bool, argc: c_int, argv: Args) c_int {
     if (argc > (if (is_set) @as(c_int, 3) else 1)) {
         const pos: usize = if (is_set) 2 else 1;
         type_id = @truncate(c.str2val32(arg(argv, pos), &led_types));
-        if (type_id == 0xff) c.lprintf(log.Level.err, "Unknown ledtype, will use data from the SDR oem field");
+        if (type_id == 0xff) log.print(log.Level.err, "Unknown ledtype, will use data from the SDR oem field", .{});
     }
     if (ciEql(arg(argv, 0), "all")) {
         const head = list(c.ipmi_sdr_find_sdr_bytype(@ptrCast(intf), 0x10));
@@ -776,11 +779,11 @@ fn led(intf: *Intf, is_set: bool, argc: c_int, argv: Args) c_int {
         return if ((if (is_set) ret_set else ret_get) == -1) -1 else 0;
     }
     const record = list(c.ipmi_sdr_find_sdr_byid(@ptrCast(intf), arg(argv, 0))) orelse {
-        c.lprintf(log.Level.err, "No Sensor Data Record found for %s", arg(argv, 0));
+        log.print(log.Level.err, "No Sensor Data Record found for %s", .{arg(argv, 0)});
         return -1;
     };
     if (record.type != 0x10) {
-        c.lprintf(log.Level.err, "Invalid SDR type %d", @as(c_int, record.type));
+        log.print(log.Level.err, "Invalid SDR type %d", .{@as(c_int, record.type)});
         return -1;
     }
     const dev = device(record) orelse return -1;
@@ -789,7 +792,7 @@ fn led(intf: *Intf, is_set: bool, argc: c_int, argv: Args) c_int {
         ledOne(intf, dev, type_id, mode, if (is_set) arg(argv, 0) else &name, false);
         return if ((if (is_set) ret_set else ret_get) == -1) -1 else 0;
     }
-    c.lprintf(log.Level.info, "LED %s is logical device", arg(argv, 0));
+    log.print(log.Level.info, "LED %s is logical device", .{arg(argv, 0)});
     const head = list(c.ipmi_sdr_find_sdr_bytype(@ptrCast(intf), 0x08)) orelse return -1;
     defer freeList(head);
     var current: ?*SdrList = head;
@@ -836,7 +839,7 @@ fn cli(intf: *Intf, original_count: c_int, original_argv: Args) c_int {
     while (true) {
         request[0] = cli_version;
         response = send(intf, 0x19, request[0..9]) orelse {
-            c.lprintf(log.Level.err, "Sun OEM cli command failed");
+            log.print(log.Level.err, "Sun OEM cli command failed", .{});
             return -1;
         };
         const raw = bytes(response);
@@ -850,15 +853,15 @@ fn cli(intf: *Intf, original_count: c_int, original_argv: Args) c_int {
                 }
             } else if (eql(&message, "Busy") and retries < 3) {
                 retries += 1;
-                c.lprintf(log.Level.info, "Failed to connect: %s, retrying", @as([*:0]const u8, @ptrCast(&message)));
+                log.print(log.Level.info, "Failed to connect: %s, retrying", .{@as([*:0]const u8, @ptrCast(&message))});
                 _ = c.sleep(2);
                 continue;
             }
-            c.lprintf(log.Level.err, "Failed to connect: %s", @as([*:0]const u8, @ptrCast(&message)));
+            log.print(log.Level.err, "Failed to connect: %s", .{@as([*:0]const u8, @ptrCast(&message))});
             return -1;
         }
         if (raw.len < 8) {
-            c.lprintf(log.Level.err, "Sun OEM cli command failed");
+            log.print(log.Level.err, "Sun OEM cli command failed", .{});
             return -1;
         }
         break;
@@ -871,14 +874,14 @@ fn cli(intf: *Intf, original_count: c_int, original_argv: Args) c_int {
     var original_terminal: c.struct_termios = undefined;
     if (argc == 0) {
         if (c.tcgetattr(c.fileno(c.stdin), &original_terminal) != 0) {
-            c.lprintf(log.Level.err, "Failed to set interactive mode: %s", c.strerror(c.__errno_location().*));
+            log.print(log.Level.err, "Failed to set interactive mode: %s", .{c.strerror(c.__errno_location().*)});
             return -1;
         }
         var terminal = original_terminal;
         terminal.c_lflag &= ~@as(@TypeOf(terminal.c_lflag), @intCast(c.ICANON | c.ECHO | c.ISIG));
         terminal.c_cc[c.VMIN] = 1;
         if (c.tcsetattr(c.fileno(c.stdin), c.TCSAFLUSH, &terminal) != 0) {
-            c.lprintf(log.Level.err, "Failed to set interactive mode: %s", c.strerror(c.__errno_location().*));
+            log.print(log.Level.err, "Failed to set interactive mode: %s", .{c.strerror(c.__errno_location().*)});
             return -1;
         }
     }
@@ -938,13 +941,13 @@ fn cli(intf: *Intf, original_count: c_int, original_argv: Args) c_int {
             var attempt: usize = 0;
             while (true) {
                 response = send(intf, 0x19, request[0 .. 8 + count + 1]) orelse {
-                    c.lprintf(log.Level.err, "Communication error.");
+                    log.print(log.Level.err, "Communication error.", .{});
                     error_flag = true;
                     break;
                 };
                 if (response.ccode != 0xc3) break;
                 if (attempt == 3) {
-                    c.lprintf(log.Level.err, "Excessive timeout.");
+                    log.print(log.Level.err, "Excessive timeout.", .{});
                     error_flag = true;
                     break;
                 }
@@ -954,7 +957,7 @@ fn cli(intf: *Intf, original_count: c_int, original_argv: Args) c_int {
             if (cli_version == 2) request[2] ^= 1;
             const raw = bytes(response);
             if (raw.len < 8) {
-                c.lprintf(log.Level.err, "Communication error.");
+                log.print(log.Level.err, "Communication error.", .{});
                 error_flag = true;
                 break;
             }
@@ -969,7 +972,7 @@ fn cli(intf: *Intf, original_count: c_int, original_argv: Args) c_int {
         if (error_flag) break;
     }
     if (argc == 0 and c.tcsetattr(c.fileno(c.stdin), c.TCSAFLUSH, &original_terminal) != 0) {
-        c.lprintf(log.Level.err, "Failed to restore interactive mode: %s", c.strerror(c.__errno_location().*));
+        log.print(log.Level.err, "Failed to restore interactive mode: %s", .{c.strerror(c.__errno_location().*)});
         return -1;
     }
     return if (!error_flag and command_response == 1) 0 else -1;
@@ -1013,7 +1016,7 @@ fn sunoemMain(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
         var uid: u8 = 0;
         const result = c.str2uchar(arg(argv, 2), &uid);
         if (result != 0) {
-            c.lprintf(log.Level.notice, if (result == 2) "Invalid interval given." else "Given interval is too big.");
+            log.print(log.Level.notice, if (result == 2) "Invalid interval given." else "Given interval is too big.", .{});
             return -1;
         }
         if (eql(arg(argv, 1), "del")) return sshDel(intf, uid);
@@ -1070,7 +1073,7 @@ fn sunoemMain(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
         }
         return getbehavior(intf, arg(argv, 1));
     }
-    c.lprintf(log.Level.err, "Invalid sunoem command: %s", command);
+    log.print(log.Level.err, "Invalid sunoem command: %s", .{command});
     return -1;
 }
 
