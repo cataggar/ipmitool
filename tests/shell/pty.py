@@ -209,6 +209,63 @@ class ShellTests(unittest.TestCase):
         ], check_terminal=True)
         self.assertEqual(status, -signal.SIGTERM, data)
 
+    def test_output_failure_reports_error_and_restores_terminal(self):
+        master, slave = os.openpty()
+        proc = None
+        try:
+            with open("/dev/full", "wb") as full:
+                proc = subprocess.Popen(
+                    [ZIG, "-I", "dummy", "shell"], stdin=slave, stdout=full,
+                    stderr=subprocess.PIPE, env=env(), close_fds=True,
+                )
+            os.close(slave)
+            slave = -1
+            os.write(master, b"exit\r")
+            _, stderr = proc.communicate(timeout=5)
+            self.assertNotEqual(proc.returncode, 0, stderr)
+            self.assertIn(b"shell: Io", stderr)
+            flags = termios.tcgetattr(master)[3]
+            self.assertTrue(flags & termios.ECHO and flags & termios.ICANON, "terminal left raw")
+        finally:
+            if proc is not None and proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=2)
+            if slave != -1:
+                os.close(slave)
+            os.close(master)
+
+    def test_redraw_failure_reports_error_and_restores_terminal(self):
+        master, slave = os.openpty()
+        proc = None
+        try:
+            proc = subprocess.Popen(
+                [ZIG, "-I", "dummy", "shell"], stdin=slave, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, env=env(), close_fds=True,
+                restore_signals=False,  # Ignore SIGPIPE so write returns EPIPE.
+            )
+            os.close(slave)
+            slave = -1
+            self.assertTrue(select.select([proc.stdout], [], [], 5)[0], "shell did not write prompt")
+            self.assertEqual(proc.stdout.read(len(b"ipmitool> ")), b"ipmitool> ")
+            proc.stdout.close()
+            os.write(master, b"x\x7fexit\r")
+            status = proc.wait(timeout=5)
+            stderr = proc.stderr.read()
+            self.assertNotEqual(status, 0, stderr)
+            self.assertIn(b"shell: Io", stderr)
+            flags = termios.tcgetattr(master)[3]
+            self.assertTrue(flags & termios.ECHO and flags & termios.ICANON, "terminal left raw")
+        finally:
+            if proc is not None:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait(timeout=2)
+                proc.stdout.close()
+                proc.stderr.close()
+            if slave != -1:
+                os.close(slave)
+            os.close(master)
+
     def test_dumb_terminal_editing(self):
         status, data = pty([
             (b"ipmitool> ", b"echo ac\x1b[Db\r"),
