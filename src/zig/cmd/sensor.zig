@@ -344,8 +344,9 @@ fn setSensorThresholds(
 
 /// `BRIDGE_TO_SENSOR()`.
 fn bridgeToSensor(intf: *Intf, addr: u8, chan: u8) bool {
-    return intf.target_addr != addr and
-        (intf.target_channel != chan or chan != 0);
+    return !((chan == 0 and intf.target_ipmb_addr != 0 and
+        intf.target_ipmb_addr == addr) or
+        (intf.target_addr == addr and intf.target_channel == chan));
 }
 
 /// `__ipmi_sensor_set_threshold()`.

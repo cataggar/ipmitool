@@ -11,7 +11,7 @@
 //!
 //! Usage:
 //!   transport-fixtures --binary <ipmitool> [--fixtures-dir D] [--work-dir D]
-//!                      [--filter S] [--update] [--list] [-v]
+//!                      [--sensor-fixture PATH] [--filter S] [--update] [--list] [-v]
 
 const std = @import("std");
 const Io = std.Io;
@@ -26,6 +26,7 @@ const usage_text =
     \\  --binary PATH        the ipmitool binary under test (required)
     \\  --fixtures-dir DIR   where the .txt fixtures live
     \\  --iana PATH          the trimmed IANA PEN registry fixture
+    \\  --sensor-fixture P   full sensor SDR hex fixture
     \\  --work-dir DIR       scratch directory
     \\  --filter SUBSTRING   only run cases whose name contains SUBSTRING
     \\  --update, --accept   rewrite the fixtures instead of comparing
@@ -41,6 +42,7 @@ const Options = struct {
     binary: []const u8 = "",
     fixtures_dir: []const u8 = "tests/transport/fixtures",
     iana: []const u8 = "tests/fixtures/iana/enterprise-numbers",
+    sensor_fixture: []const u8 = "tests/fixtures/sensor/full_bridged.hex",
     work_dir: ?[]const u8 = null,
     filter: ?[]const u8 = null,
     update: bool = false,
@@ -84,6 +86,9 @@ fn dispatch(gpa: std.mem.Allocator, io: Io, init: std.process.Init, out: *Io.Wri
         } else if (std.mem.eql(u8, arg, "--iana")) {
             i += 1;
             opts.iana = args[i];
+        } else if (std.mem.eql(u8, arg, "--sensor-fixture")) {
+            i += 1;
+            opts.sensor_fixture = args[i];
         } else if (std.mem.eql(u8, arg, "--work-dir")) {
             i += 1;
             opts.work_dir = args[i];
@@ -303,7 +308,17 @@ fn runCase(
     for (c.args) |a| try transcript.print(" {s}", .{a});
     try transcript.print("\n", .{});
 
-    var bmc: Bmc = .init(gpa, &transcript, c.bmc);
+    var personality = c.bmc;
+    if (personality.sensor) |*sensor| {
+        const text = try cwd.readFileAlloc(io, opts.sensor_fixture, gpa, .unlimited);
+        const record = try parseSensorHex(gpa, text);
+        if (sensor.local) {
+            record[5] = 0x20;
+            record[6] = 0x00;
+        }
+        sensor.record = record;
+    }
+    var bmc: Bmc = .init(gpa, &transcript, personality);
 
     var env: std.process.Environ.Map = .init(gpa);
     try env.put("PATH", "/usr/bin:/bin");
@@ -337,6 +352,7 @@ fn runCase(
         try transcript.print("  !!! model BMC aborted: {t}\n", .{err});
         bmc.violations += 1;
     }
+    try bmc.checkSensor();
 
     switch (result.term) {
         .exited => |code| try transcript.print("exit {d}\n", .{code}),
@@ -348,6 +364,19 @@ fn runCase(
     try transcript.outputBlock("err", try scrub(gpa, result.stderr, work_abs, port_text));
 
     return .{ .text = transcript.text(), .violations = bmc.violations };
+}
+
+fn parseSensorHex(gpa: std.mem.Allocator, text: []const u8) ![]u8 {
+    var bytes: std.ArrayList(u8) = .empty;
+    var lines = std.mem.splitScalar(u8, text, '\n');
+    while (lines.next()) |line| {
+        const uncommented = line[0 .. std.mem.indexOfScalar(u8, line, '#') orelse line.len];
+        var tokens = std.mem.tokenizeAny(u8, uncommented, " \t\r");
+        while (tokens.next()) |token| try bytes.append(gpa, try std.fmt.parseInt(u8, token, 16));
+    }
+    if (bytes.items.len != 53 or bytes.items[4] != bytes.items.len - 5)
+        return error.InvalidSensorRecord;
+    return bytes.items;
 }
 
 fn realPath(gpa: std.mem.Allocator, io: Io, path: []const u8) ![]const u8 {

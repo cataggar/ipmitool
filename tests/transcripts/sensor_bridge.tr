@@ -1,7 +1,7 @@
 # A BMC with a single SDR record whose sensor lives behind a bridge: owner ID
 # 2Ch, LUN 1, channel 5.  Everything else in tests/transcripts/sensor.tr sits on
-# the BMC itself at LUN 0 / channel 0, which leaves the LUN and channel fields
-# of struct sdr_record_common_sensor::keys unpinned.
+# the BMC itself at LUN 0 / channel 0.  The dummy golden suite sees the LUN
+# but not the channel or target address; tests/transport/ verifies the bridge.
 #
 #   0xa39c  full, threshold, analog, owner 2Ch, LUN 1, channel 5   "BrdgS"
 #

@@ -9,7 +9,7 @@ every datagram in both directions against a checked-in transcript.
 
 ## Why this exists
 
-The 173-case golden suite (`tests/golden/`, see `golden-harness.md`) drives
+The golden suite (`tests/golden/`, see `golden-harness.md`) drives
 every case through the `dummy` interface.  `dummy` is a UNIX-socket echo
 service: it has no checksums, no session layer, no packet assembly and no
 retry logic.  Everything Phase 4 is about is therefore invisible to it.
@@ -31,7 +31,7 @@ Every checksum ipmitool computes is now wrong by one, and the golden suite
 still reports `173 passed, 0 failed`.  A regression like that would ship green
 and only appear against real BMC hardware, which CI cannot reach.
 
-This harness turns that same mutation into 32 failures out of 33 cases.
+At the original 33-case baseline, this harness caught that mutation in 32 cases.
 
 ## Design
 
@@ -63,20 +63,33 @@ Every source of nondeterminism is fixed or masked:
 | the scratch directory path | substituted out of stderr |
 | the IANA enterprise-number registry | `tests/fixtures/iana/enterprise-numbers` is copied into a per-case `$HOME` so `mc info` output does not depend on the machine |
 
-### One stateful responder, on purpose
+### Request-dependent responders, on purpose
 
-The model BMC answers from a fixed table (`Personality.extra`): the reply does
-not depend on the request body.  There is one exception, `Personality.fru`,
-which serves a byte image through `Get FRU Inventory Area Info` and
-`Read FRU Data`.
+The model BMC usually answers from a fixed table (`Personality.extra`).  The
+request-dependent responders are `Personality.fru`, which serves a byte image
+through `Get FRU Inventory Area Info` and `Read FRU Data`, and
+`Personality.sensor`, which serves the golden `full_bridged.hex` SDR and
+validates sensor routing.
 
-It exists because `read_fru_area()` sizes every `Read FRU Data` request as
-`ipmi_intf_get_max_response_data_size(intf) - 2` and puts that count in the
-request, so the payload-size arithmetic in `src/plugins/ipmi_intf.c` — which
-is otherwise invisible, since nothing else on the wire depends on it — becomes
-a byte in the transcript.  The three `lan/md5-fru*` cases read the same image
+The FRU responder exists because `read_fru_area()` sizes every
+`Read FRU Data` request as `ipmi_intf_get_max_response_data_size(intf) - 2`
+and puts that count in the request.  The payload-size arithmetic in
+`src/plugins/ipmi_intf.c` — otherwise invisible on the wire — becomes a byte
+in the transcript.  The three `lan/md5-fru*` cases read the same image
 at bridging levels 0, 1 and 2 and record chunk sizes of 32, 23 and 15
 respectively.
+
+The `lan/sensor-*` cases retrieve the *same* full SDR used by the golden suite.
+The emulator independently decodes each sensor request's target address,
+tracking-bit/channel byte, LUN and bridge depth; a mismatch is a protocol
+violation even in fixture-update mode.  Its `sen` transcript line records
+the decoded tuple, and a final call-count check pins Get Sensor Reading on
+`get`, Get Sensor Thresholds on both commands, and Set Sensor Thresholds
+without the discarded reading removed by #66 on `thresh`.  The bridged record's
+owner `2c`, LUN 1 and channel 5 produce `target_addr=2c`,
+`target_channel=45` on the wire.  Controls check BMC-local channel-zero
+requests (no Send Message), an already-targeted owner/channel (no additional
+retarget), and a matching owner on the wrong channel (retarget *must* occur).
 
 ### One code path for record and check
 
@@ -155,6 +168,7 @@ Fixtures are line-oriented text so a reviewer can read a diff.  Example
 | `dat` | the message data field, or `-` when empty |
 | `ccc` | completion code of a response |
 | `brg` | one level of `Send Message` bridging unwrapped |
+| `sen` | emulator-decoded sensor target address, tracked channel, LUN and bridge depth |
 | `ich` | RMCP+ integrity check verdict |
 | `cnf` | RMCP+ confidentiality: padding verdict and recovered plaintext length |
 | `pln` | the decrypted RMCP+ payload |
@@ -238,8 +252,7 @@ The audited constants and the reasoning for each are in the doc comments in
 
 ## Coverage
 
-33 cases, `tests/transport/cases.zig`.
-34 cases, `tests/transport/cases.zig`.
+54 cases, `tests/transport/cases.zig`.
 
 | area | cases |
 | --- | --- |
@@ -261,6 +274,7 @@ The audited constants and the reasoning for each are in the doc comments in
 | a response the tool cannot match, then retransmission reusing `rq_seq` | `lan/none-dup-request` |
 | the `intelplus`/`-o intelwv2` non-RMCP "thump" datagrams | `lan/none-intelwv2` |
 | single and double `Send Message` bridging | `lan/md5-bridged`, `lan/md5-double-bridged` |
+| sensor IPMB target address, channel and LUN, plus local/already-targeted controls | `lan/sensor-*` |
 | double bridging selected by the *transit channel* rather than the transit address | `lan/md5-fru-transit-channel` |
 | `ipmi_intf_get_max_response_data_size()` at bridging level 0, 1 and 2, including the clamp back to the default payload size | `lan/md5-fru`, `lan/md5-fru-bridged`, `lan/md5-fru-transit-channel` |
 | `ipmi_intf_session_set_username()` copying exactly 16 bytes | `lan/md5-long-creds`, `lanplus/cipher3-long-creds` |
@@ -330,13 +344,9 @@ a future port PR still has to argue about separately.
 
 ## Mutation battery
 
-Each row is one mutation applied to the C source, rebuilt, run.  The counts in
-this first table were measured against the original 27-case suite; the
-baseline is now `33 passed, 0 failed`, so the failure counts are lower bounds.
-Each row is one mutation applied to the C source, rebuilt, run.  Baseline was
-`27 passed, 0 failed` — this table was recorded when the suite had 27 cases,
-before the `lan` port added seven more.  The counts below are therefore out of
-27, not out of 34.
+Each row is one mutation applied to the C source, rebuilt and run against the
+original 27-case suite.  These historical counts are out of 27, not the
+current 54 cases.
 
 | # | file | mutation | transport result |
 | --- | --- | --- | --- |

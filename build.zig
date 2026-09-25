@@ -1169,6 +1169,8 @@ fn addTransport(
     run.addFileArg(exe.getEmittedBin());
     run.addArg("--iana");
     run.addFileArg(b.path("tests/fixtures/iana/enterprise-numbers"));
+    run.addArg("--sensor-fixture");
+    run.addFileArg(b.path("tests/fixtures/sensor/full_bridged.hex"));
     run.addArg("--work-dir");
     run.addDirectoryArg(b.tmpPath());
     if (record) {
