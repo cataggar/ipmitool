@@ -1,0 +1,4 @@
+# Two identical 256-byte SPD pages. The I2C command uses a one-byte offset;
+# non-dividing chunk sizes can straddle the page boundary at offset 255.
+@spd/ddr3.hex
+@spd/ddr3.hex

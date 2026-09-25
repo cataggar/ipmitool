@@ -1,0 +1,1051 @@
+#!golden 1
+#!case spd_maxread_1
+#!section exit
+0
+#!section stdout
+ Memory Type           : DDR3 SDRAM
+ SDRAM Capacity        : 2048 MB
+ Memory Banks          : 4 (16 Banks)
+ Primary Bus Width     : 64 bits
+ SDRAM Device Width    : 32 bits
+ Number of Ranks       : 2
+ Memory size           : 1024 MB
+ 1.5 V Nominal Op      : Yes
+ 1.35 V Nominal Op     : No
+ 1.2X V Nominal Op     : Yes
+ Error Detect/Cor      : 8 bits
+ Manufacturer          : Micron Technology
+ Manufacture Date      : year 15 week 23
+ Serial Number         : deadbeef
+ Part Number           : 18KSF25672AZ-1G4D1
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 00
+< rule=master_write_read ccode=0x00 len=1 data=92
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 01
+< rule=master_write_read ccode=0x00 len=1 data=11
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 02
+< rule=master_write_read ccode=0x00 len=1 data=0b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 03
+< rule=master_write_read ccode=0x00 len=1 data=02
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 04
+< rule=master_write_read ccode=0x00 len=1 data=13
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 05
+< rule=master_write_read ccode=0x00 len=1 data=11
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 06
+< rule=master_write_read ccode=0x00 len=1 data=02
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 07
+< rule=master_write_read ccode=0x00 len=1 data=0b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 08
+< rule=master_write_read ccode=0x00 len=1 data=0b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 09
+< rule=master_write_read ccode=0x00 len=1 data=11
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0a
+< rule=master_write_read ccode=0x00 len=1 data=01
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0b
+< rule=master_write_read ccode=0x00 len=1 data=08
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0c
+< rule=master_write_read ccode=0x00 len=1 data=0a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 10
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 11
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 12
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 13
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 14
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 15
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 16
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 17
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 18
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 19
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 20
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 21
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 22
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 23
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 24
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 25
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 26
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 27
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 28
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 29
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 30
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 31
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 32
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 33
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 34
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 35
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 36
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 37
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 38
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 39
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 40
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 41
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 42
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 43
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 44
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 45
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 46
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 47
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 48
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 49
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 50
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 51
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 52
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 53
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 54
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 55
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 56
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 57
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 58
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 59
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 60
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 61
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 62
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 63
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 64
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 65
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 66
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 67
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 68
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 69
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 70
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 71
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 72
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 73
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 74
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 75
+< rule=master_write_read ccode=0x00 len=1 data=80
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 76
+< rule=master_write_read ccode=0x00 len=1 data=2c
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 77
+< rule=master_write_read ccode=0x00 len=1 data=01
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 78
+< rule=master_write_read ccode=0x00 len=1 data=15
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 79
+< rule=master_write_read ccode=0x00 len=1 data=23
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7a
+< rule=master_write_read ccode=0x00 len=1 data=de
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7b
+< rule=master_write_read ccode=0x00 len=1 data=ad
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7c
+< rule=master_write_read ccode=0x00 len=1 data=be
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7d
+< rule=master_write_read ccode=0x00 len=1 data=ef
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 80
+< rule=master_write_read ccode=0x00 len=1 data=31
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 81
+< rule=master_write_read ccode=0x00 len=1 data=38
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 82
+< rule=master_write_read ccode=0x00 len=1 data=4b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 83
+< rule=master_write_read ccode=0x00 len=1 data=53
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 84
+< rule=master_write_read ccode=0x00 len=1 data=46
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 85
+< rule=master_write_read ccode=0x00 len=1 data=32
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 86
+< rule=master_write_read ccode=0x00 len=1 data=35
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 87
+< rule=master_write_read ccode=0x00 len=1 data=36
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 88
+< rule=master_write_read ccode=0x00 len=1 data=37
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 89
+< rule=master_write_read ccode=0x00 len=1 data=32
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8a
+< rule=master_write_read ccode=0x00 len=1 data=41
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8b
+< rule=master_write_read ccode=0x00 len=1 data=5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8c
+< rule=master_write_read ccode=0x00 len=1 data=2d
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8d
+< rule=master_write_read ccode=0x00 len=1 data=31
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8e
+< rule=master_write_read ccode=0x00 len=1 data=47
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8f
+< rule=master_write_read ccode=0x00 len=1 data=34
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 90
+< rule=master_write_read ccode=0x00 len=1 data=44
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 91
+< rule=master_write_read ccode=0x00 len=1 data=31
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 92
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 93
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 94
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 95
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 96
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 97
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 98
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 99
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 aa
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ab
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ac
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ad
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ae
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 af
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ba
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 be
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bf
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ca
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ce
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cf
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 da
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 db
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 dc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 dd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 de
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 df
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ea
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 eb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ec
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ed
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ee
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ef
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fa
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fe
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ff
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 00
+< rule=master_write_read ccode=0x00 len=1 data=92
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 01
+< rule=master_write_read ccode=0x00 len=1 data=11
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 02
+< rule=master_write_read ccode=0x00 len=1 data=0b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 03
+< rule=master_write_read ccode=0x00 len=1 data=02
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 04
+< rule=master_write_read ccode=0x00 len=1 data=13
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 05
+< rule=master_write_read ccode=0x00 len=1 data=11
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 06
+< rule=master_write_read ccode=0x00 len=1 data=02
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 07
+< rule=master_write_read ccode=0x00 len=1 data=0b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 08
+< rule=master_write_read ccode=0x00 len=1 data=0b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 09
+< rule=master_write_read ccode=0x00 len=1 data=11
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0a
+< rule=master_write_read ccode=0x00 len=1 data=01
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0b
+< rule=master_write_read ccode=0x00 len=1 data=08
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0c
+< rule=master_write_read ccode=0x00 len=1 data=0a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 0f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 10
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 11
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 12
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 13
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 14
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 15
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 16
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 17
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 18
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 19
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 1f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 20
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 21
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 22
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 23
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 24
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 25
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 26
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 27
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 28
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 29
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 2f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 30
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 31
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 32
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 33
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 34
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 35
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 36
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 37
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 38
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 39
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 3f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 40
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 41
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 42
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 43
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 44
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 45
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 46
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 47
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 48
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 49
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 4f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 50
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 51
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 52
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 53
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 54
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 55
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 56
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 57
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 58
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 59
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 5f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 60
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 61
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 62
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 63
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 64
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 65
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 66
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 67
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 68
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 69
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 6f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 70
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 71
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 72
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 73
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 74
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 75
+< rule=master_write_read ccode=0x00 len=1 data=80
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 76
+< rule=master_write_read ccode=0x00 len=1 data=2c
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 77
+< rule=master_write_read ccode=0x00 len=1 data=01
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 78
+< rule=master_write_read ccode=0x00 len=1 data=15
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 79
+< rule=master_write_read ccode=0x00 len=1 data=23
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7a
+< rule=master_write_read ccode=0x00 len=1 data=de
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7b
+< rule=master_write_read ccode=0x00 len=1 data=ad
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7c
+< rule=master_write_read ccode=0x00 len=1 data=be
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7d
+< rule=master_write_read ccode=0x00 len=1 data=ef
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 7f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 80
+< rule=master_write_read ccode=0x00 len=1 data=31
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 81
+< rule=master_write_read ccode=0x00 len=1 data=38
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 82
+< rule=master_write_read ccode=0x00 len=1 data=4b
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 83
+< rule=master_write_read ccode=0x00 len=1 data=53
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 84
+< rule=master_write_read ccode=0x00 len=1 data=46
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 85
+< rule=master_write_read ccode=0x00 len=1 data=32
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 86
+< rule=master_write_read ccode=0x00 len=1 data=35
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 87
+< rule=master_write_read ccode=0x00 len=1 data=36
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 88
+< rule=master_write_read ccode=0x00 len=1 data=37
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 89
+< rule=master_write_read ccode=0x00 len=1 data=32
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8a
+< rule=master_write_read ccode=0x00 len=1 data=41
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8b
+< rule=master_write_read ccode=0x00 len=1 data=5a
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8c
+< rule=master_write_read ccode=0x00 len=1 data=2d
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8d
+< rule=master_write_read ccode=0x00 len=1 data=31
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8e
+< rule=master_write_read ccode=0x00 len=1 data=47
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 8f
+< rule=master_write_read ccode=0x00 len=1 data=34
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 90
+< rule=master_write_read ccode=0x00 len=1 data=44
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 91
+< rule=master_write_read ccode=0x00 len=1 data=31
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 92
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 93
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 94
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 95
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 96
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 97
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 98
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 99
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9a
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9b
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9c
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9d
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9e
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 9f
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 a9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 aa
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ab
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ac
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ad
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ae
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 af
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 b9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ba
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 be
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 bf
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 c9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ca
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ce
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 cf
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 d9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 da
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 db
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 dc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 dd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 de
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 df
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 e9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ea
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 eb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ec
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ed
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ee
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ef
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f0
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f1
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f2
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f3
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f4
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f5
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f6
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f7
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f8
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 f9
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fa
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fb
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fc
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fd
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 fe
+< rule=master_write_read ccode=0x00 len=1 data=00
+> netfn=0x06 lun=0x00 cmd=0x52 target_cmd=0x00 data=01 a0 01 ff
+< rule=master_write_read ccode=0x00 len=1 data=00
+bye

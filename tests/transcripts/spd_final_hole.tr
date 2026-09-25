@@ -1,0 +1,18 @@
+# A 63-byte SPD walk needs only eight bytes in its final request at offset
+# 504 (wire offset f8). The BMC replies successfully with just four bytes.
+
+default_ccode 0xc1
+
+respond short_final_chunk
+  netfn 0x06
+  cmd 0x52
+  match 01 a0 08 f8
+  data 00 00 00 00
+end
+
+respond master_write_read
+  netfn 0x06
+  cmd 0x52
+  partial 3 1 2
+  blob @spd/ddr3_512.hex
+end

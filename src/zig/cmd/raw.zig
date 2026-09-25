@@ -176,13 +176,7 @@ fn rawspdMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     var channel: u8 = 0;
     var i2cbus: u8 = 0;
     var i2caddr: u8 = 0;
-    // C sizes this buffer at exactly RAW_SPD_SIZE, but the loop below steps by
-    // `msize` and copies `msize` bytes at each step, so any `maxread` that does
-    // not divide 512 makes the last copy run past the end.  The slack keeps the
-    // port defined for those inputs; for every `maxread` that divides 512 -
-    // which includes the default 64 - the two are byte for byte the same.  See
-    // issue #28, which also covers the `maxread == 0` infinite loop below.
-    var spd_data: [raw_spd_size + 255]u8 = undefined;
+    var spd_data: [raw_spd_size]u8 = undefined;
     var i: c_int = 0;
 
     @memset(spd_data[0..raw_spd_size], 0);
@@ -203,21 +197,41 @@ fn rawspdMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         if (isValidParam(argv[3], &msize, "maxread") != 0) return -1;
     }
 
+    if (msize == 0 or msize > i2c_master_max_size) {
+        c.lprintf(
+            log.Level.err,
+            "SPD maxread must be between 1 and %d bytes",
+            @as(c_int, i2c_master_max_size),
+        );
+        return -1;
+    }
+
     i2cbus = @truncate(((@as(c_uint, channel) & 0xF) << 4) |
         ((@as(c_uint, i2cbus) & 7) << 1) | 1);
 
-    while (i < raw_spd_size) : (i += @as(c_int, msize)) {
+    while (i < raw_spd_size) {
+        const chunk: u8 = @intCast(@min(@as(c_int, msize), raw_spd_size - i));
         // C passes `(uint8_t *)&i`, i.e. the first byte of the int in memory,
         // which is the low byte of the offset on a little endian target.
         const offset: [*]u8 = @ptrCast(&i);
-        const rsp = masterWriteRead(intf, i2cbus, i2caddr, offset, 1, msize) orelse {
+        const rsp = masterWriteRead(intf, i2cbus, i2caddr, offset, 1, chunk) orelse {
             c.lprintf(log.Level.err, "Unable to perform I2C Master Write-Read");
             return -1;
         };
 
-        // `msize` bytes are copied whatever `rsp->data_len` says, so a short
-        // response leaves the tail of the previous one in place.
-        @memcpy(spd_data[@intCast(i)..][0..msize], rsp.data[0..msize]);
+        if (rsp.data_len < @as(c_int, chunk)) {
+            c.lprintf(
+                log.Level.err,
+                "SPD read at offset %d returned %d bytes, expected %d",
+                i,
+                rsp.data_len,
+                @as(c_int, chunk),
+            );
+            return -1;
+        }
+
+        @memcpy(spd_data[@intCast(i)..][0..chunk], rsp.data[0..chunk]);
+        i += @as(c_int, chunk);
     }
 
     _ = c.ipmi_spd_print(&spd_data, i);

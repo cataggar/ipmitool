@@ -3348,11 +3348,14 @@ If the instance is given, it will deactivate the given instance
 number.  The default is 1.
 .RE
 .TP
-\fIspd\fP <\fBi2cbus\fR> <\fBi2caddr\fR> [<\fBchannel\fR>] [<\fmaxread\fR>]
+\fIspd\fP <\fBi2cbus\fR> <\fBi2caddr\fR> [<\fBchannel\fR>] [<\fBmaxread\fR>]
 .BR
 
 This command may be used to read SPD (Serial Presence Detect) data using the
 I2C Master Write\-Read IPMI command.
+The optional \fBmaxread\fR is the number of bytes read per transaction
+(1 to 64, default 64). The last transaction reads only the remaining bytes
+of the 512\-byte SPD buffer. An incomplete read fails the command.
 
 .TP
 \fIsunoem\fP
