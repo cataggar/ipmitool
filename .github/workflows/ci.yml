@@ -216,6 +216,14 @@ jobs:
       - name: zig build test
         run: zig build test --summary all
 
+      - name: Golden tests with lanplus, OpenSSL, and shell disabled
+        # The all-Zig comparison selects every port, including disabled
+        # interfaces; these cases must still link without lanplus's C tables.
+        run: >-
+          zig build test-golden -Dipmishell=false -Dopenssl=false
+          -Dinternal-md5=true -Dintf-lanplus=false -Dzig-modules=sdr,sel
+          --summary all -- --filter sl_
+
   oracle:
     # Differential-testing reference build (issue #3). The autotools build is
     # the oracle every Zig port stage is diffed against, so it has to keep

@@ -3114,6 +3114,11 @@ comptime {
 }
 
 pub fn exportSymbols() void {
+    // The all-Zig comparison build selects every port even when its interface
+    // is disabled.  In that configuration ipmi_intf.h does not declare the
+    // cipher-suite setter used by open(), and neither C nor Zig defines it.
+    if (!@hasDecl(c, "IPMI_INTF_LANPLUS")) return;
+
     abi.assertCallSignature(@TypeOf(open), @TypeOf(c.ipmi_lanplus_open));
     abi.assertCallSignature(@TypeOf(close), @TypeOf(c.ipmi_lanplus_close));
     abi.assertCallSignature(@TypeOf(lanPing), @TypeOf(c.ipmiv2_lan_ping));
