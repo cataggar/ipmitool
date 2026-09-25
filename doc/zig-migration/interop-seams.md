@@ -86,6 +86,12 @@ configurations; `zig build test-strings-unit` runs its C-backed ABI and
 lookup checks. `zig build test-strings-compile -Dtarget=x86_64-linux-musl`
 cross-compiles those C header checks without running a foreign test binary.
 
+The two LAN+ lookup tables in `intf/lanplus_strings.zig` also import only
+`util/table_types.zig`. Selected exports check every copied status and
+privilege constant against the translated C header in a separate validation
+module. `test-lanplus-strings` tests the tables without a C bridge and also
+compares all exported entries with the C oracle.
+
 ### SDR safety across the #53 port
 
 The #53 Zig SDR port originally preceded the issue #42 checks in
