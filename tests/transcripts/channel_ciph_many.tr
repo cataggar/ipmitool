@@ -4,11 +4,8 @@
 # The first four are full 17 byte responses, which keeps the read loop going;
 # the fifth is short and ends it.  Records straddle the response boundaries.
 #
-# Only *twelve* rows print.  ipmi_print_channel_cipher_suites() passes
-# `sizeof(*suites)' - the size of one struct cipher_suite_info, which is 12 -
-# as the array capacity instead of ARRAY_SIZE(suites), so the parse stops at
-# twelve records however many the BMC reports.  That is upstream behaviour and
-# is reproduced deliberately; see the issue linked from src/zig/cmd/channel.zig.
+# All thirteen complete records must print, despite the last response ending
+# in a partial fourteenth record.
 
 default_ccode 0xc1
 

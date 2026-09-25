@@ -390,7 +390,7 @@ transcript: channel_ciph_multi.tr
 covers: channel
 
 [chan_ciph_many]
-desc: thirteen records are reported and twelve are printed
+desc: thirteen records are reported and all thirteen are printed
 args: -I dummy channel getciphers ipmi
 transcript: channel_ciph_many.tr
 covers: channel

@@ -445,7 +445,7 @@ parse_channel_cipher_suite_data(uint8_t *cipher_suite_data, size_t data_len,
 
 		if (!suite_size) {
 			lprintf(LOG_INFO,
-			        "Failed to parse cipher suite data at offset %d",
+			        "Failed to parse cipher suite data at offset %zu",
 			        offset);
 			break;
 		}
@@ -534,7 +534,7 @@ ipmi_print_channel_cipher_suites(struct ipmi_intf *intf,
 	int rc;
 	size_t i = 0;
 	struct cipher_suite_info suites[MAX_CIPHER_SUITE_COUNT];
-	size_t nr_suites = sizeof(*suites);
+	size_t nr_suites = ARRAY_SIZE(suites);
 	const char *header_str =
 "ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg";
 

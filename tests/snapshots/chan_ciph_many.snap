@@ -16,6 +16,7 @@ ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg
 9    N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
 10   N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
 11   N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
+12   N/A     hmac_sha1       hmac_sha1_96    aes_cbc_128   \x20
 #!section stderr
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
