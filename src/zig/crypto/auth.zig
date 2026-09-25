@@ -42,6 +42,27 @@ var md2_authcode: [16]u8 = @splat(0);
 /// The `static uint8_t md[16]` inside `ipmi_auth_special`.
 var special_authcode: [16]u8 = @splat(0);
 
+const md2_warning =
+    "WARNING: No internal support for MD2!  " ++
+    "Please re-compile with OpenSSL.\n";
+
+fn writeMd5Trace(writer: *std.Io.Writer, digest: *const [16]u8) std.Io.Writer.Error!void {
+    try writer.print("  MD5 AuthCode    : {s}\n", .{std.fmt.bytesToHex(digest.*, .lower)});
+}
+
+fn writeMd2Warning(writer: *std.Io.Writer) std.Io.Writer.Error!void {
+    try writer.writeAll(md2_warning);
+}
+
+fn outputFile() std.Io.File {
+    // Zig's test runner sends its protocol over stdout.
+    return if (@import("builtin").is_test) .stderr() else .stdout();
+}
+
+fn stdoutFailure(comptime function: []const u8, err: ?std.Io.File.Writer.Error) noreturn {
+    std.debug.panic("{s}: stdout write failed: {t}", .{ function, err orelse error.WriteFailed });
+}
+
 /// `ipmi_auth_md5` - multi-session authcode generation for MD5.
 ///
 /// `H(password + session_id + msg + session_seq + password)`, where the
@@ -51,7 +72,8 @@ pub fn authMd5(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
     md5_authcode = v15.md5(s.authcode[0..16], s.session_id, message, s.in_seq);
 
     if (c.verbose > 3) {
-        _ = std.c.printf("  MD5 AuthCode    : %s\n", c.buf2str(&md5_authcode, 16));
+        var stdout = outputFile().writerStreaming(std.Options.debug_io, &.{});
+        writeMd5Trace(&stdout.interface, &md5_authcode) catch stdoutFailure("ipmi_auth_md5", stdout.err);
     }
     return &md5_authcode;
 }
@@ -67,10 +89,8 @@ pub fn authMd2(s: *Session, data: [*c]u8, data_len: c_int) callconv(.c) [*c]u8 {
     _ = data_len;
 
     md2_authcode = v15.md2_unsupported;
-    _ = std.c.printf(
-        "WARNING: No internal support for MD2!  " ++
-            "Please re-compile with OpenSSL.\n",
-    );
+    var stdout = outputFile().writerStreaming(std.Options.debug_io, &.{});
+    writeMd2Warning(&stdout.interface) catch stdoutFailure("ipmi_auth_md2", stdout.err);
     return &md2_authcode;
 }
 
@@ -95,4 +115,31 @@ comptime {
     @export(&authMd5, .{ .name = "ipmi_auth_md5", .linkage = .strong });
     @export(&authMd2, .{ .name = "ipmi_auth_md2", .linkage = .strong });
     @export(&authSpecial, .{ .name = "ipmi_auth_special", .linkage = .strong });
+}
+
+test "MD2 warning matches the C oracle and propagates write failures" {
+    var buffer: [md2_warning.len]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&buffer);
+    try writeMd2Warning(&writer);
+    try std.testing.expectEqualStrings(
+        "WARNING: No internal support for MD2!  Please re-compile with OpenSSL.\n",
+        writer.buffered(),
+    );
+
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeMd2Warning(&failing));
+}
+
+test "verbose MD5 trace has the C stdout format" {
+    const digest = [16]u8{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+    var buffer: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&buffer);
+    try writeMd5Trace(&writer, &digest);
+    try std.testing.expectEqualStrings(
+        "  MD5 AuthCode    : 000102030405060708090a0b0c0d0e0f\n",
+        writer.buffered(),
+    );
+
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeMd5Trace(&failing, &digest));
 }
