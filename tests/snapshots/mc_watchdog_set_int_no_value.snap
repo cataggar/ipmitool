@@ -1,11 +1,10 @@
 #!golden 1
-#!case mc_watchdog_set_int_invalid
+#!case mc_watchdog_set_int_no_value
 #!section exit
 1
 #!section stdout
 #!section stderr
-Interrupt type 'zzz' is not valid
-
+Missing value for watchdog option 'int'
 usage: watchdog <command>:
 
    set <option[=value]> [<option[=value]> ...]

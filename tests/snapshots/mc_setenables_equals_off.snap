@@ -1,9 +1,9 @@
 #!golden 1
-#!case mc_setenables_equals_form
+#!case mc_setenables_equals_off
 #!section exit
 0
 #!section stdout
-Enabling OEM 0
+Disabling System Event Logging
 
 Verifying...
 Receive Message Queue Interrupt          : enabled
@@ -21,7 +21,7 @@ OEM 2                                    : disabled
 < rule=default ccode=0xc1 len=0 data=
 > netfn=0x06 lun=0x00 cmd=0x2f target_cmd=0x00 data=
 < rule=get_bmc_global_enables ccode=0x00 len=1 data=0f
-> netfn=0x06 lun=0x00 cmd=0x2e target_cmd=0x00 data=2f
+> netfn=0x06 lun=0x00 cmd=0x2e target_cmd=0x00 data=07
 < rule=set_bmc_global_enables ccode=0x00 len=0 data=
 > netfn=0x06 lun=0x00 cmd=0x2f target_cmd=0x00 data=
 < rule=get_bmc_global_enables ccode=0x00 len=1 data=0f

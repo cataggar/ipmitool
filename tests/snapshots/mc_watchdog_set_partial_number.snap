@@ -1,11 +1,10 @@
 #!golden 1
-#!case mc_watchdog_set_int_invalid
+#!case mc_watchdog_set_partial_number
 #!section exit
 1
 #!section stdout
 #!section stderr
-Interrupt type 'zzz' is not valid
-
+Invalid watchdog value '1sec'
 usage: watchdog <command>:
 
    set <option[=value]> [<option[=value]> ...]

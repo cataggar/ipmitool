@@ -9,37 +9,16 @@
 //! `ipmi_guid2str()`, `ipmi_mc_getsysinfo()` and `ipmi_mc_setsysinfo()`
 //! directly.  All of them link against this file unchanged and unaware.
 //!
-//! Four things are worth knowing before reading on:
+//! Three things are worth knowing before reading on:
 //!
 //! * **Formatting stays in libc.**  `printf`, `sprintf` and `lprintf` are
 //!   called through the `ipmi_c` bridge rather than reimplemented, because
 //!   `%0.1f`, `%02Xh`, `%-40s` and the exact rendering of `%08x` on a value
 //!   that C truncated to `int` are all observable.  So do `strcmp`, `strlen`,
-//!   `strncpy` and `strtol`: the module hands them pointers that C also handed
-//!   them, including the NULL ones (see below).
-//! * **Two upstream defects are reproduced deliberately**, because a port that
-//!   fixed them would change behaviour:
-//!   - `ipmi_mc_set_enables()` compares the whole argument against the option
-//!     name with `strcmp()` and then reads `argv[i] + strlen(name) + 1` - one
-//!     past the NUL - for the value.  The documented `option=on` spelling
-//!     therefore never matches, while `option on` "works" by reading into the
-//!     next `argv` string.
-//!   - `find_set_wdt_string()` walks the reserved rows of the timer tables,
-//!     whose `set` member is NULL, and hands that to `strcmp()`; and
-//!     `parse_set_wdt_options()` hands `strtol()` the NULL that `strchr()`
-//!     returns for an option written without `=`.  Both abort the process.
-//!   Neither is fixed here; both are reported as issue #31.
-//!   `tests/cases/41-mc.cases` pins both.
-//! * **`char` signedness matters once.**  `ipmi_sysinfo_main()` derives a block
-//!   count from `paramdata[3]`, a plain `char`, which is signed on x86-64 and
-//!   unsigned on aarch64.  The buffer is declared `c_char` so that Zig makes
-//!   the same choice the C compiler would on the same target.  On a target
-//!   where `char` is unsigned a length byte of 239 or more makes C's read loop
-//!   run off the end of its 256-byte `infostr` - a stack overflow, and the one
-//!   upstream defect (issue #31) this port does not reproduce, because the
-//!   corrupted bytes are whatever the C compiler happened to lay out next and
-//!   so are not a behaviour a port can match.  No golden case reaches it; one
-//!   that did would snapshot differently on the two CI architectures.
+//!   `strncpy` and `strtol`: the module hands them the same valid inputs as C.
+//! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
+//!   255 characters.  Both implementations read all required blocks and bound
+//!   the final copy to leave room for a NUL in the 256-byte output buffer.
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `mc` is selected;
 //!   see the note there.
@@ -321,9 +300,6 @@ fn mcGetEnables(intf: *Intf) c_int {
 }
 
 /// `ipmi_mc_set_enables()`.
-///
-/// The `strcmp()` guard and the `argv[i] + nl + 1` read past the NUL are
-/// upstream defects, reproduced verbatim; see the module comment.
 fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     if (argc < 1) {
         printfMcUsage();
@@ -352,11 +328,24 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     var i: c_int = 0;
     while (i < argc) : (i += 1) {
         const arg = argv[@intCast(i)];
+        const text = std.mem.span(arg);
+        const eq = std.mem.indexOfScalar(u8, text, '=');
+        const key = if (eq) |index| text[0..index] else text;
+        var found = false;
         for (mc_enables_bf_table) |bf| {
             const name = bf.name orelse break;
-            const nl = c.strlen(name);
-            if (c.strcmp(arg, name) != 0) continue;
-            const value: [*c]const u8 = @as([*c]const u8, @ptrCast(arg)) + nl + 1;
+            if (!std.mem.eql(u8, key, std.mem.span(name))) continue;
+            found = true;
+            const value: [*:0]const u8 = if (eq) |index|
+                arg + index + 1
+            else blk: {
+                if (i + 1 >= argc) {
+                    c.lprintf(log.Level.err, "Missing on/off value for %s", arg);
+                    return -1;
+                }
+                i += 1;
+                break :blk argv[@intCast(i)];
+            };
             if (c.strcmp(value, "off") == 0) {
                 _ = c.printf("Disabling %s\n", bf.desc);
                 en &= ~@as(u8, @truncate(bf.mask));
@@ -364,8 +353,14 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
                 _ = c.printf("Enabling %s\n", bf.desc);
                 en |= @as(u8, @truncate(bf.mask));
             } else {
-                c.lprintf(log.Level.err, "Unrecognized option: %s", arg);
+                c.lprintf(log.Level.err, "Unrecognized on/off value for %s: %s", name, value);
+                return -1;
             }
+            break;
+        }
+        if (!found) {
+            c.lprintf(log.Level.err, "Unrecognized option: %s", arg);
+            return -1;
         }
     }
 
@@ -503,7 +498,7 @@ fn mcGetGuid(intf: [*c]Intf, guid: [*c]c.ipmi_guid_t) callconv(.c) c_int {
     const rsp = sendrecv(@ptrCast(intf), &req) orelse return -1;
     if (rsp.ccode != 0) {
         return rsp.ccode;
-    } else if (rsp.data_len != 16 or rsp.data_len != @sizeOf(c.ipmi_guid_t)) {
+    } else if (rsp.data_len != @sizeOf(c.ipmi_guid_t)) {
         return -2;
     }
     @memcpy(
@@ -857,13 +852,12 @@ const wdt_int_table = wdtTable(&wdt_int_rows);
 const wdt_action_table = wdtTable(&wdt_action_rows);
 
 /// `find_set_wdt_string()`.
-///
-/// The reserved rows carry a NULL `set`, which this hands straight to
-/// `strcmp()` - an upstream defect, reproduced; see the module comment.
 fn findSetWdtString(w: [*c]const ?*const WdtString, s: [*c]const u8) callconv(.c) c_int {
     var val: c_int = 0;
     while (w[@intCast(val)] != null) {
-        if (c.strcmp(s, @ptrCast(w[@intCast(val)].?.set)) == 0) break;
+        if (w[@intCast(val)].?.set) |value| {
+            if (c.strcmp(s, value) == 0) break;
+        }
         val += 1;
     }
     if (w[@intCast(val)] == null) {
@@ -951,9 +945,6 @@ const WdtConf = struct {
 };
 
 /// `parse_set_wdt_options()`.
-///
-/// `vstr` is NULL whenever the option was written without `=`; C passes that
-/// straight to `strtol()` and `find_set_wdt_string()`, and so does this.
 fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
     // Seconds, makes almost USHRT_MAX when converted to 100ms intervals.
     const MAX_TIMEOUT: c_int = 6553;
@@ -972,33 +963,45 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
         var vstr = c.strchr(arg, '=');
         if (vstr != null) vstr += 1; // Point to the value
 
+        if (std.mem.indexOfScalar(u8, "tpiuac", arg[0]) != null and
+            (vstr == null or vstr[0] == 0))
+        {
+            c.lprintf(log.Level.err, "Missing value for watchdog option '%s'", arg);
+            return err;
+        }
+
         // Only check the first letter to allow for shortcuts.
         switch (arg[0]) {
-            't' => { // timeout
-                val = c.strtol(vstr, null, 10);
+            't', 'p' => { // timeout, pretimeout
+                var end: [*c]u8 = null;
+                val = c.strtol(vstr, &end, 10);
+                if (end == vstr or end[0] != 0) {
+                    c.lprintf(log.Level.err, "Invalid watchdog value '%s'", vstr);
+                    return err;
+                }
+                if (arg[0] == 'p') {
+                    if (val < 1 or val > MAX_PRETIMEOUT) {
+                        c.lprintf(
+                            log.Level.err,
+                            "Pretimeout value %ld is out of range (1-%d)\n",
+                            val,
+                            MAX_PRETIMEOUT,
+                        );
+                        return err;
+                    }
+                    conf.pretimeout = @truncate(@as(c_ulong, @bitCast(val)));
+                    continue;
+                }
                 if (val < 1 or val > MAX_TIMEOUT) {
                     c.lprintf(
                         log.Level.err,
-                        "Timeout value %lu is out of range (1-%d)\n",
-                        @as(c_ulong, @bitCast(val)),
+                        "Timeout value %ld is out of range (1-%d)\n",
+                        val,
                         MAX_TIMEOUT,
                     );
                     return err;
                 }
                 conf.timeout = @truncate(@as(c_ulong, @bitCast(val *% 10)));
-            },
-            'p' => { // pretimeout
-                val = c.strtol(vstr, null, 10);
-                if (val < 1 or val > MAX_PRETIMEOUT) {
-                    c.lprintf(
-                        log.Level.err,
-                        "Pretimeout value %lu is out of range (1-%d)\n",
-                        @as(c_ulong, @bitCast(val)),
-                        MAX_PRETIMEOUT,
-                    );
-                    return err;
-                }
-                conf.pretimeout = @truncate(@as(c_ulong, @bitCast(val)));
             },
             'i' => { // int
                 val = findSetWdtString(&wdt_int_table, vstr);
@@ -1032,10 +1035,23 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
                 }
                 conf.clear |= @truncate(@as(c_uint, 1) << @intCast(@as(c_ulong, @bitCast(val)) & 31));
             },
-            'n' => conf.nolog = true, // nolog
-            'd' => conf.dontstop = true, // dontstop
+            'n' => { // nolog
+                if (vstr != null) {
+                    c.lprintf(log.Level.err, "Invalid option '%s'", arg);
+                    return err;
+                }
+                conf.nolog = true;
+            },
+            'd' => { // dontstop
+                if (vstr != null) {
+                    c.lprintf(log.Level.err, "Invalid option '%s'", arg);
+                    return err;
+                }
+                conf.dontstop = true;
+            },
             else => {
                 c.lprintf(log.Level.err, "Invalid option '%s'", arg);
+                return err;
             },
         }
     }
@@ -1049,7 +1065,10 @@ fn mcSetWatchdog(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     var msg_data = [_]u8{0} ** 6;
     var rc: c_int = -1;
     var conf = WdtConf{};
-    const options_error = parseSetWdtOptions(&conf, argc, argv);
+    if (parseSetWdtOptions(&conf, argc, argv)) {
+        printWatchdogUsage();
+        return -1;
+    }
 
     // Fill data bytes according to IPMI 2.0 Spec section 27.6.
     msg_data[0] = @as(u8, @intFromBool(conf.nolog)) << IPMI_WDT_USE_NOLOG_SHIFT;
@@ -1104,8 +1123,6 @@ fn mcSetWatchdog(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     } else {
         c.lprintf(log.Level.err, "Set Watchdog Timer command failed");
     }
-
-    if (options_error) printWatchdogUsage();
 
     return rc;
 }
@@ -1280,9 +1297,7 @@ fn mcSetsysinfo(intf: [*c]Intf, len: c_int, buffer: ?*anyopaque) callconv(.c) c_
 /// `ipmi_sysinfo_main()`.
 fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int {
     var infostr = [_]u8{0} ** 256;
-    // `char`, not `uint8_t`: paramdata[3] feeds an int expression below and
-    // plain char is signed on x86-64 but unsigned on aarch64.
-    var paramdata = [_]c_char{0} ** 18;
+    var paramdata = [_]u8{0} ** 18;
     var maxset: c_int = 0;
     var set: c_int = 0;
 
@@ -1360,18 +1375,12 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
                     // Determine max number of blocks to read.
                     maxset = @divTrunc((@as(c_int, paramdata[3]) + 2) + 15, 16);
                 }
-                @memcpy(
-                    infostr[pos..][0..IPMI_SYSINFO_SET0_SIZE],
-                    @as([*]const u8, @ptrCast(paramdata[4..].ptr))[0..IPMI_SYSINFO_SET0_SIZE],
-                );
-                pos += IPMI_SYSINFO_SET0_SIZE;
-            } else {
-                @memcpy(
-                    infostr[pos..][0..IPMI_SYSINFO_SETN_SIZE],
-                    @as([*]const u8, @ptrCast(paramdata[2..].ptr))[0..IPMI_SYSINFO_SETN_SIZE],
-                );
-                pos += IPMI_SYSINFO_SETN_SIZE;
             }
+            const offset: usize = if (set == 0) 4 else 2;
+            const block_len: usize = if (set == 0) IPMI_SYSINFO_SET0_SIZE else IPMI_SYSINFO_SETN_SIZE;
+            const copy_len = @min(block_len, infostr.len - 1 - pos);
+            @memcpy(infostr[pos..][0..copy_len], paramdata[offset..][0..copy_len]);
+            pos += copy_len;
         }
         _ = c.printf("%s\n", &infostr);
     }
@@ -1428,7 +1437,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
 
         // Allow for 'rfc' and 'rfc4122'.
         if (argc > 1) {
-            if (c.strcmp(argv[1], "rfc") == 0) {
+            if (c.strcmp(argv[1], "rfc") == 0 or c.strcmp(argv[1], "rfc4122") == 0) {
                 guid_mode = guid_rfc4122;
             } else if (c.strcmp(argv[1], "smbios") == 0) {
                 guid_mode = guid_smbios;
@@ -1460,6 +1469,9 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
                 c.lprintf(log.Level.err, "Not enough parameters given.");
                 printWatchdogUsage();
                 rc = -1;
+            } else if (argc == 3 and c.strcmp(argv[2], "help") == 0) {
+                printWatchdogUsage();
+                rc = 0;
             } else {
                 rc = mcSetWatchdog(intf, argc - 2, argv + 2);
             }

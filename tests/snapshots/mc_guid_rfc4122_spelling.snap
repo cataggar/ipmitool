@@ -3,10 +3,8 @@
 #!section exit
 0
 #!section stdout
-System GUID   : ffeeddcc-bbaa-1988-a766-554433221100
-GUID Encoding : IPMI
-GUID Version  : Time-based
-Timestamp     : 06/29/90 12:03:00 UTC
+System GUID   : 00112233-4455-66a7-8819-aabbccddeeff
+GUID Version  : Unknown/unsupported (6)
 #!section stderr
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00

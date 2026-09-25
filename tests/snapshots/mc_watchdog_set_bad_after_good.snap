@@ -1,10 +1,10 @@
 #!golden 1
-#!case mc_watchdog_set_int_invalid
+#!case mc_watchdog_set_bad_after_good
 #!section exit
 1
 #!section stdout
 #!section stderr
-Interrupt type 'zzz' is not valid
+Use 'zzz' is not valid
 
 usage: watchdog <command>:
 

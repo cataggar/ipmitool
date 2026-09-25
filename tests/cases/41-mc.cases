@@ -138,7 +138,7 @@ transcript: mc.tr
 covers: mc
 
 [mc_guid_rfc4122_spelling]
-desc: the usage advertises rfc4122 but only "rfc" is accepted, so this falls back to auto
+desc: the advertised rfc4122 spelling forces RFC4122 network byte order
 args: -I dummy mc guid rfc4122
 transcript: mc.tr
 covers: mc
@@ -234,7 +234,7 @@ transcript: mc.tr
 covers: mc
 
 [mc_setenables_on]
-desc: enabling a flag that is off sends Set BMC Global Enables with the new mask
+desc: the existing space-separated spelling enables a flag that is off
 args: -I dummy mc setenables oem0 on
 transcript: mc.tr
 covers: mc
@@ -264,19 +264,19 @@ transcript: mc.tr
 covers: mc
 
 [mc_setenables_equals_form]
-desc: the documented option=value form never matches, so nothing changes (upstream bug)
+desc: the documented option=value form enables a flag and sends its new mask
 args: -I dummy mc setenables oem0=on
 transcript: mc.tr
 covers: mc
 
 [mc_setenables_unknown_name]
-desc: an option name that is in no table entry is silently ignored
+desc: an option name that is in no table entry is an error without a write
 args: -I dummy mc setenables bogus on
 transcript: mc.tr
 covers: mc
 
 [mc_setenables_bad_value]
-desc: a known name followed by something other than on/off is reported
+desc: a known name followed by something other than on/off fails without a write
 args: -I dummy mc setenables oem0 maybe
 transcript: mc.tr
 covers: mc
@@ -291,6 +291,42 @@ covers: mc
 desc: the Set BMC Global Enables fails after a successful get
 args: -I dummy mc setenables oem0 on
 transcript: mc_enables_setfail.tr
+covers: mc
+
+[mc_setenables_equals_off]
+desc: the documented option=off form clears a set flag
+args: -I dummy mc setenables system_event_log=off
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_mixed_forms]
+desc: documented and legacy forms can be combined in the same command
+args: -I dummy mc setenables system_event_log=off oem0 on
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_bare_name]
+desc: a bare name at the end of argv must not read past its NUL
+args: -I dummy mc setenables oem0
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_empty_value]
+desc: an empty =value is rejected without a write
+args: -I dummy mc setenables oem0=
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_prefix_name]
+desc: an option name with a valid prefix is not an exact match
+args: -I dummy mc setenables oem0extra=on
+transcript: mc.tr
+covers: mc
+
+[mc_setenables_bad_after_good]
+desc: do not write a partially updated mask if a later option is invalid
+args: -I dummy mc setenables oem0=on system_event_log=maybe
+transcript: mc.tr
 covers: mc
 
 # ---------------------------------------------------------------------------
@@ -420,7 +456,7 @@ transcript: mc.tr
 covers: mc
 
 [mc_watchdog_set_help]
-desc: watchdog set help prints the usage and sends nothing but the defaults
+desc: watchdog set help prints usage and sends no watchdog write
 args: -I dummy mc watchdog set help
 transcript: mc.tr
 covers: mc
@@ -528,7 +564,7 @@ transcript: mc.tr
 covers: mc
 
 [mc_watchdog_set_invalid_option]
-desc: an unknown option is reported but does not stop the command being sent
+desc: an unknown option is rejected without sending a watchdog write
 args: -I dummy mc watchdog set zzz=1
 transcript: mc.tr
 covers: mc
@@ -682,17 +718,12 @@ transcript: mc_setsysinfo_set1_fails.tr
 covers: mc
 
 # ---------------------------------------------------------------------------
-# mc watchdog set: the upstream NULL dereferences (see the PR body and the
-# issue it links). find_set_wdt_string() walks past the last named entry into
-# a table row whose `set' member is NULL and hands that to strcmp(), and the
-# numeric options hand strtol() the NULL that strchr() returned. Both abort
-# the process, so the "is not valid" and "out of range" diagnostics below them
-# are unreachable for these inputs. The cases pin the crash so that the port
-# cannot quietly turn it into an error message.
+# mc watchdog set: invalid values and absent/empty delimiters must fail
+# without crashing or sending the partially parsed configuration.
 # ---------------------------------------------------------------------------
 
 [mc_watchdog_set_use_invalid]
-desc: an unknown timer use name walks into the NULL `set' of a reserved row
+desc: an unknown timer use skips reserved NULL table entries and fails
 args: -I dummy mc watchdog set use=zzz
 transcript: mc.tr
 covers: mc
@@ -716,7 +747,7 @@ transcript: mc.tr
 covers: mc
 
 [mc_watchdog_set_timeout_no_value]
-desc: without an '=' strchr() returns NULL and strtol() dereferences it
+desc: timeout without an '=' is rejected rather than passed to strtol()
 args: -I dummy mc watchdog set timeout
 transcript: mc.tr
 covers: mc
@@ -728,14 +759,92 @@ transcript: mc.tr
 covers: mc
 
 [mc_watchdog_set_timeout_not_a_number]
-desc: strtol() returns 0 for a non-numeric value, which is out of range
+desc: a non-numeric timeout is rejected
 args: -I dummy mc watchdog set timeout=abc
 transcript: mc.tr
 covers: mc
 
 [mc_watchdog_set_pretimeout_not_num]
-desc: the same for pretimeout
+desc: a non-numeric pretimeout is rejected
 args: -I dummy mc watchdog set pretimeout=abc
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_use_no_value]
+desc: use without a delimiter fails rather than passing NULL to strcmp()
+args: -I dummy mc watchdog set use
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_int_no_value]
+desc: int without a delimiter fails rather than passing NULL to strcmp()
+args: -I dummy mc watchdog set int
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_action_no_value]
+desc: action without a delimiter fails rather than passing NULL to strcmp()
+args: -I dummy mc watchdog set action
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_clear_no_value]
+desc: clear without a delimiter fails rather than passing NULL to strcmp()
+args: -I dummy mc watchdog set clear
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_timeout_empty]
+desc: an empty timeout is not a valid value
+args: -I dummy mc watchdog set timeout=
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_pretimeout_empty]
+desc: an empty pretimeout is not a valid value
+args: -I dummy mc watchdog set pretimeout=
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_use_empty]
+desc: an empty use does not match reserved NULL table entries
+args: -I dummy mc watchdog set use=
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_int_empty]
+desc: an empty int is not valid
+args: -I dummy mc watchdog set int=
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_action_empty]
+desc: an empty action is not valid
+args: -I dummy mc watchdog set action=
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_clear_empty]
+desc: an empty clear is not valid
+args: -I dummy mc watchdog set clear=
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_partial_number]
+desc: a numeric prefix followed by junk cannot configure the timer
+args: -I dummy mc watchdog set timeout=1sec
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_flag_value]
+desc: valueless flags cannot take an =value
+args: -I dummy mc watchdog set nolog=on
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_set_bad_after_good]
+desc: an invalid option after a valid one must not write the partial settings
+args: -I dummy mc watchdog set timeout=30 action=zzz
 transcript: mc.tr
 covers: mc
 
@@ -766,6 +875,18 @@ covers: mc
 desc: a declared length of 14 is exactly one block, not two
 args: -I dummy mc getsysinfo system_name
 transcript: mc_sysinfo_len14.tr
+covers: mc
+
+[mc_getsysinfo_length_254]
+desc: an unsigned declared length of 254 reads 16 blocks without overrunning the output
+args: -I dummy mc getsysinfo system_name
+transcript: mc_sysinfo_long.tr
+covers: mc
+
+[mc_getsysinfo_length_255]
+desc: an unsigned declared length of 255 reads 17 blocks and copies just one final byte
+args: -I dummy mc getsysinfo system_fw_version
+transcript: mc_sysinfo_long.tr
 covers: mc
 
 [mc_getsysinfo_verbose_once]
