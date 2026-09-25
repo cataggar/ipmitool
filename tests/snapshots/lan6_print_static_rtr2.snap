@@ -1,0 +1,25 @@
+#!golden 1
+#!case lan6_print_static_rtr2
+#!section exit
+0
+#!section stdout
+IPv6 Static Router 2:
+    Address: 2001:db8::2
+    MAC:     aa:bb:cc:dd:ee:ff
+    Prefix:  2001:db8::/128
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 45 00 00
+< rule=static_rtr2_addr ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 46 00 00
+< rule=static_rtr2_mac ccode=0x00 len=7 data=11 aa bb cc dd ee ff
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 47 00 00
+< rule=static_rtr2_pfx_len ccode=0x00 len=2 data=11 80
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 48 00 00
+< rule=static_rtr2_pfx ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+bye

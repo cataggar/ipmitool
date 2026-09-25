@@ -1,0 +1,20 @@
+#!golden 1
+#!case lan6_save_flow
+#!section exit
+0
+#!section stdout
+lan6 lock 1
+lan6 set 1 nolock flow_label 0xabcded
+lan6 commit 1
+lan6 discard 1
+exit
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 36 00 00
+< rule=flow_label ccode=0x00 len=4 data=11 0a bc de
+bye

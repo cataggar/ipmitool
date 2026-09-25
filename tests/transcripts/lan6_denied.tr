@@ -1,0 +1,5 @@
+respond denied
+  netfn 0x0c
+  cmd 0x01
+  ccode 0x82
+end

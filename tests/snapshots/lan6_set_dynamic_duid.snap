@@ -1,0 +1,21 @@
+#!golden 1
+#!case lan6_set_dynamic_duid
+#!section exit
+0
+#!section stdout
+#!section stderr
+Setting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 01
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 3d 00 00 10 00 03 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 02
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 00
+< rule=set ccode=0x00 len=0 data=
+bye

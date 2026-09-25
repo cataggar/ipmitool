@@ -1,0 +1,16 @@
+#!golden 1
+#!case lan6_print_dynamic_hops
+#!section exit
+0
+#!section stdout
+IPv6 Dynamic Router Received Hop Limit: 51
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4e 00 00
+< rule=dynamic_hops ccode=0x00 len=2 data=11 33
+bye

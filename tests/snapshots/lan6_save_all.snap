@@ -1,0 +1,111 @@
+#!golden 1
+#!case lan6_save_all
+#!section exit
+0
+#!section stdout
+lan6 lock 1
+lan6 set 1 nolock enables both
+lan6 set 1 nolock traffic_class 171
+lan6 set 1 nolock static_hops 32
+lan6 set 1 nolock flow_label 0xabcded
+lan6 set 1 nolock static_addr 0 enable 2001:db8::1 64 active
+lan6 set 1 nolock static_duid 0 0 1000030102030405060708090a0b0c0d
+lan6 set 1 nolock dynamic_duid 0 0 1000010002030405060708090a0b0c0d
+lan6 set 1 nolock dhcp6_cfg 0 000102030405060708090a0b0c0d0e0f 101112131415
+lan6 set 1 nolock rtr_cfg both
+lan6 set 1 nolock static_rtr 1 2001:db8::1 00:11:22:33:44:55 2001:db8:: 64
+lan6 set 1 nolock static_rtr 2 2001:db8::2 aa:bb:cc:dd:ee:ff 2001:db8:: 128
+lan6 set 1 nolock ndslaac_cfg 0 0102030405060708090a0b0c0d0e0f00
+lan6 commit 1
+lan6 discard 1
+exit
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 32 00 00
+< rule=support ccode=0x00 len=2 data=11 07
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 33 00 00
+< rule=enables ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 34 00 00
+< rule=traffic_class ccode=0x00 len=2 data=11 ab
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 35 00 00
+< rule=static_hops ccode=0x00 len=2 data=11 20
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 36 00 00
+< rule=flow_label ccode=0x00 len=4 data=11 0a bc de
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 37 00 00
+< rule=status ccode=0x00 len=4 data=11 02 01 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 38 00 00
+< rule=static_addr ccode=0x00 len=21 data=11 00 80 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01 40 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 38 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 39 00 00
+< rule=static_duid_stg ccode=0x00 len=2 data=11 10
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3a 00 00
+< rule=static_duid ccode=0x00 len=20 data=11 00 00 10 00 03 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3a 00 01
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3a 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3b 00 00
+< rule=dynamic_addr ccode=0x00 len=21 data=11 00 02 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02 40 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3b 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3c 00 00
+< rule=dynamic_duid_stg ccode=0x00 len=2 data=11 10
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3d 00 00
+< rule=dynamic_duid ccode=0x00 len=20 data=11 00 00 10 00 01 00 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3d 00 01
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3d 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3e 00 00
+< rule=dhcp6_cfg_sup ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 00
+< rule=dhcp6_cfg_block0 ccode=0x00 len=19 data=11 00 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 01
+< rule=dhcp6_cfg_block1 ccode=0x00 len=19 data=11 00 01 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 40 00 00
+< rule=router_cfg ccode=0x00 len=2 data=11 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 41 00 00
+< rule=static_rtr1_addr ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 42 00 00
+< rule=static_rtr1_mac ccode=0x00 len=7 data=11 00 11 22 33 44 55
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 43 00 00
+< rule=static_rtr1_pfx_len ccode=0x00 len=2 data=11 40
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 44 00 00
+< rule=static_rtr1_pfx ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 45 00 00
+< rule=static_rtr2_addr ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 46 00 00
+< rule=static_rtr2_mac ccode=0x00 len=7 data=11 aa bb cc dd ee ff
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 47 00 00
+< rule=static_rtr2_pfx_len ccode=0x00 len=2 data=11 80
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 48 00 00
+< rule=static_rtr2_pfx ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 49 00 00
+< rule=num_dynamic_rtrs ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4a 00 00
+< rule=dynamic_rtr_addr ccode=0x00 len=18 data=11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4b 00 00
+< rule=dynamic_rtr_mac ccode=0x00 len=8 data=11 00 01 02 03 04 05 06
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4c 00 00
+< rule=dynamic_rtr_pfx_len ccode=0x00 len=3 data=11 00 40
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4d 00 00
+< rule=dynamic_rtr_pfx ccode=0x00 len=18 data=11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4a 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4e 00 00
+< rule=dynamic_hops ccode=0x00 len=2 data=11 33
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4f 00 00
+< rule=ndslaac_cfg_sup ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 50 00 00
+< rule=ndslaac_cfg ccode=0x00 len=18 data=11 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 50 01 00
+< rule=default ccode=0x80 len=0 data=
+bye

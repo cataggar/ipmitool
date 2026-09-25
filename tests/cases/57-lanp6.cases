@@ -1,0 +1,405 @@
+# lib/ipmi_lanp6.c. Every user-visible parameter plus composite wire requests.
+# Record these with the C oracle before selecting the Zig module.
+
+[lan6_usage]
+args: -I dummy lan6
+covers: lan6
+
+[lan6_help_set]
+args: -I dummy lan6 help set
+covers: lan6
+
+[lan6_help_save]
+args: -I dummy lan6 help save
+covers: lan6
+
+[lan6_help_print]
+args: -I dummy lan6 help print
+covers: lan6
+
+[lan6_help_lock]
+args: -I dummy lan6 help lock
+covers: lan6
+
+[lan6_help_commit]
+args: -I dummy lan6 help commit
+covers: lan6
+
+[lan6_help_discard]
+args: -I dummy lan6 help discard
+covers: lan6
+
+[lan6_help_unknown]
+args: -I dummy lan6 help nonsense
+covers: lan6
+
+[lan6_bad_command]
+args: -I dummy lan6 nonsense
+covers: lan6
+
+[lan6_print_all]
+args: -I dummy lan6 print 1
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_save_all]
+args: -I dummy lan6 save 1
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_support]
+args: -I dummy lan6 print 1 support
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_enables_full]
+args: -I dummy lan6 print 1 enables
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_traffic]
+args: -I dummy lan6 print 1 traffic_class
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_hops]
+args: -I dummy lan6 print 1 static_hops
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_flow_label]
+args: -I dummy lan6 print 1 flow_label
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_status]
+args: -I dummy lan6 print 1 status
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_addr]
+args: -I dummy lan6 print 1 static_addr 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_stg]
+args: -I dummy lan6 print 1 static_duid_stg
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_duid]
+args: -I dummy lan6 print 1 static_duid 0 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dynamic_addr]
+args: -I dummy lan6 print 1 dynamic_addr 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dynamic_stg]
+args: -I dummy lan6 print 1 dynamic_duid_stg
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dynamic_duid]
+args: -I dummy lan6 print 1 dynamic_duid 0 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dhcp_sup]
+args: -I dummy lan6 print 1 dhcp6_cfg_sup
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dhcp_cfg]
+args: -I dummy lan6 print 1 dhcp6_cfg 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_rtr_cfg]
+args: -I dummy lan6 print 1 rtr_cfg
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_rtr1]
+args: -I dummy lan6 print 1 static_rtr 1
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_rtr2]
+args: -I dummy lan6 print 1 static_rtr 2
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_static_rtr_scan]
+args: -I dummy lan6 print 1 static_rtr
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_num_rtrs]
+args: -I dummy lan6 print 1 num_dynamic_rtrs
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dynamic_rtr]
+args: -I dummy lan6 print 1 dynamic_rtr 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_dynamic_hops]
+args: -I dummy lan6 print 1 dynamic_hops
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_ndslaac_sup]
+args: -I dummy lan6 print 1 ndslaac_cfg_sup
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_print_ndslaac_cfg]
+args: -I dummy lan6 print 1 ndslaac_cfg 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_save_flow]
+args: -I dummy lan6 save 1 flow_label
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_save_static_addr]
+args: -I dummy lan6 save 1 static_addr 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_save_static_rtr2]
+args: -I dummy lan6 save 1 static_rtr 2
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_enables_full]
+args: -I dummy lan6 set 1 enables both
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_traffic]
+args: -I dummy lan6 set 1 traffic_class 255
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_hops_nolock]
+args: -I dummy lan6 set 1 nolock static_hops 64
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_flow_bound]
+args: -I dummy lan6 set 1 flow_label 1048575
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_static_addr]
+args: -I dummy lan6 set 1 static_addr 0 enable 2001:db8::ab 128
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_addr_zero_prefix]
+args: -I dummy lan6 set 1 static_addr 255 disable :: 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_duid]
+args: -I dummy lan6 set 1 static_duid 0 0 1000030102030405060708090a0b0c0d
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_dynamic_duid]
+args: -I dummy lan6 set 1 dynamic_duid 0 0 1000030102030405060708090a0b0c0d
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_dhcp_cfg]
+args: -I dummy lan6 set 1 dhcp6_cfg 0 000102030405060708090a0b0c0d0e0f 101112131415
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_rtr_cfg]
+args: -I dummy lan6 set 1 rtr_cfg static
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_static_rtr2]
+args: -I dummy lan6 set 1 static_rtr 2 2001:db8::2 aa:bb:cc:dd:ee:ff 2001:db8:: 64
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_static_rtr1]
+args: -I dummy lan6 set 1 static_rtr 1 2001:db8::1 00:11:22:33:44:55 2001:db8:: 128
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_flow_zero]
+args: -I dummy lan6 set 1 nolock flow_label 0
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_readonly]
+args: -I dummy lan6 set 1 support 3
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_set_ndslaac_cfg]
+args: -I dummy lan6 set 1 ndslaac_cfg 0 000102030405060708090a0b0c0d0e0f
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_lock]
+args: -I dummy lan6 lock 1
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_commit]
+args: -I dummy lan6 commit 1
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_discard]
+args: -I dummy lan6 discard 1
+transcript: lan6_full.tr
+covers: lan6
+
+[lan6_lock_denied]
+args: -I dummy lan6 lock 1
+transcript: lan6_denied.tr
+covers: lan6
+
+[lan6_set_denied]
+args: -I dummy lan6 set 1 static_addr 0 enable 2001:db8::1 64
+transcript: lan6_partial_set.tr
+covers: lan6
+
+[lan6_set_midfail]
+args: -I dummy lan6 set 1 static_rtr 1 2001:db8::1 00:11:22:33:44:55 2001:db8:: 64
+transcript: lan6_set_midfail.tr
+covers: lan6
+
+[lan6_get_midfail]
+args: -I dummy lan6 print 1 static_rtr 1
+transcript: lan6_get_midfail.tr
+covers: lan6
+
+[lan6_commit_denied]
+args: -I dummy lan6 set 1 enables ipv6
+transcript: lan6_commit_denied.tr
+covers: lan6
+
+[lan6_print_denied]
+args: -I dummy lan6 print 1 enables
+covers: lan6
+
+[lan6_print_scan_unsupported]
+args: -I dummy lan6 print 1 static_addr
+covers: lan6
+
+[lan6_print_short]
+args: -I dummy lan6 print 1 static_addr 0
+transcript: lan6_short.tr
+covers: lan6
+
+[lan6_print_short_composite]
+args: -I dummy lan6 print 1 dynamic_rtr 0
+transcript: lan6_short.tr
+covers: lan6
+
+[lan6_print_short_dhcp]
+args: -I dummy lan6 print 1 dhcp6_cfg 0
+transcript: lan6_short.tr
+covers: lan6
+
+[lan6_print_short_duid]
+args: -I dummy lan6 print 1 static_duid 0 0
+transcript: lan6_short.tr
+covers: lan6
+
+[lan6_bad_channel]
+args: -I dummy lan6 print xyz
+covers: lan6
+
+[lan6_channel_overflow]
+args: -I dummy lan6 print 2147483648
+covers: lan6
+
+[lan6_invalid_parameter]
+args: -I dummy lan6 print 1 bad
+covers: lan6
+
+[lan6_missing_set]
+args: -I dummy lan6 set 1 static_addr
+covers: lan6
+
+[lan6_missing_block]
+args: -I dummy lan6 set 1 static_duid 0
+covers: lan6
+
+[lan6_bad_set_selector]
+args: -I dummy lan6 print 1 static_rtr 0
+covers: lan6
+
+[lan6_bad_block_selector]
+args: -I dummy lan6 print 1 static_duid 0 nope
+covers: lan6
+
+[lan6_bad_ip]
+args: -I dummy lan6 set 1 static_addr 0 enable not-an-ip 64
+covers: lan6
+
+[lan6_bad_ipv4]
+args: -I dummy lan6 set 1 static_addr 0 enable 192.0.2.1 64
+covers: lan6
+
+[lan6_bad_prefix]
+args: -I dummy lan6 set 1 static_addr 0 enable 2001:db8::1 256
+covers: lan6
+
+[lan6_bad_router_prefix]
+args: -I dummy lan6 set 1 static_rtr 1 2001:db8::1 00:11:22:33:44:55 2001:db8:: qwerty
+covers: lan6
+
+[lan6_bad_mac]
+args: -I dummy lan6 set 1 static_rtr 1 2001:db8::1 gg:00:11:22:33:44 2001:db8:: 64
+covers: lan6
+
+[lan6_bad_rtr_set]
+args: -I dummy lan6 set 1 static_rtr 3 2001:db8::1 00:11:22:33:44:55 2001:db8:: 64
+covers: lan6
+
+[lan6_bad_rtr_get]
+args: -I dummy lan6 print 1 static_rtr 3
+covers: lan6
+
+[lan6_bad_duid_hex]
+args: -I dummy lan6 set 1 static_duid 0 0 zzzzzzzz
+covers: lan6
+
+[lan6_bad_dhcp_hex]
+args: -I dummy lan6 set 1 dhcp6_cfg 0 000102030405060708090a0b0c0d0e0f xxx
+covers: lan6
+
+[lan6_bad_block_overflow]
+args: -I dummy lan6 print 1 static_duid 0 2147483648
+covers: lan6
+
+[lan6_bad_set_overflow]
+args: -I dummy lan6 print 1 static_addr 2147483648
+covers: lan6
+
+[lan6_bad_enable]
+args: -I dummy lan6 set 1 enables ipv5
+covers: lan6
+
+[lan6_bad_flow]
+args: -I dummy lan6 set 1 flow_label 4294967296
+covers: lan6
+
+[lan6_bad_router]
+args: -I dummy lan6 set 1 rtr_cfg bogus
+covers: lan6

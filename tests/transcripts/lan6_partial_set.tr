@@ -1,0 +1,18 @@
+respond lock
+  netfn 0x0c
+  cmd 0x01
+  match 01 00 01
+  ccode 0x00
+end
+respond denied_write
+  netfn 0x0c
+  cmd 0x01
+  match 01 38
+  ccode 0x82
+end
+respond discard
+  netfn 0x0c
+  cmd 0x01
+  match 01 00 00
+  ccode 0x00
+end

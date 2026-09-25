@@ -1,0 +1,18 @@
+#!golden 1
+#!case lan6_get_midfail
+#!section exit
+1
+#!section stdout
+#!section stderr
+Getting parameter(s)...
+Failed to get IPv6 Static Router 1 MAC Address: Parameter is read-only
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 41 00 00
+< rule=addr ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 42 00 00
+< rule=mac_denied ccode=0x82 len=0 data=
+bye

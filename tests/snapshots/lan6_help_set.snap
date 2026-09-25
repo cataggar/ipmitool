@@ -1,0 +1,26 @@
+#!golden 1
+#!case lan6_help_set
+#!section exit
+0
+#!section stdout
+  set <channel> [nolock] <parameter> [<set_sel> [<block_sel>]] <values...>
+
+   available parameters:
+    enables {ipv4|ipv6|both}
+    traffic_class <value>
+    static_hops <value>
+    flow_label <value>
+    static_addr <set_sel> {enable|disable} <addr> <pfx_len>
+    static_duid <set_sel> <block_sel> <data>
+    dynamic_duid <set_sel> <block_sel> <data>
+    dhcp6_cfg <set_sel> <data> <data>
+    rtr_cfg {static|dynamic|both}
+    static_rtr <set_sel> <addr> <macaddr> <prefix> <prefix_len>
+    ndslaac_cfg <set_sel> <data>
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye
