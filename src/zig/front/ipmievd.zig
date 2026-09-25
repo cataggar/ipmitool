@@ -10,6 +10,7 @@ const Cmd = headers.intf.ipmi_intf.Cmd;
 const ipmi = headers.core.ipmi;
 const open = headers.intf.open;
 const log = headers.util.log;
+const frontend_log = headers.frontend_log;
 const open_enabled = @hasDecl(c, "IPMI_INTF_OPEN");
 
 const Event = extern struct {
@@ -200,11 +201,11 @@ fn putEvent(e: *EventIntf, evt: *Event) void {
 fn logEvent(e: *EventIntf, evt: *Event) callconv(.c) void {
     const intf = e.intf.?;
     if (evt.record_type == 0xf0) {
-        c.lprintf(log.Level.alert, "%sLinux kernel panic: %.11s", prefix(e), @as([*c]u8, @ptrCast(evt)) + 5);
+        frontend_log.print(log.Level.alert, "%sLinux kernel panic: %.11s", .{ prefix(e), @as([*c]u8, @ptrCast(evt)) + 5 });
         return;
     }
     if (evt.record_type >= 0xc0) {
-        c.lprintf(log.Level.notice, "%sIPMI Event OEM Record %02x", prefix(e), @as(c_int, evt.record_type));
+        frontend_log.print(log.Level.notice, "%sIPMI Event OEM Record %02x", .{ prefix(e), @as(c_int, evt.record_type) });
         return;
     }
 
@@ -221,9 +222,9 @@ fn logEvent(e: *EventIntf, evt: *Event) callconv(.c) void {
     );
     if (sdr_ptr == null) {
         if (desc != null) {
-            c.lprintf(log.Level.notice, "%s%s sensor - %s", prefix(e), sensor_type, desc);
+            frontend_log.print(log.Level.notice, "%s%s sensor - %s", .{ prefix(e), sensor_type, desc });
         } else {
-            c.lprintf(log.Level.notice, "%s%s sensor %02x", prefix(e), sensor_type, @as(c_int, standard.sensor_num));
+            frontend_log.print(log.Level.notice, "%s%s sensor %02x", .{ prefix(e), sensor_type, @as(c_int, standard.sensor_num) });
         }
         return;
     }
@@ -248,37 +249,39 @@ fn logEvent(e: *EventIntf, evt: *Event) callconv(.c) void {
                     0;
                 const common = raw;
                 const unit = common[c.ABI_OFFSETOF_sdr_common__unit];
-                c.lprintf(
+                frontend_log.print(
                     log.Level.notice,
                     "%s%s sensor %s %s %s (Reading %.*f %s Threshold %.*f %s)",
-                    prefix(e),
-                    sensor_type,
-                    id_string,
-                    description,
-                    direction,
-                    @as(c_int, if (reading == @trunc(reading)) 0 else 2),
-                    reading,
-                    @as([*:0]const u8, if (data[0] & 0xf & 1 == 1) ">" else "<"),
-                    @as(c_int, if (threshold == @trunc(threshold)) 0 else 2),
-                    threshold,
-                    c.ipmi_sdr_get_unit_string(
-                        unit & 1 != 0,
-                        (unit >> 1) & 3,
-                        common[c.ABI_OFFSETOF_sdr_common__unit__type__base],
-                        common[c.ABI_OFFSETOF_sdr_common__unit__type__modifier],
-                    ),
+                    .{
+                        prefix(e),
+                        sensor_type,
+                        id_string,
+                        description,
+                        direction,
+                        @as(c_int, if (reading == @trunc(reading)) 0 else 2),
+                        reading,
+                        @as([*:0]const u8, if (data[0] & 0xf & 1 == 1) ">" else "<"),
+                        @as(c_int, if (threshold == @trunc(threshold)) 0 else 2),
+                        threshold,
+                        c.ipmi_sdr_get_unit_string(
+                            unit & 1 != 0,
+                            (unit >> 1) & 3,
+                            common[c.ABI_OFFSETOF_sdr_common__unit__type__base],
+                            common[c.ABI_OFFSETOF_sdr_common__unit__type__modifier],
+                        ),
+                    },
                 );
             } else if ((event_type >= 2 and event_type <= 12) or
                 event_type == 0x6f or (event_type >= 0x70 and event_type <= 0x7f))
             {
-                c.lprintf(log.Level.notice, "%s%s sensor %s %s %s", prefix(e), sensor_type, id_string, description, direction);
+                frontend_log.print(log.Level.notice, "%s%s sensor %s %s %s", .{ prefix(e), sensor_type, id_string, description, direction });
             }
         },
         c.SDR_RECORD_TYPE_COMPACT_SENSOR => {
             const id_string: [*:0]const u8 = @ptrCast(raw + c.ABI_OFFSETOF_sdr_compact__id_string);
-            c.lprintf(log.Level.notice, "%s%s sensor %s - %s %s", prefix(e), sensor_type, id_string, description, direction);
+            frontend_log.print(log.Level.notice, "%s%s sensor %s - %s %s", .{ prefix(e), sensor_type, id_string, description, direction });
         },
-        else => c.lprintf(log.Level.notice, "%s%s sensor (0x%02x) - %s", prefix(e), sensor_type, @as(c_int, standard.sensor_num), description),
+        else => frontend_log.print(log.Level.notice, "%s%s sensor (0x%02x) - %s", .{ prefix(e), sensor_type, @as(c_int, standard.sensor_num), description }),
     }
 }
 
@@ -288,15 +291,15 @@ fn selInfo(intf: *Intf) ?SelData {
     req.msg.netfn_lun.netfn = ipmi.NetFn.storage;
     req.msg.cmd = c.IPMI_CMD_GET_SEL_INFO;
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get SEL Info command failed");
+        frontend_log.print(log.Level.err, "Get SEL Info command failed", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get SEL Info command failed: %s", ccode(rsp.ccode));
+        frontend_log.print(log.Level.err, "Get SEL Info command failed: %s", .{ccode(rsp.ccode)});
         return null;
     }
     if (rsp.data_len < 14) {
-        c.lprintf(log.Level.err, "Get SEL Info response is too short");
+        frontend_log.print(log.Level.err, "Get SEL Info response is too short", .{});
         return null;
     }
     const entries = std.mem.readInt(u16, rsp.data[1..3], .little);
@@ -304,8 +307,8 @@ fn selInfo(intf: *Intf) ?SelData {
     const bytes_used: u32 = @as(u32, entries) * 16;
     const pct: c_int = if (bytes_used == 0) 0 else @intFromFloat(@as(f64, 100) * @as(f64, @floatFromInt(bytes_used)) /
         @as(f64, @floatFromInt(bytes_used + free_space)));
-    c.lprintf(log.Level.debug, "SEL count is %d", @as(c_int, entries));
-    c.lprintf(log.Level.debug, "SEL freespace is %d", @as(c_int, free_space));
+    frontend_log.print(log.Level.debug, "SEL count is %d", .{@as(c_int, entries)});
+    frontend_log.print(log.Level.debug, "SEL freespace is %d", .{@as(c_int, free_space)});
     return .{
         .entries = entries,
         .pctused = pct,
@@ -321,11 +324,11 @@ fn selEntry(intf: *Intf, id: u16, evt: *Event) ?u16 {
     req.msg.data = &request_data;
     req.msg.data_len = request_data.len;
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get SEL Entry %x command failed", @as(c_int, id));
+        frontend_log.print(log.Level.err, "Get SEL Entry %x command failed", .{@as(c_int, id)});
         return null;
     };
     if (rsp.ccode != 0 or rsp.data_len < 18) {
-        c.lprintf(log.Level.err, "Get SEL Entry %x failed or malformed", @as(c_int, id));
+        frontend_log.print(log.Level.err, "Get SEL Entry %x failed or malformed", .{@as(c_int, id)});
         return null;
     }
     const next = std.mem.readInt(u16, rsp.data[0..2], .little);
@@ -351,7 +354,7 @@ fn lastId(intf: *Intf) ?u16 {
 
 fn selSetup(e: *EventIntf) callconv(.c) c_int {
     const data = selInfo(e.intf.?) orelse {
-        c.lprintf(log.Level.err, "Unable to retrieve SEL data");
+        frontend_log.print(log.Level.err, "Unable to retrieve SEL data", .{});
         return -1;
     };
     selwatch_count = data.entries;
@@ -359,9 +362,9 @@ fn selSetup(e: *EventIntf) callconv(.c) c_int {
     selwatch_overflow = data.overflow;
     selwatch_lastid = lastId(e.intf.?) orelse return -1;
     if (selwatch_pctused >= 80)
-        c.lprintf(log.Level.warning, "SEL buffer used at %d%%, please consider clearing the SEL buffer", selwatch_pctused);
+        frontend_log.print(log.Level.warning, "SEL buffer used at %d%%, please consider clearing the SEL buffer", .{selwatch_pctused});
     if (selwatch_overflow != 0)
-        c.lprintf(log.Level.alert, "SEL buffer overflow, no SEL message can be logged until the SEL buffer is cleared");
+        frontend_log.print(log.Level.alert, "SEL buffer overflow, no SEL message can be logged until the SEL buffer is cleared", .{});
     return 0;
 }
 fn selCheck(e: *EventIntf) callconv(.c) c_int {
@@ -373,11 +376,11 @@ fn selCheck(e: *EventIntf) callconv(.c) c_int {
     selwatch_pctused = data.pctused;
     selwatch_overflow = data.overflow;
     if (old_overflow != 0 and selwatch_overflow == 0)
-        c.lprintf(log.Level.notice, "SEL overflow is cleared")
+        frontend_log.print(log.Level.notice, "SEL overflow is cleared", .{})
     else if (old_overflow == 0 and selwatch_overflow != 0)
-        c.lprintf(log.Level.alert, "SEL buffer overflow, no new SEL message will be logged until the SEL buffer is cleared");
+        frontend_log.print(log.Level.alert, "SEL buffer overflow, no new SEL message will be logged until the SEL buffer is cleared", .{});
     if (selwatch_pctused >= 80 and selwatch_pctused > old_pct)
-        c.lprintf(log.Level.warning, "SEL buffer is %d%% full, please consider clearing the SEL buffer", selwatch_pctused);
+        frontend_log.print(log.Level.warning, "SEL buffer is %d%% full, please consider clearing the SEL buffer", .{selwatch_pctused});
     if (selwatch_count == 0)
         selwatch_lastid = 0
     else if (selwatch_count < old_count)
@@ -423,7 +426,7 @@ fn openEnable(intf: *Intf) c_int {
     req.msg.cmd = 0x2f;
     const first = intf.sendrecv.?(intf, &req) orelse return -1;
     if (first.ccode != 0 or first.data_len < 1) {
-        c.lprintf(log.Level.err, "Get BMC Global Enables failed or malformed");
+        frontend_log.print(log.Level.err, "Get BMC Global Enables failed or malformed", .{});
         return -1;
     }
     var enables: u8 = first.data[0] | 0x04;
@@ -432,7 +435,7 @@ fn openEnable(intf: *Intf) c_int {
     req.msg.data_len = 1;
     const second = intf.sendrecv.?(intf, &req) orelse return -1;
     if (second.ccode != 0) {
-        c.lprintf(log.Level.err, "Set BMC Global Enables command failed: %s", ccode(second.ccode));
+        frontend_log.print(log.Level.err, "Set BMC Global Enables command failed: %s", .{ccode(second.ccode)});
         return -1;
     }
     return 0;
@@ -441,7 +444,7 @@ fn openSetup(e: *EventIntf) callconv(.c) c_int {
     if (openEnable(e.intf.?) < 0) return -1;
     var enabled: c_int = 1;
     if (io.ioctl(e.intf.?.fd, open.ipmictl_set_gets_events_cmd, &enabled) != 0) {
-        c.lperror(log.Level.err, "Could not enable event receiver");
+        frontend_log.perror(log.Level.err, "Could not enable event receiver", .{});
         return -1;
     }
     return 0;
@@ -458,7 +461,7 @@ fn openRead(e: *EventIntf) callconv(.c) c_int {
         const err = std.c._errno().*;
         if (err == c.EINTR) return 0;
         if (err != c.EMSGSIZE) {
-            c.lperror(log.Level.err, "Unable to receive IPMI message");
+            frontend_log.perror(log.Level.err, "Unable to receive IPMI message", .{});
             return -1;
         }
         recv.msg.data_len = data.len;
@@ -466,7 +469,7 @@ fn openRead(e: *EventIntf) callconv(.c) c_int {
     if (recv.recv_type != c.IPMI_ASYNC_EVENT_RECV_TYPE or
         recv.msg.data == null or recv.msg.data_len < 16)
     {
-        c.lprintf(log.Level.err, "Invalid or truncated OpenIPMI event");
+        frontend_log.print(log.Level.err, "Invalid or truncated OpenIPMI event", .{});
         return -1;
     }
     var evt: Event = .{};
@@ -480,7 +483,7 @@ fn openWait(e: *EventIntf) callconv(.c) c_int {
         const result = io.poll(&pfd, 1, -1);
         if (result < 0) {
             if (stopped() and std.c._errno().* == c.EINTR) break;
-            c.lperror(log.Level.crit, "Unable to read from IPMI device");
+            frontend_log.perror(log.Level.crit, "Unable to read from IPMI device", .{});
             return -1;
         }
         if (result > 0) {
@@ -521,11 +524,11 @@ pub export var ipmi_event_intf_table: [3]?*EventIntf =
     .{ if (open_enabled) &open_event else &sel_event, if (open_enabled) &sel_event else null, null };
 
 fn usage() void {
-    c.lprintf(log.Level.notice, "Options:");
-    c.lprintf(log.Level.notice, "\ttimeout=#     Time between checks for SEL polling method [default=10]");
-    c.lprintf(log.Level.notice, "\tdaemon        Become a daemon [default]");
-    c.lprintf(log.Level.notice, "\tnodaemon      Do NOT become a daemon");
-    c.lprintf(log.Level.notice, "\tpidfile=PATH  PID file for daemon mode [default=/run/ipmievd.pidN]");
+    frontend_log.print(log.Level.notice, "Options:", .{});
+    frontend_log.print(log.Level.notice, "\ttimeout=#     Time between checks for SEL polling method [default=10]", .{});
+    frontend_log.print(log.Level.notice, "\tdaemon        Become a daemon [default]", .{});
+    frontend_log.print(log.Level.notice, "\tnodaemon      Do NOT become a daemon", .{});
+    frontend_log.print(log.Level.notice, "\tpidfile=PATH  PID file for daemon mode [default=/run/ipmievd.pidN]", .{});
 }
 fn startsWithIgnoreCase(arg: []const u8, key: []const u8) bool {
     return arg.len >= key.len and std.ascii.eqlIgnoreCase(arg[0..key.len], key);
@@ -551,18 +554,18 @@ fn options(intf: *Intf, args: []const []const u8) ?bool {
             else if (std.ascii.eqlIgnoreCase(value, "off") or std.ascii.eqlIgnoreCase(value, "no"))
                 daemon = false
             else {
-                c.lprintf(log.Level.err, "Invalid daemon setting");
+                frontend_log.print(log.Level.err, "Invalid daemon setting", .{});
                 return null;
             }
         } else if (startsWithIgnoreCase(arg, "timeout=")) {
             selwatch_timeout = std.fmt.parseInt(c_int, arg[8..], 10) catch {
-                c.lprintf(log.Level.err, "Invalid input given or out of range for time-out.");
+                frontend_log.print(log.Level.err, "Invalid input given or out of range for time-out.", .{});
                 return null;
             };
             if (selwatch_timeout < 0) return null;
         } else if (startsWithIgnoreCase(arg, "pidfile=")) {
             if (arg.len - 8 >= pidfile.len) {
-                c.lprintf(log.Level.err, "The pidfile path is too long. It must be fewer than %d characters", @as(c_int, pidfile.len - 1));
+                frontend_log.print(log.Level.err, "The pidfile path is too long. It must be fewer than %d characters", .{@as(c_int, pidfile.len - 1)});
                 return null;
             }
             @memset(&pidfile, 0);
@@ -588,12 +591,12 @@ fn evdMain(e: *EventIntf, argc: c_int, argv: Argv) callconv(.c) c_int {
     @as(*volatile c.sig_atomic_t, @ptrCast(&stop_signal)).* = 0;
     pid_owned = false;
     if (e.intf.?.open.?(e.intf.?) < 0) {
-        c.lprintf(log.Level.err, "Unable to open interface");
+        frontend_log.print(log.Level.err, "Unable to open interface", .{});
         return -1;
     }
     if (daemon) {
         if (io.pid_exists(pidPath())) {
-            c.lprintf(log.Level.err, "PID file '%s' already exists.", pidPath());
+            frontend_log.print(log.Level.err, "PID file '%s' already exists.", .{pidPath()});
             return -1;
         }
         io.daemonize(e.intf.?);
@@ -602,7 +605,7 @@ fn evdMain(e: *EventIntf, argc: c_int, argv: Argv) callconv(.c) c_int {
         if (!io.pid_write(pidPath())) {
             c.log_halt();
             c.log_init("ipmievd", 1, verbose);
-            c.lprintf(log.Level.err, "Failed to open PID file '%s' for writing.", pidPath());
+            frontend_log.print(log.Level.err, "Failed to open PID file '%s' for writing.", .{pidPath()});
             return -1;
         }
         pid_owned = true;
@@ -612,16 +615,16 @@ fn evdMain(e: *EventIntf, argc: c_int, argv: Argv) callconv(.c) c_int {
     defer cleanup();
     c.log_halt();
     c.log_init("ipmievd", @intFromBool(daemon), verbose);
-    c.lprintf(log.Level.notice, "Reading sensors...");
+    frontend_log.print(log.Level.notice, "Reading sensors...", .{});
     io.cache(e.intf.?);
     if (stopped()) return 0;
     if (e.setup) |setup| if (setup(e) < 0) {
-        c.lprintf(log.Level.err, "Error setting up Event Interface %s", useName(e));
+        frontend_log.print(log.Level.err, "Error setting up Event Interface %s", .{useName(e)});
         return -1;
     };
-    c.lprintf(log.Level.notice, "Waiting for events...");
+    frontend_log.print(log.Level.notice, "Waiting for events...", .{});
     if (e.wait) |wait| if (wait(e) < 0) {
-        c.lprintf(log.Level.err, "Error waiting for events!");
+        frontend_log.print(log.Level.err, "Error waiting for events!", .{});
         return -1;
     };
     return 0;
@@ -644,7 +647,7 @@ fn selMain(intf: ?*Intf, argc: c_int, argv: Argv) callconv(.c) c_int {
 fn openMain(intf: ?*Intf, argc: c_int, argv: Argv) callconv(.c) c_int {
     const in = intf orelse return -1;
     if (!std.mem.eql(u8, std.mem.sliceTo(&in.name, 0), "open") or !open_enabled) {
-        c.lprintf(log.Level.err, "Invalid Interface for OpenIPMI Event Handler: %s", &in.name);
+        frontend_log.print(log.Level.err, "Invalid Interface for OpenIPMI Event Handler: %s", .{&in.name});
         return -1;
     }
     open_event.intf = in;

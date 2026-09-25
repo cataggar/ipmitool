@@ -1028,7 +1028,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     evd_test_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, evd_test_mod, bridge_mod, target, optimize);
+    addEvdImports(b, evd_test_mod, bridge_mod, target, optimize, zig_selection);
     evd_test_mod.linkLibrary(core);
     if (zig_lib) |lib| evd_test_mod.linkLibrary(lib);
     for (libs) |lib| evd_test_mod.linkSystemLibrary(lib, .{});
@@ -1219,6 +1219,53 @@ pub fn build(b: *std.Build) void {
     }
     test_step.dependOn(log_step);
     test_step.dependOn(frontend_log_step);
+
+    if (is_linux) {
+        const evd_only: [zig_modules.len]bool = blk: {
+            var selected: [zig_modules.len]bool = @splat(false);
+            selected[moduleIndex("evd")] = true;
+            break :blk selected;
+        };
+        const evd_and_log: [zig_modules.len]bool = blk: {
+            var selected = evd_only;
+            selected[moduleIndex("log")] = true;
+            break :blk selected;
+        };
+        const daemon_options = SwappedOptions{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &evd_only),
+        };
+        const daemon_c = addSelectedTool(b, daemon_options, &evd_only, "ipmievd-log-c");
+        const daemon_zig = addSelectedTool(b, daemon_options, &evd_and_log, "ipmievd-log-zig");
+        inline for (.{ daemon_c, daemon_zig }) |daemon| {
+            daemon.root_module.addCSourceFile(.{
+                .file = b.path("tests/event_daemon/syslog_sink.c"),
+                .flags = &base_cflags,
+            });
+        }
+        const daemon_log_step = b.step("test-event-daemon-log", "Compare Zig daemon with C and Zig logger selections");
+        daemon_log_step.dependOn(frontend_log_step);
+        test_step.dependOn(daemon_log_step);
+        const parity = b.addSystemCommand(&.{ "python3", "-B" });
+        parity.addFileArg(b.path("tests/event_daemon/logging.py"));
+        parity.addFileArg(daemon_c.getEmittedBin());
+        parity.addFileArg(daemon_zig.getEmittedBin());
+        parity.addDirectoryArg(b.tmpPath());
+        daemon_log_step.dependOn(&parity.step);
+        inline for (.{ daemon_c, daemon_zig }) |daemon| {
+            const process = b.addSystemCommand(&.{ "python3", "-B" });
+            process.addFileArg(b.path("tests/event_daemon/process.py"));
+            process.addFileArg(daemon.getEmittedBin());
+            daemon_log_step.dependOn(&process.step);
+        }
+    }
 
     const spd_unit = b.addTest(.{
         .root_module = abi_mod,
@@ -1441,7 +1488,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     c_strings_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize);
+    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize, null);
     configure(b, c_strings_mod, config_h, default_intf);
     c_strings_mod.addCSourceFile(.{
         .file = b.path("src/plugins/lanplus/lanplus_strings.c"),
@@ -1471,7 +1518,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     zig_strings_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize);
+    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize, null);
     zig_strings_mod.linkLibrary(zig_strings_lib);
     lanplus_strings_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = zig_strings_mod })).step);
     test_step.dependOn(lanplus_strings_step);
@@ -2507,7 +2554,14 @@ fn addEvdImports(
     bridge_mod: *std.Build.Module,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
+    selection: ?[]const bool,
 ) void {
+    const options_mod = if (selection) |selected| blk: {
+        const options = b.addOptions();
+        options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selected));
+        break :blk options.createModule();
+    } else null;
+    if (options_mod) |selected| mod.addImport("build_options", selected);
     const headers = b.createModule(.{
         .root_source_file = b.path("src/zig/root.zig"),
         .target = target,
@@ -2515,11 +2569,12 @@ fn addEvdImports(
         .link_libc = true,
     });
     headers.addImport("ipmi_c", bridge_mod);
+    if (options_mod) |selected| headers.addImport("build_options", selected);
     mod.addImport("ipmi_zig", headers);
 }
 
 fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
-    const zig_evd = std.mem.eql(u8, options.name, "ipmievd") and
+    const zig_evd = std.mem.startsWith(u8, options.name, "ipmievd") and
         replacedByZig("src/ipmievd.c", options.zig_selection);
     const zig_cli = replacedByZig("src/ipmitool.c", options.zig_selection) and
         std.mem.startsWith(u8, options.name, "ipmitool");
@@ -2533,7 +2588,7 @@ fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
     configure(b, mod, options.config_h, options.default_intf);
     if (zig_evd) {
         mod.addImport("ipmi_c", options.bridge_mod);
-        addEvdImports(b, mod, options.bridge_mod, options.target, options.optimize);
+        addEvdImports(b, mod, options.bridge_mod, options.target, options.optimize, options.zig_selection);
     }
     if (zig_cli) mod.addImport("ipmi_c", options.bridge_mod);
     addSources(b, mod, options.sources, options.flags, options.zig_selection);

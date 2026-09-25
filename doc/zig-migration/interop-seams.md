@@ -29,6 +29,29 @@ imported into `exports.zig`: `ipmitool` shares that archive but has its own
 tests, and `test-event-daemon-process` exercises foreground/daemon signals and
 PID cleanup with the dummy BMC on Linux when `evd` is selected.
 
+The daemon is a separate Zig executable root, not a member of the
+`exports.zig` archive that owns the selected logger's `logpriv`. Its diagnostics
+use `src/zig/frontend/logging.zig` through `root.zig`'s frontend import: with
+`log` selected, the nonvariadic ABI checks severity in that archive, formats
+with C's 1024-byte limit and forwards post-format `errno` for `lperror`. With
+the C logger selected, the wrapper calls its original variadic ABI. The daemon
+reuses `root.zig`'s import because Zig 0.16 cannot assign the same file to a
+second module when the unit-test root also imports the shell frontend. It
+imports `util/log.zig` only for level constants; calling its typed logging
+functions here would create a second logger state. `build.zig` gives both the
+executable and unit-test daemon roots the same module selection as their
+linked logger archive. Zig test mode retains the frontend bridge's C-ABI
+fallback (which reaches the selected archive via `log_varargs.c`); the
+production daemon binaries exercise the nonvariadic path.
+
+On Linux, `zig build test-event-daemon-log -Dipmishell=false` builds the same
+Zig daemon with either `evd` or `evd,log`, then byte-compares help/errors,
+verbose foreground diagnostics and test-captured daemon syslog. Both binaries
+also run the signal/PID lifecycle fixture; the dependent
+`test-log-frontends` checks severity filtering, errno and truncation across
+the shared-state ABI. On hosts without OpenSSL headers, add
+`-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
+
 Supporting files at the root of `src/zig/`:
 
 | File            | Role |
