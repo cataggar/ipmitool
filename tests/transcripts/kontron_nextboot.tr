@@ -1,0 +1,7 @@
+default_ccode 0xc1
+respond nextboot
+  netfn 0x3e
+  lun 0x03
+  cmd 0x02
+  data 00
+end

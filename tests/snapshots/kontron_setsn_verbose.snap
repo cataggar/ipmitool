@@ -1,0 +1,491 @@
+#!golden 1
+#!case kontron_setsn_verbose
+#!section exit
+0
+#!section stdout
+Original serial number is : [SN12]
+FRU serial number set successfully
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: 3e
+msg.cmd: c
+msg.target_cmd: 0
+msg.lun: 3
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 3f
+msg.cmd: c
+msg.seq: 0
+msg.lun: 3
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: a
+msg.cmd: 10
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: b
+msg.cmd: 10
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 11
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+Writing 22 bytes (Bloc #1: Board Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 22 bytes (Bloc #1: Board Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 12 bytes (Bloc #1: Board Section)
+>>> IPMI req
+msg.data_len: 15
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 12 bytes
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 24
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: a
+msg.cmd: 11
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 11
+msg.seq: 0
+msg.lun: 0
+<<<
+Writing 22 bytes (Bloc #2: Product Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 22 bytes (Bloc #2: Product Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 22 bytes (Bloc #2: Product Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 22 bytes (Bloc #2: Product Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 22 bytes (Bloc #2: Product Section)
+>>> IPMI req
+msg.data_len: 25
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 22 bytes
+Writing 18 bytes (Bloc #2: Product Section)
+>>> IPMI req
+msg.data_len: 21
+msg.netfn: a
+msg.cmd: 12
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 1
+msg.netfn: b
+msg.cmd: 12
+msg.seq: 0
+msg.lun: 0
+<<<
+Wrote 18 bytes
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x3e lun=0x03 cmd=0x0c target_cmd=0x00 data=b4 90 91 8b
+< rule=serial ccode=0x00 len=4 data=53 4e 31 32
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=fru_info ccode=0x00 len=3 data=d0 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=fru_read ccode=0x00 len=9 data=08 01 00 00 01 08 18 00 de
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 08 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c2 41 43 c2 42 44 c4 30 30
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 1f 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 30 30 c1 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 36 00 0a
+< rule=fru_read ccode=0x00 len=11 data=0a 00 00 00 00 00 00 00 00 00 2d
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=fru_read ccode=0x00 len=9 data=08 01 00 00 01 08 18 00 de
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 c0 00 05
+< rule=fru_read ccode=0x00 len=6 data=05 00 80 00 00 80
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 08 00 00 00 00 00 00 00 c2 41 43 c2 42 44 c4 53 4e 31 32 c1 00 00 00 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 1e 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 34 00 00 00 00 2d 00 00 00 00 00 00 00 bc
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 40 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 57 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 6e 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c2 58
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 85 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 59 c2 50 52 c2 50 4e c2 56 31 c4 31 31 31 31 c1 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 9c 00 17
+< rule=fru_read ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 b3 00 0d
+< rule=fru_read ccode=0x00 len=14 data=0d 00 00 00 00 00 00 00 00 00 00 00 00 37
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=fru_read ccode=0x00 len=9 data=08 01 00 00 01 08 18 00 de
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 c0 00 05
+< rule=fru_read ccode=0x00 len=6 data=05 00 80 00 00 80
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 40 00 00 00 00 c2 58 59 c2 50 52 c2 50 4e c2 56 31 c4 53 4e 31 32 c1 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 56 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 6c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 37 00 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 82 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 98 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=fru_write ccode=0x00 len=1 data=20
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 ae 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c0
+< rule=fru_write ccode=0x00 len=1 data=20
+bye

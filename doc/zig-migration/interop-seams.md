@@ -44,6 +44,24 @@ names, including a 16-byte name with no in-record NUL. When changing either
 reader, rerun the `sen_` golden cases with `-Dzig-modules=sdr,sensor`; C-only
 validation cannot protect a swapped SDR build.
 
+### Kontron OEM / FRU dependency
+
+Selecting `-Dzig-modules=kontronoem` replaces `lib/ipmi_kontronoem.c` and
+exports both `ipmi_kontronoem_main` and `ipmi_kontronoem_set_large_buffer`.
+It still calls **three public FRU helpers**, declared in `ipmi_c.h` and
+provided by `lib/ipmi_fru.c`: `read_fru_area`, `write_fru_area`, and
+`get_fru_area_str`. When `ipmi_fru.c` is replaced, its Zig implementation
+must export all three with the same ABI; Kontron must not depend on a hidden
+C-only FRU shim. `tests/cases/57-kontronoem.cases` records the OEM commands,
+the FRU helper request sequences and word-access, and the buffer negotiation
+and rollback paths against the original C implementation.
+
+The Kontron C caller indexes its read buffer by absolute FRU offsets although
+`read_fru_area` fills it from index zero. The Kontron-specific fixture
+intentionally places the serial fields at the positions that caller actually
+reads, so byte-level snapshots cover its observable behavior rather than
+silently correcting it.
+
 ## Naming conventions
 
 Same as the sibling project `azure-sdk-for-zig`:

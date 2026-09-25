@@ -32,12 +32,22 @@
 
 #include <ipmitool/ipmi.h>
 #include <ipmitool/ipmi_event.h>
+#include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_sdr.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_channel.h>
 
 enum ipmitool_abi_layout {
+	/* struct fru_info - opaque because access is a one-bit bitfield. */
+	ABI_SIZEOF_fru_info = sizeof(struct fru_info),
+	ABI_ALIGNOF_fru_info = _Alignof(struct fru_info),
+	ABI_OFFSETOF_fru_info__size = offsetof(struct fru_info, size),
+	ABI_OFFSETOF_fru_info__max_read_size =
+		offsetof(struct fru_info, max_read_size),
+	ABI_OFFSETOF_fru_info__max_write_size =
+		offsetof(struct fru_info, max_write_size),
+
 	/* struct ipmi_rq - opaque: `msg.netfn:6` / `msg.lun:2` are bitfields. */
 	ABI_SIZEOF_ipmi_rq = sizeof(struct ipmi_rq),
 	ABI_ALIGNOF_ipmi_rq = _Alignof(struct ipmi_rq),

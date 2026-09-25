@@ -61,6 +61,7 @@
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_mc.h>
@@ -172,6 +173,12 @@
  */
 void ipmi_raw_help(void);
 int ipmi_spd_print(uint8_t *spd_data, int len);
+/* Exported by lib/ipmi_fru.c; Kontron's FRU editor needs all three helpers. */
+int read_fru_area(struct ipmi_intf *intf, struct fru_info *fru, uint8_t id,
+		  uint32_t offset, uint32_t length, uint8_t *frubuf);
+int write_fru_area(struct ipmi_intf *intf, struct fru_info *fru, uint8_t id,
+		   uint16_t soffset, uint16_t doffset, uint16_t length,
+		   uint8_t *frubuf);
 struct wdt_string_s;
 int find_set_wdt_string(const struct wdt_string_s *w[], const char *s);
 int ipmi_chassis_status(struct ipmi_intf *intf);

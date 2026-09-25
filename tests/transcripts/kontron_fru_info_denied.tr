@@ -1,0 +1,11 @@
+default_ccode 0xc1
+respond serial
+  netfn 0x3e
+  cmd 0x0c
+  data 53 4e 31 32
+end
+respond fru_info
+  netfn 0x0a
+  cmd 0x10
+  ccode 0x81
+end
