@@ -7,7 +7,6 @@ extern fn ipmitool_zig_log_message(level: c_int, message: [*:0]const u8) callcon
 extern fn ipmitool_zig_log_error(level: c_int, message: [*:0]const u8, errnum: c_int) callconv(.c) void;
 
 fn zigLoggerSelected() bool {
-    if (@import("builtin").is_test) return false;
     for (@import("build_options").zig_modules) |module| {
         if (std.mem.eql(u8, module, "log")) return true;
     }

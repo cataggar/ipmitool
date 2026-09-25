@@ -118,7 +118,7 @@ def run():
     binary = os.path.abspath(sys.argv[1])
     foreground_only = "--foreground-only" in sys.argv[2:]
     cache = os.path.abspath(".zig-cache")
-    pidfile = os.path.join(cache, f"p{os.getpid()}")
+    pidfile = os.path.join(cache, f"{os.getpid():x}")
     sockfile = os.path.join(cache, f"s{os.getpid()}")
     assert len(pidfile) < 64
     bmc = Bmc(sockfile)
