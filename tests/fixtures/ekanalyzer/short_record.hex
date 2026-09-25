@@ -1,0 +1,3 @@
+# Valid FRU common header pointing to a truncated multirecord header.
+01 00 00 00 00 01 00 fe
+c0 82 06

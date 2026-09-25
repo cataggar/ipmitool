@@ -1,0 +1,116 @@
+#!golden 1
+#!case ek_picmg_records
+#!section exit
+0
+#!section stdout
+Start converting file '<WORK>/picmg.fru'...
+=================================================================
+FRU Header Info
+=================================================================
+Format Version          :0x01\x20
+Internal Use Offset     :0x00
+Chassis Info Offset     :0x00
+Board Info Offset       :0x00
+Product Info Offset     :0x00
+MultiRecord Offset      :0x01
+Common header Checksum  :0xfe
+=================================================================
+FRU Multi Info area
+=================================================================
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Address Table Record {0x10}
+   Type/Len:    0xc1
+   Shelf Addr: 0x41 0x54 0x43 0x41 0x2d 0x53 0x48 0x45 0x4c 0x46 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00\x20
+   Addr Table Entries count: 0x01
+\tHWAddr: 0x72  - SiteNum: 0x01 - SiteType: 0x02\x20
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Shelf Power Distribution Record {0x11}
+   Number of Power Feeds: 0x01
+   Max External Available Current: 20 Amps
+   Max Internal Current:\t   30 Amps
+   Min Expected Operating Voltage: 12 Volts
+   Feed to FRU count: 0x01
+\tHW: 0x72\tFRU ID: 0x01
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Shelf Activation and Power Management Record {0x12}
+   Allowance for FRU Act Readiness: 0x05
+   FRU activation and Power Desc Cnt: 0x01
+   FRU activation and Power descriptor:
+\tHardware Address:\t\t0x72
+\tFRU Device ID:\t\t\t0x01
+\tMax FRU Power Capability:\t0x000c Watts
+\tConfiguration parameter:\t0x01
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Shelf Manager IP Connection Record {0x13}
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Board Point to Point Connectivity Record {0x14}
+   GUID count:  0
+   Link Descriptor
+\tLink Grouping ID:\t0x01
+\tLink Type Extension:\t0x00 - 10/100/1000BASE-T Link (four-pair)
+\tLink Type:\t\t0x01 - PICMG 3.0 Base Interface 10/100/1000
+\tLink Designator:\x20
+\t   Port 0 Flag:   enable
+\t   Port 1 Flag:   disable
+\t   Port 2 Flag:   disable
+\t   Port 3 Flag:   disable
+\t   Interface:    0x01 - Fabric Interface
+\t   Channel Number:    0x01
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Radial IPMB-0 Link Mapping Record {0x15}
+   IPMB-0 Connector Definer: 01 02 03 h
+   IPMB-0 Connector version ID: 01 00 h
+   IPMB-0 Hub Descriptor Count: 0x01   IPMB-0 Hub Descriptor
+\tHardware Address: 0x70
+\tHub Info {0x01}: IPMB-A only
+\tAddress Entry count: 0x01\t   Hardware Address: 0x72
+\t   IPMB-0 Link Entry: 0x10
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Carrier Clock Point-to-Point Connectivity Record {0x2c}
+   Clock Resource ID: 0x41
+   Type: AMC slot
+   Channel Count: 0x01
+\tCLK-ID: 0x02   --->   remote CLKID: 0x03   [ Carrier-Dev 0x04 ]
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x82
+Manufacturer ID: 00315a h
+Picmg record ID: Clock Configuration Record {0x2d}
+   Clock Resource ID: 0x41
+   Clock Configuration Descriptor Count: 0x01
+\tCLK-ID: 0x02  -  CTRL 0x01 [  Application ]
+\t   Count: Indirect 0x01   / Direct 0x01
+\t\tFeature: 0x01 [  Source] -  Dep. CLK-ID: 0x03
+\t- Feature: 0x01    - PLL: 0 / Asym: Source
+\tFamily:  0x02    - AccLVL: 0x03
+\tFRQ: 100       - min: 32        - max: 128     \x20
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

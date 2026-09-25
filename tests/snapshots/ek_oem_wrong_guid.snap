@@ -1,0 +1,28 @@
+#!golden 1
+#!case ek_oem_wrong_guid
+#!section exit
+0
+#!section stdout
+On-Carrier Device vs AMC slot A1
+  Unmatching result
+  -  AMC slot A1
+    - Channel ID 0 || Lane 0: enable
+    - Link Type: OEM Type 0\x20
+    - Link Type extension: 0
+    - Link Group ID: 1 || Link Asym. Match: 2
+    - GUID: ff-fefdfcfb-faf9f8f7-f6f5f4f3-f2f1f0
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+  -  On-Carrier Device ID 1
+    - Channel ID 0 || Lane 0: enable
+    - Link Type: OEM Type 0\x20
+    - Link Type extension: 0
+    - Link Group ID: 1 || Link Asym. Match: 1
+    - GUID: 00-01020304-05060708-090a0b0c-0d0e0f
+   *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

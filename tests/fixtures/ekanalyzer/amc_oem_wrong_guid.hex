@@ -1,0 +1,17 @@
+# Same OEM link type and extension but no common OEM GUID.
+01 00 00 00 00 01 00 fe
+@mark link_hdr
+c0 82
+@mark link_len
+00
+@mark link_sum
+00
+@mark link_hsum
+00
+@mark link_body
+5a 31 00 19 00 01
+ff fe fd fc fb fa f9 f8 f7 f6 f5 f4 f3 f2 f1 f0
+81 01 e1 ff 0f 00 01 0f 01 02
+@fill_size link_len link_body
+@fill_checksum link_sum link_body
+@fill_checksum link_hsum link_hdr

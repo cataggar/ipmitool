@@ -135,6 +135,9 @@ comptime {
     if (selected("ime")) {
         @import("cmd/ime.zig").exportSymbols();
     }
+    if (selected("ekanalyzer")) {
+        @import("cmd/ekanalyzer.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

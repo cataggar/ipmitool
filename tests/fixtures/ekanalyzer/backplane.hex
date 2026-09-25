@@ -1,0 +1,18 @@
+# Two backplane slot descriptors. The original C decoder's inclusive end
+# condition needs two complete slots to avoid reading past a one-slot record.
+01 00 00 00 00 01 00 fe
+@mark hdr
+c0 82
+@mark len
+00
+@mark sum
+00
+@mark hsum
+00
+@mark body
+5a 31 00 04 00
+08 72 00
+0b 74 00
+@fill_size len body
+@fill_checksum sum body
+@fill_checksum hsum hdr

@@ -215,6 +215,7 @@ zig build -Dzig-modules=vita     # lib/ipmi_vita.c replaced by src/zig/cmd/vita.
 zig build -Dzig-modules=oem,raw  # several at once
 zig build -Dzig-modules=lanp,channel,user  # LAN configuration and its helpers
 zig build -Dzig-modules=lanp6    # IPv6 LAN configuration (see lanp6.md)
+zig build -Dzig-modules=ekanalyzer # offline FRU/PICMG eKey analyzer
 zig build --help                 # lists the available module names
 ```
 
@@ -258,6 +259,29 @@ printing and Ekanalyzer link against the exported FRU helper ABIs in Zig.
 The Zig OEM editor intentionally fixes the original C code's zeroed FRU size
 before multirecord reads; the isolated `tests/zig-fru` fixtures exercise
 successful edits that the C oracle cannot perform.
+
+### Offline eKey analyzer
+
+`-Dzig-modules=ekanalyzer` replaces only `lib/ipmi_ekanalyzer.c`.
+`frushow`, `print`, and `summary` read FRU files directly; they do not send
+IPMI requests. The module keeps its public C symbols (entry point, value
+tables, and constants), preserves the historical output for valid records,
+and checks all offsets and descriptor counts before using them. Like the C
+analyzer, it reports the stored FRU and multirecord checksum bytes without
+rejecting corrupt checksums; the C-oracle CRC snapshots document this
+compatibility decision.
+
+The decoder uses the FRU on-disk format itself and calls only the stable C
+ABI for `get_fru_area_str()`, `ipmi_timestamp_numeric()`, `val2str()`, and
+logging/stdio. It does not import the FRU or PICMG command implementations;
+their independent Zig migrations can therefore replace their C translation
+units without changing this module. The original C analyzer stays available
+in the default build as the oracle until the final C removal.
+
+Run `zig build test-ekanalyzer` for isolated malformed-descriptor bounds
+tests, or `zig build test-golden -Dzig-modules=ekanalyzer -- --filter ek_`
+for C-oracle output, exit-status, and CLI-wire parity (including OEM GUID
+matching and PICMG multirecord rendering).
 
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:

@@ -20,6 +20,18 @@ blob: carrier.fru ekanalyzer/carrier.hex
 blob: amc.fru ekanalyzer/amc.hex
 covers: ekanalyzer
 
+[ek_verbose_topology]
+desc: verbose carrier topology includes decoded record lengths
+args: -I dummy -v ekanalyzer print carrier oc={work}/carrier.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+covers: ekanalyzer
+
+[ek_debug_topology]
+desc: debug carrier topology includes raw multirecord and carrier P2P bytes
+args: -I dummy -vv ekanalyzer print carrier oc={work}/carrier.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+covers: ekanalyzer
+
 [ek_frushow_carrier]
 desc: FRU common header, four PICMG OEM multirecord decoders
 args: -I dummy ekanalyzer frushow oc={work}/carrier.fru
@@ -32,9 +44,22 @@ args: -I dummy ekanalyzer frushow a1={work}/amc.fru
 blob: amc.fru ekanalyzer/amc.hex
 covers: ekanalyzer
 
+[ek_verbose_frushow]
+desc: verbose FRU record removal and decoded PICMG output
+args: -I dummy -v ekanalyzer frushow oc={work}/carrier.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+covers: ekanalyzer
+
 [ek_summary_match]
 desc: compatible link and physical carrier connectivity
 args: -I dummy ekanalyzer summary match oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_verbose_summary]
+desc: verbose link compatibility trace and record accounting
+args: -I dummy -v ekanalyzer summary match oc={work}/carrier.fru a1={work}/amc.fru
 blob: carrier.fru ekanalyzer/carrier.hex
 blob: amc.fru ekanalyzer/amc.hex
 covers: ekanalyzer
@@ -81,6 +106,78 @@ covers: ekanalyzer
 desc: C oracle's observable behavior for a corrupt multirecord checksum
 args: -I dummy ekanalyzer frushow a1={work}/bad.fru
 blob: bad.fru ekanalyzer/bad_crc.hex
+covers: ekanalyzer
+
+[ek_picmg_records]
+desc: shelf address, power, activation, board, radial and clock PICMG records
+args: -I dummy ekanalyzer frushow oc={work}/picmg.fru
+blob: picmg.fru ekanalyzer/picmg_records.hex
+covers: ekanalyzer
+
+[ek_backplane]
+desc: backplane point-to-point channel and slot table
+args: -I dummy ekanalyzer frushow oc={work}/backplane.fru
+blob: backplane.fru ekanalyzer/backplane.hex
+covers: ekanalyzer
+
+[ek_custom_board]
+desc: board custom field decoding and area checksum
+args: -I dummy ekanalyzer frushow a1={work}/custom.fru
+blob: custom.fru ekanalyzer/custom_board.hex
+covers: ekanalyzer
+
+[ek_bad_common_crc]
+desc: C oracle retains FRU header bytes despite a bad common checksum
+args: -I dummy ekanalyzer frushow a1={work}/bad.fru
+blob: bad.fru fru/board_bad_header.hex
+covers: ekanalyzer
+
+[ek_bad_area_offset]
+desc: area offset beyond EOF is diagnosed without out-of-bounds reads
+args: -I dummy ekanalyzer frushow a1={work}/bad.fru
+blob: bad.fru fru/board_bad_offsets.hex
+covers: ekanalyzer
+
+[ek_oem_match]
+desc: OEM link with matching GUIDs, complementary asymmetry and nonzero group
+args: -I dummy ekanalyzer summary match oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier_oem.hex
+blob: amc.fru ekanalyzer/amc_oem.hex
+covers: ekanalyzer
+
+[ek_oem_wrong_guid]
+desc: OEM link with no matching GUID cannot match
+args: -I dummy ekanalyzer summary unmatch oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier_oem.hex
+blob: amc.fru ekanalyzer/amc_oem_wrong_guid.hex
+covers: ekanalyzer
+
+[ek_short_record]
+desc: truncated multirecord header rejected
+args: -I dummy ekanalyzer frushow oc={work}/short.fru
+blob: short.fru ekanalyzer/short_record.hex
+covers: ekanalyzer
+
+[ek_short_payload]
+desc: multirecord body shorter than declared length rejected
+args: -I dummy ekanalyzer frushow oc={work}/short.fru
+blob: short.fru ekanalyzer/short_payload.hex
+covers: ekanalyzer
+
+[ek_no_carrier]
+desc: print topology with no carrier file
+args: -I dummy ekanalyzer print a1={work}/amc.fru
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_no_config_frushow]
+desc: frushow rejects configuration files before reading
+args: -I dummy ekanalyzer frushow rc={work}/carrier.fru
+covers: ekanalyzer
+
+[ek_summary_power_selector]
+desc: summary rejects print's power selector
+args: -I dummy ekanalyzer summary power oc={work}/carrier.fru a1={work}/amc.fru
 covers: ekanalyzer
 
 [ek_bad_option]
