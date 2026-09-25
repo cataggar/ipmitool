@@ -1,0 +1,11 @@
+respond get_fru_area_info
+  netfn 0x0a
+  cmd 0x10
+  data 08 00 01
+end
+respond header_in_words
+  netfn 0x0a
+  cmd 0x11
+  match 00 00 00 08
+  data 04 01 00 00 00 00 00 00 ff
+end

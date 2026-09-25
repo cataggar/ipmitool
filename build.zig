@@ -292,6 +292,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/dcmi.zig",
     },
     .{
+        .name = "fru",
+        .replaces = "lib/ipmi_fru.c",
+        .implementation = "src/zig/cmd/fru.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
@@ -788,6 +793,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .link_libc = true,
+            .sanitize_c = if (sanitize_c) .full else .off,
         });
         mod.addImport("ipmi_c", bridge_mod);
         mod.addImport("build_options", zig_options.createModule());
@@ -1221,6 +1227,10 @@ pub fn build(b: *std.Build) void {
 
     const golden_step = b.step("test-golden", "Run the golden CLI test suite");
     golden_step.dependOn(&addGolden(b, golden_exe, ipmitool).step);
+    const fru_oem_step = b.step("test-fru-oem", "Run fixed Zig-only OEM edit cases");
+    if (zig_selection[fruIndex()]) {
+        fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, ipmitool).step);
+    }
 
     // The whole point of the suite is to prove that a Zig replacement is
     // observably identical to the C it replaced, so run it a second time
@@ -1242,7 +1252,10 @@ pub fn build(b: *std.Build) void {
             .system_libs = swapped_libs,
         });
         golden_step.dependOn(&addGolden(b, golden_exe, swapped).step);
+        if (!zig_selection[fruIndex()])
+            fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, swapped).step);
     }
+    golden_step.dependOn(fru_oem_step);
 
     test_step.dependOn(golden_step);
 
@@ -1423,6 +1436,31 @@ fn addGolden(
     run.addArg("--work-dir");
     run.addDirectoryArg(b.tmpPath());
     if (b.args) |args| run.addArgs(args);
+    run.expectExitCode(0);
+    return run;
+}
+
+fn fruIndex() usize {
+    for (zig_modules, 0..) |module, index| {
+        if (std.mem.eql(u8, module.name, "fru")) return index;
+    }
+    unreachable;
+}
+
+fn addFruOemGolden(
+    b: *std.Build,
+    golden_exe: *std.Build.Step.Compile,
+    exe: *std.Build.Step.Compile,
+) *std.Build.Step.Run {
+    const run = b.addRunArtifact(golden_exe);
+    run.setName(b.fmt("golden Zig FRU OEM {s}", .{exe.name}));
+    run.addArg("--tests-dir");
+    run.addDirectoryArg(b.path("tests/zig-fru"));
+    run.addArgs(&.{ "--repo", b.build_root.path orelse ".", "--binary" });
+    run.addFileArg(exe.getEmittedBin());
+    run.addArg("--work-dir");
+    run.addDirectoryArg(b.tmpPath());
+    run.addArg("--allow-uncovered");
     run.expectExitCode(0);
     return run;
 }
@@ -1609,6 +1647,7 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .target = options.target,
         .optimize = options.optimize,
         .link_libc = true,
+        .sanitize_c = if (options.sanitize_c) .full else .off,
     });
     exports_mod.addImport("ipmi_c", swapped_bridge_mod);
     exports_mod.addImport("build_options", zig_options.createModule());

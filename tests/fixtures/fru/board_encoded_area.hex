@@ -1,0 +1,19 @@
+# Board area with all four FRU string encodings, followed by an extra field.
+@mark board
+01
+@mark length
+00
+00
+c0 9c c0          # 2020-01-01 UTC
+42 12 34          # BCD-plus manufacturer: 1234
+83 41 42 43       # 6-bit ASCII board name, four decoded characters
+02 de ad          # binary serial: dead
+c7 52 75 6e 6e 65 72 31  # ASCII part: Runner1
+c6 55 49 44 2d 31 32      # ASCII file ID: UID-12
+c3 78 79 7a      # extra: xyz
+c1
+@pad 27 0x00
+@mark checksum
+00
+@fill_size8 length board
+@fill_checksum checksum board

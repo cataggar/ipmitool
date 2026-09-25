@@ -1,0 +1,35 @@
+#!golden 1
+#!case fru_edit_same_length
+#!section exit
+0
+#!section stdout
+Updating Field 'Acme Corp' with 'Acme Team' ...
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 20 00 03
+< rule=read_fru_data ccode=0x00 len=4 data=03 01 08 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 20 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 01 08 00 c0 9c c0 c9 41 63 6d 65 20 43 6f 72 70 c9 4d 61 69 6e 62 6f
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 37 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 61 72 64 ca 42 52 44 2d 30 30 30 31 32 33 c8 50 4e 2d 30 30 30 34 32
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 4e 00 12
+< rule=read_fru_data ccode=0x00 len=19 data=12 c6 46 52 55 31 2e 30 c1 00 00 00 00 00 00 00 00 00 11
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a0 00 05
+< rule=read_fru_data ccode=0x00 len=6 data=05 01 02 0d 20 f0
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 20 00 01 08 00 c0 9c c0 c9 41 63 6d 65 20 54 65 61 6d c9 4d 61 69 6e 62
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 36 00 6f 61 72 64 ca 42 52 44 2d 30 30 30 31 32 33 c8 50 4e 2d 30 30 30
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 4c 00 34 32 c6 46 52 55 31 2e 30 c1 00 00 00 00 00 00 00 00 00 1e
+< rule=write_fru_data ccode=0x00 len=1 data=01
+bye

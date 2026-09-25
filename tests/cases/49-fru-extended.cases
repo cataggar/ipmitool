@@ -1,0 +1,297 @@
+# Additional FRU oracle coverage. These cases intentionally exercise both
+# file transfer and parser failure paths; the original parser snapshots stay
+# unchanged.
+
+[fru_read_image]
+desc: read the entire 256-byte FRU across transport-sized chunks to a file
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru.tr
+covers: fru
+
+[fru_read_retry]
+desc: a BMC rejects an oversized FRU read once, then accepts smaller chunks
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru_retry.tr
+covers: fru
+
+[fru_write_image]
+desc: write an inventory image through block boundaries after discovering protected regions
+args: -I dummy fru write 0 {work}/inventory.bin
+transcript: fru_write.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
+[fru_write_verbose]
+desc: verbose FRU write pins protected-block names and the write-size log
+args: -I dummy -v fru write 0 {work}/inventory.bin
+transcript: fru_write.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
+[fru_write_missing]
+desc: writing a non-existent file still queries FRU device info
+args: -I dummy fru write 0 {work}/missing.bin
+transcript: fru.tr
+covers: fru
+
+[fru_read_missing_id]
+desc: read rejects an absent FRU id before creating the output file
+args: -I dummy fru read 1 {work}/inventory.bin
+transcript: fru_no_device.tr
+covers: fru
+
+[fru_print_id_max]
+desc: numeric FRU id 255 is accepted and sent as one byte
+args: -I dummy fru print 255
+transcript: fru_no_device.tr
+covers: fru
+
+[fru_print_id_overflow]
+desc: a value outside the FRU id byte range is rejected without IPMI reads
+args: -I dummy fru print 256
+covers: fru
+
+[fru_read_no_filename]
+desc: read without required file path reports usage without querying BMC
+args: -I dummy fru read 0
+covers: fru
+
+[fru_write_no_filename]
+desc: write without required file path reports usage without querying BMC
+args: -I dummy fru write 0
+covers: fru
+
+[fru_print_short_data]
+desc: read FRU Data advertises eight bytes but carries only two
+args: -I dummy fru print 0
+transcript: fru_short_data.tr
+covers: fru
+
+[fru_print_zero_count]
+desc: a zero-length FRU read does not spin forever on incomplete inventory
+args: -I dummy fru print 0
+transcript: fru_zero_count.tr
+covers: fru
+
+[fru_read_short_data]
+desc: read-to-file with an inconsistent count and short response
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru_short_data.tr
+covers: fru
+
+[fru_read_word_aligned]
+desc: word-access FRU read interprets reply count in words and copies eight bytes
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru_word_access.tr
+covers: fru
+
+[fru_print_word_access]
+desc: word-addressed eight-byte FRU common header with no additional areas
+args: -I dummy fru print 0
+transcript: fru_word_access.tr
+covers: fru
+
+[fru_print_oem_multirecord]
+desc: nonzero high byte of 24-bit OEM IANA and DC load in multirecord area
+args: -I dummy -v fru print 0
+transcript: fru_multirecord_oem.tr
+covers: fru
+
+[fru_print_sdr_locator]
+desc: discover a second logical FRU via an SDR locator and read device id 7
+args: -I dummy fru print
+transcript: fru_sdr_locator.tr
+covers: fru sdr
+
+[fru_print_sdr_no_builtin]
+desc: absent builtin FRU support still discovers a logical FRU through SDR
+args: -I dummy fru print
+transcript: fru_sdr_without_builtin.tr
+covers: fru sdr
+
+[fru_print_mc_locator]
+desc: SDR management controller locator redirects FRU reads to satellite IPMB address
+args: -I dummy fru print
+transcript: fru_sdr_mc_locator.tr
+covers: fru sdr
+
+[fru_write_protected]
+desc: a write-protected chassis area is skipped while subsequent areas are written
+args: -I dummy fru write 0 {work}/inventory.bin
+transcript: fru_write_protected.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
+[fru_write_rejected]
+desc: first FRU write receives a BMC invalid-length completion code
+args: -I dummy fru write 0 {work}/inventory.bin
+transcript: fru_write_rejected.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
+[fru_print_encodings]
+desc: BCD-plus, six-bit ASCII, binary hex and extra FRU board strings
+args: -I dummy -v fru print 0
+transcript: fru_encoded.tr
+covers: fru
+
+[fru_print_picmg_current]
+desc: PICMG manufacturer IANA, record id, version, and AMC current decode
+args: -I dummy -v fru print 0
+transcript: fru_picmg_current.tr
+covers: fru
+
+[fru_print_picmg_variants]
+desc: decode PICMG activation, carrier, shelf and clock records and unknown IDs
+args: -I dummy -v fru print 0
+transcript: fru_picmg_variants.tr
+covers: fru
+
+[fru_print_picmg_topology]
+desc: decode PICMG address table, power feed and topology descriptors
+args: -I dummy -v fru print 0
+transcript: fru_picmg_topology.tr
+covers: fru
+
+[fru_print_short_board]
+desc: area length read advertises two bytes but contains only one
+args: -I dummy fru print 0
+transcript: fru_short_board.tr
+covers: fru
+
+[fru_print_powersupply]
+desc: power-supply multirecord decodes 12-bit capacity, voltage ranges, flags and fan
+args: -I dummy -v fru print 0
+transcript: fru_powersupply.tr
+covers: fru
+
+[fru_print_short_multi]
+desc: a multirecord DC output body advertises more bytes than it returns
+args: -I dummy -v fru print 0
+transcript: fru_short_multi.tr
+covers: fru
+
+[fru_internaluse_info]
+desc: internal-use area length is the gap before the next advertised section
+args: -I dummy fru internaluse 0 info
+transcript: fru_internaluse.tr
+covers: fru
+
+[fru_internaluse_print]
+desc: dump untyped internal-use area in groups of sixteen
+args: -I dummy fru internaluse 0 print
+transcript: fru_internaluse.tr
+covers: fru
+
+[fru_internaluse_read]
+desc: save internal-use area without reading the rest of the FRU
+args: -I dummy fru internaluse 0 read {work}/internal.bin
+transcript: fru_internaluse.tr
+covers: fru
+
+[fru_internaluse_write]
+desc: write exact-size internal-use area without touching adjacent sections
+args: -I dummy fru internaluse 0 write {work}/internal.bin
+transcript: fru_internaluse.tr
+blob: internal.bin fru/internal_area.hex
+covers: fru
+
+[fru_print_sdr_verbose]
+desc: verbose builtin and SDR-located FRUs both render multirecords
+args: -I dummy -v fru print
+transcript: fru_sdr_locator.tr
+covers: fru sdr
+
+[fru_edit_same_length]
+desc: replace a board string in place and update its area checksum
+args: -I dummy fru edit 0 field b 0 "Acme Team"
+transcript: fru_write.tr
+covers: fru
+
+[fru_edit_rebuild]
+desc: grow a board field into existing area padding and rebuild its checksum
+args: -I dummy fru edit 0 field b 0 "Acme Team Gold"
+transcript: fru_write.tr
+covers: fru
+
+[fru_edit_grow]
+desc: nearly exhaust the board area's padding without moving later sections
+args: -I dummy fru edit 0 field b 0 "Acme Corporation"
+transcript: fru_write.tr
+covers: fru
+
+[fru_edit_shrink]
+desc: shrink the board area and adjust later header offsets
+args: -I dummy fru edit 0 field b 0 "Acme"
+transcript: fru_write.tr
+covers: fru
+
+[fru_upg_ekey]
+desc: replace target multirecords from a full FRU image file
+args: -I dummy fru upgEkey 0 {work}/board.bin
+transcript: fru_write.tr
+blob: board.bin fru/board.hex
+covers: fru
+
+[fru_upg_ekey_valid]
+desc: upgrade valid checksummed multirecords from a FRU file
+args: -I dummy fru upgEkey 0 {work}/board.bin
+transcript: fru_write.tr
+blob: board.bin fru/board_valid_multirecord.hex
+covers: fru
+
+[fru_upg_ekey_missing]
+desc: upgEkey rejects a missing source FRU image after target discovery
+args: -I dummy fru upgEkey 0 {work}/missing.bin
+transcript: fru_write.tr
+covers: fru
+
+[fru_get_oem_missing]
+desc: OEM lookup rejects a missing FRU before scanning any multirecords
+args: -I dummy fru get 0 oem 12634 1
+transcript: fru_no_device.tr
+covers: fru
+
+[fru_helper_kontron_date]
+desc: Kontron's external FRU read/write helpers preserve source offsets and block boundaries
+args: -I dummy kontronoem setmfgdate
+transcript: fru_kontron_date.tr
+covers: kontronoem fru
+
+[fru_get_kontron]
+desc: fetch an end-marked Kontron OEM multirecord with bounded block traversal
+args: -I dummy fru get 0 oem 15000 3 0 name 0
+transcript: fru_kontron_get.tr
+covers: fru
+
+[fru_get_kontron_fields]
+desc: parse a full Kontron OEM v0 record's name, version, dates and checksum
+args: -I dummy fru get 0 oem 15000 3 0 TEST 0
+transcript: fru_kontron_get_fields.tr
+covers: fru
+
+[fru_help_public]
+desc: public FRU usage text is available without querying a BMC
+args: -I dummy fru help
+covers: fru
+
+[fru_edit_help_public]
+desc: FRU edit usage includes fields and OEM record editing
+args: -I dummy fru edit help
+covers: fru
+
+[fru_get_help_public]
+desc: FRU get usage describes OEM record arguments
+args: -I dummy fru get help
+covers: fru
+
+[fru_internaluse_help_public]
+desc: internal-use usage enumerates all four area operations
+args: -I dummy fru internaluse help
+covers: fru
+
+[fru_edit_oem_missing]
+desc: absent FRU inventory aborts OEM edit before section lookup
+args: -I dummy fru edit 0 oem 15000 3
+transcript: fru_no_device.tr
+covers: fru

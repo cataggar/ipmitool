@@ -274,6 +274,30 @@ struct ipmi_rs *ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf,
 						 uint8_t channel);
 void printf_sdr_usage(void);
 
+/* Public FRU helpers with external linkage but no prototypes in
+ * include/ipmitool/ipmi_fru.h. */
+void ipmi_fru_read_help(void);
+void ipmi_fru_write_help(void);
+void ipmi_fru_edit_help(void);
+void ipmi_fru_get_help(void);
+void ipmi_fru_upgekey_help(void);
+void ipmi_fru_internaluse_help(void);
+void ipmi_fru_help(void);
+int ipmi_spd_print_fru(struct ipmi_intf *intf, uint8_t id);
+int is_valid_filename(const char *filename);
+t_ipmi_fru_bloc *build_fru_bloc(struct ipmi_intf *intf,
+			       struct fru_info *fru, uint8_t id);
+void free_fru_bloc(t_ipmi_fru_bloc *bloc);
+int read_fru_area(struct ipmi_intf *intf, struct fru_info *fru,
+		  uint8_t id, uint32_t offset, uint32_t length, uint8_t *data);
+int read_fru_area_section(struct ipmi_intf *intf, struct fru_info *fru,
+			  uint8_t id, uint32_t offset, uint32_t length,
+			  uint8_t *data);
+int write_fru_area(struct ipmi_intf *intf, struct fru_info *fru, uint8_t id,
+		   uint16_t source_offset, uint16_t destination_offset,
+		   uint16_t length, uint8_t *data);
+int ipmi_fru_get_adjust_size_from_buffer(uint8_t *data, uint32_t *size);
+
 /* Global symbols defined by lib/ipmi_picmg.c but absent from its header. */
 struct sAmcAddrMap {
 	unsigned char ipmbLAddr;

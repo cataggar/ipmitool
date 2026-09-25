@@ -1,0 +1,6 @@
+@fru/common_header.hex
+@fru/chassis_area.hex
+@fru/board_encoded_area.hex
+@fru/product_area.hex
+@fru/multirecord_area.hex
+@pad 62 0x00

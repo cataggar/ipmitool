@@ -1,0 +1,5 @@
+respond no_fru
+  netfn 0x0a
+  cmd 0x10
+  ccode 0xcb
+end

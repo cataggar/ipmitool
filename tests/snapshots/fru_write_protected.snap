@@ -1,0 +1,46 @@
+#!golden 1
+#!case fru_write_protected
+#!section exit
+0
+#!section stdout
+Fru Size         : 256 bytes
+Size to Write    : 256 bytes
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a0 00 05
+< rule=read_fru_data ccode=0x00 len=6 data=05 01 02 0d 20 f0
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 00 00 01 00 01 04 0c 14 00 da
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 08 00 01 03 17 c5 43 48 2d 30 31 c6 53 4e 43 48 30 31 c1 00 00 00 00 00
+< rule=chassis_protected ccode=0x80 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 20 00 01 08 00 c0 9c c0 c9 41 63 6d 65 20 43 6f 72 70 c9 4d 61 69 6e 62
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 36 00 6f 61 72 64 ca 42 52 44 2d 30 30 30 31 32 33 c8 50 4e 2d 30 30 30
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 4c 00 34 32 c6 46 52 55 31 2e 30 c1 00 00 00 00 00 00 00 00 00 11
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 60 00 01 08 00 c9 41 63 6d 65 20 43 6f 72 70 c6 57 69 64 67 65 74 c8 4d
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 76 00 44 4c 2d 31 32 33 34 c3 31 2e 30 c9 50 53 30 30 30 30 30 30 31 c6
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 8c 00 41 53 53 45 54 31 c6 46 52 55 31 2e 30 c1 00 00 00 00 00 b5
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 a0 00 01 02 0d 20 f0 01 b8 0b 9c ff 64 00 32 00 00 00 e8 03
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 b2 00 03 82 0b 73 70 03 68 74 74 70 3a 2f 2f 62 6d 63 00 00 00 00 00 00
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 c8 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 de 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 f4 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=write_fru_data ccode=0x00 len=1 data=01
+bye

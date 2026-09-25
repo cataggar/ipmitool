@@ -1,0 +1,18 @@
+# The C OEM editor clears fru.size immediately before reading the multirecord
+# area, so it cannot successfully edit any nonzero multirecord offset. These
+# Zig-only snapshots exercise the repaired path without weakening C-oracle
+# parity for commands the C oracle can actually execute.
+
+[zig_fru_kontron_edit]
+desc: edit a complete Kontron information block and write updated checksums
+args: -I dummy fru edit 0 oem 15000 3 0 TEST 0 ABCDEFGH 20240102 20250102 hgfedcba
+transcript: kontron_edit.tr
+registry: none
+covers: fru
+
+[zig_fru_picmg_edit_prompt]
+desc: inspect AMC current and leave it unchanged when interactive input is absent
+args: -I dummy fru edit 0 oem 12634
+transcript: picmg_edit.tr
+registry: none
+covers: fru

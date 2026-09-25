@@ -1,0 +1,16 @@
+#!golden 1
+#!case fru_internaluse_help_public
+#!section exit
+0
+#!section stdout
+#!section stderr
+fru internaluse <fru id> info             - get internal use area size
+fru internaluse <fru id> print            - print internal use area in hex
+fru internaluse <fru id> read  <fru file> - read internal use area to file
+fru internaluse <fru id> write <fru file> - write internal use area from file
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

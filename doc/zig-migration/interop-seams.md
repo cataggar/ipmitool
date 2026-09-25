@@ -38,9 +38,8 @@ Supporting files at the root of `src/zig/`:
 | `root.zig`      | namespace of every header port; the root of `zig build test` |
 | `exports.zig`   | link-time root of `libipmitool_zig.a`; one guarded `@import` per port |
 
-`ipmi_c.h` and `abi_layout.h` are the only two C files the Zig tree owns. They
-are build-time scaffolding, never linked into the product, and they are deleted
-together with the last C translation unit.
+`ipmi_c.h` and `abi_layout.h` are build-time scaffolding, never linked into
+the product, and are deleted with the last C translation unit.
 
 ### SDR safety across the #53 port
 
@@ -222,6 +221,15 @@ Mechanics, all in `build.zig`:
    `libipmitool_zig.a` and linked after `libipmitool_core.a`.
 5. With no selection the Zig library is not built or linked at all, so the
    default build is bit-for-bit the pre-existing all-C build.
+
+Selecting `-Dzig-modules=fru` now replaces `lib/ipmi_fru.c` in its entirety:
+print/list with SDR discovery and PICMG records, read/write, internaluse,
+Kontron get, EKey upgrade, field edits and OEM edits. The `fru_legacy.c` shim
+has been removed. External consumers such as Kontron OEM commands, SEL FRU
+printing and Ekanalyzer link against the exported FRU helper ABIs in Zig.
+The Zig OEM editor intentionally fixes the original C code's zeroed FRU size
+before multirecord reads; the isolated `tests/zig-fru` fixtures exercise
+successful edits that the C oracle cannot perform.
 
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:

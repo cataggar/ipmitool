@@ -1,0 +1,43 @@
+#!golden 1
+#!case zig_fru_kontron_edit
+#!section exit
+0
+#!section stdout
+   Kontron OEM Information Record
+   blockCount: 1
+Found : TEST
+#!section stderr
+IANA PEN registry open failed: No such file or directory
+Failed to load entries from IANA PEN Registry
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a0 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 c0 82 30 e9 a5 98 3a 00 03 00 01 04 54 45 53 54 c8 31 32 33 34 35 36
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 b7 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 37 38 c8 32 30 32 34 30 31 30 31 c8 32 30 32 35 30 31 30 31 c8 61 62
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 ce 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 63 64 65 66 67 68 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 e5 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 fc 00 04
+< rule=read_fru_data ccode=0x00 len=5 data=04 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a0 00 05
+< rule=read_fru_data ccode=0x00 len=6 data=05 c0 82 30 e9 a5
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 a0 00 c0 82 30 67 27 98 3a 00 03 00 01 04 54 45 53 54 c8 41 42 43 44 45
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 b6 00 46 47 48 c8 32 30 32 34 30 31 30 32 c8 32 30 32 35 30 31 30 32 c8
+< rule=write_fru_data ccode=0x00 len=1 data=01
+> netfn=0x0a lun=0x00 cmd=0x12 target_cmd=0x00 data=00 cc 00 68 67 66 65 64 63 62 61 00
+< rule=write_fru_data ccode=0x00 len=1 data=01
+bye

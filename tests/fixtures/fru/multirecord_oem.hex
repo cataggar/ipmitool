@@ -1,0 +1,35 @@
+# DC load record with values distinct from DC output, followed by an OEM
+# record with 24-bit manufacturer 0xf3c2b1 (all three bytes nonzero).
+@mark dc_hdr
+02 02
+@mark dc_len
+00
+@mark dc_sum
+00
+@mark dc_hsum
+00
+@mark dc_body
+07             # output 7
+e8 03          # nominal 10 V
+84 03          # minimum 9 V
+4c 04          # maximum 11 V
+23 01          # ripple 291 mV
+41 01          # minimum draw 321 mA
+e5 07          # maximum draw 2021 mA
+@fill_size dc_len dc_body
+@fill_checksum dc_sum dc_body
+@fill_checksum dc_hsum dc_hdr
+
+@mark oem_hdr
+c0 82
+@mark oem_len
+00
+@mark oem_sum
+00
+@mark oem_hsum
+00
+@mark oem_body
+b1 c2 f3 99 01 12 34
+@fill_size oem_len oem_body
+@fill_checksum oem_sum oem_body
+@fill_checksum oem_hsum oem_hdr

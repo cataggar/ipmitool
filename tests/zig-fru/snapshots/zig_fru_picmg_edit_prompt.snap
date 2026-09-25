@@ -1,0 +1,33 @@
+#!golden 1
+#!case zig_fru_picmg_edit_prompt
+#!section exit
+0
+#!section stdout no-final-newline
+    FRU_AMC_CURRENT
+      Current draw(@12V): 5.50 A (0x37)
+Would you like to change this value <y/n> ?\x20
+#!section stderr
+IANA PEN registry open failed: No such file or directory
+Failed to load entries from IANA PEN Registry
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 00 01 04 0c 14 00 da
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 a0 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 c0 82 06 28 90 5a 31 00 16 00 37 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 b7 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 ce 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 e5 00 17
+< rule=read_fru_data ccode=0x00 len=24 data=17 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 fc 00 04
+< rule=read_fru_data ccode=0x00 len=5 data=04 00 00 00 00
+bye

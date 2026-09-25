@@ -1,0 +1,6 @@
+@fru/common_header.hex
+@fru/chassis_area.hex
+@fru/board_area.hex
+@fru/product_area.hex
+@fru/picmg_current.hex
+@pad 85 0x00

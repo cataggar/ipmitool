@@ -1,0 +1,6 @@
+# Same two records as multirecord_area.hex, with valid header checksums so
+# upgEkey accepts the source instead of rejecting the first record.
+01 02 0d 20 d0
+01 b8 0b 9c ff 64 00 32 00 00 00 e8 03
+03 82 0b 73 fd
+03 68 74 74 70 3a 2f 2f 62 6d 63
