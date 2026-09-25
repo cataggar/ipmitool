@@ -281,11 +281,13 @@ remaining variadic C callers still use the logging trampoline.
 
 CI cross-builds the all-selected `ipmitool` and `ipmievd` binaries in
 `ReleaseSafe` for the opposite runner architecture with musl and verifies
-that neither executable has an ELF interpreter or `NEEDED` library. This
-reduced-feature gate disables readline and OpenSSL/LAN+, and still links musl
-libc. The fully selected tool omits the logging C shim, while selections
-combining the Zig logger with C modules retain it. This is not a libc-free
-build or a pure-Zig release.
+that neither executable has an ELF interpreter or `NEEDED` library. The
+reduced-feature gate disables the shell and OpenSSL/LAN+; a second gate
+retains the default shell, LAN+ and crypto features. The selected Zig
+implementations need neither readline nor OpenSSL libraries, but both
+configurations still link musl libc. The fully selected tool omits the
+logging C shim, while selections combining the Zig logger with C modules
+retain it. This is not a libc-free build or a pure-Zig release.
 
 `src/zig/cli/main.zig` is linked through `exports.zig` into the shared Zig
 archive, unlike the separate `cli/tool.zig` executable root. Its diagnostics
