@@ -1,0 +1,29 @@
+# Board area with a non-empty custom field, followed by a valid PICMG record.
+# The board area begins at 8; the multirecord area begins at 32.
+01 00 00 01 00 04 00 fa
+@mark board
+01
+@mark length
+00
+00 00 00 00
+c0 c0 c0 c0 c0
+c3 41 42 43
+c1
+@pad 7 0x00
+@mark board_sum
+00
+@fill_size8 length board
+@fill_checksum board_sum board
+@mark current_hdr
+c0 82
+@mark current_len
+00
+@mark current_sum
+00
+@mark current_hsum
+00
+@mark current_body
+5a 31 00 16 00 0a
+@fill_size current_len current_body
+@fill_checksum current_sum current_body
+@fill_checksum current_hsum current_hdr

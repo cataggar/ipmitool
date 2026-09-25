@@ -1,0 +1,58 @@
+#!golden 1
+#!case ek_verbose_topology
+#!section exit
+0
+#!section stdout
+Type: On-Carrier Device,   file name: <WORK>/carrier.fru
+Record 0 has length = 0c
+Record 1 has length = 0a
+Record 2 has length = 08
+Record 3 has length = 10
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+From Carrier file: <WORK>/carrier.fru
+resource id= 01  port count= 1
+   On Carrier Device ID 1 topology:\x20
+\tPort 2 =====> AMC slot A1, Port 1
+   Number of AMC bays supported by Carrier: 1
+Record list has been removed successfully
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,119 @@
+# PICMG shelf/address/board/radial/clock record variants. All lengths and
+# checksums are calculated from the actual binary body by the fixture loader.
+01 00 00 00 00 01 00 fe
+
+@mark address_hdr
+c0 02
+@mark address_len
+00
+@mark address_sum
+00
+@mark address_hsum
+00
+@mark address_body
+5a 31 00 10 00
+c1
+41 54 43 41 2d 53 48 45 4c 46 00 00 00 00 00 00 00 00 00 00
+01 72 01 02
+@fill_size address_len address_body
+@fill_checksum address_sum address_body
+@fill_checksum address_hsum address_hdr
+
+@mark power_hdr
+c0 02
+@mark power_len
+00
+@mark power_sum
+00
+@mark power_hsum
+00
+@mark power_body
+5a 31 00 11 00 01 02 00 03 00 18 01 72 01
+@fill_size power_len power_body
+@fill_checksum power_sum power_body
+@fill_checksum power_hsum power_hdr
+
+@mark activation_hdr
+c0 02
+@mark activation_len
+00
+@mark activation_sum
+00
+@mark activation_hsum
+00
+@mark activation_body
+5a 31 00 12 00 05 01 72 01 0c 00 01
+@fill_size activation_len activation_body
+@fill_checksum activation_sum activation_body
+@fill_checksum activation_hsum activation_hdr
+
+@mark shelf_ip_hdr
+c0 02
+@mark shelf_ip_len
+00
+@mark shelf_ip_sum
+00
+@mark shelf_ip_hsum
+00
+@mark shelf_ip_body
+5a 31 00 13 00 c0 00 02 01 c0 00 02 fe ff ff ff 00
+@fill_size shelf_ip_len shelf_ip_body
+@fill_checksum shelf_ip_sum shelf_ip_body
+@fill_checksum shelf_ip_hsum shelf_ip_hdr
+
+@mark board_hdr
+c0 02
+@mark board_len
+00
+@mark board_sum
+00
+@mark board_hsum
+00
+@mark board_body
+5a 31 00 14 00 00 41 11 00 01
+@fill_size board_len board_body
+@fill_checksum board_sum board_body
+@fill_checksum board_hsum board_hdr
+
+@mark radial_hdr
+c0 02
+@mark radial_len
+00
+@mark radial_sum
+00
+@mark radial_hsum
+00
+@mark radial_body
+5a 31 00 15 00 01 02 03 01 00 01 70 01 01 72 10
+@fill_size radial_len radial_body
+@fill_checksum radial_sum radial_body
+@fill_checksum radial_hsum radial_hdr
+
+@mark clock_p2p_hdr
+c0 02
+@mark clock_p2p_len
+00
+@mark clock_p2p_sum
+00
+@mark clock_p2p_hsum
+00
+@mark clock_p2p_body
+5a 31 00 2c 00 01 41 01 02 03 04
+@fill_size clock_p2p_len clock_p2p_body
+@fill_checksum clock_p2p_sum clock_p2p_body
+@fill_checksum clock_p2p_hsum clock_p2p_hdr
+
+@mark clock_cfg_hdr
+c0 82
+@mark clock_cfg_len
+00
+@mark clock_cfg_sum
+00
+@mark clock_cfg_hsum
+00
+@mark clock_cfg_body
+5a 31 00 2d 00 41 01 02 01 01 01 01 03
+01 02 03 64 00 00 00 20 00 00 00 80 00 00 00
+@fill_size clock_cfg_len clock_cfg_body
+@fill_checksum clock_cfg_sum clock_cfg_body
+@fill_checksum clock_cfg_hsum clock_cfg_hdr

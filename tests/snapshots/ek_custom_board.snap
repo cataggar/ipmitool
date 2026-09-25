@@ -1,0 +1,50 @@
+#!golden 1
+#!case ek_custom_board
+#!section exit
+0
+#!section stdout
+Start converting file '<WORK>/custom.fru'...
+=================================================================
+FRU Header Info
+=================================================================
+Format Version          :0x01\x20
+Internal Use Offset     :0x00
+Chassis Info Offset     :0x00
+Board Info Offset       :0x01
+Product Info Offset     :0x00
+MultiRecord Offset      :0x04
+Common header Checksum  :0xfa
+=================================================================
+FRU Board Info Area
+=================================================================
+Format Version: 1
+Area Length: 24
+Language Code: 0
+Board Mfg Date: 0, Unspecified
+Board Manufacture Data: None
+Board Product Name: None
+Board Serial Number: None
+Board Part Number: None
+FRU File ID: None
+Additional Custom Mfg. length: 0xc3
+Additional Custom Mfg. Data: ABC
+End of Custom Mfg. fields (0xc1)
+Unused space: 7 (bytes)
+Checksum: 0xf2
+=================================================================
+FRU Multi Info area
+=================================================================
+Record Type ID: 0xc0
+Record Format version: 0x82
+Manufacturer ID: 00315a h
+Picmg record ID: Module Current Requirements Record {0x16}
+   Current draw: 1.0 A @ 12V => 12.00 Watt
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

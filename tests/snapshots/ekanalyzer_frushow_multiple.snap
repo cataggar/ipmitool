@@ -1,0 +1,124 @@
+#!golden 1
+#!case ekanalyzer_frushow_multiple
+#!section exit
+0
+#!section stdout
+Start converting file '<WORK>/carrier.fru'...
+=================================================================
+FRU Header Info
+=================================================================
+Format Version          :0x01\x20
+Internal Use Offset     :0x00
+Chassis Info Offset     :0x00
+Board Info Offset       :0x00
+Product Info Offset     :0x00
+MultiRecord Offset      :0x01
+Common header Checksum  :0xfe
+=================================================================
+FRU Multi Info area
+=================================================================
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Carrier Activation and Power Management Record {0x17}
+   Maximum Internal Current(@12V): 2.00 A [ 24.00 Watt ]
+   Module Activation Readiness:    5 sec.
+   Descriptor Count: 1
+\tIPMB-Address:\t\t0x72
+\tMax. Module Current:\t1.00 A
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Carrier Point-to-Point Connectivity Record {0x18}
+   On Carrier Device ID 1 topology:\x20
+\tPort 2 =====> AMC slot A1, Port 1
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Carrier Information Table {0x1a}
+   AMC.0 extension version: R1.0
+   Carrier Site Number Count: 1
+\tSite ID (1): AMC slot A1\x20
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x82
+Manufacturer ID: 00315a h
+Picmg record ID: AdvancedMC Point-to-Point Connectivity Record {0x19}
+OEM GUID count: 00
+On-Carrier Device 01 h
+AMC Channel Descriptor count: 01 h
+   AMC Channel Descriptor {0fffe2}
+      Lane 0 Port: 2
+      Lane 1 Port: 31
+      Lane 2 Port: 31
+      Lane 3 Port: 31
+
+   AMC Link Descriptor:
+\t- Link Type: AMC.2 Ethernet\x20
+\t- Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+\t- Link Group ID: 0\x20
+\t- Link Asym. Match: 0 - exact match
+\t- AMC Link Designator:
+\t    Channel ID: 0
+\t\t Lane 0: enable
+\t\t Lane 1: disable
+\t\t Lane 2: disable
+\t\t Lane 3: disable
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Start converting file '<WORK>/amc.fru'...
+=================================================================
+FRU Header Info
+=================================================================
+Format Version          :0x01\x20
+Internal Use Offset     :0x00
+Chassis Info Offset     :0x00
+Board Info Offset       :0x00
+Product Info Offset     :0x00
+MultiRecord Offset      :0x01
+Common header Checksum  :0xfe
+=================================================================
+FRU Multi Info area
+=================================================================
+Record Type ID: 0xc0
+Record Format version: 0x02
+Manufacturer ID: 00315a h
+Picmg record ID: Module Current Requirements Record {0x16}
+   Current draw: 1.0 A @ 12V => 12.00 Watt
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Record Type ID: 0xc0
+Record Format version: 0x82
+Manufacturer ID: 00315a h
+Picmg record ID: AdvancedMC Point-to-Point Connectivity Record {0x19}
+OEM GUID count: 00
+AMC module connection
+AMC Channel Descriptor count: 01 h
+   AMC Channel Descriptor {0fffe1}
+      Lane 0 Port: 1
+      Lane 1 Port: 31
+      Lane 2 Port: 31
+      Lane 3 Port: 31
+
+   AMC Link Descriptor:
+\t- Link Type: AMC.2 Ethernet\x20
+\t- Link Type extension: 1000BASE-BX (SerDES Gigabit) Ethernet link
+\t- Link Group ID: 0\x20
+\t- Link Asym. Match: 0 - exact match
+\t- AMC Link Designator:
+\t    Channel ID: 0
+\t\t Lane 0: enable
+\t\t Lane 1: disable
+\t\t Lane 2: disable
+\t\t Lane 3: disable
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

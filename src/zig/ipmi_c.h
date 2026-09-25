@@ -60,6 +60,7 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_dcmi.h>
 #include <ipmitool/ipmi_event.h>
+#include <ipmitool/ipmi_ekanalyzer.h>
 #include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_cfgp.h>

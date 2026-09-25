@@ -317,6 +317,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/ime.zig",
     },
     .{
+        .name = "ekanalyzer",
+        .replaces = "lib/ipmi_ekanalyzer.c",
+        .implementation = "src/zig/cmd/ekanalyzer.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
@@ -1196,6 +1201,18 @@ pub fn build(b: *std.Build) void {
     const ime_tests = b.addTest(.{ .root_module = ime_test_mod });
     b.step("test-ime", "Run isolated Intel ME firmware update unit tests")
         .dependOn(&b.addRunArtifact(ime_tests).step);
+
+    const ekanalyzer_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/ekanalyzer_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    ekanalyzer_mod.addImport("ipmi_c", bridge_mod);
+    const ekanalyzer_tests = b.addRunArtifact(b.addTest(.{ .root_module = ekanalyzer_mod }));
+    const ekanalyzer_step = b.step("test-ekanalyzer", "Run offline FRU/PICMG bounds tests");
+    ekanalyzer_step.dependOn(&ekanalyzer_tests.step);
+    test_step.dependOn(ekanalyzer_step);
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.

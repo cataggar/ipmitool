@@ -1,0 +1,17 @@
+# Asymmetry 2 complements the carrier's asymmetry 1; GUIDs match.
+01 00 00 00 00 01 00 fe
+@mark link_hdr
+c0 82
+@mark link_len
+00
+@mark link_sum
+00
+@mark link_hsum
+00
+@mark link_body
+5a 31 00 19 00 01
+00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+81 01 e1 ff 0f 00 01 0f 01 02
+@fill_size link_len link_body
+@fill_checksum link_sum link_body
+@fill_checksum link_hsum link_hdr

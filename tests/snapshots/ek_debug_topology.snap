@@ -1,0 +1,83 @@
+#!golden 1
+#!case ek_debug_topology
+#!section exit
+0
+#!section stdout
+Type: On-Carrier Device,   file name: <WORK>/carrier.fru
+Record 0 has length = 0c
+Type: c0
+0x00: 5a 31 00 17 00 14 00 05\x20
+0x08: 01 72 0a 00\x20
+
+Record 1 has length = 0a
+Type: c0
+0x00: 5a 31 00 18 00 01 01 81\x20
+0x08: 41 00\x20
+
+Record 2 has length = 08
+Type: c0
+0x00: 5a 31 00 1a 00 01 01 01\x20
+
+Record 3 has length = 10
+Type: c0
+0x00: 5a 31 00 19 00 00 01 01\x20
+0x08: e2 ff 0f 00 51 00 00 00\x20
+
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+From Carrier file: <WORK>/carrier.fru
+Binary data of Carrier p2p connectivity record starting from mfg id
+5a   31   00   18   00   01   01   81   41   00  \x20
+resource id= 01  port count= 1
+   On Carrier Device ID 1 topology:\x20
+\tPort 2 =====> AMC slot A1, Port 1
+   Number of AMC bays supported by Carrier: 1
+Record list has been removed successfully
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+start multi offset = 0x08
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

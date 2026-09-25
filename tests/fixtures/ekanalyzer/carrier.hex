@@ -1,0 +1,59 @@
+# Carrier FRU, multirecord area at byte 8. PICMG OEM ID 0x00315a.
+01 00 00 00 00 01 00 fe
+
+@mark current_hdr
+c0 02
+@mark current_len
+00
+@mark current_sum
+00
+@mark current_hsum
+00
+@mark current_body
+5a 31 00 17 00 14 00 05 01 72 0a 00
+@fill_size current_len current_body
+@fill_checksum current_sum current_body
+@fill_checksum current_hsum current_hdr
+
+@mark topology_hdr
+c0 02
+@mark topology_len
+00
+@mark topology_sum
+00
+@mark topology_hsum
+00
+@mark topology_body
+5a 31 00 18 00 01 01 81 41 00
+@fill_size topology_len topology_body
+@fill_checksum topology_sum topology_body
+@fill_checksum topology_hsum topology_hdr
+
+@mark bays_hdr
+c0 02
+@mark bays_len
+00
+@mark bays_sum
+00
+@mark bays_hsum
+00
+@mark bays_body
+5a 31 00 1a 00 01 01 01
+@fill_size bays_len bays_body
+@fill_checksum bays_sum bays_body
+@fill_checksum bays_hsum bays_hdr
+
+# On-carrier device 1, channel lane 0 port 2, Ethernet link channel 0.
+@mark link_hdr
+c0 82
+@mark link_len
+00
+@mark link_sum
+00
+@mark link_hsum
+00
+@mark link_body
+5a 31 00 19 00 00 01 01 e2 ff 0f 00 51 00 00 00
+@fill_size link_len link_body
+@fill_checksum link_sum link_body
+@fill_checksum link_hsum link_hdr

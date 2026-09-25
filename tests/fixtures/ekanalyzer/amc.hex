@@ -1,0 +1,30 @@
+# AMC slot A1, lane 0 port 1, Ethernet link compatible with carrier.hex.
+01 00 00 00 00 01 00 fe
+
+@mark current_hdr
+c0 02
+@mark current_len
+00
+@mark current_sum
+00
+@mark current_hsum
+00
+@mark current_body
+5a 31 00 16 00 0a
+@fill_size current_len current_body
+@fill_checksum current_sum current_body
+@fill_checksum current_hsum current_hdr
+
+@mark link_hdr
+c0 82
+@mark link_len
+00
+@mark link_sum
+00
+@mark link_hsum
+00
+@mark link_body
+5a 31 00 19 00 00 81 01 e1 ff 0f 00 51 00 00 00
+@fill_size link_len link_body
+@fill_checksum link_sum link_body
+@fill_checksum link_hsum link_hdr

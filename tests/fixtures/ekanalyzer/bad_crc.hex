@@ -1,0 +1,4 @@
+# Record with corrupt data and header checksums; the legacy C reader ignores both.
+01 00 00 00 00 01 00 fe
+c0 82 06 00 00
+5a 31 00 16 00 0a
