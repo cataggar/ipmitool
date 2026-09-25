@@ -18,13 +18,12 @@
 const std = @import("std");
 
 const c = @import("ipmi_c");
-const helper = @import("helper.zig");
 const log = @import("log.zig");
 const parse = @import("registry_parse.zig");
 const strings = @import("strings.zig");
 
 const tables = strings.tables;
-const ValStr = helper.ValStr;
+const ValStr = @import("table_types.zig").ValStr;
 
 /// `IANA_NAME_OFFSET`: the registry indents the organisation name by exactly
 /// two spaces below its enterprise number.

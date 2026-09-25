@@ -17,17 +17,13 @@
 
 const std = @import("std");
 
-const helper = @import("helper.zig");
+const types = @import("table_types.zig");
 
 /// The generated tables, one `pub const` per C array, in the C order.
 pub const tables = @import("strings_tables.zig");
 
-comptime {
-    _ = @import("strings_tables_validation.zig");
-}
-
-const ValStr = helper.ValStr;
-const OemValStr = helper.OemValStr;
+const ValStr = types.ValStr;
+const OemValStr = types.OemValStr;
 
 // ---------------------------------------------------------------------------
 // The lookup rules these tables are written for
