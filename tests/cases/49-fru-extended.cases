@@ -183,3 +183,41 @@ args: -I dummy fru internaluse 0 write {work}/internal.bin
 transcript: fru_internaluse.tr
 blob: internal.bin fru/internal_area.hex
 covers: fru
+
+[fru_print_sdr_verbose]
+desc: verbose builtin and SDR-located FRUs both render multirecords
+args: -I dummy -v fru print
+transcript: fru_sdr_locator.tr
+covers: fru sdr
+
+[fru_edit_same_length]
+desc: replace a board string in place and update its area checksum
+args: -I dummy fru edit 0 field b 0 "Acme Team"
+transcript: fru_write.tr
+covers: fru
+
+[fru_upg_ekey]
+desc: replace target multirecords from a full FRU image file
+args: -I dummy fru upgEkey 0 {work}/board.bin
+transcript: fru_write.tr
+blob: board.bin fru/board.hex
+covers: fru
+
+[fru_upg_ekey_valid]
+desc: upgrade valid checksummed multirecords from a FRU file
+args: -I dummy fru upgEkey 0 {work}/board.bin
+transcript: fru_write.tr
+blob: board.bin fru/board_valid_multirecord.hex
+covers: fru
+
+[fru_upg_ekey_missing]
+desc: upgEkey rejects a missing source FRU image after target discovery
+args: -I dummy fru upgEkey 0 {work}/missing.bin
+transcript: fru_write.tr
+covers: fru
+
+[fru_get_oem_no_match]
+desc: an OEM query walks multirecords and finds no matching manufacturer
+args: -I dummy fru get 0 oem 12634 1
+transcript: fru.tr
+covers: fru
