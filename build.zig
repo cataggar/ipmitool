@@ -302,6 +302,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/dimm_spd.zig",
     },
     .{
+        .name = "hpmfwupg",
+        .replaces = "lib/ipmi_hpmfwupg.c",
+        .implementation = "src/zig/cmd/hpmfwupg.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",

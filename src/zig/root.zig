@@ -78,6 +78,7 @@ test {
     _ = @import("cmd/lanp6.zig");
     _ = @import("cmd/dcmi.zig");
     _ = @import("cmd/dimm_spd.zig");
+    _ = @import("cmd/hpmfwupg.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);
