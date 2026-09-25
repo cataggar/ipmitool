@@ -373,8 +373,9 @@ and first/second write failures. The shared value-table golden test checks
 ordering around libc-buffered stdout. The `lanplus/pong` transport fixtures
 compare original C LAN+ against selected Zig at verbosity 0/1/2, including
 earlier buffered C output before the pong details at verbosity 2. Only the
-dynamic CLI version, the 16-byte random-number diagnostic and trailing
-whitespace in stderr's verbose dump are normalized there, not stdout.
+dynamic CLI version, the 16-byte random-number diagnostic and the single
+trailing space on stderr's `>>    data    :` diagnostic lines are normalized
+there, not stdout or any other stderr lines.
 Without local OpenSSL headers, run the pong unit with
 `-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`
 (the unit runs independently of the transport). The transport comparison

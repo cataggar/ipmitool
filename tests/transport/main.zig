@@ -430,27 +430,45 @@ fn scrubPongDetails(gpa: std.mem.Allocator, text: []const u8) ![]const u8 {
         if (i < 15 and stage[start + i * 3 + 2] != ' ') return stage;
     }
     const normalized = try std.fmt.allocPrint(gpa, "{s}<16 random bytes>{s}", .{ stage[0..start], stage[end..] });
-    return std.mem.replaceOwned(u8, gpa, normalized, " \n", "\n");
+    var output: std.ArrayList(u8) = .empty;
+    var pos: usize = 0;
+    while (std.mem.indexOfScalar(u8, normalized[pos..], '\n')) |offset| {
+        const line_end = pos + offset;
+        const line = normalized[pos..line_end];
+        const data_dump = std.mem.startsWith(u8, line, ">>    data    :") and std.mem.endsWith(u8, line, " ");
+        try output.appendSlice(gpa, if (data_dump) line[0 .. line.len - 1] else line);
+        try output.append(gpa, '\n');
+        pos = line_end + 1;
+    }
+    try output.appendSlice(gpa, normalized[pos..]);
+    return output.toOwnedSlice(gpa);
 }
 
-test "pong details scrub only the volatile version and random bytes" {
+test "pong details scrub only volatile values and data dump trailing spaces" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const debug =
         "ipmitool version 1.0\n" ++
         ">> Console generated random number (16 bytes)\n" ++
         " 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n" ++
+        "unrelated trailing space \n" ++
         ">>    data    : 0x04 \n" ++
+        ">>    data    : \n" ++
         "Sending IPMI/RMCP presence ping packet\n";
     try std.testing.expectEqualStrings(
         "ipmitool version <version>\n" ++
             ">> Console generated random number (16 bytes)\n" ++
             " <16 random bytes>\n" ++
+            "unrelated trailing space \n" ++
             ">>    data    : 0x04\n" ++
+            ">>    data    :\n" ++
             "Sending IPMI/RMCP presence ping packet\n",
         try scrubPongDetails(arena.allocator(), debug),
     );
-    try std.testing.expectEqualStrings("not random\n", try scrubPongDetails(arena.allocator(), "not random\n"));
+    try std.testing.expectEqualStrings(
+        "unrelated trailing space \n",
+        try scrubPongDetails(arena.allocator(), "unrelated trailing space \n"),
+    );
 }
 
 test {
