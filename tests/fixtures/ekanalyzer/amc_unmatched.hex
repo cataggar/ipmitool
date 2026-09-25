@@ -1,0 +1,15 @@
+# AMC slot A1, lane 0 port 1, storage link (different from carrier Ethernet).
+01 00 00 00 00 01 00 fe
+@mark hdr
+c0 82
+@mark len
+00
+@mark sum
+00
+@mark hsum
+00
+@mark body
+5a 31 00 19 00 00 81 01 e1 ff 0f 00 71 00 00 00
+@fill_size len body
+@fill_checksum sum body
+@fill_checksum hsum hdr

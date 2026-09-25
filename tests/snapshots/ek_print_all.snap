@@ -1,0 +1,28 @@
+#!golden 1
+#!case ek_print_all
+#!section exit
+0
+#!section stdout
+Print all information
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+From On-Carrier Device file '<WORK>/carrier.fru'
+   Carrier AMC power available on AMC slot A1:
+\t- Local IPMB Address    \t: 72
+\t- Maximum module Current\t: 12.00 Watts (1.00 Amps)
+   Carrier AMC total power available for all bays from file '<WORK>/carrier.fru': 24.00 Watts (2.00 Amps)
+   On Carrier Device ID 1 topology:\x20
+\tPort 2 =====> AMC slot A1, Port 1
+   Number of AMC bays supported by Carrier: 1
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+From AMC slot A1 file '<WORK>/amc.fru'
+   AMC slot A1 power required (Current Draw): 12.00 Watts (1.00 Amps)
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

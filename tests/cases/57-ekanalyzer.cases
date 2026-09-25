@@ -1,0 +1,99 @@
+# Offline eKey analyzer: C-oracle file data, stdout, stderr and exit statuses.
+
+[ek_print_topology]
+desc: PICMG carrier P2P and site table
+args: -I dummy ekanalyzer print carrier oc={work}/carrier.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+covers: ekanalyzer
+
+[ek_print_power]
+desc: carrier activation and AMC current calculations
+args: -I dummy ekanalyzer print power oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_print_all]
+desc: both power and topology, with multiple multirecords
+args: -I dummy ekanalyzer print all oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_frushow_carrier]
+desc: FRU common header, four PICMG OEM multirecord decoders
+args: -I dummy ekanalyzer frushow oc={work}/carrier.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+covers: ekanalyzer
+
+[ek_frushow_amc]
+desc: FRU common header, current and AMC link descriptor decoding
+args: -I dummy ekanalyzer frushow a1={work}/amc.fru
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_summary_match]
+desc: compatible link and physical carrier connectivity
+args: -I dummy ekanalyzer summary match oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_summary_unmatch]
+desc: incompatible link type with physical connectivity
+args: -I dummy ekanalyzer summary unmatch oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc_unmatched.hex
+covers: ekanalyzer
+
+[ek_summary_all]
+desc: both matching and unmatching descriptors
+args: -I dummy ekanalyzer summary all oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_summary_no_amc]
+desc: carrier alone cannot eKey
+args: -I dummy ekanalyzer summary oc={work}/carrier.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+covers: ekanalyzer
+
+[ek_summary_no_carrier]
+desc: AMC alone cannot eKey
+args: -I dummy ekanalyzer summary a1={work}/amc.fru
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
+
+[ek_empty_multirec]
+desc: existing FRU without a multirecord area
+args: -I dummy ekanalyzer frushow a1={work}/empty.fru
+blob: empty.fru ekanalyzer/no_multi.hex
+covers: ekanalyzer
+
+[ek_short_header]
+desc: FRU header truncated before the multirecord offset
+args: -I dummy ekanalyzer frushow a1={work}/short.fru
+blob: short.fru ekanalyzer/short_header.hex
+covers: ekanalyzer
+
+[ek_bad_crc]
+desc: C oracle's observable behavior for a corrupt multirecord checksum
+args: -I dummy ekanalyzer frushow a1={work}/bad.fru
+blob: bad.fru ekanalyzer/bad_crc.hex
+covers: ekanalyzer
+
+[ek_bad_option]
+desc: invalid print selector is rejected
+args: -I dummy ekanalyzer print invalid oc={work}/carrier.fru
+covers: ekanalyzer
+
+[ek_bad_prefix]
+desc: invalid module prefix in summary
+args: -I dummy ekanalyzer summary xx={work}/amc.fru
+covers: ekanalyzer
+
+[ek_missing_args]
+desc: insufficient files for print
+args: -I dummy ekanalyzer print
+covers: ekanalyzer
