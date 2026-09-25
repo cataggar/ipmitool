@@ -1,9 +1,8 @@
 # A Quanta BMC (IANA 7244).
 # 
-# ipmi_get_oem_desc() forwards Quanta records to oem_qct_get_evt_desc(), which
-# still lives in lib/ipmi_quantaoem.c.  This transcript pins that the hand-off
-# happens and that the Get Platform ID command (netfn 36h, cmd 65h) is issued
-# with the expected magic bytes.
+# ipmi_get_oem_desc() forwards Quanta records to oem_qct_get_evt_desc().
+# This transcript pins that hand-off and the Get Platform ID request
+# (netfn 36h, cmd 65h) with its magic bytes for both the C and Zig helpers.
 
 default_ccode 0xc1
 

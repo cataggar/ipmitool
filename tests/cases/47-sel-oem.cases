@@ -56,6 +56,72 @@ args: -I dummy sel list
 transcript: sel_quanta.tr
 covers: sel
 
+[slq_elist]
+desc: Quanta extended SEL listing
+args: -I dummy sel elist
+transcript: sel_quanta.tr
+covers: sel
+
+[slq_get_memory]
+desc: Quanta memory record through sel get
+args: -I dummy sel get 1
+transcript: sel_quanta.tr
+covers: sel
+
+[slq_get_non_memory]
+desc: Quanta event with a different sensor type does not probe the platform
+args: -I dummy sel get 4
+transcript: sel_quanta.tr
+covers: sel
+
+[slq_get_nonspecific]
+desc: Quanta memory event without event type 6f does not probe the platform
+args: -I dummy sel get 5
+transcript: sel_quanta.tr
+covers: sel
+
+[slq_platform_short]
+desc: zero-length platform response after Quanta memory event
+args: -I dummy sel list
+transcript: sel_quanta_short.tr
+covers: sel
+
+[slq_device_short]
+desc: zero-length device ID response within the Quanta helper
+args: -I dummy sel list
+transcript: sel_quanta_device_short.tr
+covers: sel
+
+[slq_platform_reject]
+desc: completion code from Quanta Get Platform ID
+args: -I dummy sel list
+transcript: sel_quanta_reject.tr
+covers: sel
+
+[slq_device_reject]
+desc: completion code from the Quanta helper Get Device ID
+args: -I dummy sel list
+transcript: sel_quanta_device_reject.tr
+covers: sel
+
+[slq_deassert]
+desc: Quanta memory event with the direction bit set and nonzero decode fields
+args: -I dummy sel list
+transcript: sel_quanta_deassert.tr
+covers: sel
+
+[slq_get_bad_id]
+desc: malformed SEL ID must not send an OEM request
+args: -I dummy sel get not-an-id
+transcript: sel_quanta.tr
+covers: sel
+
+[slq_get_missing_id]
+desc: missing SEL ID must not send an OEM request
+args: -I dummy sel get
+transcript: sel_quanta.tr
+covers: sel
+
 [sl_iana_wide]
 desc: manufacturer ID with three non-zero bytes
 args: -I dummy -vvv sel list

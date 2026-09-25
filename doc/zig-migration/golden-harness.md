@@ -349,6 +349,15 @@ PICMG and VITA records are exercised through `transcripts/picmg.tr` and
 `transcripts/vita.tr`, since those records are only ever seen as command
 responses rather than as stored structures.
 
+`-Dzig-modules=quantaoem` replaces the two Quanta SEL helpers, not a standalone
+CLI command. The `sl_quanta_list` and `slq_*` cases exercise them through
+`sel list`, `sel elist`, and `sel get`: Purley CPU/channel/DIMM decoding
+(including zero/all-ones OEM bytes and the deassertion bit), Grantley and
+non-memory records, zero-length platform/device responses, rejected
+platform/device requests, and malformed SEL IDs. The snapshots pin the OEM
+magic request as well as the printed descriptions and errors. Run them with
+`./tests/run.sh --filter slq_` and `./tests/run.sh --filter sl_quanta_`.
+
 ## Snapshots
 
 A snapshot is a text file with four sections:
