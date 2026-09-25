@@ -298,7 +298,7 @@ implementation before the swap. The Zig decoder rejects truncated BMC
 responses rather than reading bytes beyond the reply, and its table iterator
 terminates when a BMC advertises 255 filter entries (the C `uint8_t` counter
 would wrap).
-Run `zig build test-pef-unit` for the five focused PEF unit tests without
+Run `zig build test-pef-unit` for the focused PEF unit tests without
 running unrelated crypto vector fixtures.
 
 `exports.zig` gates each port on a build option, so an unselected module is
