@@ -1,0 +1,6 @@
+respond inactive_limit
+  netfn 0x2c
+  cmd 0x03
+  ccode 0x80
+  data dc 00 00 00 64 00 76 16 00 00 00 00 0a 00
+end

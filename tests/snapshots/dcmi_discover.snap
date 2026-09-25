@@ -1,0 +1,67 @@
+#!golden 1
+#!case dcmi_discover
+#!section exit
+0
+#!section stdout
+    Supported DCMI capabilities:
+
+         Mandatory platform capabilities
+        Identification support available
+        SEL logging available
+        Chassis power available
+        Temperature monitor available
+
+         Optional platform capabilities
+        Power management available
+
+         Managebility access capabilities
+        In-band KCS channel available
+        Out-of-band serial TMODE available
+        Out-of-band secondary LAN channel available
+        Out-of-band primary LAN channel available
+        SOL enabled
+        VLAN capable
+
+    Mandatory platform attributes:
+
+         SEL Attributes:\x20
+               SEL automatic rollover is enabled
+               36 SEL entries
+
+         Identification Attributes:\x20
+        GUID
+        DHCP hostname
+        Asset tag
+
+         Temperature Monitoring Attributes:\x20
+        inlet
+        cpu
+        baseboard
+
+    Optional Platform Attributes:\x20
+
+         Power Management:
+                Slave address of device: 20h (BMC)
+                Channel number is 1h\x20
+                    Device revision is 2\x20
+
+    Manageability Access Attributes:\x20
+         Primary LAN channel number: 1 is available
+         Secondary LAN channel is not available for OOB
+         Serial channel number: 3 is available
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=dc 01
+< rule=capability_platform ccode=0x00 len=8 data=dc 01 00 01 0f 01 3f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=dc 02
+< rule=capability_mandatory ccode=0x00 len=8 data=dc 01 00 01 24 80 07 07
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=dc 03
+< rule=capability_optional ccode=0x00 len=8 data=dc 01 00 01 40 12 00 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=dc 04
+< rule=capability_access ccode=0x00 len=8 data=dc 01 00 01 01 ff 03 00
+bye

@@ -1,0 +1,5 @@
+respond short_capabilities
+  netfn 0x2c
+  cmd 0x01
+  data dc 01
+end

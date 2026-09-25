@@ -1,0 +1,11 @@
+respond length
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 00
+  data dc 10
+end
+respond short_chunk
+  netfn 0x2c
+  cmd 0x06
+  data dc 10 41
+end

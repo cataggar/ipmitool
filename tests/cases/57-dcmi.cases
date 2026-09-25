@@ -1,0 +1,136 @@
+# DCMI 1.5 CLI and netfn 2c traffic, captured from lib/ipmi_dcmi.c.
+[dcmi_discover]
+args: -I dummy dcmi discover
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_discover_bad_revision]
+args: -I dummy dcmi discover
+transcript: dcmi_bad_revision.tr
+covers: dcmi
+
+[dcmi_discover_short]
+args: -I dummy dcmi discover
+transcript: dcmi_short.tr
+covers: dcmi
+
+[dcmi_power_reading]
+args: -I dummy dcmi power reading
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_reading_sample]
+args: -I dummy dcmi power reading 15_sec
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_get_limit]
+args: -I dummy dcmi power get_limit
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_set_limit]
+args: -I dummy dcmi power set_limit action sel_logging limit 330 correction 6500 sample 10
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_set_one]
+args: -I dummy dcmi power set_limit limit 230
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_activate]
+args: -I dummy dcmi power activate
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_deactivate]
+args: -I dummy dcmi power deactivate
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_power_limit_cc]
+args: -I dummy dcmi power get_limit
+transcript: dcmi_limit_cc.tr
+covers: dcmi
+
+[dcmi_power_bad_limit]
+args: -I dummy dcmi power set_limit action no_action limit 65536 correction 5 sample 2
+covers: dcmi
+
+[dcmi_sensors_empty]
+args: -I dummy dcmi sensors
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_get_temps]
+args: -I dummy dcmi get_temp_reading
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_get_asset]
+args: -I dummy dcmi asset_tag
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_get_asset_partial]
+args: -I dummy dcmi asset_tag
+transcript: dcmi_partial.tr
+covers: dcmi
+
+[dcmi_get_asset_cc]
+args: -I dummy dcmi asset_tag
+transcript: dcmi_asset_cc.tr
+covers: dcmi
+
+[dcmi_set_asset]
+args: -I dummy dcmi set_asset_tag "0123456789abcdefMORE"
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_set_asset_overflow]
+args: -I dummy dcmi set_asset_tag "01234567890123456789012345678901234567890123456789012345678901234"
+covers: dcmi
+
+[dcmi_get_mc_id]
+args: -I dummy dcmi get_mc_id_string
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_set_mc_id]
+args: -I dummy dcmi set_mc_id_string "management id"
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_thermal_get]
+args: -I dummy dcmi thermalpolicy get 0x40 2
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_thermal_set]
+args: -I dummy dcmi thermalpolicy set 0x40 2 nonvolatile poweroff sel 40 300
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_get_config]
+args: -I dummy dcmi get_conf_param
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_set_config]
+args: -I dummy dcmi set_conf_param retry 300
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_activate_dhcp]
+args: -I dummy dcmi set_conf_param activate_dhcp
+transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_bad_config]
+args: -I dummy dcmi set_conf_param retry 65536
+covers: dcmi
+
+[dcmi_oob_local]
+args: -I dummy dcmi oob_discover
+covers: dcmi

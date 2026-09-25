@@ -1,0 +1,157 @@
+respond capability_platform
+  netfn 0x2c
+  cmd 0x01
+  match dc 01
+  data dc 01 00 01 0f 01 3f 00
+end
+respond capability_mandatory
+  netfn 0x2c
+  cmd 0x01
+  match dc 02
+  data dc 01 00 01 24 80 07 07
+end
+respond capability_optional
+  netfn 0x2c
+  cmd 0x01
+  match dc 03
+  data dc 01 00 01 40 12 00 00
+end
+respond capability_access
+  netfn 0x2c
+  cmd 0x01
+  match dc 04
+  data dc 01 00 01 01 ff 03 00
+end
+respond power_reading
+  netfn 0x2c
+  cmd 0x02
+  data dc e6 00 78 00 2c 01 ca 00 00 00 00 00 10 27 00 00 40
+end
+respond power_limit
+  netfn 0x2c
+  cmd 0x03
+  data dc 00 00 01 64 00 76 16 00 00 00 00 0a 00
+end
+respond power_set
+  netfn 0x2c
+  cmd 0x04
+  data dc
+end
+respond power_switch
+  netfn 0x2c
+  cmd 0x05
+  data dc
+end
+respond asset_length
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 00
+  data dc 14
+end
+respond asset_first
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 10
+  data dc 14 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66
+end
+respond asset_last
+  netfn 0x2c
+  cmd 0x06
+  match dc 10 04
+  data dc 14 4d 4f 52 45
+end
+respond asset_write
+  netfn 0x2c
+  cmd 0x08
+  data dc
+end
+respond mc_length
+  netfn 0x2c
+  cmd 0x09
+  match dc 00 01
+  data dc 14 30
+end
+respond mc_first
+  netfn 0x2c
+  cmd 0x09
+  match dc 00 10
+  data dc 14 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66
+end
+respond mc_last
+  netfn 0x2c
+  cmd 0x09
+  match dc 10 04
+  data dc 14 4d 4f 52 45
+end
+respond mc_write
+  netfn 0x2c
+  cmd 0x0a
+  data dc
+end
+respond sensors_empty
+  netfn 0x2c
+  cmd 0x07
+  data dc 00 00
+end
+respond temp_first
+  netfn 0x2c
+  cmd 0x10
+  match dc 01 40 00 00
+  data dc 01 00
+end
+respond temp_second
+  netfn 0x2c
+  cmd 0x10
+  match dc 01 41 00 00
+  data dc 01 00
+end
+respond temp_third
+  netfn 0x2c
+  cmd 0x10
+  match dc 01 42 00 00
+  data dc 01 00
+end
+respond temp_records
+  netfn 0x2c
+  cmd 0x10
+  data dc 01 01 1e 01
+end
+respond thermal_get
+  netfn 0x2c
+  cmd 0x0c
+  data dc e0 28 2c 01
+end
+respond thermal_set
+  netfn 0x2c
+  cmd 0x0b
+  data dc
+end
+respond config_dhcp
+  netfn 0x2c
+  cmd 0x13
+  match dc 02
+  data dc 01 00 00 03
+end
+respond config_init
+  netfn 0x2c
+  cmd 0x13
+  match dc 03
+  data dc 01 00 00 0a
+end
+respond config_timeout
+  netfn 0x2c
+  cmd 0x13
+  match dc 04
+  data dc 01 00 00 2c 01
+end
+respond config_retry
+  netfn 0x2c
+  cmd 0x13
+  match dc 05
+  data dc 01 00 00 1e 00
+end
+respond config_set
+  netfn 0x2c
+  cmd 0x12
+  data dc
+end

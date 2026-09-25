@@ -1,0 +1,26 @@
+#!golden 1
+#!case dcmi_power_set_one
+#!section exit
+0
+#!section stdout
+
+    Current Limit State: Power Limit Active
+    Exception actions:   Hard Power Off & Log Event to SEL
+    Power Limit:         100 Watts
+    Correction time:     5750 milliseconds
+    Sampling period:     10 seconds
+
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x03 target_cmd=0x00 data=dc 00 00
+< rule=power_limit ccode=0x00 len=14 data=dc 00 00 01 64 00 76 16 00 00 00 00 0a 00
+> netfn=0x2c lun=0x00 cmd=0x04 target_cmd=0x00 data=dc 00 00 00 01 e6 00 76 16 00 00 00 00 0a 00
+< rule=power_set ccode=0x00 len=1 data=dc
+> netfn=0x2c lun=0x00 cmd=0x03 target_cmd=0x00 data=dc 00 00
+< rule=power_limit ccode=0x00 len=14 data=dc 00 00 01 64 00 76 16 00 00 00 00 0a 00
+bye
