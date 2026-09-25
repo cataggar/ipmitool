@@ -713,7 +713,7 @@ fn setConfig(intf: *Intf, args: []const ?[*:0]u8) c_int {
 }
 
 fn oobDiscover(intf: *Intf) c_int {
-    if (comptime @hasDecl(c, "ipmi_intf_socket_connect") and @hasDecl(c, "ipmiv2_lan_ping")) {
+    if (comptime @hasDecl(c, "IPMI_INTF_LANPLUS")) {
         if (intf.opened == 0) {
             if (intf.open) |open| if (open(intf) < 0) return -1;
         }
