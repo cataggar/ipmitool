@@ -79,6 +79,9 @@ comptime {
     if (selected("quantaoem")) {
         @import("cmd/quantaoem.zig").exportSymbols();
     }
+    if (selected("kontronoem")) {
+        @import("cmd/kontronoem.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

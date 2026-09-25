@@ -1,0 +1,41 @@
+default_ccode 0xc1
+
+respond date
+  netfn 0x3e
+  lun 0x03
+  cmd 0x0e
+  data 12 34 56
+end
+
+respond fru_info
+  netfn 0x0a
+  cmd 0x10
+  data 48 00 01
+end
+
+respond fru_header
+  netfn 0x0a
+  cmd 0x11
+  match 00 00 00 08
+  data 08 01 00 00 01 04 00 00 fa
+end
+
+respond fru_board
+  netfn 0x0a
+  cmd 0x11
+  match 00 04 00 16
+  data 0b 01 03 00 00 00 00 c2 41 43 c2 42 44 c4 30 30 30 30 c1 00 00 00 00 00
+end
+
+respond fru_board_tail
+  netfn 0x0a
+  cmd 0x11
+  match 00 0f 00 02
+  data 01 00 29
+end
+
+respond fru_write
+  netfn 0x0a
+  cmd 0x12
+  data 0c
+end

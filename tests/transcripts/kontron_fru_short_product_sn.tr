@@ -1,0 +1,22 @@
+default_ccode 0xc1
+respond serial
+  netfn 0x3e
+  cmd 0x0c
+  data 53 4e 31 32
+end
+respond fru_info
+  netfn 0x0a
+  cmd 0x10
+  data d0 00 00
+end
+respond fru_read
+  netfn 0x0a
+  cmd 0x11
+  partial 1 2 3 count_prefix
+  blob @fru/kontron_short_product_sn.hex
+end
+respond fru_write
+  netfn 0x0a
+  cmd 0x12
+  data 20
+end

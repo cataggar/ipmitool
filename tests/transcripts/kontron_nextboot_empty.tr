@@ -1,0 +1,7 @@
+# The C command checks only the completion code, not the response data length.
+default_ccode 0xc1
+respond nextboot_empty_ack
+  netfn 0x3e
+  lun 0x03
+  cmd 0x02
+end

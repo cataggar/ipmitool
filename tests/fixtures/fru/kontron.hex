@@ -1,0 +1,17 @@
+# The legacy Kontron caller indexes the FRU read buffer by absolute FRU
+# offsets, even though read_fru_area fills it from index zero. Fields here
+# deliberately sit at the positions that caller actually decodes. The
+# physically addressed common header and multi-record are valid/checksummed.
+01 00 00 01 08 18 00 de 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 c2 41 43 c2 42 44 c4 30 30 30
+30 c1 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2d
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 c2 58 59 c2 50 52 c2 50 4e c2 56 31 c4
+31 31 31 31 c1 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 37
+00 80 00 00 80 00 00 00 00 00 00 00 00 00 00 00

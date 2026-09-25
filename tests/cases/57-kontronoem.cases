@@ -1,0 +1,185 @@
+# Recorded from the C implementation before selecting the Zig port.
+# Request logs pin the OEM LUN and payload as well as the FRU helper calls.
+
+[kontron_nextboot_bios]
+args: -I dummy kontronoem nextboot BIOS
+transcript: kontron_nextboot.tr
+covers: kontronoem
+
+[kontron_nextboot_fdd]
+args: -I dummy kontronoem nextboot FDD
+transcript: kontron_nextboot.tr
+covers: kontronoem
+
+[kontron_nextboot_hdd]
+args: -I dummy kontronoem nextboot HDD
+transcript: kontron_nextboot.tr
+covers: kontronoem
+
+[kontron_nextboot_cdrom]
+args: -I dummy kontronoem nextboot CDROM
+transcript: kontron_nextboot.tr
+covers: kontronoem
+
+[kontron_nextboot_network]
+args: -I dummy kontronoem nextboot network
+transcript: kontron_nextboot.tr
+covers: kontronoem
+
+[kontron_nextboot_empty_ack]
+args: -I dummy kontronoem nextboot HDD
+transcript: kontron_nextboot_empty.tr
+covers: kontronoem
+
+[kontron_nextboot_extra_arg]
+args: -I dummy kontronoem nextboot BIOS ignored
+transcript: kontron_nextboot.tr
+covers: kontronoem
+
+[kontron_nextboot_missing]
+args: -I dummy kontronoem nextboot
+covers: kontronoem
+
+[kontron_nextboot_invalid]
+args: -I dummy kontronoem nextboot PXE
+covers: kontronoem
+
+[kontron_nextboot_case]
+args: -I dummy kontronoem nextboot bios
+covers: kontronoem
+
+[kontron_nextboot_denied]
+args: -I dummy kontronoem nextboot BIOS
+covers: kontronoem
+
+[kontron_setsn_ok]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru.tr
+covers: kontronoem
+
+[kontron_setsn_verbose]
+args: -I dummy -v kontronoem setsn
+transcript: kontron_fru.tr
+covers: kontronoem
+
+[kontron_setsn_denied]
+args: -I dummy kontronoem setsn
+covers: kontronoem
+
+[kontron_setsn_info_denied]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_info_denied.tr
+covers: kontronoem
+
+[kontron_setsn_zero_size]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_zero.tr
+covers: kontronoem
+
+[kontron_setsn_badheader]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_badheader.tr
+covers: kontronoem
+
+[kontron_setsn_short_field]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_short_sn.tr
+covers: kontronoem
+
+[kontron_setsn_short_oem]
+args: -I dummy kontronoem setsn
+transcript: kontron_serial_short.tr
+covers: kontronoem
+
+[kontron_setsn_short_read]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_shortread.tr
+covers: kontronoem
+
+[kontron_setsn_product_short_field]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_short_product_sn.tr
+covers: kontronoem
+
+[kontron_setsn_read_denied]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_denied.tr
+covers: kontronoem
+
+[kontron_setsn_write_denied]
+args: -I dummy kontronoem setsn
+transcript: kontron_fru_write_denied.tr
+covers: kontronoem
+
+[kontron_setmfgdate_ok]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru.tr
+covers: kontronoem
+
+[kontron_setmfgdate_word]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru_word.tr
+covers: kontronoem
+
+[kontron_setmfgdate_denied]
+args: -I dummy kontronoem setmfgdate
+covers: kontronoem
+
+[kontron_setmfgdate_short]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_date_short.tr
+covers: kontronoem
+
+[kontron_setmfgdate_zero_size]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru_zero.tr
+covers: kontronoem
+
+[kontron_setmfgdate_badheader]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru_badheader.tr
+covers: kontronoem
+
+[kontron_setmfgdate_read_denied]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru_denied.tr
+covers: kontronoem
+
+[kontron_setmfgdate_short_read]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru_shortread.tr
+covers: kontronoem
+
+[kontron_setmfgdate_write_denied]
+args: -I dummy kontronoem setmfgdate
+transcript: kontron_fru_write_denied.tr
+covers: kontronoem
+
+[kontron_buffer_local]
+args: -I dummy -o kontron -z 64 kontronoem help
+transcript: kontron_buffer.tr
+covers: kontronoem
+
+[kontron_buffer_zero_truncation]
+args: -I dummy -o kontron -z 256 kontronoem help
+transcript: kontron_buffer.tr
+covers: kontronoem
+
+[kontron_buffer_denied]
+args: -I dummy -o kontron -z 64 kontronoem help
+covers: kontronoem
+
+[kontron_buffer_remote]
+args: -I dummy -o kontron -m 0x20 -t 0x30 -z 64 kontronoem help
+transcript: kontron_buffer.tr
+covers: kontronoem
+
+[kontron_buffer_ipmb_denied]
+args: -I dummy -o kontron -m 0x20 -t 0x30 -z 64 kontronoem help
+transcript: kontron_buffer_ipmb_denied.tr
+covers: kontronoem
+
+[kontron_buffer_remote_denied]
+args: -I dummy -o kontron -m 0x20 -t 0x30 -z 64 kontronoem help
+transcript: kontron_buffer_remote_denied.tr
+covers: kontronoem
