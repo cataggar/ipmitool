@@ -176,7 +176,7 @@ fn close(intf: *Intf) callconv(.c) void {
     req.msg.netfn = 0x3f;
     req.msg.cmd = 0xff;
     if (dataWrite(intf.fd, &req, @sizeOf(DummyRq)) != 0) {
-        c.lprintf(log.Level.err, "dummy failed to send 'BYE'");
+        log.print(log.Level.err, "dummy failed to send 'BYE'", .{});
     }
     _ = c.close(intf.fd);
     intf.fd = -1;
@@ -189,9 +189,10 @@ fn open(intf: *Intf) callconv(.c) c_int {
 
     var dummy_sock_path = c.getenv("IPMI_DUMMY_SOCK");
     if (dummy_sock_path == null) {
-        c.lprintf(
+        log.print(
             log.Level.debug,
             "No IPMI_DUMMY_SOCK set. Using " ++ default_sock,
+            .{},
         );
         dummy_sock_path = @constCast(default_sock);
     }
@@ -201,7 +202,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
     }
     intf.fd = c.socket(c.AF_UNIX, c.SOCK_STREAM, 0);
     if (intf.fd == -1) {
-        c.lprintf(log.Level.err, "dummy failed on socket()");
+        log.print(log.Level.err, "dummy failed on socket()", .{});
         return -1;
     }
     address.sun_family = @intCast(c.AF_UNIX);
@@ -239,7 +240,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     var rsp_dummy: DummyRs = undefined;
 
     if (intf.fd < 0 or intf.opened != 1) {
-        c.lprintf(log.Level.err, "dummy failed on intf check.");
+        log.print(log.Level.err, "dummy failed on intf check.", .{});
         return null;
     }
 
@@ -251,13 +252,13 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     req_dummy.msg.data_len = req.msg.data_len;
     req_dummy.msg.data = req.msg.data;
     if (c.verbose != 0) {
-        c.lprintf(log.Level.notice, ">>> IPMI req");
-        c.lprintf(log.Level.notice, "msg.data_len: %i", @as(c_int, req_dummy.msg.data_len));
-        c.lprintf(log.Level.notice, "msg.netfn: %x", @as(c_int, req_dummy.msg.netfn));
-        c.lprintf(log.Level.notice, "msg.cmd: %x", @as(c_int, req_dummy.msg.cmd));
-        c.lprintf(log.Level.notice, "msg.target_cmd: %x", @as(c_int, req_dummy.msg.target_cmd));
-        c.lprintf(log.Level.notice, "msg.lun: %x", @as(c_int, req_dummy.msg.lun));
-        c.lprintf(log.Level.notice, ">>>");
+        log.print(log.Level.notice, ">>> IPMI req", .{});
+        log.print(log.Level.notice, "msg.data_len: %i", .{@as(c_int, req_dummy.msg.data_len)});
+        log.print(log.Level.notice, "msg.netfn: %x", .{@as(c_int, req_dummy.msg.netfn)});
+        log.print(log.Level.notice, "msg.cmd: %x", .{@as(c_int, req_dummy.msg.cmd)});
+        log.print(log.Level.notice, "msg.target_cmd: %x", .{@as(c_int, req_dummy.msg.target_cmd)});
+        log.print(log.Level.notice, "msg.lun: %x", .{@as(c_int, req_dummy.msg.lun)});
+        log.print(log.Level.notice, ">>>", .{});
     }
     if (dataWrite(intf.fd, &req_dummy, @sizeOf(DummyRq)) != 0) {
         return null;
@@ -285,14 +286,14 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     rsp.msg.seq = rsp_dummy.msg.seq;
     rsp.msg.lun = rsp_dummy.msg.lun;
     if (c.verbose != 0) {
-        c.lprintf(log.Level.notice, "<<< IPMI rsp");
-        c.lprintf(log.Level.notice, "ccode: %x", @as(c_int, rsp.ccode));
-        c.lprintf(log.Level.notice, "data_len: %i", rsp.data_len);
-        c.lprintf(log.Level.notice, "msg.netfn: %x", @as(c_int, rsp.msg.netfn));
-        c.lprintf(log.Level.notice, "msg.cmd: %x", @as(c_int, rsp.msg.cmd));
-        c.lprintf(log.Level.notice, "msg.seq: %x", @as(c_int, rsp.msg.seq));
-        c.lprintf(log.Level.notice, "msg.lun: %x", @as(c_int, rsp.msg.lun));
-        c.lprintf(log.Level.notice, "<<<");
+        log.print(log.Level.notice, "<<< IPMI rsp", .{});
+        log.print(log.Level.notice, "ccode: %x", .{@as(c_int, rsp.ccode)});
+        log.print(log.Level.notice, "data_len: %i", .{rsp.data_len});
+        log.print(log.Level.notice, "msg.netfn: %x", .{@as(c_int, rsp.msg.netfn)});
+        log.print(log.Level.notice, "msg.cmd: %x", .{@as(c_int, rsp.msg.cmd)});
+        log.print(log.Level.notice, "msg.seq: %x", .{@as(c_int, rsp.msg.seq)});
+        log.print(log.Level.notice, "msg.lun: %x", .{@as(c_int, rsp.msg.lun)});
+        log.print(log.Level.notice, "<<<", .{});
     }
     return &rsp;
 }
