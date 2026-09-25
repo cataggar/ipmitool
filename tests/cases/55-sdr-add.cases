@@ -1,7 +1,8 @@
 # lib/ipmi_sdradd.c - the SDR writer.
 #
 # `sdr fill sensors', `nosat', `file' and `range', the Clear SDR Repository
-# poll loop, the Add SDR Record chunking, and every parse arm of
+# poll loop, the Add SDR Record chunking and mixed success/failure, malformed
+# file rejection before clearing the repository, and every parse arm of
 # ipmi_parse_range_list() / ipmi_hex_to_dec().
 
 [sd_fill_sensors]
@@ -55,6 +56,12 @@ args: -I dummy sdr fill nosat
 transcript: sd_add_adderr.tr
 covers: sdr
 
+[sd_fill_nosat_firsterr]
+desc: first built-in SDR Add fails but the second succeeds; the command still fails
+args: -I dummy sdr fill nosat
+transcript: sd_add_firsterr.tr
+covers: sdr
+
 [sd_fill_shortrsp]
 desc: Add SDR Record returns a one-byte response
 args: -I dummy sdr fill nosat
@@ -75,18 +82,32 @@ transcript: sd_add_file.tr
 blob: sdr.bin sdr/sd_file_two.hex
 covers: sdr
 
+[sd_fill_file_firsterr]
+desc: first file SDR Add fails but the second succeeds; the command still fails
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_firsterr.tr
+blob: sdr.bin sdr/sd_file_two.hex
+covers: sdr
+
 [sd_fill_file_trunc]
-desc: `sdr fill file' where the last record is truncated
+desc: `sdr fill file' with a truncated last record refuses to clear the repository
 args: -I dummy sdr fill file {work}/sdr.bin
 transcript: sd_add_file.tr
 blob: sdr.bin sdr/sd_file_trunc.hex
 covers: sdr
 
 [sd_fill_file_short]
-desc: `sdr fill file' with a file shorter than one header
+desc: `sdr fill file' with a file shorter than one header refuses to clear
 args: -I dummy sdr fill file {work}/sdr.bin
 transcript: sd_add_file.tr
 blob: sdr.bin sdr/sd_file_short.hex
+covers: sdr
+
+[sd_fill_file_trailing_header]
+desc: a short header after a valid record must not clear or partially write the repository
+args: -I dummy sdr fill file {work}/sdr.bin
+transcript: sd_add_file.tr
+blob: sdr.bin sdr/sd_file_trailing_header.hex
 covers: sdr
 
 [sd_fill_file_empty]
@@ -97,14 +118,14 @@ blob: sdr.bin sdr/sd_file_empty.hex
 covers: sdr
 
 [sd_fill_file_zerolen]
-desc: `sdr fill file' with a zero-length record
+desc: `sdr fill file' with a zero-length record refuses to clear
 args: -I dummy sdr fill file {work}/sdr.bin
 transcript: sd_add_file.tr
 blob: sdr.bin sdr/sd_file_zerolen.hex
 covers: sdr
 
 [sd_fill_file_missing]
-desc: `sdr fill file' with a file that does not exist
+desc: `sdr fill file' with a missing file refuses to clear
 args: -I dummy sdr fill file {work}/nosuch.bin
 transcript: sd_add_file.tr
 covers: sdr

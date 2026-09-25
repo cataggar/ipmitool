@@ -1,8 +1,9 @@
 #!golden 1
 #!case sd_fill_file_two_v
 #!section exit
-signal SEGV
+0
 #!section stdout
+SDRR successfully erased
 #!section stderr
 ipmitool version <VERSION>
 
@@ -250,3 +251,4 @@ msg.lun: 0
 < rule=add_partial_sdr ccode=0x00 len=2 data=3c 4b
 > netfn=0x0a lun=0x00 cmd=0x25 target_cmd=0x00 data=5a a5 3c 4b 18 01 87 02 02 00 00 00 00 c9 46 41 4e 31 20 54 61 63 68
 < rule=add_partial_sdr ccode=0x00 len=2 data=3c 4b
+bye

@@ -5128,8 +5128,9 @@ fn sdrCopyToSdrr(intf: *Intf, use_builtin: c_int, from_addr: c_int, to_addr: c_i
     var sdrr = sdrr_queue.head;
     while (sdrr) |entry| {
         const sdrr_next = entry.next;
-        rc = sdrAddRecord(intf, entry);
-        if (rc < 0) {
+        const add_rc = sdrAddRecord(intf, entry);
+        if (add_rc < 0) {
+            rc = -1;
             c.lprintf(
                 c.LOG_ERR,
                 "Cannot add SDR ID 0x%04x to repository...",
@@ -5350,6 +5351,18 @@ fn sdrAddFromList(intf: *Intf, range_list: [*c]const u8) callconv(.c) c_int {
     return rc;
 }
 
+fn freeSdrrQueue(queue: *SdrrQueue) void {
+    var sdrr = queue.head;
+    while (sdrr) |entry| {
+        const next = entry.next;
+        c.free(entry.raw);
+        c.free(entry);
+        sdrr = next;
+    }
+    queue.head = null;
+    queue.tail = null;
+}
+
 /// `ipmi_sdr_read_records()`: fill the SDR repository from a binary file.
 fn sdrReadRecords(filename: [*c]const u8, queue: *SdrrQueue) c_int {
     var rc: c_int = 0;
@@ -5361,15 +5374,21 @@ fn sdrReadRecords(filename: [*c]const u8, queue: *SdrrQueue) c_int {
     const fd = c.open(filename, c.O_RDONLY);
     if (fd < 0) return -1;
 
-    while (c.read(fd, &bin_hdr, 5) == 5) {
+    while (true) {
+        const header_bytes = c.read(fd, &bin_hdr, bin_hdr.len);
+        if (header_bytes == 0) break;
+        if (header_bytes != bin_hdr.len) {
+            c.lprintf(c.LOG_ERR, "SDR from '%s' has incomplete header", filename);
+            rc = -1;
+            break;
+        }
+
         c.lprintf(c.LOG_DEBUG, "binHdr[0] (id[MSB]) = 0x%02x", @as(c_uint, bin_hdr[0]));
         c.lprintf(c.LOG_DEBUG, "binHdr[1] (id[LSB]) = 0x%02x", @as(c_uint, bin_hdr[1]));
         c.lprintf(c.LOG_DEBUG, "binHdr[2] (version) = 0x%02x", @as(c_uint, bin_hdr[2]));
         c.lprintf(c.LOG_DEBUG, "binHdr[3] (type) = 0x%02x", @as(c_uint, bin_hdr[3]));
         c.lprintf(c.LOG_DEBUG, "binHdr[4] (length) = 0x%02x", @as(c_uint, bin_hdr[4]));
 
-        // Deliberately *not* zeroed: the C does not `memset()` here, so
-        // `next` is left holding whatever `malloc()` returned.
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
                 c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
@@ -5377,10 +5396,18 @@ fn sdrReadRecords(filename: [*c]const u8, queue: *SdrrQueue) c_int {
                 break;
             },
         ));
+        @memset(std.mem.asBytes(sdrr), 0);
         sdrr.id = (@as(u16, bin_hdr[1]) << 8) | @as(u16, bin_hdr[0]); // LS byte first.
         sdrr.version = bin_hdr[2];
         sdrr.type = bin_hdr[3];
         sdrr.length = bin_hdr[4];
+
+        if (sdrr.length == 0) {
+            c.lprintf(c.LOG_ERR, "SDR from '%s' has zero-length record", filename);
+            c.free(sdrr);
+            rc = -1;
+            break;
+        }
 
         sdrr.raw = @ptrCast(c.malloc(sdrr.length) orelse {
             c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
@@ -5407,6 +5434,7 @@ fn sdrReadRecords(filename: [*c]const u8, queue: *SdrrQueue) c_int {
         queue.tail = sdrr;
     }
     _ = c.close(fd);
+    if (rc < 0) freeSdrrQueue(queue);
     return rc;
 }
 
@@ -5417,10 +5445,11 @@ fn sdrAddFromFile(intf: *Intf, ifile: [*c]const u8) callconv(.c) c_int {
 
     // Read the SDR records from the file.
     rc = sdrReadRecords(ifile, &sdrr_queue);
+    if (rc < 0) return rc;
 
     if (sdrRepoClear(intf) != 0) {
         c.lprintf(c.LOG_ERR, "Cannot erase SDRR. Giving up.");
-        // FIXME: free the SDR list.
+        freeSdrrQueue(&sdrr_queue);
         return -1;
     }
 
@@ -5428,14 +5457,16 @@ fn sdrAddFromFile(intf: *Intf, ifile: [*c]const u8) callconv(.c) c_int {
     var sdrr = sdrr_queue.head;
     while (sdrr) |entry| {
         const sdrr_next = entry.next;
-        rc = sdrAddRecord(intf, entry);
-        if (rc < 0) {
+        const add_rc = sdrAddRecord(intf, entry);
+        if (add_rc < 0) {
+            rc = -1;
             c.lprintf(
                 c.LOG_ERR,
                 "Cannot add SDR ID 0x%04x to repository...",
                 @as(c_uint, entry.id),
             );
         }
+        c.free(entry.raw);
         c.free(entry);
         sdrr = sdrr_next;
     }

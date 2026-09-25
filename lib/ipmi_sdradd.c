@@ -230,6 +230,20 @@ struct sdrr_queue {
   struct sdr_record_list *tail;
 }; 
 
+static void
+sdrr_queue_free(struct sdrr_queue *queue)
+{
+  struct sdr_record_list *sdrr = queue->head;
+  while (sdrr) {
+    struct sdr_record_list *next = sdrr->next;
+    free(sdrr->raw);
+    free(sdrr);
+    sdrr = next;
+  }
+  queue->head = NULL;
+  queue->tail = NULL;
+}
+
 
 /*
  * Fill the SDR repository from built-in sensors
@@ -280,6 +294,7 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
                  int from_addr, int to_addr)
 {
   int rc;
+  int add_rc;
   struct sdrr_queue sdrr_queue;
   struct ipmi_sdr_iterator *itr;
   struct sdr_record_list *sdrr;
@@ -302,8 +317,9 @@ sdr_copy_to_sdrr(struct ipmi_intf *intf, int use_builtin,
   intf->target_addr = to_addr;
   for (sdrr = sdrr_queue.head; sdrr; sdrr = sdrr_next) {
     sdrr_next = sdrr->next;
-    rc = ipmi_sdr_add_record(intf, sdrr);
-    if(rc < 0){
+    add_rc = ipmi_sdr_add_record(intf, sdrr);
+    if(add_rc < 0){
+      rc = -1;
       lprintf(LOG_ERR, "Cannot add SDR ID 0x%04x to repository...", sdrr->id);
     }
     free(sdrr);
@@ -576,6 +592,7 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
 {
   int rc = 0;
   int fd;
+  ssize_t header_bytes;
   uint8_t binHdr[5];
 
   queue->head = NULL;
@@ -585,9 +602,15 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     return -1;
   }
 
-  while (read(fd, binHdr, 5) == 5) {
+  while ((header_bytes = read(fd, binHdr, sizeof(binHdr))) != 0) {
     
     struct sdr_record_list *sdrr;
+
+    if (header_bytes != (ssize_t)sizeof(binHdr)) {
+      lprintf(LOG_ERR, "SDR from '%s' has incomplete header", filename);
+      rc = -1;
+      break;
+    }
 
     lprintf(LOG_DEBUG, "binHdr[0] (id[MSB]) = 0x%02x", binHdr[0]);
     lprintf(LOG_DEBUG, "binHdr[1] (id[LSB]) = 0x%02x", binHdr[1]);
@@ -601,10 +624,18 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
       rc = -1;
       break;
     }
+    memset(sdrr, 0, sizeof(*sdrr));
     sdrr->id = (binHdr[1] << 8) | binHdr[0];  // LS Byte first
     sdrr->version = binHdr[2];
     sdrr->type = binHdr[3];
     sdrr->length = binHdr[4];
+
+    if (sdrr->length == 0) {
+      lprintf(LOG_ERR, "SDR from '%s' has zero-length record", filename);
+      free(sdrr);
+      rc = -1;
+      break;
+    }
 
     sdrr->raw = malloc(sdrr->length);
     if (!sdrr->raw) {
@@ -633,6 +664,8 @@ ipmi_sdr_read_records(const char *filename, struct sdrr_queue *queue)
     queue->tail = sdrr;
   }
   close(fd);
+  if (rc < 0)
+    sdrr_queue_free(queue);
   return rc;
 }
 
@@ -640,29 +673,33 @@ int
 ipmi_sdr_add_from_file(struct ipmi_intf *intf, const char *ifile)
 {
   int rc;
+  int add_rc;
   struct sdrr_queue sdrr_queue;
   struct sdr_record_list *sdrr;
   struct sdr_record_list *sdrr_next;
 
   /* read the SDR records from file */
   rc = ipmi_sdr_read_records(ifile, &sdrr_queue);
+  if (rc < 0)
+    return rc;
 
   if (ipmi_sdr_repo_clear(intf)) {
     lprintf(LOG_ERR, "Cannot erase SDRR. Giving up.");
-    /* FIXME: free sdr list */
+    sdrr_queue_free(&sdrr_queue);
     return -1;
   }
 
   /* write the SDRs to the SDR Repository */
   for (sdrr = sdrr_queue.head; sdrr; sdrr = sdrr_next) {
     sdrr_next = sdrr->next;
-    rc = ipmi_sdr_add_record(intf, sdrr);
-    if(rc < 0){
+    add_rc = ipmi_sdr_add_record(intf, sdrr);
+    if(add_rc < 0){
+      rc = -1;
       lprintf(LOG_ERR, "Cannot add SDR ID 0x%04x to repository...", sdrr->id);
     }
+    free(sdrr->raw);
     free(sdrr);
     sdrr = NULL;
   }
   return rc;
 }
-

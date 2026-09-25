@@ -1,10 +1,12 @@
 #!golden 1
-#!case sd_fill_file_two
+#!case sd_fill_file_firsterr
 #!section exit
-0
+1
 #!section stdout
 SDRR successfully erased
 #!section stderr
+ipmitool: partial send error
+Cannot add SDR ID 0x1234 to repository...
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
 < rule=default ccode=0xc1 len=0 data=
@@ -17,13 +19,7 @@ SDRR successfully erased
 > netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
 < rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
 > netfn=0x0a lun=0x00 cmd=0x25 target_cmd=0x00 data=5a a5 00 00 00 00 34 12 51 01 34
-< rule=add_partial_sdr ccode=0x00 len=2 data=3c 4b
-> netfn=0x0a lun=0x00 cmd=0x25 target_cmd=0x00 data=5a a5 3c 4b 05 00 20 00 0b 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00
-< rule=add_partial_sdr ccode=0x00 len=2 data=3c 4b
-> netfn=0x0a lun=0x00 cmd=0x25 target_cmd=0x00 data=5a a5 3c 4b 18 00 01 00 00 00 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02
-< rule=add_partial_sdr ccode=0x00 len=2 data=3c 4b
-> netfn=0x0a lun=0x00 cmd=0x25 target_cmd=0x00 data=5a a5 3c 4b 2b 01 02 00 00 00 c9 43 50 55 31 20 54 65 6d 70
-< rule=add_partial_sdr ccode=0x00 len=2 data=3c 4b
+< rule=reject_first_sdr ccode=0x80 len=0 data=
 > netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
 < rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
 > netfn=0x0a lun=0x00 cmd=0x25 target_cmd=0x00 data=5a a5 00 00 00 00 78 56 51 02 24

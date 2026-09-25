@@ -1,0 +1,4 @@
+# A complete SDR followed by an incomplete five-byte header; neither the
+# repository clear nor any partial add may happen.
+@sdr/sd_full_temp.hex
+78 56 51
