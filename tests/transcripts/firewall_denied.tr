@@ -1,0 +1,6 @@
+default_ccode 0xd5
+respond netfn_support
+  netfn 0x06
+  cmd 0x09
+  data 01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end

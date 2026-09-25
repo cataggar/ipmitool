@@ -1,0 +1,67 @@
+#!golden 1
+#!case fw_info_command
+#!section exit
+0
+#!section stdout
+(A)vailable, (C)onfigurable, (E)nabled: | A | C | E |
+-----------------------------------------------------
+LUN 0, NetFn 0x04, Command 0x05:        | X | X | X |
+sub-function 0x00:                      | X | X | X |
+sub-function 0x01:                      |   |   |   |
+sub-function 0x02:                      | X | X |   |
+sub-function 0x03:                      |   |   |   |
+sub-function 0x04:                      |   |   |   |
+sub-function 0x05:                      |   |   |   |
+sub-function 0x06:                      |   |   |   |
+sub-function 0x07:                      |   |   |   |
+sub-function 0x08:                      |   |   |   |
+sub-function 0x09:                      | X | X | X |
+sub-function 0x0a:                      |   |   |   |
+sub-function 0x0b:                      |   |   |   |
+sub-function 0x0c:                      |   |   |   |
+sub-function 0x0d:                      |   |   |   |
+sub-function 0x0e:                      |   |   |   |
+sub-function 0x0f:                      |   |   |   |
+sub-function 0x10:                      |   |   |   |
+sub-function 0x11:                      |   |   |   |
+sub-function 0x12:                      |   |   |   |
+sub-function 0x13:                      |   |   |   |
+sub-function 0x14:                      |   |   |   |
+sub-function 0x15:                      |   |   |   |
+sub-function 0x16:                      |   |   |   |
+sub-function 0x17:                      |   |   |   |
+sub-function 0x18:                      |   |   |   |
+sub-function 0x19:                      |   |   |   |
+sub-function 0x1a:                      |   |   |   |
+sub-function 0x1b:                      |   |   |   |
+sub-function 0x1c:                      |   |   |   |
+sub-function 0x1d:                      |   |   |   |
+sub-function 0x1e:                      |   |   |   |
+sub-function 0x1f:                      |   |   |   |
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=0e
+< rule=netfn_support ccode=0x00 len=17 data=01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 04 00
+< rule=command_support_low ccode=0x00 len=16 data=de ff ff ff ff ff ff ff ff ff ff ff fe ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 44 00
+< rule=command_support_high ccode=0x00 len=16 data=f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 04 00
+< rule=command_config_low ccode=0x00 len=16 data=21 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 44 00
+< rule=command_config_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 04 00
+< rule=command_enabled_low ccode=0x00 len=16 data=20 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 44 00
+< rule=command_enabled_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0b target_cmd=0x00 data=0e 04 00 05
+< rule=subfn_support ccode=0x00 len=4 data=fa fd ff ff
+> netfn=0x06 lun=0x00 cmd=0x0d target_cmd=0x00 data=0e 04 00 05
+< rule=subfn_config ccode=0x00 len=4 data=05 02 00 00
+> netfn=0x06 lun=0x00 cmd=0x63 target_cmd=0x00 data=0e 04 00 05
+< rule=subfn_enabled ccode=0x00 len=4 data=01 02 00 00
+bye
