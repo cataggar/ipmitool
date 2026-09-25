@@ -1,0 +1,8 @@
+#!golden 1
+#!case cli_kg_nonhex
+#!section exit
+1
+#!section stdout
+#!section stderr
+Kg key is not hexadecimal number
+#!section requests

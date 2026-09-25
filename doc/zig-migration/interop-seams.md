@@ -19,6 +19,7 @@ kept apart, exactly as `include/ipmitool/*.h` and `lib/*.c` are.
 | `src/zig/cmd/`       | `lib/ipmi_*.c`                             | one module per command translation unit |
 | `src/zig/util/`      | `lib/helper.c`, `lib/log.c`, `bswap.h`, `ipmi_time.c`, `ipmi_strings.c` | shared utilities |
 | `src/zig/crypto/`    | `src/plugins/lan/{md5,auth}.c`, `src/plugins/lanplus/lanplus_crypt*.c` | hashes, HMAC, AES-CBC and the RMCP+/RAKP layer on `std.crypto` — see [crypto.md](crypto.md) |
+| `src/zig/cli/`      | `lib/ipmi_main.c`, `src/ipmitool.c`        | command-line parsing, session setup, dispatch, command table and executable entry point |
 | `src/zig/front/`     | `src/ipmievd.c`                             | daemon executable entrypoint, SEL polling and OpenIPMI notifications |
 
 `-Dzig-modules=evd` switches the daemon executable root from the C oracle to
@@ -216,6 +217,8 @@ zig build -Dzig-modules=oem,raw  # several at once
 zig build -Dzig-modules=lanp,channel,user  # LAN configuration and its helpers
 zig build -Dzig-modules=lanp6    # IPv6 LAN configuration (see lanp6.md)
 zig build -Dzig-modules=ekanalyzer # offline FRU/PICMG eKey analyzer
+zig build -Dzig-modules=cli      # use Zig for both the shared CLI and ipmitool main
+zig build test-cli               # diff C and Zig CLI, including PTY/SIGINT tests
 zig build --help                 # lists the available module names
 ```
 
@@ -248,6 +251,9 @@ Mechanics, all in `build.zig`:
    duplicate symbol; the swap is a substitution, not an override.
 4. When at least one module is selected, `src/zig/exports.zig` is compiled into
    `libipmitool_zig.a` and linked after `libipmitool_core.a`.
+   For `cli`, `src/zig/cli/tool.zig` is also the `ipmitool` executable root;
+   the Zig archive exports `ipmi_main`, `ipmi_cmd_run`, and `ipmi_cmd_print` for
+   the still-C `ipmievd` and `ipmishell` callers.
 5. With no selection the Zig library is not built or linked at all, so the
    default build is bit-for-bit the pre-existing all-C build.
 

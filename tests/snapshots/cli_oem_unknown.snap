@@ -1,0 +1,8 @@
+#!golden 1
+#!case cli_oem_unknown
+#!section exit
+1
+#!section stdout
+#!section stderr
+OEM setup for "unknown" failed
+#!section requests

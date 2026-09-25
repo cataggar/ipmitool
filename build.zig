@@ -98,16 +98,15 @@ const ipmievd_sources: CSourceSet = .{
 // See doc/zig-migration/interop-seams.md.
 // ---------------------------------------------------------------------------
 
-/// One C translation unit that has a Zig implementation available.
+/// One Zig port and the C translation units it replaces.
 const ZigModule = struct {
     /// Name used in `-Dzig-modules=<name>`.
     name: []const u8,
     /// C translation unit it replaces, relative to the build root.
     replaces: []const u8,
     /// Further C translation units the same Zig module replaces, relative to
-    /// the build root.  Only `sdr` has any: `lib/ipmi_sdradd.c` is a second
-    /// file over the same `sdr` command and shares its file statics, so the
-    /// two have to be swapped as a unit.
+    /// the build root. `sdr` replaces a second command source, while `cli`
+    /// replaces both the shared parser and the ipmitool-specific entrypoint.
     also_replaces: []const []const u8 = &.{},
     /// Zig implementation, for documentation and `zig build --help`.
     implementation: []const u8,
@@ -138,6 +137,12 @@ const zig_modules = [_]ZigModule{
         .name = "gendev",
         .replaces = "lib/ipmi_gendev.c",
         .implementation = "src/zig/cmd/gendev.zig",
+    },
+    .{
+        .name = "cli",
+        .replaces = "lib/ipmi_main.c",
+        .also_replaces = &.{"src/ipmitool.c"},
+        .implementation = "src/zig/cli/main.zig and src/zig/cli/tool.zig",
     },
     .{
         .name = "oem",
@@ -877,6 +882,7 @@ pub fn build(b: *std.Build) void {
         .default_intf = default_intf,
         .flags = flags,
         .core = core,
+        .bridge_mod = bridge_mod,
         .zig_lib = zig_lib,
         .zig_selection = zig_selection,
         .system_libs = libs,
@@ -891,10 +897,10 @@ pub fn build(b: *std.Build) void {
         .default_intf = default_intf,
         .flags = flags,
         .core = core,
+        .bridge_mod = bridge_mod,
         .zig_lib = zig_lib,
         .zig_selection = zig_selection,
         .system_libs = libs,
-        .bridge_mod = bridge_mod,
     });
 
     // -- install layout ------------------------------------------------------
@@ -1304,7 +1310,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const golden_step = b.step("test-golden", "Run the golden CLI test suite");
-    golden_step.dependOn(&addGolden(b, golden_exe, ipmitool, replacedByZig("lib/ipmi_gendev.c", zig_selection)).step);
+    golden_step.dependOn(&addGolden(b, golden_exe, ipmitool, null, replacedByZig("lib/ipmi_gendev.c", zig_selection)).step);
     const fru_oem_step = b.step("test-fru-oem", "Run fixed Zig-only OEM edit cases");
     if (zig_selection[fruIndex()]) {
         fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, ipmitool).step);
@@ -1329,7 +1335,7 @@ pub fn build(b: *std.Build) void {
             .bridge_mod = bridge_mod,
             .system_libs = swapped_libs,
         });
-        golden_step.dependOn(&addGolden(b, golden_exe, swapped, true).step);
+        golden_step.dependOn(&addGolden(b, golden_exe, swapped, null, true).step);
         if (!zig_selection[fruIndex()])
             fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, swapped).step);
     }
@@ -1355,20 +1361,8 @@ pub fn build(b: *std.Build) void {
     const tsol_run = b.addSystemCommand(&.{ "python3", "tests/tsol/run.py", "--oracle" });
     tsol_run.addArtifactArg(tsol_oracle);
     if (replacedByZig("lib/ipmi_tsol.c", zig_selection)) {
-        const tsol_candidate_mod = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-        });
-        tsol_candidate_mod.addIncludePath(b.path("include"));
-        tsol_candidate_mod.addCSourceFiles(.{
-            .root = b.path("tests/tsol"),
-            .files = &.{"fixture.c"},
-            .flags = &.{"-DHAVE_TERMIOS_H"},
-        });
-        // The fixture only supplies TSOL's C dependencies. Linking the main
-        // selection also pulls in unrelated exports (e.g. ISOL), whose C
-        // globals do not exist in this standalone fixture.
+        // The fixture stubs TSOL's dependencies, not those of other selected
+        // ports such as the CLI. Give it an archive exporting TSOL alone.
         const tsol_only: [zig_modules.len]bool = blk: {
             var selected: [zig_modules.len]bool = @splat(false);
             selected[moduleIndex("tsol")] = true;
@@ -1385,9 +1379,20 @@ pub fn build(b: *std.Build) void {
         tsol_exports.addImport("ipmi_c", bridge_mod);
         tsol_exports.addImport("build_options", tsol_options.createModule());
         const tsol_lib = b.addLibrary(.{
-            .name = "ipmitool_tsol_fixture",
+            .name = "tsol_fixture_zig",
             .linkage = .static,
             .root_module = tsol_exports,
+        });
+        const tsol_candidate_mod = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        tsol_candidate_mod.addIncludePath(b.path("include"));
+        tsol_candidate_mod.addCSourceFiles(.{
+            .root = b.path("tests/tsol"),
+            .files = &.{"fixture.c"},
+            .flags = &.{"-DHAVE_TERMIOS_H"},
         });
         tsol_candidate_mod.linkLibrary(tsol_lib);
         const tsol_candidate = b.addExecutable(.{ .name = "tsol-candidate", .root_module = tsol_candidate_mod });
@@ -1396,6 +1401,56 @@ pub fn build(b: *std.Build) void {
     }
     tsol_step.dependOn(&tsol_run.step);
     test_step.dependOn(tsol_step);
+
+    // Exercise the frontend in isolation: both binaries have identical C
+    // backends, with only lib/ipmi_main.c and src/ipmitool.c swapped.  The
+    // golden comparison also catches argv permutation and dummy wire traffic;
+    // the runtime checks PTY prompts, SIGINT and failed devices/transports.
+    if (is_linux) {
+        const no_zig: [zig_modules.len]bool = @splat(false);
+        const cli_only = blk: {
+            var selected = no_zig;
+            selected[moduleIndex("cli")] = true;
+            break :blk selected;
+        };
+        const cli_options = SwappedOptions{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &no_zig),
+        };
+        const oracle = addSelectedTool(b, cli_options, &no_zig, "ipmitool-cli-c");
+        const candidate = addSelectedTool(b, cli_options, &cli_only, "ipmitool-cli-zig");
+        const daemon_oracle = addSelectedTool(b, cli_options, &no_zig, "ipmievd-cli-c");
+        const daemon_candidate = addSelectedTool(b, cli_options, &cli_only, "ipmievd-cli-zig");
+        const cli_step = b.step("test-cli", "Compare C and Zig CLI, including PTY and SIGINT");
+        // Differential cases need /a and /b beneath each case name; a build
+        // cache path plus a 36-character case exceeds sockaddr_un.sun_path in
+        // longer checkout paths. The harness removes this short scratch root.
+        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-golden"), false);
+        compare.addArg("--candidate");
+        compare.addFileArg(candidate.getEmittedBin());
+        cli_step.dependOn(&compare.step);
+
+        const runtime = b.addSystemCommand(&.{"python3"});
+        runtime.addFileArg(b.path("tests/cli/runtime.py"));
+        runtime.addArg("--oracle");
+        runtime.addFileArg(oracle.getEmittedBin());
+        runtime.addArg("--candidate");
+        runtime.addFileArg(candidate.getEmittedBin());
+        runtime.addArg("--daemon-oracle");
+        runtime.addFileArg(daemon_oracle.getEmittedBin());
+        runtime.addArg("--daemon-candidate");
+        runtime.addFileArg(daemon_candidate.getEmittedBin());
+        runtime.addArg("--work-dir");
+        runtime.addDirectoryArg(b.tmpPath());
+        cli_step.dependOn(&runtime.step);
+    }
 
     // -- `zig build test-transport` / `gen-transport-fixtures` ---------------
     //
@@ -1496,6 +1551,7 @@ fn addGolden(
     b: *std.Build,
     golden_exe: *std.Build.Step.Compile,
     exe: *std.Build.Step.Compile,
+    work_dir: ?[]const u8,
     zig_gendev: bool,
 ) *std.Build.Step.Run {
     const run = b.addRunArtifact(golden_exe);
@@ -1513,7 +1569,12 @@ fn addGolden(
     // are independent steps and the build runner may execute them at the same
     // time.  `tmpPath` lives in the cache and is cleaned up on success.
     run.addArg("--work-dir");
-    run.addDirectoryArg(b.tmpPath());
+    if (work_dir) |path| {
+        run.addArg(path);
+        run.has_side_effects = true;
+    } else {
+        run.addDirectoryArg(b.tmpPath());
+    }
     if (zig_gendev) run.addArg("--zig-gendev");
     if (b.args) |args| run.addArgs(args);
     run.expectExitCode(0);
@@ -1677,29 +1738,15 @@ const SwappedOptions = struct {
 /// This mirrors the main build rather than refactoring it, so that adding a
 /// module stays a one-entry change to `zig_modules` and does not touch here.
 fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compile {
-    const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
-    @memset(selection, true);
+    return addSelectedTool(b, options, &all_selected, "ipmitool-zig");
+}
 
-    // The swapped archive compiles every Zig port, including USB when the
-    // interface is disabled.  Its bridge must expose SG_IO in that case,
-    // without requiring SCSI headers for the ordinary disabled-USB build.
-    const swapped_bridge_mod = if (options.plugins_enabled[pluginIndex("usb")])
-        options.bridge_mod
-    else blk: {
-        const bridge = b.addTranslateC(.{
-            .root_source_file = b.path(zig_bridge_header),
-            .target = options.target,
-            .optimize = options.optimize,
-            .link_libc = true,
-        });
-        bridge.addConfigHeader(options.config_h);
-        bridge.addIncludePath(b.path("include"));
-        bridge.defineCMacro("HAVE_CONFIG_H", "1");
-        bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{options.default_intf}));
-        bridge.defineCMacro("IPMITOOL_ZIG_USB", "1");
-        break :blk bridge.createModule();
-    };
-
+fn addSelectedTool(
+    b: *std.Build,
+    options: SwappedOptions,
+    selection: []const bool,
+    name: []const u8,
+) *std.Build.Step.Compile {
     const core_mod = b.createModule(.{
         .target = options.target,
         .optimize = options.optimize,
@@ -1720,34 +1767,54 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .root_module = core_mod,
     });
 
-    const zig_options = b.addOptions();
-    zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
-    const exports_mod = b.createModule(.{
-        .root_source_file = b.path(zig_root ++ "/exports.zig"),
-        .target = options.target,
-        .optimize = options.optimize,
-        .link_libc = true,
-        .sanitize_c = if (options.sanitize_c) .full else .off,
-    });
-    exports_mod.addImport("ipmi_c", swapped_bridge_mod);
-    exports_mod.addImport("build_options", zig_options.createModule());
-    addZigCShims(
-        b,
-        exports_mod,
-        options.config_h,
-        options.default_intf,
-        options.flags,
-        selection,
-    );
-    const zig_lib = b.addLibrary(.{
-        .name = "ipmitool_zig_all",
-        .linkage = .static,
-        .root_module = exports_mod,
-    });
+    const zig_lib: ?*std.Build.Step.Compile = if (anySelected(selection)) blk: {
+        // A selected USB port needs SG_IO even with its interface disabled.
+        // Do not expose SCSI headers to ordinary builds without that port.
+        const export_bridge_mod = if (selection[moduleIndex("usb")] and
+            !options.plugins_enabled[pluginIndex("usb")])
+        bridge_blk: {
+            const bridge = b.addTranslateC(.{
+                .root_source_file = b.path(zig_bridge_header),
+                .target = options.target,
+                .optimize = options.optimize,
+                .link_libc = true,
+            });
+            bridge.addConfigHeader(options.config_h);
+            bridge.addIncludePath(b.path("include"));
+            bridge.defineCMacro("HAVE_CONFIG_H", "1");
+            bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{options.default_intf}));
+            bridge.defineCMacro("IPMITOOL_ZIG_USB", "1");
+            break :bridge_blk bridge.createModule();
+        } else options.bridge_mod;
+        const zig_options = b.addOptions();
+        zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
+        const exports_mod = b.createModule(.{
+            .root_source_file = b.path(zig_root ++ "/exports.zig"),
+            .target = options.target,
+            .optimize = options.optimize,
+            .link_libc = true,
+            .sanitize_c = if (options.sanitize_c) .full else .off,
+        });
+        exports_mod.addImport("ipmi_c", export_bridge_mod);
+        exports_mod.addImport("build_options", zig_options.createModule());
+        addZigCShims(
+            b,
+            exports_mod,
+            options.config_h,
+            options.default_intf,
+            options.flags,
+            selection,
+        );
+        break :blk b.addLibrary(.{
+            .name = b.fmt("ipmitool_zig_{s}", .{name}),
+            .linkage = .static,
+            .root_module = exports_mod,
+        });
+    } else null;
 
     return addTool(b, .{
-        .name = "ipmitool-zig",
-        .sources = ipmitool_sources,
+        .name = name,
+        .sources = if (std.mem.startsWith(u8, name, "ipmievd")) ipmievd_sources else ipmitool_sources,
         .target = options.target,
         .optimize = options.optimize,
         .sanitize_c = options.sanitize_c,
@@ -1755,6 +1822,7 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .default_intf = options.default_intf,
         .flags = options.flags,
         .core = core,
+        .bridge_mod = options.bridge_mod,
         .zig_lib = zig_lib,
         .zig_selection = selection,
         .system_libs = options.system_libs,
@@ -1803,6 +1871,7 @@ fn addSerialVariant(b: *std.Build, options: SwappedOptions, selection: []const b
         .default_intf = options.default_intf,
         .flags = options.flags,
         .core = core,
+        .bridge_mod = options.bridge_mod,
         .zig_lib = zig_lib,
         .zig_selection = selection,
         .system_libs = options.system_libs,
@@ -2036,10 +2105,10 @@ const ToolOptions = struct {
     default_intf: []const u8,
     flags: []const []const u8,
     core: *std.Build.Step.Compile,
+    bridge_mod: *std.Build.Module,
     zig_lib: ?*std.Build.Step.Compile,
     zig_selection: []const bool,
     system_libs: []const []const u8,
-    bridge_mod: ?*std.Build.Module = null,
 };
 
 fn addEvdImports(
@@ -2062,8 +2131,10 @@ fn addEvdImports(
 fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
     const zig_evd = std.mem.eql(u8, options.name, "ipmievd") and
         replacedByZig("src/ipmievd.c", options.zig_selection);
+    const zig_cli = replacedByZig("src/ipmitool.c", options.zig_selection) and
+        std.mem.startsWith(u8, options.name, "ipmitool");
     const mod = b.createModule(.{
-        .root_source_file = if (zig_evd) b.path("src/zig/front/ipmievd.zig") else null,
+        .root_source_file = if (zig_evd) b.path("src/zig/front/ipmievd.zig") else if (zig_cli) b.path(zig_root ++ "/cli/tool.zig") else null,
         .target = options.target,
         .optimize = options.optimize,
         .link_libc = true,
@@ -2071,9 +2142,10 @@ fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
     });
     configure(b, mod, options.config_h, options.default_intf);
     if (zig_evd) {
-        mod.addImport("ipmi_c", options.bridge_mod.?);
-        addEvdImports(b, mod, options.bridge_mod.?, options.target, options.optimize);
+        mod.addImport("ipmi_c", options.bridge_mod);
+        addEvdImports(b, mod, options.bridge_mod, options.target, options.optimize);
     }
+    if (zig_cli) mod.addImport("ipmi_c", options.bridge_mod);
     addSources(b, mod, options.sources, options.flags, options.zig_selection);
     mod.linkLibrary(options.core);
     // Listed after the C archive so the linker resolves the symbols the

@@ -1,0 +1,201 @@
+# The parser is shared with ipmievd; these cases exercise the ipmitool entry
+# point, libc getopt permutation, validation, session options and dispatch.
+
+[cli_permuted_option]
+desc: getopt moves a flag after the command before dispatch
+args: -I dummy mc -v info
+transcript: mc_info.tr
+covers: mc
+
+[cli_argv_after_command]
+desc: command arguments survive getopt's option permutation unchanged
+args: -I dummy raw 0x06 0x01 -v
+transcript: mc_info.tr
+covers: raw
+
+[cli_repeated_interface]
+desc: later -I wins after freeing the preceding interface name
+args: -I open -I dummy mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_devnum_negative]
+desc: valid signed device number is rejected by the range check
+args: -I dummy -d -1 mc info
+
+[cli_devnum_invalid]
+desc: str2int rejects malformed device numbers
+args: -I dummy -d 1x mc info
+
+[cli_port_negative]
+desc: reject a negative port before loading the interface
+args: -I dummy -p -1 mc info
+
+[cli_port_overflow]
+desc: reject a port outside the IPMI range
+args: -I dummy -p 65536 mc info
+
+[cli_port_invalid]
+desc: reject a nonnumeric port
+args: -I dummy -p bogus mc info
+
+[cli_username_long]
+desc: reject usernames beyond 16 bytes
+args: -I dummy -U 12345678901234567 mc info
+
+[cli_ipv4_ipv6_conflict]
+desc: reject mutually exclusive address families
+args: -I dummy -4 -6 mc info
+
+[cli_ipv4_repeated]
+desc: reject repeated -4
+args: -I dummy -4 -4 mc info
+
+[cli_ipv6_repeated]
+desc: reject repeated -6
+args: -I dummy -6 -6 mc info
+
+[cli_bad_target_lun]
+desc: -l returns a positive error code (the tool maps it to success)
+args: -I dummy -l 256 mc info
+
+[cli_bad_target_addr]
+desc: reject out-of-range bridging address
+args: -I dummy -t 256 mc info
+
+[cli_bad_local_addr]
+desc: reject malformed local IPMB address
+args: -I dummy -m invalid mc info
+
+[cli_transit_without_target]
+desc: transit without a bridge target fails after opening the interface
+args: -I dummy -T 0x82 mc info
+transcript: mc_info.tr
+
+[cli_kg_odd]
+desc: odd-length hexadecimal Kg key
+args: -I dummy -y abc mc info
+
+[cli_kg_nonhex]
+desc: invalid hexadecimal Kg key
+args: -I dummy -y gg mc info
+
+[cli_kg_valid]
+desc: pass an explicit hexadecimal Kg key to the dummy interface
+args: -I dummy -y abcd mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_kg_environment_missing]
+desc: -K logs a warning but continues when no Kg key exists
+args: -I dummy -K mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_kg_environment]
+desc: -K copies a supplied Kg key before opening the interface
+args: -I dummy -K mc info
+env: IPMI_KGKEY=testkg
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_environment_missing]
+desc: -E logs a warning but continues when no password exists
+args: -I dummy -E mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_environment]
+desc: -E accepts the IPMITOOL_PASSWORD environment variable
+args: -I dummy -E mc info
+env: IPMITOOL_PASSWORD=testpassword
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_explicit]
+desc: -P supplies the remote password before running the command
+args: -I dummy -P testpassword mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_file_missing]
+desc: -f logs two errors but continues with no password
+args: -I dummy -f {work}/missing mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_file]
+desc: -f trims the trailing newline
+args: -I dummy -f {work}/password.txt mc info
+text: password.txt cli/password.txt
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_file_empty]
+desc: -f reports an empty password file but still runs the command
+args: -I dummy -f {work}/password.txt mc info
+text: password.txt event/empty.txt
+transcript: mc_info.tr
+covers: mc
+
+[cli_password_too_long_lan]
+desc: password length is checked before trying a LAN device
+args: -I lan -P 12345678901234567 mc info
+
+[cli_bad_retry]
+desc: retry must be a nonnegative int
+args: -I dummy -R -1 mc info
+
+[cli_bad_timeout]
+desc: timeout must be a nonnegative uint32
+args: -I dummy -N -1 mc info
+
+[cli_bad_large_buffer]
+desc: large-buffer size must fit uint16
+args: -I dummy -z 65536 mc info
+
+[cli_large_buffer]
+desc: large-buffer request invokes the shared interface setter
+args: -I dummy -z 128 mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_oem_unknown]
+desc: unknown OEM fails before opening the dummy interface
+args: -I dummy -o unknown mc info
+
+[cli_auth_invalid]
+desc: invalid auth type is passed through as the C lookup returned it
+args: -I dummy -A wrong mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_privilege_unknown]
+desc: an unknown privilege level logs a warning but continues
+args: -I dummy -L wrong mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_privilege_lookup]
+desc: a trailing plus disables name-only lookup and mutates optarg
+args: -I dummy -L ADMINISTRATOR+ mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_missing_sdr_cache]
+desc: -S reports an unreadable cache after interface discovery
+args: -I dummy -S {work}/missing.sdr mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_missing_sel_oem]
+desc: -O reports an unreadable OEM file after interface discovery
+args: -I dummy -O {work}/missing.oem mc info
+transcript: mc_info.tr
+covers: mc
+
+[cli_utc_csv]
+desc: UTC, CSV and verbose flags combine with command dispatch
+args: -I dummy -Z -c -v mc info
+transcript: mc_info.tr
+covers: mc
