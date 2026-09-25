@@ -1,9 +1,9 @@
 //! Port of `lib/log.c` and `include/ipmitool/log.h`.
 //!
 //! Selected with `zig build -Dzig-modules=log`, which drops `lib/log.c` from
-//! the compile and links this module plus `log_varargs.c` instead.  Every
-//! ipmitool translation unit calls `lprintf()`, so this is a link-time
-//! substitution the rest of the tree never notices.
+//! the compile and links this module plus `log_varargs.c` instead.  Most
+//! callers still use the C-variadic `lprintf()` / `lperror()` ABI; Zig modules
+//! can call the typed `print()` / `perror()` path without the trampoline.
 //!
 //! Two things are worth knowing before reading on:
 //!
@@ -16,9 +16,9 @@
 //! * **`lprintf()` and `lperror()` are variadic**, and Zig 0.16 cannot define a
 //!   C variadic function on aarch64 (`std.builtin.VaList` is a `@compileError`
 //!   under the LLVM backend, ziglang/zig#15389).  `log_varargs.c` keeps the two
-//!   `va_start` trampolines; they immediately hand the `va_list` to
-//!   `ipmitool_zig_lvprintf`/`ipmitool_zig_lvperror` below, so all observable
-//!   behaviour is here.  See doc/zig-migration/varargs-trampoline.md.
+//!   `va_start` trampolines for remaining ABI callers; they immediately hand
+//!   the `va_list` to `ipmitool_zig_lvprintf`/`ipmitool_zig_lvperror` below.
+//!   See doc/zig-migration/varargs-trampoline.md.
 //!
 //! Allocation: `logInit` takes an allocator explicitly, and the exported
 //! `log_init`/`log_halt` pass `std.heap.c_allocator` so the program name stays
@@ -153,6 +153,46 @@ pub fn logLevelSet(verbose: c_int) void {
 fn enabled(level: c_int) bool {
     if (logpriv == null) reinit(default_allocator);
     return logpriv.?.level >= level;
+}
+
+fn selectedInProduct() bool {
+    if (@import("builtin").is_test) return false;
+    for (@import("build_options").zig_modules) |module| {
+        if (std.mem.eql(u8, module, "log")) return true;
+    }
+    return false;
+}
+
+/// Callers compiled alongside the C logger keep its state and ABI.  When the
+/// Zig logger is selected, formatting and emission stay in Zig; only the
+/// libc printf/syslog functions are called, never a C variadic definition.
+pub fn print(level: c_int, format: [*:0]const u8, args: anytype) void {
+    if (comptime selectedInProduct()) {
+        if (!enabled(level)) return;
+        _ = @call(.auto, c.snprintf, .{ &printf_msg, msg_length, format } ++ args);
+        if (logpriv.?.daemon) {
+            c.syslog(level, "%s", &printf_msg);
+        } else {
+            _ = c.fprintf(c.stderr, "%s\n", &printf_msg);
+        }
+    } else {
+        @call(.auto, c.lprintf, .{ level, format } ++ args);
+    }
+}
+
+pub fn perror(level: c_int, format: [*:0]const u8, args: anytype) void {
+    if (comptime selectedInProduct()) {
+        if (!enabled(level)) return;
+        _ = @call(.auto, c.snprintf, .{ &perror_msg, msg_length, format } ++ args);
+        const reason = c.strerror(std.c._errno().*);
+        if (logpriv.?.daemon) {
+            c.syslog(level, "%s: %s", &perror_msg, reason);
+        } else {
+            _ = c.fprintf(c.stderr, "%s: %s\n", &perror_msg, reason);
+        }
+    } else {
+        @call(.auto, c.lperror, .{ level, format } ++ args);
+    }
 }
 
 /// `lprintf()` minus the `va_start`, which `log_varargs.c` did.

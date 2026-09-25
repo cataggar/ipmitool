@@ -1090,6 +1090,65 @@ pub fn build(b: *std.Build) void {
 
     test_step.dependOn(unit_step);
 
+    const log_step = b.step("test-log", "Check native Zig logging against the C oracle and C ABI");
+    const log_compile_step = b.step("test-log-compile", "Compile both logging ABI fixtures without executing them");
+    inline for (.{ false, true }) |zig_log| {
+        const log_options = b.addOptions();
+        log_options.addOption([]const []const u8, "zig_modules", if (zig_log) &.{"log"} else &.{});
+        const log_options_mod = log_options.createModule();
+        const log_mod = b.createModule(.{
+            .root_source_file = b.path("tests/logging.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        log_mod.addImport("ipmi_c", bridge_mod);
+        log_mod.addImport("build_options", log_options_mod);
+        const log_headers = b.createModule(.{
+            .root_source_file = b.path("src/zig/root.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        log_headers.addImport("ipmi_c", bridge_mod);
+        log_headers.addImport("build_options", log_options_mod);
+        log_mod.addImport("ipmi_zig", log_headers);
+        configure(b, log_mod, config_h, default_intf);
+        log_mod.addCSourceFiles(.{
+            .root = b.path("."),
+            .files = if (zig_log)
+                &.{ "src/zig/util/log_varargs.c", "tests/logging_syslog.c" }
+            else
+                &.{ "lib/log.c", "tests/logging_syslog.c" },
+            .flags = flags,
+        });
+        const log_exe = b.addExecutable(.{
+            .name = if (zig_log) "logging-zig" else "logging-c",
+            .root_module = log_mod,
+        });
+        log_compile_step.dependOn(&log_exe.step);
+        const log_run = b.addRunArtifact(log_exe);
+        log_run.setEnvironmentVariable("LC_ALL", "C");
+        log_run.expectStdOutEqual("");
+        log_run.expectStdErrEqual(
+            "lazy 3\n" ++
+                "7: 0x002a left      +3 %\n" ++
+                "ABI 11\n" ++
+                "errno native: No such file or directory\n" ++
+                "ABI errno 5: Permission denied\n" ++
+                ": Invalid or incomplete multibyte or wide character\n" ++
+                ("x" ** 1023) ++ "\n" ++
+                "openlog:parity-daemon\n" ++
+                "syslog:6:daemon yes  -2\n" ++
+                "syslog:5:ABI daemon 12\n" ++
+                "syslog:3:daemon error: No such file or directory\n" ++
+                "closelog\n" ++
+                "reset\n",
+        );
+        log_step.dependOn(&log_run.step);
+    }
+    test_step.dependOn(log_step);
+
     const spd_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{ "SPD decoder", "JEDEC table" },
