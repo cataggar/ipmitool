@@ -203,8 +203,8 @@ transcript: fru_write.tr
 covers: fru
 
 [fru_edit_grow]
-desc: resize the board area and move later product and multirecord sections
-args: -I dummy fru edit 0 field b 0 "Acme Corporation Plus"
+desc: nearly exhaust the board area's padding without moving later sections
+args: -I dummy fru edit 0 field b 0 "Acme Corporation"
 transcript: fru_write.tr
 covers: fru
 
