@@ -72,6 +72,8 @@ pub const util = struct {
     pub const time = @import("util/time.zig");
 };
 
+pub const frontend_log = @import("frontend/logging.zig");
+
 test {
     _ = @import("cmd/channel.zig");
     _ = @import("cmd/lanp.zig");
