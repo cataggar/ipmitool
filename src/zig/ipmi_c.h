@@ -47,6 +47,10 @@
 #include <ipmitool/log.h>
 #include <ipmitool/bswap.h>
 #include <ipmitool/ipmi.h>
+#if defined(__linux__) && (defined(IPMI_INTF_USB) || defined(IPMITOOL_ZIG_USB))
+#include <sys/file.h>
+#include <scsi/sg.h>
+#endif
 #include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_channel.h>
@@ -239,6 +243,45 @@ extern struct ipmi_intf ipmi_dummy_intf;
 #ifdef IPMI_INTF_USB
 extern struct ipmi_intf ipmi_usb_intf;
 #endif
+
+/*
+ * The USB plugin's non-static entry points and its command header.  They
+ * have no public header in the C tree; these declarations let the Zig port
+ * check and preserve their ABI when usb.c is replaced.
+ */
+typedef struct {
+    uint8_t BeginSig[16];
+    uint16_t Command;
+    uint16_t Status;
+    uint32_t DataInLen;
+    uint32_t DataOutLen;
+    uint32_t InternalUseDataIn;
+    uint32_t InternalUseDataOut;
+} CONFIG_CMD;
+int scsiProbeNew(int *num_ami_devices, int *sg_nos);
+int OpenCD(struct ipmi_intf *intf, char *CDName);
+int sendscsicmd_SGIO(int cd_desc, unsigned char *cdb_buf, unsigned char cdb_len,
+                      void *data_buf, unsigned int *data_len, int direction,
+                      void *sense_buf, unsigned char slen, unsigned int timeout);
+int AMI_SPT_CMD_Identify(int cd_desc, char *szSignature);
+int IsG2Drive(int cd_desc);
+int FindG2CDROM(struct ipmi_intf *intf);
+void InitCmdHeader(CONFIG_CMD *header);
+int AMI_SPT_CMD_SendCmd(int cd_desc, char *buffer, char type, uint16_t buflen,
+                        unsigned int timeout);
+int AMI_SPT_CMD_RecvCmd(int cd_desc, char *buffer, char type, uint16_t buflen);
+int ReadCD(int cd_desc, char cmd_data, char *buffer, uint32_t data_len);
+int WriteCD(int cd_desc, char cmd_data, char *buffer, unsigned int timeout,
+            uint32_t data_len);
+int WriteSplitData(struct ipmi_intf *intf, char *buffer, char sector,
+                   uint32_t num_bytes, uint32_t timeout);
+int ReadSplitData(struct ipmi_intf *intf, char *buffer, char sector,
+                  uint32_t num_bytes);
+int WaitForCommandCompletion(struct ipmi_intf *intf, CONFIG_CMD *header,
+                             uint32_t timeout, uint32_t data_len);
+int SendDataToUSBDriver(struct ipmi_intf *intf, char *request,
+                         unsigned int request_len, unsigned char *response,
+                         int *response_len, unsigned int timeout);
 
 /*
  * `src/plugins/dummy/dummy.c` defines these two with external linkage and no

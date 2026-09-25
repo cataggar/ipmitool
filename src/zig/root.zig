@@ -38,6 +38,12 @@ pub const intf = struct {
     pub const lanplus_dump = @import("intf/lanplus_dump.zig");
     pub const serial_basic = @import("intf/serial_basic.zig");
     pub const serial_terminal = @import("intf/serial_terminal.zig");
+    // Like the C transport, USB depends on Linux's SCSI generic driver.
+    pub const usb = if (@import("builtin").target.os.tag == .linux and
+        @hasDecl(@import("ipmi_c"), "sg_io_hdr_t"))
+        @import("intf/usb.zig")
+    else
+        struct {};
 };
 
 /// Ports of the crypto primitives that used to come from OpenSSL.
@@ -90,6 +96,7 @@ test {
     _ = intf.lanplus_dump;
     _ = intf.serial_basic;
     _ = intf.serial_terminal;
+    _ = intf.usb;
     _ = util.bswap;
     _ = util.helper;
     _ = util.log;
