@@ -1021,6 +1021,14 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run the build smoke tests");
 
+    if (allSelected(zig_selection) and is_linux) {
+        const no_varargs_step = b.step("test-no-log-varargs", "Check the all-selected archive has no C variadic logger");
+        const check = b.addSystemCommand(&.{ "python3", "-B", "tests/logging_no_varargs.py" });
+        check.addArtifactArg(zig_lib.?);
+        no_varargs_step.dependOn(&check.step);
+        test_step.dependOn(no_varargs_step);
+    }
+
     const evd_test_mod = b.createModule(.{
         .root_source_file = b.path("src/zig/front/ipmievd.zig"),
         .target = b.graph.host,
@@ -2427,7 +2435,7 @@ fn moduleSelected(name: []const u8, zig_selection: []const bool) bool {
     return false;
 }
 
-/// Adds the `c_shims` of every selected module to the Zig replacement library.
+/// Adds the C shims needed by the selected modules to the replacement library.
 fn addZigCShims(
     b: *std.Build,
     mod: *std.Build.Module,
@@ -2439,7 +2447,13 @@ fn addZigCShims(
     var files: std.ArrayList([]const u8) = .empty;
     for (zig_modules, 0..) |module, i| {
         if (!zig_selection[i]) continue;
-        for (module.c_shims) |shim| files.append(b.allocator, shim) catch @panic("OOM");
+        for (module.c_shims) |shim| {
+            // A fully selected tool has no C logger callers; mixed selections
+            // still need the C-variadic ABI for their remaining C sources.
+            if (allSelected(zig_selection) and
+                std.mem.eql(u8, shim, "src/zig/util/log_varargs.c")) continue;
+            files.append(b.allocator, shim) catch @panic("OOM");
+        }
     }
     if (files.items.len == 0) return;
 

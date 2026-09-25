@@ -283,7 +283,9 @@ CI cross-builds the all-selected `ipmitool` and `ipmievd` binaries in
 `ReleaseSafe` for the opposite runner architecture with musl and verifies
 that neither executable has an ELF interpreter or `NEEDED` library. This
 reduced-feature gate disables readline and OpenSSL/LAN+, and still links musl
-libc and the logging C shim; it is not a pure-Zig or libc-free build.
+libc. The fully selected tool omits the logging C shim, while selections
+combining the Zig logger with C modules retain it. This is not a libc-free
+build or a pure-Zig release.
 
 `src/zig/cli/main.zig` is linked through `exports.zig` into the shared Zig
 archive, unlike the separate `cli/tool.zig` executable root. Its diagnostics

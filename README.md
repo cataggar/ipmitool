@@ -124,8 +124,9 @@ that were enabled. The golden transcript suite is built on top of this.
 
 `zig build -Dzig-modules=all` builds the installable binaries with every
 registered Zig replacement selected. This is not yet a pure-Zig release: the
-logging varargs shim still compiles as C, Zig imports translated C headers, and
-the binaries link libc. The default build remains the C regression oracle.
+fully selected tools omit the C logging varargs shim, but mixed C/Zig builds
+still need it. Zig also imports translated C headers and the binaries link
+libc. The default build remains the C regression oracle.
 
 `-Dipmishell` is on by default so that the command table matches the autotools
 baseline. Select `-Dzig-modules=ipmishell` for the native Zig line editor with
