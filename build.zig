@@ -875,6 +875,18 @@ pub fn build(b: *std.Build) void {
     unit_step.dependOn(&unit_tests.step);
     test_step.dependOn(unit_step);
 
+    const lanp_test_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/lanp_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    lanp_test_mod.addImport("ipmi_c", bridge_mod);
+    const lanp_unit = b.addTest(.{ .root_module = lanp_test_mod });
+    const lanp_step = b.step("test-lanp", "Run LAN parameter encoding and reply validation tests");
+    lanp_step.dependOn(&b.addRunArtifact(lanp_unit).step);
+    test_step.dependOn(lanp_step);
+
     // The golden harness cannot supply getpass()'s static buffer or a NULL
     // prompt result. Exercise the actual C and Zig user modules with the same
     // scripted prompt and sendrecv stubs.

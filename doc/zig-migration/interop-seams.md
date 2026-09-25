@@ -147,6 +147,8 @@ zig build --help                 # lists the available module names
 The C/Zig parity fixtures for LAN print, alert destinations, stats and writes
 are in `tests/cases/57-lanp.cases`; run them with
 `tests/run.sh --binary zig-out/bin/ipmitool --filter lanp_`.
+`zig build test-lanp` runs the focused Zig parameter and short-reply tests
+without depending on unrelated crypto vector fixtures.
 
 Mechanics, all in `build.zig`:
 

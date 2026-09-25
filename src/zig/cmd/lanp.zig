@@ -564,27 +564,38 @@ fn authSet(intf: *Intf, ch: u8, level: [*:0]const u8, types: [*:0]const u8) c_in
 }
 fn cipherData(spec: [*:0]const u8, data: *[9]u8) bool {
     const s = std.mem.span(spec);
-    if (s.len != 15) {
-        c.lprintf(log.Level.err, "Invalid privilege specification length: %d", @as(c_int, @intCast(s.len)));
+    packCipher(s, data) catch |err| {
+        switch (err) {
+            error.InvalidLength => c.lprintf(log.Level.err, "Invalid privilege specification length: %d", @as(c_int, @intCast(s.len))),
+            error.InvalidCharacter => for (s) |char| {
+                if (privNibble(char) == null) {
+                    c.lprintf(log.Level.err, "Invalid privilege specification char: %c", @as(c_int, char));
+                    break;
+                }
+            },
+        }
         return false;
-    }
+    };
+    return true;
+}
+fn privNibble(char: u8) ?u8 {
+    return switch (char) {
+        'X' => 0,
+        'c' => 1,
+        'u' => 2,
+        'o' => 3,
+        'a' => 4,
+        'O' => 5,
+        else => null,
+    };
+}
+fn packCipher(s: []const u8, data: *[9]u8) error{ InvalidLength, InvalidCharacter }!void {
+    if (s.len != 15) return error.InvalidLength;
     @memset(data, 0);
     for (s, 0..) |char, i| {
-        const n: u8 = switch (char) {
-            'X' => 0,
-            'c' => 1,
-            'u' => 2,
-            'o' => 3,
-            'a' => 4,
-            'O' => 5,
-            else => {
-                c.lprintf(log.Level.err, "Invalid privilege specification char: %c", @as(c_int, char));
-                return false;
-            },
-        };
+        const n = privNibble(char) orelse return error.InvalidCharacter;
         data[1 + i / 2] |= if (i & 1 == 0) n else n << 4;
     }
-    return true;
 }
 fn validDestination(intf: *Intf, ch: u8, dest: u8) bool {
     const v = get(intf, ch, .destinations, 0) catch return false;
@@ -843,6 +854,27 @@ pub fn exportSymbols() void {
     abi.assertCallSignature(@TypeOf(findChannel), @TypeOf(c.find_lan_channel));
     @export(&lanpMain, .{ .name = "ipmi_lanp_main", .linkage = .strong });
     @export(&findChannel, .{ .name = "find_lan_channel", .linkage = .strong });
+}
+
+test "cipher privilege symbols encode in suite-number order" {
+    var data: [9]u8 = undefined;
+    try packCipher("cuoaOXXXXXXXXXX", &data);
+    try std.testing.expectEqualSlices(u8, &.{ 0, 0x21, 0x43, 0x05, 0, 0, 0, 0, 0 }, &data);
+
+    try packCipher("XXXXXXXXXXXXXXO", &data);
+    try std.testing.expectEqualSlices(u8, &.{ 0, 0, 0, 0, 0, 0, 0, 0, 5 }, &data);
+}
+
+test "cipher privilege parser rejects malformed specifications" {
+    var data: [9]u8 = undefined;
+    try std.testing.expectError(error.InvalidLength, packCipher("cuoaO", &data));
+    try std.testing.expectError(error.InvalidCharacter, packCipher("cuoaOXXXXXXXXX?", &data));
+}
+
+test "LAN parameter values distinguish unsupported and short BMC replies" {
+    try std.testing.expectError(error.ShortResponse, required(.{ .bytes = null }, 1));
+    try std.testing.expectError(error.ShortResponse, required(.{ .bytes = &.{1} }, 2));
+    try std.testing.expectEqualSlices(u8, &.{ 1, 2, 3 }, try required(.{ .bytes = &.{ 1, 2, 3 } }, 2));
 }
 fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
     if (argc < 2) {
