@@ -1,0 +1,15 @@
+default_ccode 0xc1
+
+respond trace_first
+  netfn 0x08
+  cmd 0x0f
+  match 00
+  data 0a 01 00 0b 02 c7 c1 03 83 0f 00 00 0e 01 00
+  data 00 00 00 01 00 00
+end
+
+respond trace_rest
+  netfn 0x08
+  cmd 0x0f
+  data @pad 21 00
+end

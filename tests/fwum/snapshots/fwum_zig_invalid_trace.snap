@@ -1,0 +1,37 @@
+#!golden 1
+#!case fwum_zig_invalid_trace
+#!section exit
+0
+#!section stdout
+FWUM extension Version 1.3
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+  Cmd ID:       GetFwStatus -- CmdState:      Begin -- CompCode: 10
+
+#!section stderr
+IANA PEN registry open failed: No such file or directory
+Failed to load entries from IANA PEN Registry
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=00
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=01
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=02
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=03
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=04
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=05
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x0f target_cmd=0x00 data=06
+< rule=trace ccode=0x00 len=21 data=0a 04 ff c6 01 20 07 01 10 00 00 00 00 00 00 00 00 00 00 00 00
+bye

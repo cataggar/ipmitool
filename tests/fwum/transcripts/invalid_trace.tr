@@ -1,0 +1,7 @@
+default_ccode 0xc1
+respond trace
+  netfn 0x08
+  cmd 0x0f
+  data 0a 04 ff c6 01 20 07 01 10
+  data @pad 12 00
+end

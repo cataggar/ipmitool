@@ -1,0 +1,109 @@
+#!golden 1
+#!case fwum_status_verbose
+#!section exit
+0
+#!section stdout
+FWUM extension Version 1.3
+Getting Kontron FWUM Status
+ Getting Status!
+Protocol Revision          : > 5 optimizing buffers
+SMI payload size           : 32
+
+Bank State 0               : Last Known Good
+Firmware Length            : 16384 bytes
+Firmware Revision          : 7.42 SDR 9
+
+Bank State 1               : Not programmed
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 8
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 9
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 8
+msg.cmd: 7
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 9
+msg.cmd: 7
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 8
+msg.cmd: 7
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 9
+msg.cmd: 7
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x00 target_cmd=0x00 data=
+< rule=info ccode=0x00 len=7 data=06 20 01 07 42 02 55
+> netfn=0x08 lun=0x00 cmd=0x07 target_cmd=0x00 data=00
+< rule=bank0 ccode=0x00 len=7 data=03 00 40 00 07 42 09
+> netfn=0x08 lun=0x00 cmd=0x07 target_cmd=0x00 data=01
+< rule=bank1 ccode=0x00 len=7 data=00 00 00 00 00 00 00
+bye

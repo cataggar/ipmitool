@@ -1,0 +1,30 @@
+#!golden 1
+#!case fwum_info
+#!section exit
+0
+#!section stdout
+FWUM extension Version 1.3
+
+IPMC Info
+=========
+Manufacturer Id           : 15000
+Board Id                  : 5002
+Firmware Revision         : 2.03 SDR 9
+
+FWUM info
+=========
+Protocol Revision         : 06h
+Controller Device Id      : 20h
+Firmware Revision         : 7.42 - DEBUG BUILD
+Number Of Memory Bank     : 2
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 8a 13 09 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x00 target_cmd=0x00 data=
+< rule=info ccode=0x00 len=7 data=06 20 01 07 42 02 55
+bye

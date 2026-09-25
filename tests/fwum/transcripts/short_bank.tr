@@ -1,0 +1,11 @@
+default_ccode 0xc1
+respond info
+  netfn 0x08
+  cmd 0x00
+  data 06 20 01 07 42 01 55
+end
+respond bank
+  netfn 0x08
+  cmd 0x07
+  data 03
+end

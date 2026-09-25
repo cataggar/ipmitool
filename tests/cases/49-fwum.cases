@@ -1,0 +1,172 @@
+# FWUM C-oracle cases: status/info, every CLI arm, 24-bit metadata, old/new
+# transfer addressing, 256-byte page crossings, chunk shrink and busy retry.
+# Request logs pin command order and exact transmitted image bytes.
+
+[fwum_help]
+args: -I dummy fwum help
+covers: fwum
+
+[fwum_unknown]
+args: -I dummy fwum mystery
+covers: fwum
+
+[fwum_info]
+args: -I dummy fwum info
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_info_verbose]
+args: -v -I dummy fwum info
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_status]
+args: -I dummy fwum status
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_status_verbose]
+args: -v -I dummy fwum status
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_rollback]
+args: -I dummy fwum rollback
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_upgrade_existing]
+args: -I dummy fwum upgrade
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_upgrade_none]
+args: -I dummy fwum upgrade
+covers: fwum
+
+[fwum_download_no_file]
+args: -I dummy fwum download
+covers: fwum
+
+[fwum_download_missing]
+args: -I dummy fwum download {work}/missing.bin
+covers: fwum
+
+[fwum_download_short]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/short.hex
+covers: fwum
+
+[fwum_download_wrong_board]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/wrong_board.hex
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_download_wrong_iana]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/wrong_iana.hex
+transcript: fwum_info.tr
+covers: fwum
+
+[fwum_download_new]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_transfer.tr
+timeout_ms: 20000
+covers: fwum
+
+[fwum_download_old]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_old.tr
+timeout_ms: 20000
+covers: fwum
+
+[fwum_download_retry]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_retry.tr
+timeout_ms: 20000
+covers: fwum
+
+[fwum_upgrade_file]
+args: -I dummy fwum upgrade {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_transfer.tr
+timeout_ms: 20000
+covers: fwum
+
+[fwum_download_wrong_size]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/wrong_size.hex
+transcript: fwum_start_fail.tr
+covers: fwum
+
+[fwum_download_wrong_crc]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/wrong_crc.hex
+transcript: fwum_start_fail.tr
+covers: fwum
+
+[fwum_download_wrong_magic]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/wrong_magic.hex
+transcript: fwum_start_fail.tr
+covers: fwum
+
+[fwum_info_failure]
+args: -I dummy fwum info
+covers: fwum
+
+[fwum_status_failure]
+args: -I dummy fwum status
+covers: fwum
+
+[fwum_download_device_failure]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+covers: fwum
+
+[fwum_tracelog_failure]
+args: -I dummy fwum tracelog
+covers: fwum
+
+[fwum_tracelog]
+args: -I dummy fwum tracelog
+transcript: fwum_trace.tr
+covers: fwum
+
+[fwum_info_old_short]
+args: -v -I dummy fwum info
+transcript: fwum_short_protocol_start.tr
+covers: fwum
+
+[fwum_status_bank_failure]
+args: -I dummy fwum status
+transcript: fwum_status_fail.tr
+covers: fwum
+
+[fwum_upgrade_d5]
+args: -I dummy fwum upgrade
+transcript: fwum_upgrade_d5.tr
+covers: fwum
+
+[fwum_download_start_failure]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_start_fail.tr
+covers: fwum
+
+[fwum_download_save_failure]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_save_fail.tr
+timeout_ms: 20000
+covers: fwum
+
+[fwum_download_short_protocol]
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin fwum/valid.hex
+transcript: fwum_short_protocol_start.tr
+covers: fwum

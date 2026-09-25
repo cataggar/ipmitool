@@ -1,0 +1,3 @@
+@mark image
+@include fwum/valid.hex
+@poke image 0 00
