@@ -1,0 +1,10 @@
+respond register_rollback
+  netfn 0x30
+  cmd 0xa4
+  match 03 00
+end
+respond short_status
+  netfn 0x30
+  cmd 0xa6
+  data 1e
+end

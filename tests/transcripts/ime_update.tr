@@ -1,0 +1,57 @@
+respond initial_status
+  netfn 0x30
+  cmd 0xa6
+  times 1
+  data @ime/status_idle.hex
+end
+respond prepare
+  netfn 0x30
+  cmd 0xa0
+end
+respond prepared_status
+  netfn 0x30
+  cmd 0xa6
+  times 1
+  data @ime/status_requested.hex
+end
+respond open_area
+  netfn 0x30
+  cmd 0xa1
+  match 01 00
+end
+respond writing_status
+  netfn 0x30
+  cmd 0xa6
+  times 2
+  data @ime/status_progress.hex
+end
+respond write_first
+  netfn 0x30
+  cmd 0xa2
+  match 00
+end
+respond write_second
+  netfn 0x30
+  cmd 0xa2
+  match 01
+end
+respond close_area
+  netfn 0x30
+  cmd 0xa3
+end
+respond closed_status
+  netfn 0x30
+  cmd 0xa6
+  times 1
+  data @ime/status_requested.hex
+end
+respond activate
+  netfn 0x30
+  cmd 0xa4
+  match 01 00
+end
+respond completed_status
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_success.hex
+end

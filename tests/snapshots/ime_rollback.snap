@@ -1,0 +1,17 @@
+#!golden 1
+#!case ime_rollback
+#!section exit
+0
+#!section stdout
+Manual Rollback Succeed
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa4 target_cmd=0x00 data=03 00
+< rule=register_rollback ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=rolled_back ccode=0x00 len=13 data=1e 05 00 00 00 11 22 33 44 10 20 30 40
+bye

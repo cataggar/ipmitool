@@ -1,0 +1,5 @@
+respond rejected_id
+  netfn 0x06
+  cmd 0x01
+  ccode 0xc1
+end

@@ -1,0 +1,38 @@
+#!golden 1
+#!case ime_info_unknown_image
+#!section exit
+0
+#!section stdout
+Manufacturer Name          : Intel Corporation
+Product ID                 : 2816 (0x0b00)
+Product Name               : Unknown (0xB00)
+Intel ME Firmware Revision : 12.03.04.456.7
+SPS FW IPMI cmd version    : 2.1
+Current Image Type         : Unknown
+
+Supported Area
+   Operation Code          : Supported
+   PIA                     : Supported
+   SDR                     : Supported
+
+Special Capabilities
+   Rollback                : Supported
+   Recovery                : Supported
+
+Image Status
+   Staging (new)           : Valid
+   Rollback                : Valid
+   Running Image Area      : CODE3
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=intel_unknown_image ccode=0x00 len=15 data=00 00 12 34 51 bf 57 01 00 00 0b 21 45 67 03
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=status ccode=0x00 len=13 data=1e 00 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa7 target_cmd=0x00 data=
+< rule=caps ccode=0x00 len=2 data=0e 03
+bye

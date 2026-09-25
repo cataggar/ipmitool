@@ -1,0 +1,10 @@
+respond initial_status
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_idle.hex
+end
+respond rejected_prepare
+  netfn 0x30
+  cmd 0xa0
+  ccode 0xc1
+end

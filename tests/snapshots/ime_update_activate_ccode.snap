@@ -1,0 +1,41 @@
+#!golden 1
+#!case ime_update_activate_ccode
+#!section exit
+1
+#!section stdout
+Percent: 100,  Elapsed time 00:00\x0d
+UpdateCompleted, Activate now
+Update Error
+
+Time Taken 00:00
+#!section stderr
+Update using file: <WORK>/fw.bin
+ImeUpdateRegisterUpdate command failed: Invalid command
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=idle ccode=0x00 len=13 data=1e 00 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa0 target_cmd=0x00 data=
+< rule=prepare ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=requested ccode=0x00 len=13 data=1e 01 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa1 target_cmd=0x00 data=01 00
+< rule=open_area ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=progress ccode=0x00 len=13 data=1e 02 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa2 target_cmd=0x00 data=00 01
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=progress ccode=0x00 len=13 data=1e 02 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa3 target_cmd=0x00 data=01 00 00 00 07 00
+< rule=close ccode=0x00 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=closed_status ccode=0x00 len=13 data=1e 01 00 00 00 11 22 33 44 10 20 30 40
+> netfn=0x30 lun=0x00 cmd=0xa4 target_cmd=0x00 data=01 00
+< rule=rejected_activate ccode=0xc1 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xa6 target_cmd=0x00 data=
+< rule=completed_status ccode=0x00 len=13 data=1e 03 00 00 00 11 22 33 44 10 20 30 40
+bye

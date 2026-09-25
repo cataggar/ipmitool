@@ -1,0 +1,11 @@
+respond rejected_rollback
+  netfn 0x30
+  cmd 0xa4
+  match 03 00
+  ccode 0xc1
+end
+respond idle
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_idle.hex
+end

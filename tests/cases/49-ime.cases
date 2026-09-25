@@ -1,0 +1,219 @@
+# C-oracle IME command and Intel ME firmware-update flow fixtures.
+
+[ime_unknown]
+desc: unknown command prints usage, with success as in C
+args: -I dummy ime bogus
+covers: ime
+
+[ime_case_sensitive]
+desc: INFO is not the lower-case info command
+args: -I dummy ime INFO
+covers: ime
+
+[ime_info]
+desc: Intel ME ID, firmware versions, flags, status and capabilities
+args: -I dummy ime info
+transcript: ime_info.tr
+covers: ime
+
+[ime_info_verbose]
+desc: verbose Intel ME information includes device and status debug logs
+args: -I dummy -v -v ime info
+transcript: ime_info.tr
+covers: ime
+
+[ime_info_extra]
+desc: extra info arguments are ignored
+args: -I dummy ime info ignored
+transcript: ime_info.tr
+covers: ime
+
+[ime_info_generic]
+desc: non-Intel device ID does not request OEM status
+args: -I dummy ime info
+transcript: ime_generic.tr
+covers: ime
+
+[ime_info_unsupported]
+desc: image area zero and capability bits clear, operational image 2
+args: -I dummy ime info
+transcript: ime_info_no_caps.tr
+covers: ime
+
+[ime_info_unknown_image]
+desc: reserved image type renders Unknown without masking other flags
+args: -I dummy ime info
+transcript: ime_info_unknown_image.tr
+covers: ime
+
+[ime_info_short_id]
+desc: short Get Device ID must not read past response
+args: -I dummy ime info
+transcript: ime_short_id.tr
+covers: ime
+
+[ime_info_short_status]
+desc: short Get Status must not read past response
+args: -I dummy ime info
+transcript: ime_short_status.tr
+covers: ime
+
+[ime_info_short_caps]
+desc: short Get Capabilities must not read past response
+args: -I dummy ime info
+transcript: ime_short_caps.tr
+covers: ime
+
+[ime_info_id_ccode]
+desc: Get Device ID completion failure
+args: -I dummy ime info
+transcript: ime_id_error.tr
+covers: ime
+
+[ime_info_status_ccode]
+desc: Get Status completion failure
+args: -I dummy ime info
+transcript: ime_status_error.tr
+covers: ime
+
+[ime_info_caps_ccode]
+desc: Get Capabilities completion failure
+args: -I dummy ime info
+transcript: ime_caps_error.tr
+covers: ime
+
+[ime_rollback]
+desc: register a manual rollback and observe the rolled-back state
+args: -I dummy ime rollback
+transcript: ime_rollback.tr
+covers: ime
+
+[ime_rollback_extra]
+desc: extra rollback argument is ignored
+args: -I dummy ime rollback ignored
+transcript: ime_rollback.tr
+covers: ime
+
+[ime_rollback_ccode]
+desc: manual rollback registration failure
+args: -I dummy ime rollback
+transcript: ime_rollback_error.tr
+covers: ime
+
+[ime_rollback_short]
+desc: a short rollback status cannot report success
+args: -I dummy ime rollback
+transcript: ime_rollback_short.tr
+covers: ime
+
+[ime_update_no_file]
+desc: update requires exactly one filename
+args: -I dummy ime update
+covers: ime
+
+[ime_update_extra]
+desc: update rejects extra arguments
+args: -I dummy ime update file ignored
+covers: ime
+
+[ime_update_missing]
+desc: missing firmware file is rejected before sending OEM commands
+args: -I dummy ime update {work}/missing.bin
+covers: ime
+
+[ime_update_empty]
+desc: empty image is rejected before sending OEM commands
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_empty.hex
+covers: ime
+
+[ime_update_one]
+desc: one-byte image uses one short write and CRC8
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update.tr
+covers: ime
+
+[ime_update_one_verbose]
+desc: verbose update reports CRC8 and OEM command debug messages
+args: -I dummy -v -v ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update.tr
+covers: ime
+
+[ime_update_22]
+desc: exactly 22 image bytes use one full-size write
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_22.hex
+transcript: ime_update.tr
+covers: ime
+
+[ime_update_23]
+desc: 23 image bytes use a full write followed by a one-byte write
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_23.hex
+transcript: ime_update.tr
+covers: ime
+
+[ime_update_restart]
+desc: special 0x80 Write Area completion code returns IME_RESTART
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_restart.tr
+covers: ime
+
+[ime_update_write_ccode]
+desc: ordinary Write Area completion failure does not close or activate
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_write_error.tr
+covers: ime
+
+[ime_update_short_status]
+desc: truncated initial status must not prepare or report success
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_short.tr
+covers: ime
+
+[ime_update_bad_state]
+desc: prepare succeeds but ME remains in the wrong state
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_bad_state.tr
+covers: ime
+
+[ime_update_negative_state]
+desc: signed 32-bit update state -1 is printed without trapping
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_negative_state.tr
+covers: ime
+
+[ime_update_prepare_ccode]
+desc: failed Prepare stops before opening an area
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_prepare_error.tr
+covers: ime
+
+[ime_update_open_ccode]
+desc: failed Open Area stops before writing the image
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_open_error.tr
+covers: ime
+
+[ime_update_close_ccode]
+desc: failed Close Area does not activate
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_close_error.tr
+covers: ime
+
+[ime_update_activate_ccode]
+desc: failed register-update does not report successful completion
+args: -I dummy ime update {work}/fw.bin
+blob: fw.bin ime/image_one.hex
+transcript: ime_update_activate_error.tr
+covers: ime

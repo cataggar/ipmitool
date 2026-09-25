@@ -1,0 +1,5 @@
+respond truncated_id
+  netfn 0x06
+  cmd 0x01
+  data 00 00 12 34 51
+end

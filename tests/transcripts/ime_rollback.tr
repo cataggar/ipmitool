@@ -1,0 +1,10 @@
+respond register_rollback
+  netfn 0x30
+  cmd 0xa4
+  match 03 00
+end
+respond rolled_back
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_rollback.hex
+end

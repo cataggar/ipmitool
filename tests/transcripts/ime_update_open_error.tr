@@ -1,0 +1,21 @@
+respond initial_status
+  netfn 0x30
+  cmd 0xa6
+  times 1
+  data @ime/status_idle.hex
+end
+respond prepare
+  netfn 0x30
+  cmd 0xa0
+end
+respond prepared_status
+  netfn 0x30
+  cmd 0xa6
+  data @ime/status_requested.hex
+end
+respond rejected_open
+  netfn 0x30
+  cmd 0xa1
+  match 01 00
+  ccode 0xc1
+end

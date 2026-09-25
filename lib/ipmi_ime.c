@@ -211,6 +211,10 @@ static int ImeGetInfo(struct ipmi_intf *intf)
          val2str(rsp->ccode, completion_code_vals));
       return IME_ERROR;
    }
+   if (rsp->data_len < sizeof(struct ipm_devid_rsp)) {
+      lprintf(LOG_ERR, "Get Device ID command failed: short response");
+      return IME_ERROR;
+   }
 
    devid = (struct ipm_devid_rsp *) rsp->data;
 
@@ -357,15 +361,21 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
    rc = ImeImageCtxFromFile(imageFilename, &imgCtx);
 
    if (rc == IME_ERROR || !imgCtx.pData || !imgCtx.size) {
+      free(imgCtx.pData);
       return IME_ERROR;
    }
 
-   ImeUpdateGetStatus(intf,&imeStatus);
+   rc = ImeUpdateGetStatus(intf,&imeStatus);
+   if (rc != IME_SUCCESS) {
+      free(imgCtx.pData);
+      return rc;
+   }
 
    if(rc == IME_SUCCESS)
    {
       rc = ImeUpdatePrepare(intf);
-      ImeUpdateGetStatus(intf,&imeStatus);
+      if (ImeUpdateGetStatus(intf,&imeStatus) != IME_SUCCESS && rc == IME_SUCCESS)
+         rc = IME_ERROR;
    }
 
    if(
@@ -374,7 +384,8 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
      )
    {
       rc = ImeUpdateOpenArea(intf);
-      ImeUpdateGetStatus(intf,&imeStatus);
+      if (ImeUpdateGetStatus(intf,&imeStatus) != IME_SUCCESS && rc == IME_SUCCESS)
+         rc = IME_ERROR;
    }
    else if(rc == IME_SUCCESS)
    {
@@ -432,7 +443,8 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
 
          }
       }
-      ImeUpdateGetStatus(intf,&imeStatus);
+      if (ImeUpdateGetStatus(intf,&imeStatus) != IME_SUCCESS && rc == IME_SUCCESS)
+         rc = IME_ERROR;
       printf("\n");
    }
    else if(rc == IME_SUCCESS)
@@ -447,7 +459,8 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
      )
    {
       rc = ImeUpdateCloseArea(intf, imgCtx.size, imgCtx.crc8);
-      ImeUpdateGetStatus(intf,&imeStatus);
+      if (ImeUpdateGetStatus(intf,&imeStatus) != IME_SUCCESS && rc == IME_SUCCESS)
+         rc = IME_ERROR;
    }
    else if(rc == IME_SUCCESS)
    {
@@ -462,7 +475,8 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
    {
       printf("UpdateCompleted, Activate now\n");
       rc = ImeUpdateRegisterUpdate(intf, IME_UPDTYPE_NORMAL);
-      ImeUpdateGetStatus(intf,&imeStatus);
+      if (ImeUpdateGetStatus(intf,&imeStatus) != IME_SUCCESS && rc == IME_SUCCESS)
+         rc = IME_ERROR;
    }
    else if(rc == IME_SUCCESS)
    {
@@ -485,6 +499,7 @@ static int ImeUpgrade(struct ipmi_intf *intf, char* imageFilename)
       printf("\nTime Taken %02ld:%02ld\n",(end-start)/60, (end-start)%60);
    }
 
+   free(imgCtx.pData);
    return rc;
 }
 
@@ -672,6 +687,10 @@ static int ImeUpdateGetStatus(struct ipmi_intf *intf, tImeStatus *pStatus )
 
    lprintf(LOG_DEBUG, "UpdatePrepare command succeed");
 
+   if (rsp->data_len < sizeof(tImeStatus)) {
+      lprintf(LOG_ERR, "UpdatePrepare command failed: short response");
+      return IME_ERROR;
+   }
    pGetStatus = (tImeStatus *) rsp->data;
    
    memcpy( pStatus, pGetStatus, sizeof(tImeStatus));
@@ -745,6 +764,10 @@ static int ImeUpdateGetCapabilities(struct ipmi_intf *intf, tImeCaps *pCaps )
 
    lprintf(LOG_DEBUG, "UpdatePrepare command succeed");
 
+   if (rsp->data_len < sizeof(tImeCaps)) {
+      lprintf(LOG_ERR, "UpdatePrepare command failed: short response");
+      return IME_ERROR;
+   }
    pGetCaps = (tImeCaps *) rsp->data;
    
    memcpy( pCaps, pGetCaps, sizeof(tImeCaps));
@@ -816,6 +839,10 @@ static int ImeUpdateShowStatus(struct ipmi_intf *intf)
 
    lprintf(LOG_DEBUG, "UpdatePrepare command succeed");
 
+   if (rsp->data_len < sizeof(tImeStatus)) {
+      lprintf(LOG_ERR, "UpdatePrepare command failed: short response");
+      return IME_ERROR;
+   }
    pStatus = (tImeStatus *) rsp->data ;
 
    
@@ -881,20 +908,26 @@ static int ImeImageCtxFromFile(
 
    if (rc == IME_SUCCESS) {
       /* Get the raw data in file */
-      fseek(pImageFile, 0, SEEK_END);
-      pImageCtx->size  = ftell(pImageFile); 
-      if (pImageCtx->size <= 0) {
-         if (pImageCtx->size < 0)
+      long imageSize;
+      if (fseek(pImageFile, 0, SEEK_END) != 0)
+         imageSize = -1;
+      else
+         imageSize = ftell(pImageFile);
+      if (imageSize <= 0 || (unsigned long)imageSize > UINT32_MAX) {
+         if (imageSize < 0)
             lprintf(LOG_ERR, "Error seeking %s. %s\n", imageFilename, strerror(errno));
+         else if ((unsigned long)imageSize > UINT32_MAX)
+            lprintf(LOG_ERR, "Image file %s exceeds maximum size", imageFilename);
          rc = IME_ERROR;
          fclose(pImageFile);
          return rc;
       }
+      pImageCtx->size = (uint32_t)imageSize;
       pImageCtx->pData = malloc(sizeof(unsigned char)*pImageCtx->size);
       rewind(pImageFile);
 
       if (!pImageCtx->pData
-          || pImageCtx->size < fread(pImageCtx->pData, sizeof(unsigned char),
+          || pImageCtx->size != fread(pImageCtx->pData, sizeof(unsigned char),
                                      pImageCtx->size, pImageFile))
       {
          rc = IME_ERROR;
@@ -1016,6 +1049,4 @@ int ipmi_ime_main(struct ipmi_intf * intf, int argc, char ** argv)
    
    return rc;
 }
-
-
 

@@ -1,0 +1,5 @@
+respond ordinary_bmc
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
