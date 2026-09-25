@@ -346,21 +346,38 @@ ipmi_mc_set_enables(struct ipmi_intf * intf, int argc, char ** argv)
 	en = rsp->data[0];
 
 	for (i = 0; i < argc; i++) {
+		const char *eq = strchr(argv[i], '=');
+		size_t nl = eq ? (size_t)(eq - argv[i]) : strlen(argv[i]);
+		const char *value;
+
 		for (bf = mc_enables_bf; bf->name; bf++) {
-			int nl = strlen(bf->name);
-			if (strcmp(argv[i], bf->name))
-				continue;
-			if (!strcmp(argv[i]+nl+1, "off")) {
-					printf("Disabling %s\n", bf->desc);
-					en &= ~bf->mask;
-			}
-			else if (!strcmp(argv[i]+nl+1, "on")) {
-					printf("Enabling %s\n", bf->desc);
-					en |= bf->mask;
-			}
-			else {
-				lprintf(LOG_ERR, "Unrecognized option: %s", argv[i]);
-			}
+			if (strlen(bf->name) == nl && !strncmp(argv[i], bf->name, nl))
+				break;
+		}
+		if (!bf->name) {
+			lprintf(LOG_ERR, "Unrecognized option: %s", argv[i]);
+			return -1;
+		}
+
+		if (eq) {
+			value = eq + 1;
+		} else if (i + 1 < argc) {
+			value = argv[++i]; /* Also accept the existing "option on" form. */
+		} else {
+			lprintf(LOG_ERR, "Missing on/off value for %s", argv[i]);
+			return -1;
+		}
+
+		if (!strcmp(value, "off")) {
+			printf("Disabling %s\n", bf->desc);
+			en &= ~bf->mask;
+		} else if (!strcmp(value, "on")) {
+			printf("Enabling %s\n", bf->desc);
+			en |= bf->mask;
+		} else {
+			lprintf(LOG_ERR, "Unrecognized on/off value for %s: %s",
+			        bf->name, value);
+			return -1;
 		}
 	}
 
@@ -513,8 +530,7 @@ _ipmi_mc_get_guid(struct ipmi_intf *intf, ipmi_guid_t *guid)
 		return (-1);
 	} else if (rsp->ccode) {
 		return rsp->ccode;
-	} else if (rsp->data_len != 16
-			|| rsp->data_len != sizeof(ipmi_guid_t)) {
+	} else if (rsp->data_len != sizeof(ipmi_guid_t)) {
 		return (-2);
 	}
 	memcpy(guid, &rsp->data[0], sizeof(ipmi_guid_t));
@@ -929,7 +945,7 @@ int find_set_wdt_string(const struct wdt_string_s *w[], const char *s)
 {
 	int val = 0;
 	while (w[val]) {
-		if (!strcmp(s, w[val]->set)) break;
+		if (w[val]->set && !strcmp(s, w[val]->set)) break;
 		++val;
 	}
 	if (!w[val]) {
@@ -1040,27 +1056,40 @@ parse_set_wdt_options(wdt_conf_t *conf, int argc, char *argv[])
 		if (vstr)
 			vstr++; /* Point to the value */
 
+		if (argv[i][0] && strchr("tpiuac", argv[i][0]) &&
+		    (!vstr || !*vstr)) {
+			lprintf(LOG_ERR, "Missing value for watchdog option '%s'", argv[i]);
+			goto out;
+		}
+
 		switch (argv[i][0]) { /* only check the first letter to allow for
 		                         shortcuts */
 		case 't': /* timeout */
-			val = strtol(vstr, NULL, 10);
+		case 'p': /* pretimeout */ {
+			char *end;
+			val = strtol(vstr, &end, 10);
+			if (end == vstr || *end) {
+				lprintf(LOG_ERR, "Invalid watchdog value '%s'", vstr);
+				goto out;
+			}
+			if (argv[i][0] == 'p') {
+				if (val < 1 || val > MAX_PRETIMEOUT) {
+					lprintf(LOG_ERR,
+					        "Pretimeout value %ld is out of range (1-%d)\n",
+					        val, MAX_PRETIMEOUT);
+					goto out;
+				}
+				conf->pretimeout = val;
+				break;
+			}
 			if (val < 1 || val > MAX_TIMEOUT) {
-				lprintf(LOG_ERR, "Timeout value %lu is out of range (1-%d)\n",
+				lprintf(LOG_ERR, "Timeout value %ld is out of range (1-%d)\n",
 				        val, MAX_TIMEOUT);
 				goto out;
 			}
 			conf->timeout = val * 10; /* Convert seconds to 100ms intervals */
 			break;
-		case 'p': /* pretimeout */
-			val = strtol(vstr, NULL, 10);
-			if (val < 1 || val > MAX_PRETIMEOUT) {
-				lprintf(LOG_ERR,
-				        "Pretimeout value %lu is out of range (1-%d)\n",
-				        val, MAX_PRETIMEOUT);
-				goto out;
-			}
-			conf->pretimeout = val; /* Convert seconds to 100ms intervals */
-			break;
+		}
 		case 'i': /* int */
 			if (0 > (val = find_set_wdt_string(wdt_int, vstr))) {
 				lprintf(LOG_ERR, "Interrupt type '%s' is not valid\n", vstr);
@@ -1090,15 +1119,23 @@ parse_set_wdt_options(wdt_conf_t *conf, int argc, char *argv[])
 			conf->clear |= 1 << val;
 			break;
 		case 'n': /* nolog */
+			if (vstr) {
+				lprintf(LOG_ERR, "Invalid option '%s'", argv[i]);
+				goto out;
+			}
 			conf->nolog = true;
 			break;
 		case 'd': /* dontstop */
+			if (vstr) {
+				lprintf(LOG_ERR, "Invalid option '%s'", argv[i]);
+				goto out;
+			}
 			conf->dontstop = true;
 			break;
 
 		default:
 			lprintf(LOG_ERR, "Invalid option '%s'", argv[i]);
-			break;
+			goto out;
 		}
 	}
 
@@ -1126,6 +1163,11 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	int rc = -1;
 	wdt_conf_t conf = {0};
 	bool options_error = parse_set_wdt_options(&conf, argc, argv);
+
+	if (options_error) {
+		print_watchdog_usage();
+		return -1;
+	}
 
 	/* Fill data bytes according to IPMI 2.0 Spec section 27.6 */
 	msg_data[0] = conf.nolog << IPMI_WDT_USE_NOLOG_SHIFT;
@@ -1176,8 +1218,6 @@ ipmi_mc_set_watchdog(struct ipmi_intf * intf, int argc, char *argv[])
 	lprintf(LOG_NOTICE, "Watchdog Timer was successfully configured");
 
 out:
-	if (options_error) print_watchdog_usage();
-
 	return rc;
 }
 
@@ -1326,7 +1366,7 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 
 		/* Allow for 'rfc' and 'rfc4122' */
 		if (argc > 1) {
-			if (!strcmp(argv[1], "rfc")) {
+			if (!strcmp(argv[1], "rfc") || !strcmp(argv[1], "rfc4122")) {
 				guid_mode = GUID_RFC4122;
 			}
 			else if (!strcmp(argv[1], "smbios")) {
@@ -1368,6 +1408,10 @@ ipmi_mc_main(struct ipmi_intf * intf, int argc, char ** argv)
 				lprintf(LOG_ERR, "Not enough parameters given.");
 				print_watchdog_usage();
 				rc = (-1);
+			}
+			else if (argc == 3 && !strcmp(argv[2], "help")) {
+				print_watchdog_usage();
+				rc = 0;
 			}
 			else {
 				rc = ipmi_mc_set_watchdog(intf, argc - 2, &(argv[2]));
@@ -1536,7 +1580,7 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 {
 	char *str;
 	unsigned char  infostr[256];
-	char paramdata[18];
+	uint8_t paramdata[18];
 	int len, maxset, param, pos, rc, set;
 
 	if (argc == 2 && !strcmp(argv[1], "help")) {
@@ -1574,11 +1618,11 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 				/* First block is special case */
 				paramdata[2] = 0;   /* ascii encoding */
 				paramdata[3] = len; /* length */
-				strncpy(paramdata + 4, str + pos, IPMI_SYSINFO_SET0_SIZE);
+				strncpy((char *)paramdata + 4, str + pos, IPMI_SYSINFO_SET0_SIZE);
 				pos += IPMI_SYSINFO_SET0_SIZE;
 			}
 			else {
-				strncpy(paramdata + 2, str + pos, IPMI_SYSINFO_SETN_SIZE);
+				strncpy((char *)paramdata + 2, str + pos, IPMI_SYSINFO_SETN_SIZE);
 				pos += IPMI_SYSINFO_SETN_SIZE;
 			}
 			rc = ipmi_mc_setsysinfo(intf, 18, paramdata);
@@ -1594,6 +1638,7 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 		/* Read blocks of data */
 		pos = 0;
 		for (set = 0; set < maxset; set++) {
+			size_t copy_len;
 			rc = ipmi_mc_getsysinfo(intf, param, set, 0, 18, paramdata);
 
 			if (rc)
@@ -1605,13 +1650,16 @@ ipmi_sysinfo_main(struct ipmi_intf *intf, int argc, char ** argv, int is_set)
 					/* Determine max number of blocks to read */
 					maxset = ((paramdata[3] + 2) + 15) / 16;
 				}
-				memcpy(infostr + pos, paramdata + 4, IPMI_SYSINFO_SET0_SIZE);
-				pos += IPMI_SYSINFO_SET0_SIZE;
+				copy_len = IPMI_SYSINFO_SET0_SIZE;
 			}
 			else {
-				memcpy(infostr + pos, paramdata + 2, IPMI_SYSINFO_SETN_SIZE);
-				pos += IPMI_SYSINFO_SETN_SIZE;
+				copy_len = IPMI_SYSINFO_SETN_SIZE;
 			}
+			/* Leave space for the terminating NUL, including for length 255. */
+			if (copy_len > sizeof(infostr) - 1 - pos)
+				copy_len = sizeof(infostr) - 1 - pos;
+			memcpy(infostr + pos, paramdata + (set == 0 ? 4 : 2), copy_len);
+			pos += copy_len;
 		}
 		printf("%s\n", infostr);
 	}

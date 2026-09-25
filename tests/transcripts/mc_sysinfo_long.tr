@@ -1,0 +1,31 @@
+# A length byte >= 128 must be interpreted as unsigned on every architecture.
+# The 255-byte value needs 17 blocks, but only one byte from the last block.
+default_ccode 0xc1
+
+respond name_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 02 00 00
+  data 11 00 00 fe 41 41 41 41 41 41 41 41 41 41 41 41 41 41
+end
+
+respond name_set_n
+  netfn 0x06
+  cmd 0x59
+  match 00 02
+  data 11 01 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42
+end
+
+respond fw_set0
+  netfn 0x06
+  cmd 0x59
+  match 00 01 00 00
+  data 11 00 00 ff 41 41 41 41 41 41 41 41 41 41 41 41 41 41
+end
+
+respond fw_set_n
+  netfn 0x06
+  cmd 0x59
+  match 00 01
+  data 11 01 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42
+end
