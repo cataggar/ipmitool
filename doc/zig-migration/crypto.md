@@ -116,14 +116,22 @@ reproduces exactly:
 
 ```
 ipmi_auth_md2() → writes 16 zero bytes into the authcode buffer,
-                  prints (via printf, not lprintf, so on stdout):
+                  prints (on stdout, not through lprintf):
                   "WARNING: No internal support for MD2!  Please re-compile with OpenSSL."
                   and returns the authcode buffer.
 ```
 
 This is a clean, non-fatal error, not a crash — the request goes out with a
 zeroed authcode and the BMC rejects it. The `auth/md2/unsupported` vector pins
-the 16 zero bytes.
+the 16 zero bytes and the input buffers; a separate Zig writer test pins the
+warning bytes and newline.
+`auth.zig` writes the warning and verbose MD5 trace directly to stdout through
+Zig's unbuffered `std.Io.File` writer, rather than C `printf` and `buf2str`.
+The C callers still receive the same static authcode buffer on successful
+output. Unlike C's unchecked `printf` return, a failed stdout write is
+reported as a fatal error instead of silently returning a zero authcode.
+Unit-test binaries route these writes to stderr because Zig's test runner
+reserves stdout for its protocol; the writer tests check their exact bytes.
 
 `auth.zig` additionally contains a `comptime` guard: if someone ever restores a
 `HAVE_CRYPTO_MD2` build, the Zig module fails to compile with an explicit

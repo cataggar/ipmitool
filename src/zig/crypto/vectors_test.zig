@@ -260,11 +260,16 @@ fn checkAuth(case: Case) !void {
         return;
     }
 
-    // auth/md2/unsupported: the baseline answers with zeros, and so do we.
-    // `ipmi_auth_md2` also prints its warning, which is why this is noisy.
+    // auth/md2/unsupported: drive the exported stub with the oracle's inputs.
+    try std.testing.expectEqualStrings("auth/md2/unsupported", case.name);
     try std.testing.expectEqualSlices(u8, &expected, &v15.md2_unsupported);
+    var authcode: [16]u8 = undefined;
+    var data: [32]u8 = undefined;
+    _ = try case.hex("authcode", &authcode);
+    const message = try case.hex("data", &data);
     var session = std.mem.zeroes(intf_mod.Session);
-    const returned = auth_mod.authMd2(&session, null, 0);
+    @memcpy(session.authcode[0..authcode.len], &authcode);
+    const returned = auth_mod.authMd2(&session, message.ptr, @intCast(message.len));
     try std.testing.expectEqualSlices(u8, &expected, returned[0..16]);
 }
 
