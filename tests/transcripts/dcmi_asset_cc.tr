@@ -1,0 +1,12 @@
+respond asset_length
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 00
+  data dc 01
+end
+respond unsupported_chunk
+  netfn 0x2c
+  cmd 0x06
+  ccode 0x80
+  data dc 01 58
+end

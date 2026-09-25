@@ -1,0 +1,23 @@
+#!golden 1
+#!case dcmi_get_asset_partial
+#!section exit
+1
+#!section stdout no-final-newline
+
+ Asset tag: 0123456789abcdef
+#!section stderr
+
+    DCMI request failed because: Request data length invalid (c7)
+Error getting asset tag!
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=dc 00 00
+< rule=length ccode=0x00 len=2 data=dc 14
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=dc 00 10
+< rule=first_chunk ccode=0x00 len=18 data=dc 14 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=dc 10 04
+< rule=unavailable_tail ccode=0xc7 len=1 data=dc
+bye

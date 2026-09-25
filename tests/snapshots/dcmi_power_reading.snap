@@ -1,0 +1,23 @@
+#!golden 1
+#!case dcmi_power_reading
+#!section exit
+0
+#!section stdout
+
+    Instantaneous power reading:                   230 Watts
+    Minimum during sampling period:                120 Watts
+    Maximum during sampling period:                300 Watts
+    Average power reading over sample period:      202 Watts
+    IPMI timestamp:                           S+ 00:00:00    Sampling period:                          00000010 Seconds.
+    Power reading state is:                   activated
+
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x02 target_cmd=0x00 data=dc 01 00 00
+< rule=power_reading ccode=0x00 len=18 data=dc e6 00 78 00 2c 01 ca 00 00 00 00 00 10 27 00 00 40
+bye

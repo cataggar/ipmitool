@@ -1,0 +1,25 @@
+#!golden 1
+#!case nm_policy_get
+#!section exit
+0
+#!section stdout
+    Power domain:                             platform
+    Policy is enabled\x20
+    Policy is a power control type.
+    Policy Trigger Type:                      No trigger, use Power Limit
+    Correction Aggressiveness:                no T-state use
+    Policy Exception Actions:                 alert
+    Power Limit:                              200 Watts
+    Correction Time Limit:                    5000 milliseconds
+    Trigger Limit:                            1 units
+    Statistics Reporting Period:              5 seconds
+    Policy retention:                         non-volatile
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0xc2 target_cmd=0x00 data=57 01 00 00 03
+< rule=policy_get ccode=0x00 len=16 data=57 01 00 10 10 01 c8 00 88 13 00 00 01 00 05 00
+bye

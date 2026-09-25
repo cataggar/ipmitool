@@ -1,0 +1,27 @@
+#!golden 1
+#!case dcmi_get_config
+#!section exit
+0
+#!section stdout
+
+\tDHCP Discovery method\t:\x20
+\t\tManagement Controller ID String is enabled
+\t\tVendor class identifier DCMI IANA and Vendor class-specific Informationa are enabled
+\tInitial timeout interval\t: 10 seconds
+\tServer contact timeout interval\t: 300 seconds
+\tServer contact retry interval\t: 30 seconds
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x13 target_cmd=0x00 data=dc 02 00
+< rule=config_dhcp ccode=0x00 len=5 data=dc 01 00 00 03
+> netfn=0x2c lun=0x00 cmd=0x13 target_cmd=0x00 data=dc 03 00
+< rule=config_init ccode=0x00 len=5 data=dc 01 00 00 0a
+> netfn=0x2c lun=0x00 cmd=0x13 target_cmd=0x00 data=dc 04 00
+< rule=config_timeout ccode=0x00 len=6 data=dc 01 00 00 2c 01
+> netfn=0x2c lun=0x00 cmd=0x13 target_cmd=0x00 data=dc 05 00
+< rule=config_retry ccode=0x00 len=6 data=dc 01 00 00 1e 00
+bye

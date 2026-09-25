@@ -277,6 +277,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/vita.zig",
     },
     .{
+        .name = "dcmi",
+        .replaces = "lib/ipmi_dcmi.c",
+        .implementation = "src/zig/cmd/dcmi.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",

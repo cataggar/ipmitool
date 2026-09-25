@@ -1,0 +1,75 @@
+respond version
+  netfn 0x2e
+  cmd 0xca
+  data 57 01 00 02 00 05 03 12
+end
+respond caps
+  netfn 0x2e
+  cmd 0xc9
+  data 57 01 00 04 f4 01 64 00 10 27 00 00 20 4e 00 00 02 00 0a 00 00
+end
+respond control
+  netfn 0x2e
+  cmd 0xc0
+  data 57 01 00
+end
+respond policy_get
+  netfn 0x2e
+  cmd 0xc2
+  data 57 01 00 10 10 01 c8 00 88 13 00 00 01 00 05 00
+end
+respond policy_set
+  netfn 0x2e
+  cmd 0xc1
+  data 57 01 00
+end
+respond limiting
+  netfn 0x2e
+  cmd 0xf2
+  data 57 01 00 03
+end
+respond stats
+  netfn 0x2e
+  cmd 0xc8
+  data 57 01 00 64 00 32 00 c8 00 5a 00 00 00 00 00 3c 00 00 00 10
+end
+respond power_set
+  netfn 0x2e
+  cmd 0xcb
+  data 57 01 00
+end
+respond suspend_get
+  netfn 0x2e
+  cmd 0xc6
+  data 57 01 00 01 0a 14 7f
+end
+respond suspend_set
+  netfn 0x2e
+  cmd 0xc5
+  data 57 01 00
+end
+respond reset
+  netfn 0x2e
+  cmd 0xc7
+  data 57 01 00
+end
+respond alert_get
+  netfn 0x2e
+  cmd 0xcf
+  data 57 01 00 01 02 83
+end
+respond alert_set
+  netfn 0x2e
+  cmd 0xce
+  data 57 01 00
+end
+respond threshold_get
+  netfn 0x2e
+  cmd 0xc4
+  data 57 01 00 03 64 00 c8 00 2c 01
+end
+respond threshold_set
+  netfn 0x2e
+  cmd 0xc3
+  data 57 01 00
+end

@@ -1,0 +1,15 @@
+#!golden 1
+#!case nm_statistics_csv
+#!section exit
+0
+#!section stdout
+platform,Globally Enabled,suspended,suspended,not triggered,100,50,200,90,S+ 00:00:00,60
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0xc8 target_cmd=0x00 data=57 01 00 01 00 ff
+< rule=stats ccode=0x00 len=20 data=57 01 00 64 00 32 00 c8 00 5a 00 00 00 00 00 3c 00 00 00 10
+bye

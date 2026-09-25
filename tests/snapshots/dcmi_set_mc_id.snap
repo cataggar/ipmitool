@@ -1,0 +1,17 @@
+#!golden 1
+#!case dcmi_set_mc_id
+#!section exit
+0
+#!section stdout
+
+ Set Management Controller Identifier String Command: management id\x00
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x0a target_cmd=0x00 data=dc 00 0e 6d 61 6e 61 67 65 6d 65 6e 74 20 69 64 00
+< rule=mc_write ccode=0x00 len=1 data=dc
+bye

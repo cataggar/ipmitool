@@ -1,0 +1,5 @@
+respond periods
+  netfn 0x2e
+  cmd 0xc6
+  data 57 01 00 03 0a 14 7f
+end

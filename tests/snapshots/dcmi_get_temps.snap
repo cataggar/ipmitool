@@ -1,0 +1,29 @@
+#!golden 1
+#!case dcmi_get_temps
+#!section exit
+0
+#!section stdout
+
+\tEntity ID\t\t\tEntity Instance\t   Temp. Readings
+Inlet air temperature(40h)\t\t1\t\t+30 C
+CPU temperature sensors(41h)\t\t1\t\t+30 C
+Baseboard temperature sensors(42h)\t\t1\t\t+30 C
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x10 target_cmd=0x00 data=dc 01 40 00 00
+< rule=temp_first ccode=0x00 len=3 data=dc 01 00
+> netfn=0x2c lun=0x00 cmd=0x10 target_cmd=0x00 data=dc 01 40 00 01
+< rule=temp_records ccode=0x00 len=5 data=dc 01 01 1e 01
+> netfn=0x2c lun=0x00 cmd=0x10 target_cmd=0x00 data=dc 01 41 00 00
+< rule=temp_second ccode=0x00 len=3 data=dc 01 00
+> netfn=0x2c lun=0x00 cmd=0x10 target_cmd=0x00 data=dc 01 41 00 01
+< rule=temp_records ccode=0x00 len=5 data=dc 01 01 1e 01
+> netfn=0x2c lun=0x00 cmd=0x10 target_cmd=0x00 data=dc 01 42 00 00
+< rule=temp_third ccode=0x00 len=3 data=dc 01 00
+> netfn=0x2c lun=0x00 cmd=0x10 target_cmd=0x00 data=dc 01 42 00 01
+< rule=temp_records ccode=0x00 len=5 data=dc 01 01 1e 01
+bye

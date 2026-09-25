@@ -1,0 +1,16 @@
+#!golden 1
+#!case nm_discover_valid
+#!section exit
+0
+#!section stdout
+    Node Manager Version 1.5
+    revision 3.12  patch version 5
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0xca target_cmd=0x00 data=57 01 00
+< rule=version ccode=0x00 len=8 data=57 01 00 02 00 05 03 12
+bye

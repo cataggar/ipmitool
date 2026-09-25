@@ -59,6 +59,7 @@
 #include <ipmitool/ipmi_chassis.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_constants.h>
+#include <ipmitool/ipmi_dcmi.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_channel.h>
@@ -227,6 +228,26 @@ int ipmi_hex_to_dec(char *rangeList, unsigned char *pDecValue);
  * file-local enum has C int representation; the four values are 0..3. */
 int ipmi_get_session_info(struct ipmi_intf *intf, int request_type,
 			  uint32_t id_or_handle);
+
+/* Global helper and wire entry points defined by lib/ipmi_dcmi.c. */
+void print_strs(const struct dcmi_cmd *vs, const char *title,
+                int loglevel, int verthorz);
+uint16_t str2val2(const char *str, const struct dcmi_cmd *vs);
+const char *val2str2(uint16_t val, const struct dcmi_cmd *vs);
+struct ipmi_rs *ipmi_dcmi_getcapabilities(struct ipmi_intf *intf, uint8_t selector);
+struct ipmi_rs *ipmi_dcmi_getassettag(struct ipmi_intf *intf, uint8_t offset, uint8_t length);
+struct ipmi_rs *ipmi_dcmi_setassettag(struct ipmi_intf *intf, uint8_t offset, uint8_t length, uint8_t *data);
+struct ipmi_rs *ipmi_dcmi_getmngctrlids(struct ipmi_intf *intf, uint8_t offset, uint8_t length);
+struct ipmi_rs *ipmi_dcmi_setmngctrlids(struct ipmi_intf *intf, uint8_t offset, uint8_t length, uint8_t *data);
+struct ipmi_rs *ipmi_dcmi_discvry_snsr(struct ipmi_intf *intf, uint8_t sensor, uint8_t offset);
+struct ipmi_rs *ipmi_dcmi_get_temp_readings(struct ipmi_intf *intf, uint8_t entity, uint8_t instance, uint8_t start);
+struct ipmi_rs *ipmi_dcmi_getconfparam(struct ipmi_intf *intf, int selector);
+struct ipmi_rs *ipmi_dcmi_setconfparam(struct ipmi_intf *intf, uint8_t selector, uint16_t value);
+struct ipmi_rs *ipmi_dcmi_pwr_glimit(struct ipmi_intf *intf);
+int ipmi_dcmi_getthermalpolicy(struct ipmi_intf *intf, uint8_t entity, uint8_t instance);
+int ipmi_dcmi_setthermalpolicy(struct ipmi_intf *intf, uint8_t entity,
+			      uint8_t instance, uint8_t persistence, uint8_t hard,
+			      uint8_t sel, uint8_t limit, uint8_t low, uint8_t high);
 int ipmi_sdr_get_info(struct ipmi_intf *intf,
 		      struct get_sdr_repository_info_rsp *sdr_repository_info);
 int ipmi_sdr_print_type(struct ipmi_intf *intf, char *type);

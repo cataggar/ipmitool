@@ -1,0 +1,25 @@
+#!golden 1
+#!case dcmi_sensors_empty
+#!section exit
+0
+#!section stdout
+
+Inlet: 0 temperature sensor found:
+
+CPU: 0 temperature sensor found:
+
+Baseboard: 0 temperature sensor found:
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 40 00 00
+< rule=sensors_empty ccode=0x00 len=3 data=dc 00 00
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 41 00 00
+< rule=sensors_empty ccode=0x00 len=3 data=dc 00 00
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 42 00 00
+< rule=sensors_empty ccode=0x00 len=3 data=dc 00 00
+bye

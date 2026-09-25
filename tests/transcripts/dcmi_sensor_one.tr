@@ -1,0 +1,11 @@
+respond inlet_records
+  netfn 0x2c
+  cmd 0x07
+  match dc 01 40
+  data dc 01 01 34 12
+end
+respond other_sensors
+  netfn 0x2c
+  cmd 0x07
+  data dc 00 00
+end
