@@ -1252,6 +1252,7 @@ pub fn build(b: *std.Build) void {
         }
         const daemon_log_step = b.step("test-event-daemon-log", "Compare Zig daemon with C and Zig logger selections");
         daemon_log_step.dependOn(frontend_log_step);
+        test_step.dependOn(daemon_log_step);
         const parity = b.addSystemCommand(&.{ "python3", "-B" });
         parity.addFileArg(b.path("tests/event_daemon/logging.py"));
         parity.addFileArg(daemon_c.getEmittedBin());
