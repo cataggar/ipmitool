@@ -46,6 +46,12 @@ tested independently of the exported wrappers:
 | `src/zig/crypto/assert_text.zig` | the exact `assert()` expression strings, shared by the call sites and pinned by the vectors |
 | `src/zig/util/cassert.zig` | `assert()` parity: diagnostic on stderr then `SIGABRT` |
 
+Assertion text now reads the generated `have_crypto_sha256` build option
+without importing translated C headers. `lanplus_crypt.zig` checks that option
+against the C configuration at the selected ABI boundary. Run
+`zig build test-assert-text-data` to compile and check the standalone C-free
+assertion text with SHA-256 both enabled and disabled.
+
 ## How each exported function is verified
 
 | Exported function | Fixture | Cases |

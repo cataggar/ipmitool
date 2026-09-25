@@ -31,6 +31,11 @@ const mac_mod = @import("mac.zig");
 const payload_mod = @import("payload.zig");
 const rakp = @import("rakp.zig");
 
+comptime {
+    if (assert_text.have_sha256 != @hasDecl(c, "HAVE_CRYPTO_SHA256"))
+        @compileError("SHA-256 build option does not match the C configuration");
+}
+
 const Intf = intf_mod.Intf;
 const Session = intf_mod.Session;
 
