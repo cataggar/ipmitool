@@ -22,6 +22,8 @@ const helper = @import("helper.zig");
 const log = @import("log.zig");
 const strings = @import("strings.zig");
 
+extern "c" fn ferror(stream: *std.c.FILE) c_int;
+
 const tables = strings.tables;
 const ValStr = helper.ValStr;
 
@@ -35,10 +37,9 @@ const registry_file = "enterprise-numbers";
 /// `LOG_DEBUG + 4` in `oem_info_init_from_list`: six `-v` options.
 const oemlist_debug: c_int = log.Level.debug + 4;
 
-/// Allocator for the temporary entry list.  The registry strings and the array
-/// `ipmi_oem_info` points at are `malloc`ed directly instead, because
-/// `ipmi_oem_info_free` hands them to `free()`.
-const allocator = std.heap.c_allocator;
+/// Allocator for the temporary entry list. The registry strings and the array
+/// `ipmi_oem_info` points at still use `malloc`/`free` together.
+const allocator = std.heap.page_allocator;
 
 /// `ipmi_oem_info`: an array filled from IANA's enterprise number registry,
 /// or `ipmi_oem_info_dummy` when it could not be allocated.
@@ -54,8 +55,7 @@ const dummy: [*]const ValStr = &tables.ipmi_oem_info_dummy;
 /// `oem_info_list_load`, minus the linked list: entries are collected in file
 /// order because that is the order they end up in the final array.
 ///
-/// Returns the number of entries read, or -1 when the registry cannot be
-/// opened.
+/// Returns the number of entries read, or -1 when the registry cannot be read.
 fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
     const file = openRegistry() orelse {
         log.perror(log.Level.err, "IANA PEN registry open failed", .{});
@@ -65,7 +65,11 @@ fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
 
     var text: std.ArrayList(u8) = .empty;
     defer text.deinit(allocator);
-    readAll(file, &text);
+    readAll(file, &text) catch |err| {
+        if (err == error.OutOfMemory) std.c._errno().* = c.ENOMEM;
+        log.perror(log.Level.err, "IANA PEN registry read failed", .{});
+        return -1;
+    };
 
     var lines: Lines = .{ .text = text.items };
     while (lines.next()) |number_line| {
@@ -86,6 +90,7 @@ fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
             break;
         };
         entries.append(allocator, .{ .val = iana, .str = copy }) catch {
+            std.c._errno().* = c.ENOMEM;
             log.perror(log.Level.err, "IANA PEN registry entry allocation failed", .{});
             freeStr(copy);
             break;
@@ -124,12 +129,15 @@ fn joinTruncating(buf: []u8, parts: []const []const u8) [:0]const u8 {
     return buf[0..len :0];
 }
 
-fn readAll(file: *std.c.FILE, out: *std.ArrayList(u8)) void {
+fn readAll(file: *std.c.FILE, out: *std.ArrayList(u8)) error{ OutOfMemory, ReadFailed }!void {
     var chunk: [64 * 1024]u8 = undefined;
     while (true) {
         const read = std.c.fread(&chunk, 1, chunk.len, file);
-        if (read == 0) return;
-        out.appendSlice(allocator, chunk[0..read]) catch return;
+        if (read == 0) {
+            if (ferror(file) != 0) return error.ReadFailed;
+            return;
+        }
+        try out.appendSlice(allocator, chunk[0..read]);
     }
 }
 
