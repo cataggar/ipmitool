@@ -203,6 +203,17 @@ number -- defaults to 0).
 \fItimeout\fP=<\fBseconds\fR>
 Time between checks for SEL polling method.  Default is 10 seconds.
 .RE
+.PP
+The Zig implementation is selected at build time with
+.BR "zig build -Dzig-modules=evd" .
+The unselected build continues to use the C daemon.  The Zig daemon handles
+\fBSIGINT\fP, \fBSIGQUIT\fP and \fBSIGTERM\fP by stopping the listener and
+removing a PID file it created; daemon mode logs via syslog facility
+\fBLOG_LOCAL4\fP.  The hardware-independent daemon tests are available with
+.BR "zig build test-event-daemon" ;
+when Zig is selected on Linux,
+.B zig build test-event-daemon-process
+also exercises the real process and PID lifecycle against the dummy BMC.
 .SH "EXAMPLES"
 .TP
 \fIExample 1\fP: Daemon process watching OpenIPMI for events

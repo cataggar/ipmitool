@@ -70,6 +70,7 @@
 #include <ipmitool/ipmi_isol.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_lanp6.h>
+#include <ipmitool/ipmi_main.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_picmg.h>

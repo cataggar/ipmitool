@@ -19,6 +19,14 @@ kept apart, exactly as `include/ipmitool/*.h` and `lib/*.c` are.
 | `src/zig/cmd/`       | `lib/ipmi_*.c`                             | one module per command translation unit |
 | `src/zig/util/`      | `lib/helper.c`, `lib/log.c`, `bswap.h`, `ipmi_time.c`, `ipmi_strings.c` | shared utilities |
 | `src/zig/crypto/`    | `src/plugins/lan/{md5,auth}.c`, `src/plugins/lanplus/lanplus_crypt*.c` | hashes, HMAC, AES-CBC and the RMCP+/RAKP layer on `std.crypto` — see [crypto.md](crypto.md) |
+| `src/zig/front/`     | `src/ipmievd.c`                             | daemon executable entrypoint, SEL polling and OpenIPMI notifications |
+
+`-Dzig-modules=evd` switches the daemon executable root from the C oracle to
+`src/zig/front/ipmievd.zig`. Unlike library ports, this frontend must not be
+imported into `exports.zig`: `ipmitool` shares that archive but has its own
+`main` and globals. `zig build test-event-daemon` runs hardware-free model
+tests, and `test-event-daemon-process` exercises foreground/daemon signals and
+PID cleanup with the dummy BMC on Linux when `evd` is selected.
 
 Supporting files at the root of `src/zig/`:
 
