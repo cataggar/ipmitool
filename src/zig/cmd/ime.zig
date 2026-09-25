@@ -368,6 +368,7 @@ fn imeMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
 }
 
 pub fn exportSymbols() void {
+    @setEvalBranchQuota(100_000);
     abi.assertCallSignature(@TypeOf(imeMain), @TypeOf(c.ipmi_ime_main));
     @export(&imeMain, .{ .name = "ipmi_ime_main", .linkage = .strong });
 }
