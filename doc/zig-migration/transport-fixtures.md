@@ -499,9 +499,58 @@ transport port.
 | `ipmi_lan_open()`: dropping the `if (intf == NULL)` guard | `intf` is the vtable receiver; every caller reaches it through `intf->open`.  No Zig counterpart exists, because the Zig signature takes a non-optional pointer. |
 | `ipmi_lan_close()`: dropping the trailing `intf = NULL` | a store to a by-value parameter, dead in the C.  No Zig counterpart. |
 
+## Mutation battery, Zig `lanplus`
+
+`src/zig/intf/lanplus.zig` now has in-module tests for RMCP+ session header
+decoding (including a payload length above 255), Open Session and RAKP 2/4
+parsing, cipher-suite negotiation, the exact unencrypted and AES-CBC packet
+lengths, confidentiality and integrity padding, HMAC input and truncation for
+SHA1/MD5/SHA256, the ICTS padding exception, and outbound sequence wrap.
+`zig build test-unit` runs these tests without building the CLI or requiring
+the golden fixtures; `zig build test` still includes the same tests.
+
+Eight **independently applied and reverted** Zig-source mutations were tested
+against `zig build test-unit -Dipmishell=false`.  Seven were also run against
+their matching fixture using `zig build test-transport -Dipmishell=false
+-Dzig-modules=auth,md5,lanplus-crypt-impl,lanplus-crypt,lanplus --
+--filter lanplus/<case>`.  Both transport binaries (partially selected and
+all-Zig) rejected every filtered mutant: **0 passed, 1 failed, 48 skipped**
+for each.  All eight were caught by the unit tests, including the OEM branch
+which loopback transport fixtures do not exercise.
+
+| # | mutation in `lanplus.zig` | unit-test failure | matching transport case |
+| --- | --- | --- | --- |
+| L1 | integrity pad `0xff` → `0x00` | packet HMAC and AES packet (2) | `cipher3-mc-info` |
+| L2 | HMAC input one byte short | packet HMAC and AES packet (2) | `cipher3-mc-info` (7 BMC violations) |
+| L3 | SHA256 check value truncated to 12 instead of 16 | RAKP 4 and packet length (2) | `cipher17-mc-info` |
+| L4 | copy 11 instead of 12 RAKP 4 SHA1 bytes | RAKP length (1) | `cipher3-mc-info` |
+| L5 | ignore high byte of inbound RMCP+ payload length | session header (1) | `cipher1-raw-big` |
+| L6 | zero high byte of outbound RMCP+ payload length | large outbound packet (1) | `cipher1-raw-big` (4 BMC violations) |
+| L7 | emit integrity flag `0x40` in place of AES flag `0x80` | AES packet (1) | `cipher3-mc-info` (16 BMC violations) |
+| L8 | use normal integrity-pad formula for ICTS OEM | ICTS packet length (1) | no ICTS transport fixture |
+
+The tests' expected wire bytes and lengths are literals, and their HMAC
+checks use `std.crypto` independently of the C bridge.  The AES test decrypts
+the actual built packet using `std.crypto.core.aes` to check the ascending
+confidentiality pad across the 16-byte boundary.  The fixtures additionally
+use the independent model BMC.  Mutations to the crypto primitives themselves
+are covered separately in `crypto.md`; this battery targets the RMCP+ module's
+calls, lengths and layout.  No mutation or recorded fixture is retained.
+
+After reverting all mutations, `test-unit` passes **198/198** and the full
+`test-transport -Dipmishell=false
+-Dzig-modules=auth,md5,lanplus-crypt-impl,lanplus-crypt` passes all **49
+fixtures on both binaries**: the first uses C `lanplus.c`, the second uses
+Zig `lanplus.zig`.  Swapping the four crypto components avoids dependency on
+OpenSSL development headers while keeping the SHA256 configuration enabled;
+`-Dipmishell=false` is needed where readline development headers are absent.
+That option changes CLI `shell` help snapshots, so it is **not** a substitute
+for a default-configuration `zig build test` / golden-suite run.
+
 ## Running it
 
 ```
+zig build test-unit                  # Zig in-module and ABI tests only
 zig build test-transport             # compare against checked-in fixtures
 zig build test                       # includes the above
 zig build gen-transport-fixtures     # re-record (writes into the source tree)

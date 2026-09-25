@@ -89,6 +89,7 @@
 #include "../plugins/lanplus/lanplus.h"
 #include "../plugins/lanplus/lanplus_crypt.h"
 #include "../plugins/lanplus/lanplus_crypt_impl.h"
+#include "../plugins/lanplus/lanplus_dump.h"
 
 #include "abi_layout.h"
 
@@ -217,3 +218,12 @@ int data_write(int fd, void *data_ptr, int data_len);
  * compare its replacement against.
  */
 int ipmi_openipmi_setup(struct ipmi_intf *intf);
+
+/*
+ * `src/plugins/lanplus/lanplus_strings.c` defines these two lookup tables with
+ * external linkage and no header declares them; `lanplus.c` and
+ * `lanplus_dump.c` each restate them locally.  The bridge does the same so
+ * `intf/lanplus.zig` can name them without an `extern` of its own.
+ */
+extern const struct valstr ipmi_rakp_return_codes[];
+extern const struct valstr ipmi_priv_levels[];
