@@ -302,8 +302,11 @@ registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. Registry
 files are opened and streamed with Zig I/O, including non-seekable files; the
 user registry still takes precedence over the system registry. Common open
 and read errors retain their `errno`/`perror` diagnostics, while other Zig
-open errors report their name explicitly. `HOME` lookup and error reporting
-still call libc. The C oracle retains its original `malloc`/`free` and stdio.
+open errors report their name explicitly. Line iteration, enterprise-number
+parsing and bounded path joins live in header-free `util/registry_parse.zig`;
+`zig build test-registry-parse` checks their newline, saturation and truncation
+boundaries without libc. `HOME` lookup and error reporting still call libc.
+The C oracle retains its original `malloc`/`free` and stdio.
 
 The selected `helper.zig` scans six width-two MAC fields in Zig and formats
 the `Unknown (0x...)` fallback with `std.fmt`. Unit tests keep libc

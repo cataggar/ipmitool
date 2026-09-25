@@ -20,6 +20,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const helper = @import("helper.zig");
 const log = @import("log.zig");
+const parse = @import("registry_parse.zig");
 const strings = @import("strings.zig");
 
 const tables = strings.tables;
@@ -70,16 +71,16 @@ fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
         return -1;
     };
 
-    var lines: Lines = .{ .text = text.items };
+    var lines: parse.Lines = .{ .text = text.items };
     while (lines.next()) |number_line| {
         // A registry entry starts with the enterprise number at column 0.  The
         // C runs strtol as well, but `isdigit(line[0])` already decides it.
-        const iana = leadingNumber(number_line) orelse continue;
+        const iana = parse.leadingNumber(number_line) orelse continue;
 
         // The organisation name has to follow immediately.  A line that does
         // not qualify is still consumed, exactly as the second getline does.
         const name_line = lines.next() orelse continue;
-        if (leadingSpaces(name_line) != name_offset) continue;
+        if (parse.leadingSpaces(name_line) != name_offset) continue;
 
         var name = name_line[name_offset..];
         if (name.len != 0 and name[name.len - 1] == '\n') name = name[0 .. name.len - 1];
@@ -105,7 +106,7 @@ fn openRegistry() std.Io.File.OpenError!std.Io.File {
     const io = std.Options.debug_io;
     if (std.c.getenv("HOME")) |home| {
         var buf: [std.fs.max_path_bytes + 1]u8 = undefined;
-        const path = joinTruncating(buf[0..std.fs.max_path_bytes], &.{
+        const path = parse.joinTruncating(buf[0..std.fs.max_path_bytes], &.{
             std.mem.span(@as([*:0]const u8, home)),
             c.PATH_SEPARATOR ++ c.IANAUSERDIR ++ c.PATH_SEPARATOR ++ registry_file,
         });
@@ -142,20 +143,6 @@ fn logRegistryError(context: [*:0]const u8, err: anyerror) void {
     }
 }
 
-/// `snprintf(buf, buf.len, "%s%s", ...)`: concatenate, truncate, NUL terminate.
-fn joinTruncating(buf: []u8, parts: []const []const u8) [:0]const u8 {
-    var len: usize = 0;
-    for (parts) |part| {
-        const room = buf.len - 1 - len;
-        const take = @min(room, part.len);
-        @memcpy(buf[len..][0..take], part[0..take]);
-        len += take;
-        if (take < part.len) break;
-    }
-    buf[len] = 0;
-    return buf[0..len :0];
-}
-
 fn readAll(file: std.Io.File, out: *std.ArrayList(u8)) (std.Io.File.Reader.Error || error{OutOfMemory})!void {
     var read_buffer: [4096]u8 = undefined;
     var reader = file.readerStreaming(std.Options.debug_io, &read_buffer);
@@ -165,56 +152,6 @@ fn readAll(file: std.Io.File, out: *std.ArrayList(u8)) (std.Io.File.Reader.Error
         if (count == 0) return;
         try out.appendSlice(allocator, chunk[0..count]);
     }
-}
-
-/// Iterates lines the way `getline` does: the newline stays on the line, and a
-/// file that does not end in one still yields its last line.
-const Lines = struct {
-    text: []const u8,
-    pos: usize = 0,
-
-    fn next(it: *Lines) ?[]const u8 {
-        if (it.pos >= it.text.len) return null;
-        const start = it.pos;
-        const end = if (std.mem.indexOfScalarPos(u8, it.text, start, '\n')) |nl|
-            nl + 1
-        else
-            it.text.len;
-        it.pos = end;
-        return it.text[start..end];
-    }
-};
-
-/// `isdigit(line[0])` followed by `strtol(line, &endptr, 10)`, truncated into
-/// the `uint32_t` the C assigns it to.
-fn leadingNumber(line: []const u8) ?u32 {
-    if (line.len == 0 or !std.ascii.isDigit(line[0])) return null;
-
-    var value: c_long = 0;
-    var saturated = false;
-    for (line) |ch| {
-        if (!std.ascii.isDigit(ch)) break;
-        if (saturated) continue;
-        const digit: c_long = ch - '0';
-        value = std.math.mul(c_long, value, 10) catch {
-            saturated = true;
-            continue;
-        };
-        value = std.math.add(c_long, value, digit) catch {
-            saturated = true;
-            continue;
-        };
-    }
-    // strtol saturates at LONG_MAX on overflow.
-    if (saturated) value = std.math.maxInt(c_long);
-    return @truncate(@as(c_ulong, @bitCast(value)));
-}
-
-/// `count_bytes(line, ' ')`.
-fn leadingSpaces(line: []const u8) usize {
-    var count: usize = 0;
-    while (count < line.len and line[count] == ' ') count += 1;
-    return count;
 }
 
 fn dupeZ(text: []const u8) ?[*:0]const u8 {

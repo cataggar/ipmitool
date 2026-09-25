@@ -1187,6 +1187,15 @@ pub fn build(b: *std.Build) void {
     }
     test_step.dependOn(strings_tables_step);
 
+    const registry_parse_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/util/registry_parse.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const registry_parse_step = b.step("test-registry-parse", "Test header-free IANA registry parsing");
+    registry_parse_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = registry_parse_mod })).step);
+    test_step.dependOn(registry_parse_step);
+
     const assert_text_step = b.step("test-assert-text-data", "Test C-free assertion text with and without SHA256");
     inline for (.{ false, true }) |sha256| {
         const feature_options = b.addOptions();
