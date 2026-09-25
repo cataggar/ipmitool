@@ -1,0 +1,187 @@
+# PICMG C-oracle fixtures, added before porting lib/ipmi_picmg.c.
+# The dummy transcript verifies request bytes as well as responses.
+
+[picmg_depth_properties]
+args: -I dummy picmg properties
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_address]
+args: -I dummy picmg addrinfo 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_frucontrol]
+args: -I dummy picmg frucontrol 1 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_activate]
+args: -I dummy picmg activate 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_deactivate]
+args: -I dummy picmg deactivate 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_policy_get]
+args: -I dummy picmg policy get 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_policy_set]
+args: -I dummy picmg policy set 1 3 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_port_get]
+args: -I dummy picmg portstate get 1 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_port_set]
+args: -I dummy picmg portstate set 1 1 5 2 3 4 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_amc_get]
+args: -I dummy picmg amcportstate get 2 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_amc_set]
+args: -I dummy picmg amcportstate set 2 5 2 3 4 1 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_led_prop]
+args: -I dummy picmg led prop 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_led_cap]
+args: -I dummy picmg led cap 1 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_led_get]
+args: -I dummy picmg led get 1 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_led_set]
+args: -I dummy picmg led set 1 2 251 127 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_power_get]
+args: -I dummy picmg power get 1 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_power_set]
+args: -I dummy picmg power set 1 20 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_busres]
+args: -I dummy picmg busres summary
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_clk_get]
+args: -I dummy picmg clk get 2 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_depth_clk_set]
+args: -I dummy picmg clk set 2 1 12 2 3 0x12345678 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_amc_port]
+args: -I dummy picmg amcportstate get 2
+transcript: picmg_amc.tr
+covers: picmg
+
+[picmg_amc_clk_get]
+args: -I dummy picmg clk get 2
+transcript: picmg_amc.tr
+covers: picmg
+
+[picmg_amc_clk_set]
+args: -I dummy picmg clk set 2 1 12 2 3 0x12345678
+transcript: picmg_amc.tr
+covers: picmg
+
+[picmg_short_port]
+args: -I dummy picmg portstate get 1 1
+transcript: picmg_short.tr
+covers: picmg
+
+[picmg_short_amc]
+args: -I dummy picmg amcportstate get 2 3
+transcript: picmg_short.tr
+covers: picmg
+
+[picmg_cc_port]
+args: -I dummy picmg portstate get 1 1
+transcript: picmg_cc.tr
+covers: picmg
+
+[picmg_cc_led]
+args: -I dummy picmg led get 1 2
+transcript: picmg_cc.tr
+covers: picmg
+
+[picmg_cc_power]
+args: -I dummy picmg power get 1 2
+transcript: picmg_cc.tr
+covers: picmg
+
+[picmg_cc_clk]
+args: -I dummy picmg clk get 2 3
+transcript: picmg_cc.tr
+covers: picmg
+
+[picmg_bad_discovery]
+args: -I dummy picmg properties
+transcript: picmg_bad_discovery.tr
+covers: picmg
+
+[picmg_invalid_fru]
+args: -I dummy picmg frucontrol 256 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_invalid_led_color]
+args: -I dummy picmg led set 1 2 251 127 7
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_invalid_led_duration]
+args: -I dummy picmg led set 1 2 251 128 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_invalid_power_level]
+args: -I dummy picmg power set 1 21 1
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_invalid_policy]
+args: -I dummy picmg policy set 1 4 2
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_missing_clk_resource]
+args: -I dummy picmg clk set 2 1 12 2 3 0x12345678
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_event_discovery]
+args: -I dummy event 1
+transcript: picmg_depth.tr
+covers: picmg

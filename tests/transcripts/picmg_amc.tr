@@ -1,0 +1,30 @@
+# An AMC module (not an ATCA carrier) omits the device/resource byte.
+default_ccode 0xc1
+
+respond properties
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 14 01 00
+end
+
+respond port_get
+  netfn 0x2c
+  cmd 0x1a
+  match 00 02
+  data 00 25 30 04 01
+end
+
+respond clk_get
+  netfn 0x2c
+  cmd 0x2d
+  match 00 02
+  data 00 00
+end
+
+respond clk_set
+  netfn 0x2c
+  cmd 0x2c
+  match 00 02 01 0c 02 03 78 56 34 12
+  data 00
+end

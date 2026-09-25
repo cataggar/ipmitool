@@ -1,0 +1,141 @@
+# ATCA extension with successful responses for the PICMG command families.
+default_ccode 0xc1
+
+respond properties
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 32 0f 00
+end
+
+respond address
+  netfn 0x2c
+  cmd 0x01
+  match 00 01
+  data 00 41 82 ff 01 02 07
+end
+
+respond frucontrol
+  netfn 0x2c
+  cmd 0x04
+  match 00 01 02
+  data 00
+end
+
+respond led_properties
+  netfn 0x2c
+  cmd 0x05
+  match 00 01
+  data 00 0f 03
+end
+
+respond led_capabilities
+  netfn 0x2c
+  cmd 0x06
+  match 00 01 02
+  data 00 7e 03 02
+end
+
+respond led_set
+  netfn 0x2c
+  cmd 0x07
+  match 00 01 02 fb 7f 03
+  data 00
+end
+
+respond led_get
+  netfn 0x2c
+  cmd 0x08
+  match 00 01 02
+  data 00 07 01 0a 03 ff 00 02 64
+end
+
+respond policy_set
+  netfn 0x2c
+  cmd 0x0a
+  match 00 01 03 02
+  data 00
+end
+
+respond policy_get
+  netfn 0x2c
+  cmd 0x0b
+  match 00 01
+  data 00 01
+end
+
+respond activation
+  netfn 0x2c
+  cmd 0x0c
+  match 00 01 01
+  data 00
+end
+
+respond deactivation
+  netfn 0x2c
+  cmd 0x0c
+  match 00 01 00
+  data 00
+end
+
+respond port_set
+  netfn 0x2c
+  cmd 0x0e
+  match 00 41 25 30 04 01
+  data 00
+end
+
+respond port_get
+  netfn 0x2c
+  cmd 0x0f
+  match 00 41
+  data 00 41 25 30 04 01 02 01 00 00 00
+end
+
+respond power_set
+  netfn 0x2c
+  cmd 0x11
+  match 00 01 14 01
+  data 00
+end
+
+respond power_get
+  netfn 0x2c
+  cmd 0x12
+  match 00 01 02
+  data 00 83 05 0a 14 32
+end
+
+respond busres
+  netfn 0x2c
+  cmd 0x17
+  data 00 01
+end
+
+respond amc_port_set
+  netfn 0x2c
+  cmd 0x19
+  match 00 02 25 30 04 01 03
+  data 00
+end
+
+respond amc_port_get
+  netfn 0x2c
+  cmd 0x1a
+  match 00 02 03
+  data 00 25 30 04 01 10 20 05 00
+end
+
+respond clk_set
+  netfn 0x2c
+  cmd 0x2c
+  match 00 02 01 0c 02 03 78 56 34 12 03
+  data 00
+end
+
+respond clk_get
+  netfn 0x2c
+  cmd 0x2d
+  match 00 02 03
+  data 00 0c 01 02 03 78 56 34 12
+end

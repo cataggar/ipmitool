@@ -1,0 +1,25 @@
+#!golden 1
+#!case picmg_amc_port
+#!section exit
+0
+#!section stdout
+   Link device :         AMC
+   Link Grouping ID:     0x04
+   Link Type Extension:  Gen 2 - SSC
+   Link Type:            PCI EXPRESS
+   Link Designator:\x20
+      Channel Number:    0x02
+      Port Flag:         0x05
+   STATE:                enabled
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 14 01 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 14 01 00
+> netfn=0x2c lun=0x00 cmd=0x1a target_cmd=0x00 data=00 02
+< rule=port_get ccode=0x00 len=5 data=00 25 30 04 01
+bye

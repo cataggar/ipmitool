@@ -1,0 +1,33 @@
+# Successful discovery followed by per-command completion-code failures.
+default_ccode 0xc1
+
+respond properties
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 32 01 00
+end
+
+respond port_get
+  netfn 0x2c
+  cmd 0x0f
+  ccode 0xc9
+end
+
+respond led_get
+  netfn 0x2c
+  cmd 0x08
+  ccode 0xc9
+end
+
+respond power_get
+  netfn 0x2c
+  cmd 0x12
+  ccode 0xc9
+end
+
+respond clk_get
+  netfn 0x2c
+  cmd 0x2d
+  ccode 0xc9
+end

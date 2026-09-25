@@ -1,0 +1,17 @@
+#!golden 1
+#!case picmg_short_amc
+#!section exit
+0
+#!section stdout
+#!section stderr
+ipmi_picmg_amc_portstate_getUnexpected answer, can't print result
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 01 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 01 00
+> netfn=0x2c lun=0x00 cmd=0x1a target_cmd=0x00 data=00 02 03
+< rule=amc_port_get ccode=0x00 len=3 data=00 25 30
+bye
