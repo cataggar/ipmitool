@@ -328,11 +328,11 @@ pub fn exportSymbols() void {
             },
         });
         abi.assertOpaqueLayout(GenLocator, .{
-            .size = c.ABI_SIZEOF_sdr_genloc,
-            .alignment = c.ABI_ALIGNOF_sdr_genloc,
+            .size = c.ABI_SIZEOF_sdr_record_generic_locator,
+            .alignment = c.ABI_ALIGNOF_sdr_record_generic_locator,
             .fields = &.{
-                .{ .name = "slave", .offset = c.ABI_OFFSETOF_sdr_genloc__slave },
-                .{ .name = "device_type", .offset = c.ABI_OFFSETOF_sdr_genloc__type },
+                .{ .name = "slave", .offset = c.ABI_OFFSETOF_sdr_genloc__dev_slave_addr },
+                .{ .name = "device_type", .offset = c.ABI_OFFSETOF_sdr_genloc__dev_type },
                 .{ .name = "id_string", .offset = c.ABI_OFFSETOF_sdr_genloc__id_string },
             },
         });
