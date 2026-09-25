@@ -353,13 +353,8 @@ ipmi_event_fromsensor(struct ipmi_intf * intf, char * id, char * state, char * e
 		if ((emsg.event_dir == EVENT_DIR_ASSERT   && hilo == 1) ||
 		    (emsg.event_dir == EVENT_DIR_DEASSERT && hilo == 0))
 			emsg.event_data[0] = (uint8_t)(str2val(state, ipmi_event_thresh_hi) & 0xf);
-		else if ((emsg.event_dir == EVENT_DIR_ASSERT   && hilo == 0) ||
-			 (emsg.event_dir == EVENT_DIR_DEASSERT && hilo == 1))
+		else
 			emsg.event_data[0] = (uint8_t)(str2val(state, ipmi_event_thresh_lo) & 0xf);
-		else {
-			lprintf(LOG_ERR, "Invalid Event");
-			return -1;
-		}
 
 		rsp = ipmi_sdr_get_sensor_thresholds(intf, emsg.sensor_num,
 							target, lun, channel);
@@ -517,6 +512,7 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 
 	while (feof(fp) == 0) {
 		size_t count = 0;
+		int send_rc;
 		if (!fgets(buf, 1024, fp))
 			continue;
 
@@ -531,11 +527,10 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			ptr = buf + strlen(buf);
 
 		/* clip off trailing and leading whitespace */
-		ptr--;
-		while (isspace((int)*ptr) && ptr >= buf)
-			*ptr-- = '\0';
+		while (ptr > buf && isspace((unsigned char)ptr[-1]))
+			*--ptr = '\0';
 		ptr = buf;
-		while (isspace((int)*ptr))
+		while (isspace((unsigned char)*ptr))
 			ptr++;
 		if (strlen(ptr) == 0)
 			continue;
@@ -560,10 +555,12 @@ ipmi_event_fromfile(struct ipmi_intf * intf, char * file)
 			continue;
 		}
 
-		/* Now actually send it, failures will be logged by the sender */
-		rc = ipmi_send_platform_event(intf, &rqdata.emsg);
-		if (IPMI_CC_OK != rc)
+		/* Keep sending after bad tokens, but do not clear their failure status. */
+		send_rc = ipmi_send_platform_event(intf, &rqdata.emsg);
+		if (IPMI_CC_OK != send_rc) {
+			rc = send_rc;
 			break;
+		}
 	}
 
 	fclose(fp);

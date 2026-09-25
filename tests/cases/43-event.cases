@@ -135,6 +135,8 @@ transcript: event_sdr.tr
 covers: event
 
 # --- fromsensor: threshold class (event/reading type 01h) ------------------
+# All six threshold identifiers below are exercised in both assert and
+# deassert directions, covering both sides of the direction/state selection.
 
 [event_thresh_list_implicit]
 desc: no state at all lists the six threshold names and returns failure
@@ -559,10 +561,17 @@ text: ev.txt event/badtok.txt
 covers: event
 
 [event_file_bad_then_ok]
-desc: a bad line does not stop the file, and the later line resets the status
+desc: a bad token does not stop later sends, but the command still fails
 args: -I dummy event file {work}/ev.txt
 transcript: bmc.tr
 text: ev.txt event/badtok_then_ok.txt
+covers: event
+
+[event_file_multiple_bad]
+desc: multiple bad tokens are each reported, valid lines between and after them are still sent, and the command fails
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/multiple_bad.txt
 covers: event
 
 [event_file_extra]
@@ -594,10 +603,17 @@ text: ev.txt event/empty.txt
 covers: event
 
 [event_file_blank]
-desc: a file of blank lines sends nothing and succeeds
+desc: blank and whitespace-only lines send nothing and succeed
 args: -I dummy event file {work}/ev.txt
 transcript: bmc.tr
 text: ev.txt event/blank.txt
+covers: event
+
+[event_file_comments_only]
+desc: whole-line and indented comments (including a bare #) send nothing and succeed
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/comments_only.txt
 covers: event
 
 [event_file_send_fail]
