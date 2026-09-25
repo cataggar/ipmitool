@@ -1,0 +1,30 @@
+#!golden 1
+#!case vita_missing_led_set
+#!section exit
+1
+#!section stdout
+#!section stderr
+usage: led set <FRU-ID> <LED-ID> <FUNCTION> <DURATION> <COLOR>
+    <FRU-ID>
+    <LED-ID>   0-0xFE:    Specified LED
+               0xFF:      All LEDs under management control
+    <FUNCTION> 0:       LED OFF override
+               1 - 250: LED blinking override (off duration)
+               251:     LED Lamp Test
+               252:     LED restore to local control
+               255:     LED ON override
+    <DURATION> 1 - 127: LED Lamp Test / on duration
+    <COLOR>    1:   BLUE
+               2:   RED
+               3:   GREEN
+               4:   AMBER
+               5:   ORANGE
+               6:   WHITE
+               0xE: do not change
+               0xF: use default color
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

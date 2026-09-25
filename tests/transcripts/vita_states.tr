@@ -1,0 +1,85 @@
+default_ccode 0xc1
+
+respond vita_discover
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  data 03 11 10 00 01 01 00
+end
+
+respond vita_ipmb
+  netfn 0x2c
+  cmd 0x40
+  match 03
+  data 03 41 82 ff 00 01 00
+end
+
+respond led_local_off
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 01
+  data 03 09 00 00 87
+end
+
+respond led_override_on
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 02
+  data 03 02 00 00 00 ff 20 82
+end
+
+respond led_lamptest
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 03
+  data 03 04 00 00 00 01 7f 04 33
+end
+
+respond led_local_override
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 04
+  data 03 03 01 22 04 00 00 03
+end
+
+respond led_short_override
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 05
+  data 03 02 00 00 00 01 02
+end
+
+respond led_short_lamp
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 06
+  data 03 04 00 00 00 01 02 03
+end
+
+respond led_wrong_group
+  netfn 0x2c
+  cmd 0x08
+  match 03 00 07
+  data 02 01 ff 00 01
+end
+
+respond led_cap_long
+  netfn 0x2c
+  cmd 0x06
+  match 03 00 02
+  data 03 3e ff 0f 03 99
+end
+
+respond led_cap_short
+  netfn 0x2c
+  cmd 0x06
+  match 03 00 03
+  data 03 3e 01
+end
+
+respond led_cap_no_flags
+  netfn 0x2c
+  cmd 0x06
+  match 03 00 04
+  data 03 01 01 02
+end

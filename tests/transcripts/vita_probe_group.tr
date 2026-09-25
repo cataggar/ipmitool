@@ -1,0 +1,7 @@
+default_ccode 0xc1
+respond wrong_extension
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  data 02 11 10 00 01 01 00
+end

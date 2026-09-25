@@ -1,0 +1,62 @@
+# Valid discovery/address; command responses omit mandatory bytes.
+default_ccode 0xc1
+respond vita_discover
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  times 1
+  data 03 11 10 00 01 01 00
+end
+respond vita_ipmb
+  netfn 0x2c
+  cmd 0x40
+  match 03
+  times 1
+  data 03 41 82 ff 00 01 00
+end
+respond vita_short_properties
+  netfn 0x2c
+  cmd 0x00
+  data 03 11 10 00
+end
+respond vita_short_address
+  netfn 0x2c
+  cmd 0x40
+  data 03 41 82
+end
+respond vita_short_control
+  netfn 0x2c
+  cmd 0x04
+end
+respond vita_short_prop
+  netfn 0x2c
+  cmd 0x05
+  data 03 00
+end
+respond vita_short_cap
+  netfn 0x2c
+  cmd 0x06
+  data 03 01 02
+end
+respond vita_short_set
+  netfn 0x2c
+  cmd 0x07
+end
+respond vita_short_get
+  netfn 0x2c
+  cmd 0x08
+  data 03 01 ff 00
+end
+respond vita_short_policy_set
+  netfn 0x2c
+  cmd 0x0a
+end
+respond vita_short_policy_get
+  netfn 0x2c
+  cmd 0x0b
+  data 03
+end
+respond vita_short_activate
+  netfn 0x2c
+  cmd 0x0c
+end

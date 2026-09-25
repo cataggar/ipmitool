@@ -1,0 +1,17 @@
+#!golden 1
+#!case vita_full_led_set
+#!section exit
+0
+#!section stdout
+LED state has been updated
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=vita_properties ccode=0x00 len=7 data=03 11 10 00 01 fe 80
+> netfn=0x2c lun=0x00 cmd=0x40 target_cmd=0x00 data=03
+< rule=vita_ipmb_address ccode=0x00 len=7 data=03 41 82 ff 00 01 00
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=03 ff ff fb 7f 0f
+< rule=vita_led_set ccode=0x00 len=1 data=03
+bye

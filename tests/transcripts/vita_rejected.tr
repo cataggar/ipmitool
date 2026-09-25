@@ -1,0 +1,68 @@
+# Valid discovery/address; all CLI requests are explicitly rejected.
+default_ccode 0xc1
+respond vita_discover
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  times 1
+  data 03 11 10 00 01 01 00
+end
+respond vita_ipmb
+  netfn 0x2c
+  cmd 0x40
+  match 03
+  times 1
+  data 03 41 82 ff 00 01 00
+end
+respond vita_reject_properties
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  ccode 0xc9
+end
+respond vita_reject_address
+  netfn 0x2c
+  cmd 0x40
+  match 03
+  ccode 0xc9
+end
+respond vita_reject_control
+  netfn 0x2c
+  cmd 0x04
+  ccode 0xc9
+end
+respond vita_reject_prop
+  netfn 0x2c
+  cmd 0x05
+  ccode 0xc9
+end
+respond vita_reject_cap
+  netfn 0x2c
+  cmd 0x06
+  ccode 0xc9
+end
+respond vita_reject_set
+  netfn 0x2c
+  cmd 0x07
+  ccode 0xc9
+end
+respond vita_reject_get
+  netfn 0x2c
+  cmd 0x08
+  ccode 0xc9
+end
+respond vita_reject_policy_set
+  netfn 0x2c
+  cmd 0x0a
+  ccode 0xc9
+end
+respond vita_reject_policy_get
+  netfn 0x2c
+  cmd 0x0b
+  ccode 0xc9
+end
+respond vita_reject_activate
+  netfn 0x2c
+  cmd 0x0c
+  ccode 0xc9
+end

@@ -1,0 +1,17 @@
+#!golden 1
+#!case vita_short_led_cap
+#!section exit
+1
+#!section stdout
+#!section stderr
+Invalid response length 3
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=vita_short_properties ccode=0x00 len=4 data=03 11 10 00
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=vita_discover ccode=0x00 len=7 data=03 11 10 00 01 01 00
+> netfn=0x2c lun=0x00 cmd=0x40 target_cmd=0x00 data=03
+< rule=vita_ipmb ccode=0x00 len=7 data=03 41 82 ff 00 01 00
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=03 00 01
+< rule=vita_short_cap ccode=0x00 len=3 data=03 01 02
+bye

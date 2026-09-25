@@ -1,0 +1,73 @@
+#!golden 1
+#!case vita_props_reserved_frequency
+#!section exit
+0
+#!section stdout
+VSO Identifier    : 0x03
+IPMC Identifier   : 0x33
+    Tier  4
+    Layer 4
+IPMB Capabilities : 0x23
+    Frequency  RESERVEDkHz
+VSO Standard      : VITA 46.11
+VSO Spec Revision : 2.1
+Max FRU Device ID : 0xfe
+FRU Device ID     : 0xff
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Unknown VSO Specification Revision 2.1
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=unknown_revision ccode=0x00 len=7 data=03 33 23 00 12 fe ff
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=unknown_revision ccode=0x00 len=7 data=03 33 23 00 12 fe ff
+bye
