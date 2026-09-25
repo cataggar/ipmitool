@@ -265,22 +265,21 @@ and the full 16-bit fallback range; the invalid-MAC diagnostic and value
 fallbacks remain golden-tested. General numeric parsers and printf-style
 formatting paths still use libc.
 
-**MAC cutover blocker:** libc's behavior for a width-two incomplete `0x`/`0X`
-prefix changed across versions. The *same* binary linked to
+**Intentional MAC deviation:** Zig always rejects a width-two incomplete
+`0x`/`0X` prefix, leaving the output buffer unchanged and reporting the usual
+invalid-MAC error. libc's behavior for this prefix changed across versions.
+The *same* binary linked to
 `sscanf@GLIBC_2.17` parses `0x:00:00:00:00:00` as six zero bytes on Ubuntu
 24.04 glibc 2.39, but returns no conversions on glibc 2.43; musl also returns
 no conversions. With `00:00:00:00:00:0Xf`, glibc 2.39 accepts six zero bytes
-but glibc 2.43 and musl stop after five conversions. The Zig scanner rejects
-the incomplete prefix; the libc differential tests intentionally **fail**
-under glibc 2.39 rather than mask a behavior difference. A fixed libc-free
-scanner cannot exactly emulate a dynamically linked libc that changes
-semantics when the binary is run with a different version.
-
-If byte-for-byte C parity remains required, retain the libc MAC parser until
-the release policy changes. For a portable pure-Zig rule, recommend explicitly
-rejecting incomplete prefixes on every platform, documenting that as an
-intentional divergence from glibc 2.39 and adding explicit coverage for it;
-do not claim C-oracle parity or relax unrelated snapshots.
+but glibc 2.43 and musl stop after five conversions. A fixed libc-free scanner
+cannot emulate both runtime libc versions. This narrowly scoped difference
+from the C oracle on glibc 2.39 is accepted for the selected Zig helper; no
+other MAC inputs are exempted from libc differential checks. The tests compare
+all other two-byte field pairs against libc, and for the incomplete-prefix
+cases assert that Zig rejects without writing while libc either rejects or
+produces the exact expected bytes. The C oracle and golden snapshots remain
+unchanged.
 
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its

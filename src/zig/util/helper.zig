@@ -1195,9 +1195,7 @@ test "libc scanf MAC field width and delimiter baseline" {
         .{ .input = "-1:0:0:0:0:0", .expected = null },
         .{ .input = "0:-f:0:0:0:0", .expected = null },
         .{ .input = "0:0:0:0:0:-f", .expected = null },
-        .{ .input = "0x:0:0:0:0:0", .expected = null },
         .{ .input = "0Xf:0:0:0:0:0", .expected = null },
-        .{ .input = "00:00:00:00:00:0Xf", .expected = null },
         .{ .input = "0:+:0:0:0:0", .expected = null },
         .{ .input = "0:0:0:0:0", .expected = null },
         .{ .input = "00:00:00:00:00:0g", .expected = .{0} ** 6 },
@@ -1221,6 +1219,40 @@ test "libc scanf MAC field width and delimiter baseline" {
     }
 }
 
+fn expectIncompletePrefixRejected(arg: [*:0]const u8, field: usize, accepted_by_old_libc: [6]u8) !void {
+    if (libcMac(arg)) |octets| {
+        if (!std.mem.eql(u8, &accepted_by_old_libc, &octets)) {
+            std.debug.print(
+                "MAC prefix field={d} input bytes={any} libc={any} expected={any}\n",
+                .{ field, std.mem.span(arg), octets, accepted_by_old_libc },
+            );
+        }
+        try std.testing.expectEqualSlices(u8, &accepted_by_old_libc, &octets);
+    }
+
+    const untouched = [_]u8{0xa5} ** 6;
+    var actual = untouched;
+    if (scanMac(arg, &actual)) {
+        std.debug.print(
+            "MAC prefix field={d} input bytes={any} unexpectedly accepted as {any}\n",
+            .{ field, std.mem.span(arg), actual },
+        );
+        return error.UnexpectedMacPrefixAcceptance;
+    }
+    try std.testing.expectEqualSlices(u8, &untouched, &actual);
+}
+
+test "incomplete width-two MAC prefixes are rejected regardless of libc" {
+    const cases = [_]struct { input: [*:0]const u8, field: usize, old: [6]u8 }{
+        .{ .input = "0x:0:0:0:0:0", .field = 0, .old = .{0} ** 6 },
+        .{ .input = "00:0X:00:00:00:00", .field = 1, .old = .{0} ** 6 },
+        .{ .input = "00:00:00:00:00:0Xf", .field = 5, .old = .{0} ** 6 },
+        .{ .input = " 0x:12:34:56:78:9a", .field = 0, .old = .{ 0, 0x12, 0x34, 0x56, 0x78, 0x9a } },
+        .{ .input = "12:34:56:78:9a:\t0Xtail", .field = 5, .old = .{ 0x12, 0x34, 0x56, 0x78, 0x9a, 0 } },
+    };
+    for (cases) |case| try expectIncompletePrefixRejected(case.input, case.field, case.old);
+}
+
 fn expectMacMatchesLibc(arg: [*:0]const u8, field: ?usize) !void {
     const expected = libcMac(arg);
     const untouched = [_]u8{0xa5} ** 6;
@@ -1242,7 +1274,7 @@ fn expectMacMatchesLibc(arg: [*:0]const u8, field: ?usize) !void {
     }
 }
 
-test "MAC scanning agrees with libc for every two-byte field and trailing byte" {
+test "MAC scanning matches libc for every stable two-byte field and trailing byte" {
     var input = [_]u8{
         '0', '0', ':', '0', '0', ':', '0', '0', ':',
         '0', '0', ':', '0', '0', ':', '0', '0', 0,
@@ -1255,7 +1287,11 @@ test "MAC scanning agrees with libc for every two-byte field and trailing byte" 
             input[start] = @intCast(first);
             for (0..256) |second| {
                 input[start + 1] = @intCast(second);
-                try expectMacMatchesLibc(arg, field);
+                if (first == '0' and (second == 'x' or second == 'X')) {
+                    try expectIncompletePrefixRejected(arg, field, .{0} ** 6);
+                } else {
+                    try expectMacMatchesLibc(arg, field);
+                }
             }
         }
         input[start] = '0';
