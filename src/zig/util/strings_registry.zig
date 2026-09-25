@@ -22,6 +22,8 @@ const helper = @import("helper.zig");
 const log = @import("log.zig");
 const strings = @import("strings.zig");
 
+extern "c" fn ferror(stream: *std.c.FILE) c_int;
+
 const tables = strings.tables;
 const ValStr = helper.ValStr;
 
@@ -132,7 +134,7 @@ fn readAll(file: *std.c.FILE, out: *std.ArrayList(u8)) error{ OutOfMemory, ReadF
     while (true) {
         const read = std.c.fread(&chunk, 1, chunk.len, file);
         if (read == 0) {
-            if (c.ferror(@ptrCast(file)) != 0) return error.ReadFailed;
+            if (ferror(file) != 0) return error.ReadFailed;
             return;
         }
         try out.appendSlice(allocator, chunk[0..read]);
