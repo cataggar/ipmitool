@@ -27,6 +27,12 @@ are the verification.
 
 `build.zig` module names: `md5`, `auth`, `lanplus-crypt-impl`, `lanplus-crypt`.
 
+The Zig MD5 implementation no longer imports the translated C crypto header.
+Its C-callable exports retain the original `md5_state_t` size, alignment and
+field offsets, asserted at compile time. The C MD5 source remains available
+to the regression oracle; other crypto modules still depend on translated
+headers and libc, so this is not a libc-free build.
+
 Supporting pure-Zig modules with no C ABI surface, so the maths can be unit
 tested independently of the exported wrappers:
 

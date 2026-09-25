@@ -22,9 +22,6 @@
 
 const std = @import("std");
 
-const c = @import("ipmi_c");
-const abi = @import("../abi.zig");
-
 const Md5 = std.crypto.hash.Md5;
 
 /// `md5_state_t` from `src/plugins/lan/md5.h`.
@@ -86,11 +83,13 @@ pub fn finish(pms: *State, digest: [*c]u8) callconv(.c) void {
 // ---------------------------------------------------------------------------
 
 comptime {
-    abi.assertLayout(State, c.md5_state_t);
-
-    abi.assertCallSignature(@TypeOf(init), @TypeOf(c.md5_init));
-    abi.assertCallSignature(@TypeOf(append), @TypeOf(c.md5_append));
-    abi.assertCallSignature(@TypeOf(finish), @TypeOf(c.md5_finish));
+    if (@sizeOf(State) != 88 or @alignOf(State) != 4 or
+        @offsetOf(State, "count") != 0 or
+        @offsetOf(State, "abcd") != 8 or
+        @offsetOf(State, "buf") != 24)
+    {
+        @compileError("MD5 state C ABI layout drift");
+    }
 
     @export(&init, .{ .name = "md5_init", .linkage = .strong });
     @export(&append, .{ .name = "md5_append", .linkage = .strong });
