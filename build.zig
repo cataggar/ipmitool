@@ -352,6 +352,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/intf/lanplus.zig",
     },
     .{
+        .name = "lanplus-strings",
+        .replaces = "src/plugins/lanplus/lanplus_strings.c",
+        .implementation = "src/zig/intf/lanplus_strings.zig",
+    },
+    .{
         .name = "lanplus-dump",
         .replaces = "src/plugins/lanplus/lanplus_dump.c",
         .implementation = "src/zig/intf/lanplus_dump.zig",
@@ -1208,6 +1213,49 @@ pub fn build(b: *std.Build) void {
     support_step.dependOn(&b.addRunArtifact(support_c).step);
     support_step.dependOn(&b.addRunArtifact(support_zig).step);
     test_step.dependOn(support_step);
+
+    const lanplus_strings_step = b.step("test-lanplus-strings", "Check C and Zig LAN+ lookup tables and their ABI");
+    const c_strings_mod = b.createModule(.{
+        .root_source_file = b.path("tests/lanplus_strings.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    c_strings_mod.addImport("ipmi_c", bridge_mod);
+    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize);
+    configure(b, c_strings_mod, config_h, default_intf);
+    c_strings_mod.addCSourceFile(.{
+        .file = b.path("src/plugins/lanplus/lanplus_strings.c"),
+        .flags = &base_cflags,
+    });
+    lanplus_strings_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = c_strings_mod })).step);
+
+    const zig_strings_options = b.addOptions();
+    zig_strings_options.addOption([]const []const u8, "zig_modules", &.{"lanplus-strings"});
+    const zig_strings_exports = b.createModule(.{
+        .root_source_file = b.path("src/zig/exports.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    zig_strings_exports.addImport("ipmi_c", bridge_mod);
+    zig_strings_exports.addImport("build_options", zig_strings_options.createModule());
+    const zig_strings_lib = b.addLibrary(.{
+        .name = "lanplus-strings-zig",
+        .linkage = .static,
+        .root_module = zig_strings_exports,
+    });
+    const zig_strings_mod = b.createModule(.{
+        .root_source_file = b.path("tests/lanplus_strings.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    zig_strings_mod.addImport("ipmi_c", bridge_mod);
+    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize);
+    zig_strings_mod.linkLibrary(zig_strings_lib);
+    lanplus_strings_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = zig_strings_mod })).step);
+    test_step.dependOn(lanplus_strings_step);
 
     const ime_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/ime_test.zig"),

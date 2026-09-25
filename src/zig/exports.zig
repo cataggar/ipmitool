@@ -159,6 +159,9 @@ comptime {
     if (selected("lanplus")) {
         @import("intf/lanplus.zig").exportSymbols();
     }
+    if (selected("lanplus-strings")) {
+        @import("intf/lanplus_strings.zig").exportSymbols();
+    }
     if (selected("lanplus-dump")) {
         @import("intf/lanplus_dump.zig").exportSymbols();
     }
