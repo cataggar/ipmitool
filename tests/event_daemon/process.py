@@ -24,10 +24,15 @@ def wait_for(predicate, label, timeout=5):
     raise AssertionError(f"timed out waiting for {label}")
 
 
-def read_exact(connection, length):
+def read_exact(connection, length, stopped):
     data = bytearray()
     while len(data) < length:
-        chunk = connection.recv(length - len(data))
+        try:
+            chunk = connection.recv(length - len(data))
+        except socket.timeout:
+            if stopped.is_set():
+                raise EOFError
+            continue
         if not chunk:
             raise EOFError
         data.extend(chunk)
@@ -54,13 +59,13 @@ class Bmc:
             except socket.timeout:
                 continue
             with connection:
-                connection.settimeout(2)
+                connection.settimeout(0.1)
                 try:
                     while not self.stopped.is_set():
-                        request = read_exact(connection, 16)
+                        request = read_exact(connection, 16, self.stopped)
                         netfn, cmd = request[0], request[2]
                         size = struct.unpack_from("=H", request, 4)[0]
-                        read_exact(connection, size)
+                        read_exact(connection, size, self.stopped)
                         if netfn == 0x3F and cmd == 0xFF:
                             break
                         self.count += 1
@@ -143,7 +148,13 @@ def run():
                 timeout=5, check=True,
             )
             assert parent.returncode == 0
-            wait_for(lambda: os.path.exists(pidfile), "daemon PID file")
+            def pid_ready():
+                if not os.path.exists(pidfile):
+                    return False
+                with open(pidfile, encoding="ascii") as file:
+                    return file.read().strip().isdecimal()
+
+            wait_for(pid_ready, "daemon PID file")
             with open(pidfile, encoding="ascii") as file:
                 daemon_pid = int(file.read().strip())
             wait_for(lambda: bmc.info_count > before, "daemon SEL request")

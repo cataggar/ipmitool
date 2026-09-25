@@ -30,10 +30,13 @@ def foreground(binary, env):
             ready, _, _ = select.select([process.stderr], [], [], 0.1)
             if ready:
                 output.extend(os.read(process.stderr.fileno(), 4096))
+        # The dummy BMC must keep an idle connection open until the daemon
+        # shuts down, rather than closing it before the final BYE write.
+        time.sleep(2.1)
         process.send_signal(signal.SIGINT)
         stdout, stderr = process.communicate(timeout=5)
         output.extend(stderr)
-        assert process.returncode == 0
+        assert process.returncode == 0, (process.returncode, bytes(output), stdout)
         assert b"SEL count is " in output
         assert b"SEL freespace is " in output
         # Another poll can begin between readiness and SIGINT; compare the
@@ -63,7 +66,10 @@ def daemon(binary, label, verbose, env, bmc):
             timeout=5, check=True,
         )
         assert parent.returncode == 0
-        wait_for(pidfile.exists, "event daemon PID file")
+        wait_for(
+            lambda: pidfile.exists() and pidfile.read_text(encoding="ascii").strip().isdecimal(),
+            "event daemon PID file",
+        )
         daemon_pid = int(pidfile.read_text(encoding="ascii").strip())
         wait_for(lambda: b"Waiting for events..." in syslog.read_bytes() if syslog.exists() else False,
                  "event daemon syslog readiness")
