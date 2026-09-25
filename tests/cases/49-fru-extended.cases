@@ -109,3 +109,21 @@ args: -I dummy fru write 0 {work}/inventory.bin
 transcript: fru_write_rejected.tr
 blob: inventory.bin fru/board.hex
 covers: fru
+
+[fru_print_encodings]
+desc: BCD-plus, six-bit ASCII, binary hex and extra FRU board strings
+args: -I dummy -v fru print 0
+transcript: fru_encoded.tr
+covers: fru
+
+[fru_print_picmg_current]
+desc: PICMG manufacturer IANA, record id, version, and AMC current decode
+args: -I dummy -v fru print 0
+transcript: fru_picmg_current.tr
+covers: fru
+
+[fru_print_short_board]
+desc: area length read advertises two bytes but contains only one
+args: -I dummy fru print 0
+transcript: fru_short_board.tr
+covers: fru

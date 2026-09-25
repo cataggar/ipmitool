@@ -1,0 +1,14 @@
+# PICMG OEM extension: IANA 0x315a, AMC current-draw record 0x16.
+@mark header
+c0 82
+@mark length
+00
+@mark recordsum
+00
+@mark headersum
+00
+@mark body
+5a 31 00 16 00 37
+@fill_size length body
+@fill_checksum recordsum body
+@fill_checksum headersum header
