@@ -216,8 +216,8 @@ args: -I dummy fru upgEkey 0 {work}/missing.bin
 transcript: fru_write.tr
 covers: fru
 
-[fru_get_oem_no_match]
-desc: an OEM query walks multirecords and finds no matching manufacturer
+[fru_get_oem_missing]
+desc: OEM lookup rejects a missing FRU before scanning any multirecords
 args: -I dummy fru get 0 oem 12634 1
-transcript: fru.tr
+transcript: fru_no_device.tr
 covers: fru
