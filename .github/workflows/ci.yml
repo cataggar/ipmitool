@@ -51,7 +51,8 @@ env:
   #   libssl-dev      -> libcrypto, for -Dopenssl (RMCP+ crypto, SHA256/MD5)
   #   libreadline-dev -> libreadline, for -Dipmishell (the `shell`/`exec` cmds)
   #   pkg-config      -> how build.zig locates readline
-  BUILD_APT_PACKAGES: 'libssl-dev libreadline-dev pkg-config'
+  #   binutils        -> readelf checks the cross-built musl binaries are static
+  BUILD_APT_PACKAGES: 'libssl-dev libreadline-dev pkg-config binutils'
 
 jobs:
   fmt:
@@ -179,6 +180,30 @@ jobs:
           test -x zig-out/sbin/ipmievd
           zig-out/bin/ipmitool -V
           zig-out/sbin/ipmievd -V
+
+      - name: Cross-build static all-selected binaries
+        run: |
+          set -euo pipefail
+          case '${{ matrix.os }}' in
+            ubuntu-latest) target=aarch64-linux-musl; machine=AArch64 ;;
+            ubuntu-24.04-arm) target=x86_64-linux-musl; machine=X86-64 ;;
+            *) echo "::error::unexpected runner"; exit 1 ;;
+          esac
+          # Keep native C-default artifacts intact. External OpenSSL/readline
+          # are disabled until their replacements can be cross-linked.
+          prefix="zig-out/cross-$target"
+          zig build -Dzig-modules=all -Dtarget="$target" -Doptimize=ReleaseSafe \
+            -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
+            -Dintf-lanplus=false --prefix "$prefix" --summary all
+          for binary in "$prefix/bin/ipmitool" "$prefix/sbin/ipmievd"; do
+            test -x "$binary"
+            readelf -h "$binary" | grep -Fq "$machine"
+            if readelf -l "$binary" | grep -q INTERP ||
+               readelf -d "$binary" | grep -q NEEDED; then
+              echo "::error::$binary is not statically linked"
+              exit 1
+            fi
+          done
 
   test:
     name: test

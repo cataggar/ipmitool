@@ -202,7 +202,7 @@ fn sysOpen(path: [*:0]const u8, flags: c_int) c_int {
 
 const IoctlRequest = @typeInfo(@TypeOf(c.ioctl)).@"fn".params[1].type.?;
 
-fn libcRequest(request: c_ulong) IoctlRequest {
+pub fn libcRequest(request: c_ulong) IoctlRequest {
     // musl takes a signed int, glibc an unsigned long; keep the _IOC bits.
     const Bits = std.meta.Int(.unsigned, @bitSizeOf(IoctlRequest));
     const bits: Bits = if (@bitSizeOf(IoctlRequest) < @bitSizeOf(c_ulong))
