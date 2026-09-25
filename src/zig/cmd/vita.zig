@@ -1,7 +1,8 @@
 //! VITA 46.11 VSO discovery, IPMB address acquisition, and the `vita` command.
 //! Selected with `-Dzig-modules=vita` in place of `lib/ipmi_vita.c`.
-//! Requests, responses, C parsing, and printf/lprintf formatting retain the
-//! C ABI; the three public entry points are checked against their C headers.
+//! Requests, responses, C parsing, and libc printf formatting retain the
+//! C ABI; diagnostics use the typed logger. The three public entry points
+//! are checked against their C headers.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -124,22 +125,22 @@ fn completion(ccode: u8) [*c]const u8 {
 /// has no period; all other CLI operations have one.
 fn sendChecked(intf: *Intf, req: *Request, min_len: c_int, address: bool, led_state: bool) ?*Response {
     const rsp = intf.sendrecv.?(intf, req) orelse {
-        c.lprintf(log.Level.err, if (address) "No valid response received" else "No valid response received.");
+        log.print(log.Level.err, if (address) "No valid response received" else "No valid response received.", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Invalid completion code received: %s", completion(rsp.ccode));
+        log.print(log.Level.err, "Invalid completion code received: %s", .{completion(rsp.ccode)});
         return null;
     }
     if (rsp.data_len < min_len or (led_state and
         ((rsp.data[1] & 0x02 != 0 and rsp.data_len < 8) or
             (rsp.data[1] & 0x04 != 0 and rsp.data_len < 9))))
     {
-        c.lprintf(log.Level.err, "Invalid response length %d", rsp.data_len);
+        log.print(log.Level.err, "Invalid response length %d", .{rsp.data_len});
         return null;
     }
     if (rsp.data[0] != group) {
-        c.lprintf(log.Level.err, "Invalid group extension %#x", @as(c_uint, rsp.data[0]));
+        log.print(log.Level.err, "Invalid group extension %#x", .{@as(c_uint, rsp.data[0])});
         return null;
     }
     return rsp;
@@ -148,25 +149,25 @@ fn sendChecked(intf: *Intf, req: *Request, min_len: c_int, address: bool, led_st
 fn discover(intf: *Intf) callconv(.c) u8 {
     var data = [_]u8{group};
     var req = request(c.VITA_GET_VSO_CAPABILITIES_CMD, &data);
-    c.lprintf(log.Level.info, "Running Get VSO Capabilities my_addr %#x, transit %#x, target %#x", intf.my_addr, intf.transit_addr, intf.target_addr);
+    log.print(log.Level.info, "Running Get VSO Capabilities my_addr %#x, transit %#x, target %#x", .{ intf.my_addr, intf.transit_addr, intf.target_addr });
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "No valid response received");
+        log.print(log.Level.err, "No valid response received", .{});
         return 0;
     };
     if (rsp.ccode == 0xcc) {
-        c.lprintf(log.Level.info, "Invalid data field received: %s", completion(rsp.ccode));
+        log.print(log.Level.info, "Invalid data field received: %s", .{completion(rsp.ccode)});
     } else if (rsp.ccode != 0) {
-        c.lprintf(log.Level.info, "Invalid completion code received: %s", completion(rsp.ccode));
+        log.print(log.Level.info, "Invalid completion code received: %s", .{completion(rsp.ccode)});
     } else if (rsp.data_len < 5) {
-        c.lprintf(log.Level.info, "Invalid response length %d", rsp.data_len);
+        log.print(log.Level.info, "Invalid response length %d", .{rsp.data_len});
     } else if (rsp.data[0] != group) {
-        c.lprintf(log.Level.info, "Invalid group extension %#x", @as(c_uint, rsp.data[0]));
+        log.print(log.Level.info, "Invalid group extension %#x", .{@as(c_uint, rsp.data[0])});
     } else if (rsp.data[3] & 0x03 != 0) {
-        c.lprintf(log.Level.info, "Unknown VSO Standard %d", @as(c_int, rsp.data[3] & 0x03));
+        log.print(log.Level.info, "Unknown VSO Standard %d", .{@as(c_int, rsp.data[3] & 0x03)});
     } else if (rsp.data[4] & 0x0f != 1) {
-        c.lprintf(log.Level.info, "Unknown VSO Specification Revision %d.%d", @as(c_int, rsp.data[4] & 0x0f), @as(c_int, rsp.data[4] >> 4));
+        log.print(log.Level.info, "Unknown VSO Specification Revision %d.%d", .{ @as(c_int, rsp.data[4] & 0x0f), @as(c_int, rsp.data[4] >> 4) });
     } else {
-        c.lprintf(log.Level.info, "Discovered VITA 46.11 Revision %d.%d", @as(c_int, rsp.data[4] & 0x0f), @as(c_int, rsp.data[4] >> 4));
+        log.print(log.Level.info, "Discovered VITA 46.11 Revision %d.%d", .{ @as(c_int, rsp.data[4] & 0x0f), @as(c_int, rsp.data[4] >> 4) });
         return 1;
     }
     return 0;
@@ -424,13 +425,13 @@ fn vitaMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
             show_help = true;
         },
         .unknown => {
-            c.lprintf(log.Level.notice, "Unknown command");
+            log.print(log.Level.notice, "Unknown command", .{});
             cmd = .help;
             show_help = true;
         },
     }
     if (show_help) {
-        c.lprintf(log.Level.notice, "%s", c.val2str(@intFromEnum(cmd), @ptrCast(&help_strings)));
+        log.print(log.Level.notice, "%s", .{c.val2str(@intFromEnum(cmd), @ptrCast(&help_strings))});
     }
     return rc;
 }

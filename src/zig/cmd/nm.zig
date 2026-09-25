@@ -3,6 +3,7 @@
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const log = @import("../util/log.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Response = ipmi.Response;
@@ -138,9 +139,9 @@ fn pick(condition: bool, yes: [*:0]const u8, no: [*:0]const u8) [*:0]const u8 {
     return if (condition) yes else no;
 }
 fn usage(items: []const Item, title: [*:0]const u8) void {
-    c.lprintf(3, "\n%s", title);
-    for (items) |item| c.lprintf(3, "    %s    %s", item.text, item.help);
-    c.lprintf(3, "");
+    log.print(3, "\n%s", .{title});
+    for (items) |item| log.print(3, "    %s    %s", .{ item.text, item.help });
+    log.print(3, "", .{});
 }
 fn number(comptime T: type, arg: ?[*:0]u8) ?T {
     const s = arg orelse return null;
@@ -173,23 +174,23 @@ fn send(intf: *Intf, command: u8, bytes: []u8, min_size: usize) ?*Response {
     request.msg.data_len = @intCast(bytes.len);
     const transmit = intf.sendrecv orelse return null;
     const response = transmit(intf, &request) orelse {
-        c.lprintf(3, "\n    No response to NM request");
+        log.print(3, "\n    No response to NM request", .{});
         return null;
     };
     if (command == 0xf2 and response.ccode == 0xa1) return response;
     if (response.ccode != 0) {
-        c.lprintf(3, "\n    NM request failed because: %s (%x)", c.val2str(response.ccode, if (response.ccode >= 0x80 and response.ccode <= 0xd6) @ptrCast(&nm_ccodes) else c.completion_code_vals), @as(c_uint, response.ccode));
+        log.print(3, "\n    NM request failed because: %s (%x)", .{ c.val2str(response.ccode, if (response.ccode >= 0x80 and response.ccode <= 0xd6) @ptrCast(&nm_ccodes) else c.completion_code_vals), @as(c_uint, response.ccode) });
         return null;
     }
     if (response.data_len < 1 or response.data[0] != 0x57) {
         if (response.data_len >= 1)
             _ = c.printf("\n    A valid NM command was not returned! (%x)", @as(c_uint, response.data[0]))
         else
-            c.lprintf(3, "\n    No response to NM request");
+            log.print(3, "\n    No response to NM request", .{});
         return null;
     }
     if (response.data_len < min_size or response.data_len > ipmi.buf_size) {
-        c.lprintf(3, "NM response is too short or malformed");
+        log.print(3, "NM response is too short or malformed", .{});
         return null;
     }
     return response;
@@ -276,7 +277,7 @@ fn nmControl(intf: *Intf, args: []const ?[*:0]u8) c_int {
             }
         } else if (scope == 4) {
             policy_id = number(u8, opt(args, i + 1)) orelse {
-                c.lprintf(3, "Policy ID must be a positive integer (0-255)\n");
+                log.print(3, "Policy ID must be a positive integer (0-255)\n", .{});
                 return -1;
             };
         }
@@ -441,7 +442,7 @@ fn parseStatsOptions(args: []const ?[*:0]u8, start: usize, domain: *u8, id: *u8,
             },
             2 => {
                 id.* = number(u8, opt(args, i + 1)) orelse {
-                    c.lprintf(3, "Policy ID must be a positive integer (0-255)\n");
+                    log.print(3, "Policy ID must be a positive integer (0-255)\n", .{});
                     return false;
                 };
                 have_id.* = true;
@@ -540,11 +541,11 @@ fn nmPowerRange(intf: *Intf, args: []const ?[*:0]u8) c_int {
                 }
             },
             2 => minimum = number(u16, opt(args, i + 1)) orelse {
-                c.lprintf(3, "Power minimum must be a positive integer.\n");
+                log.print(3, "Power minimum must be a positive integer.\n", .{});
                 return -1;
             },
             3 => maximum = number(u16, opt(args, i + 1)) orelse {
-                c.lprintf(3, "Power maximum must be a positive integer.\n");
+                log.print(3, "Power maximum must be a positive integer.\n", .{});
                 return -1;
             },
             else => {
@@ -554,7 +555,7 @@ fn nmPowerRange(intf: *Intf, args: []const ?[*:0]u8) c_int {
         }
     }
     if (minimum == 0xffff or maximum == 0xffff) {
-        c.lprintf(3, "Missing parameters: nm power range min <minimum> max <maximum>.\n");
+        log.print(3, "Missing parameters: nm power range min <minimum> max <maximum>.\n", .{});
         return -1;
     }
     putWord(&msg, 4, minimum);
@@ -590,18 +591,18 @@ fn nmAlert(intf: *Intf, args: []const ?[*:0]u8) c_int {
         switch (val(&alert_opts, args[i])) {
             1 => {
                 chan = number(u8, opt(args, i + 1)) orelse {
-                    c.lprintf(3, "Alert Lan chan must be a positive integer.\n");
+                    log.print(3, "Alert Lan chan must be a positive integer.\n", .{});
                     return -1;
                 };
                 if (action == 3) chan |= 0x80;
             },
             2 => dest = number(u8, opt(args, i + 1)) orelse {
-                c.lprintf(3, "Alert Destination must be a positive integer.\n");
+                log.print(3, "Alert Destination must be a positive integer.\n", .{});
                 return -1;
             },
             3 => {
                 string = number(u8, opt(args, i + 1)) orelse {
-                    c.lprintf(3, "Alert String # must be a positive integer.\n");
+                    log.print(3, "Alert String # must be a positive integer.\n", .{});
                     return -1;
                 };
                 string |= 0x80;
@@ -640,17 +641,17 @@ fn nmThreshold(intf: *Intf, args: []const ?[*:0]u8) c_int {
             i += 1;
         } else if (std.mem.eql(u8, std.mem.span(args[i].?), "policy_id")) {
             id = number(u8, opt(args, i + 1)) orelse {
-                c.lprintf(3, "Policy ID must be a positive integer (0-255)\n");
+                log.print(3, "Policy ID must be a positive integer (0-255)\n", .{});
                 return -1;
             };
             i += 1;
         } else {
             if (count >= 3) {
-                c.lprintf(3, "Set Threshold requires 1, 2, or 3 threshold integer values.\n");
+                log.print(3, "Set Threshold requires 1, 2, or 3 threshold integer values.\n", .{});
                 return -1;
             }
             const n = number(u16, args[i]) orelse {
-                c.lprintf(3, "threshold value %d count must be a positive integer.\n", @as(c_int, @intCast(count + 1)));
+                log.print(3, "threshold value %d count must be a positive integer.\n", .{@as(c_int, @intCast(count + 1))});
                 return -1;
             };
             putWord(&msg, 6 + 2 * count, n);
@@ -666,12 +667,12 @@ fn nmThreshold(intf: *Intf, args: []const ?[*:0]u8) c_int {
     if (action == 2) {
         const rsp = send(intf, 0xc4, msg[0..5], 4) orelse return -1;
         if (rsp.data[3] > 3) {
-            c.lprintf(3, "NM threshold response has an invalid threshold count");
+            log.print(3, "NM threshold response has an invalid threshold count", .{});
             return -1;
         }
         const n: usize = @min(@as(usize, rsp.data[3]), 3);
         if (rsp.data_len < 4 + n * 2) {
-            c.lprintf(3, "NM threshold response is too short");
+            log.print(3, "NM threshold response is too short", .{});
             return -1;
         }
         var values = [3]u16{ 0, 0, 0 };
@@ -707,17 +708,17 @@ fn nmSuspend(intf: *Intf, args: []const ?[*:0]u8) c_int {
             i += 2;
         } else if (std.mem.eql(u8, std.mem.span(args[i].?), "policy_id")) {
             id = number(u8, opt(args, i + 1)) orelse {
-                c.lprintf(3, "Policy ID must be a positive integer (0-255)\n");
+                log.print(3, "Policy ID must be a positive integer (0-255)\n", .{});
                 return -1;
             };
             i += 2;
         } else {
             if (args.len - i < 3 or count >= periods.len) {
-                c.lprintf(3, "Error: suspend period requires a start, stop, and repeat values.\n");
+                log.print(3, "Error: suspend period requires a start, stop, and repeat values.\n", .{});
                 return -1;
             }
             for (0..3) |j| periods[count][j] = number(u8, args[i + j]) orelse {
-                c.lprintf(3, "suspend period value %d unable to convert.\n", @as(c_int, @intCast(count)));
+                log.print(3, "suspend period value %d unable to convert.\n", .{@as(c_int, @intCast(count))});
                 return -1;
             };
             count += 1;
@@ -740,7 +741,7 @@ fn nmSuspend(intf: *Intf, args: []const ?[*:0]u8) c_int {
     const total: usize = rsp.data[3];
     const received = (total + 2) / 3;
     if (total > 5 or rsp.data_len < 4 + received * 3) {
-        c.lprintf(3, "NM suspend response has an invalid period count");
+        log.print(3, "NM suspend response has an invalid period count", .{});
         return -1;
     }
     _ = c.printf("    Suspend Policy domain:                    %s\n", text(&domains, domain));

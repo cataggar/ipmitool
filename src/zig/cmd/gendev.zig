@@ -1,7 +1,7 @@
 //! Port of `lib/ipmi_gendev.c`: generic locator listing and EEPROM read/write.
 //! Selected with `-Dzig-modules=gendev`; the only exported symbol is
-//! `ipmi_gendev_main`. I2C, SDR lookup, safe file opening and logging still
-//! use the existing C ABI.
+//! `ipmi_gendev_main`. I2C, SDR lookup and safe file opening use the C ABI;
+//! logging uses the typed Zig interface backed by the selected logger.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -98,7 +98,7 @@ fn addressRangeValid(dev: *const GenLocator, info: Eeprom) bool {
 
 fn validAddressRange(dev: *const GenLocator, info: Eeprom) bool {
     if (addressRangeValid(dev, info)) return true;
-    c.lprintf(log.Level.err, "EEPROM size exceeds address range");
+    log.print(log.Level.err, "EEPROM size exceeds address range", .{});
     return false;
 }
 
@@ -137,7 +137,7 @@ fn transfer(
             read_len,
         );
         if (rsp != null) return @ptrCast(rsp);
-        c.lprintf(log.Level.err, "Retry");
+        log.print(log.Level.err, "Retry", .{});
         _ = c.sleep(1);
     }
     return null;
@@ -161,7 +161,7 @@ fn finishProgress(completed: bool, percent: u8) void {
 
 fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int {
     const info = eepromInfo(dev) orelse {
-        c.lprintf(log.Level.err, "The selected generic device is not an eeprom");
+        log.print(log.Level.err, "The selected generic device is not an eeprom", .{});
         return -1;
     };
     if (!validAddressRange(dev, info)) return -1;
@@ -184,12 +184,12 @@ fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int 
             break;
         };
         if (rsp.data_len < chunk) {
-            c.lprintf(log.Level.err, "Short I2C Master Write-Read response: %d of %d bytes", rsp.data_len, @as(c_int, chunk));
+            log.print(log.Level.err, "Short I2C Master Write-Read response: %d of %d bytes", .{ rsp.data_len, @as(c_int, chunk) });
             rc = -1;
             break;
         }
         if (c.fwrite(&rsp.data[0], 1, chunk, fp) != chunk) {
-            c.lprintf(log.Level.err, "Error writing file %s", filename);
+            log.print(log.Level.err, "Error writing file %s", .{filename});
             rc = -1;
             break;
         }
@@ -199,7 +199,7 @@ fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int 
 
     finishProgress(counter == info.size, percent);
     if (c.fclose(fp) != 0) {
-        c.lprintf(log.Level.err, "Error closing file %s", filename);
+        log.print(log.Level.err, "Error closing file %s", .{filename});
         rc = -1;
     }
     return rc;
@@ -207,7 +207,7 @@ fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int 
 
 fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int {
     const info = eepromInfo(dev) orelse {
-        c.lprintf(log.Level.err, "The selected generic device is not an eeprom");
+        log.print(log.Level.err, "The selected generic device is not an eeprom", .{});
         return -1;
     };
     if (!validAddressRange(dev, info)) return -1;
@@ -215,20 +215,20 @@ fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int
     const fp = c.ipmi_open_file(filename, 0);
     if (fp == null) return -1;
     if (c.fseek(fp, 0, c.SEEK_END) != 0) {
-        c.lprintf(log.Level.err, "Error seeking file %s", filename);
+        log.print(log.Level.err, "Error seeking file %s", .{filename});
         _ = c.fclose(fp);
         return -1;
     }
     const length = c.ftell(fp);
-    c.lprintf(log.Level.err, "File   Size: %i", @as(c_int, @truncate(length)));
-    c.lprintf(log.Level.err, "Eeprom Size: %i", @as(c_int, @intCast(info.size)));
+    log.print(log.Level.err, "File   Size: %i", .{@as(c_int, @truncate(length))});
+    log.print(log.Level.err, "Eeprom Size: %i", .{@as(c_int, @intCast(info.size))});
     if (length != info.size) {
-        c.lprintf(log.Level.err, "File size does not fit Eeprom Size");
+        log.print(log.Level.err, "File size does not fit Eeprom Size", .{});
         _ = c.fclose(fp);
         return -1;
     }
     if (c.fseek(fp, 0, c.SEEK_SET) != 0) {
-        c.lprintf(log.Level.err, "Error seeking file %s", filename);
+        log.print(log.Level.err, "Error seeking file %s", .{filename});
         _ = c.fclose(fp);
         return -1;
     }
@@ -244,7 +244,7 @@ fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int
         wr[0] = @truncate(address);
         if (info.address_length == 2) wr[1] = @truncate(address >> 8);
         if (c.fread(&wr[info.address_length], 1, chunk, fp) != chunk) {
-            c.lprintf(log.Level.err, "Error reading file %s", filename);
+            log.print(log.Level.err, "Error reading file %s", .{filename});
             rc = -1;
             break;
         }
@@ -258,7 +258,7 @@ fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int
 
     finishProgress(counter == info.size, percent);
     if (c.fclose(fp) != 0) {
-        c.lprintf(log.Level.err, "Error closing file %s", filename);
+        log.print(log.Level.err, "Error closing file %s", .{filename});
         rc = -1;
     }
     return rc;
@@ -266,13 +266,13 @@ fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int
 
 fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     const command: ?[*:0]u8 = if (argc > 0) argv[0] else null;
-    c.lprintf(log.Level.err, "Rx gendev command: %s", command);
+    log.print(log.Level.err, "Rx gendev command: %s", .{command});
 
     if (argc <= 0 or std.mem.eql(u8, std.mem.span(command.?), "help")) {
-        c.lprintf(log.Level.err, "SDR Commands:  list read write");
-        c.lprintf(log.Level.err, "                     list                     List All Generic Device Locators");
-        c.lprintf(log.Level.err, "                     read <sdr name> <file>   Read to file eeprom specify by Generic Device Locators");
-        c.lprintf(log.Level.err, "                     write <sdr name> <file>  Write from file eeprom specify by Generic Device Locators");
+        log.print(log.Level.err, "SDR Commands:  list read write", .{});
+        log.print(log.Level.err, "                     list                     List All Generic Device Locators", .{});
+        log.print(log.Level.err, "                     read <sdr name> <file>   Read to file eeprom specify by Generic Device Locators", .{});
+        log.print(log.Level.err, "                     write <sdr name> <file>  Write from file eeprom specify by Generic Device Locators", .{});
         return 0;
     }
     if (std.mem.eql(u8, std.mem.span(command.?), "list")) {
@@ -281,33 +281,33 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     const is_read = std.mem.eql(u8, std.mem.span(command.?), "read");
     const is_write = std.mem.eql(u8, std.mem.span(command.?), "write");
     if (!is_read and !is_write) {
-        c.lprintf(log.Level.err, "Invalid gendev command: %s", command);
+        log.print(log.Level.err, "Invalid gendev command: %s", .{command});
         return -1;
     }
     if (argc < 3) {
         if (is_read)
-            c.lprintf(log.Level.err, "usage: gendev read <gendev> <filename>")
+            log.print(log.Level.err, "usage: gendev read <gendev> <filename>", .{})
         else
-            c.lprintf(log.Level.err, "usage: gendev write <gendev> <filename>");
+            log.print(log.Level.err, "usage: gendev write <gendev> <filename>", .{});
         return -1;
     }
-    c.lprintf(log.Level.err, if (is_read) "Gendev read sdr name : %s" else "Gendev write sdr name : %s", argv[1]);
+    log.print(log.Level.err, if (is_read) "Gendev read sdr name : %s" else "Gendev write sdr name : %s", .{argv[1]});
     _ = c.printf("Locating sensor record '%s'...\n", argv[1]);
     const found = c.ipmi_sdr_find_sdr_byid(@ptrCast(intf), argv[1]);
     if (found == null) {
-        c.lprintf(log.Level.err, "Sensor data record not found!");
+        log.print(log.Level.err, "Sensor data record not found!", .{});
         return -1;
     }
     const sdr: *const SdrRecordList = @ptrCast(found);
     if (sdr.type != generic_locator) {
-        c.lprintf(log.Level.err, "Target SDR is not a generic device locator");
+        log.print(log.Level.err, "Target SDR is not a generic device locator", .{});
         return -1;
     }
     const dev = sdr.record orelse {
-        c.lprintf(log.Level.err, "Generic device locator record is missing");
+        log.print(log.Level.err, "Generic device locator record is missing", .{});
         return -1;
     };
-    c.lprintf(log.Level.err, if (is_read) "Gendev read file name: %s" else "Gendev write file name: %s", argv[2]);
+    log.print(log.Level.err, if (is_read) "Gendev read file name: %s" else "Gendev write file name: %s", .{argv[2]});
     if (is_read) return readFile(intf, dev, argv[2]);
     return writeFile(intf, dev, argv[2]);
 }
