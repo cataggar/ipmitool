@@ -1,0 +1,241 @@
+# The PEF oracle records C's byte-level requests before the Zig port is selected.
+
+[pef_filters_values]
+args: -I dummy pef filter list
+transcript: pef_filters.tr
+covers: pef
+
+[pef_filters_verbose]
+args: -v -I dummy pef filter list
+transcript: pef_filters.tr
+covers: pef
+
+[pef_filters_empty]
+args: -I dummy pef filter list
+transcript: pef_empty.tr
+covers: pef
+
+[pef_filters_short_capabilities]
+args: -I dummy pef filter list
+transcript: pef_short.tr
+covers: pef
+
+[pef_filters_short_entry]
+args: -I dummy pef filter list
+transcript: pef_short_entry.tr
+covers: pef
+
+[pef_filters_denied]
+args: -I dummy pef filter list
+transcript: pef_denied.tr
+covers: pef
+
+[pef_filter_enable]
+args: -I dummy pef filter enable 1
+transcript: pef_filters.tr
+covers: pef
+
+[pef_filter_disable]
+args: -I dummy pef filter disable 2
+transcript: pef_filters.tr
+covers: pef
+
+[pef_filter_enable_denied]
+args: -I dummy pef filter enable 1
+transcript: pef_denied.tr
+covers: pef
+
+[pef_filter_set_denied]
+args: -I dummy pef filter enable 1
+transcript: pef_set_denied.tr
+covers: pef
+
+[pef_filter_enable_short]
+args: -I dummy pef filter enable 1
+transcript: pef_short.tr
+covers: pef
+
+[pef_filter_enable_zero]
+args: -I dummy pef filter enable 0
+transcript: default.tr
+covers: pef
+
+[pef_filter_enable_max]
+args: -I dummy pef filter enable 255
+transcript: pef_filters.tr
+covers: pef
+
+[pef_filter_enable_overflow]
+args: -I dummy pef filter enable 256
+transcript: default.tr
+covers: pef
+
+[pef_filter_enable_garbage]
+args: -I dummy pef filter enable xyz
+transcript: default.tr
+covers: pef
+
+[pef_filter_enable_missing]
+args: -I dummy pef filter enable
+transcript: default.tr
+covers: pef
+
+[pef_filter_help]
+args: -I dummy pef filter help
+transcript: default.tr
+covers: pef
+
+[pef_filter_unknown]
+args: -I dummy pef filter who
+transcript: default.tr
+covers: pef
+
+[pef_filter_create]
+args: -I dummy pef filter create 1
+transcript: default.tr
+covers: pef
+
+[pef_filter_delete]
+args: -I dummy pef filter delete 1
+transcript: default.tr
+covers: pef
+
+[pef_policy_lan]
+args: -I dummy pef policy list
+transcript: pef_policies.tr
+covers: pef
+
+[pef_policy_lan_verbose]
+args: -v -I dummy pef policy list
+transcript: pef_policies.tr
+covers: pef
+
+[pef_policy_serial]
+args: -I dummy pef policy list
+transcript: pef_serial.tr
+covers: pef
+
+[pef_policy_empty]
+args: -I dummy pef policy list
+transcript: pef_empty.tr
+covers: pef
+
+[pef_policy_short]
+args: -I dummy pef policy list
+transcript: pef_short.tr
+covers: pef
+
+[pef_policy_short_entry]
+args: -I dummy pef policy list
+transcript: pef_short_entry.tr
+covers: pef
+
+[pef_policy_enable]
+args: -I dummy pef policy enable 1
+transcript: pef_policies.tr
+covers: pef
+
+[pef_policy_disable]
+args: -I dummy pef policy disable 1
+transcript: pef_policies.tr
+covers: pef
+
+[pef_policy_enable_denied]
+args: -I dummy pef policy enable 1
+transcript: pef_denied.tr
+covers: pef
+
+[pef_policy_set_denied]
+args: -I dummy pef policy enable 1
+transcript: pef_set_denied.tr
+covers: pef
+
+[pef_policy_enable_zero]
+args: -I dummy pef policy enable 0
+transcript: default.tr
+covers: pef
+
+[pef_policy_enable_127]
+args: -I dummy pef policy enable 127
+transcript: pef_policies.tr
+covers: pef
+
+[pef_policy_enable_128]
+args: -I dummy pef policy enable 128
+transcript: default.tr
+covers: pef
+
+[pef_policy_enable_garbage]
+args: -I dummy pef policy enable no
+transcript: default.tr
+covers: pef
+
+[pef_policy_help]
+args: -I dummy pef policy help
+transcript: default.tr
+covers: pef
+
+[pef_policy_create]
+args: -I dummy pef policy create 1
+transcript: default.tr
+covers: pef
+
+[pef_policy_delete]
+args: -I dummy pef policy delete 1
+transcript: default.tr
+covers: pef
+
+[pef_policy_unknown]
+args: -I dummy pef policy who
+transcript: default.tr
+covers: pef
+
+[pef_info_fallback]
+args: -I dummy pef info
+transcript: pef_info_fallback.tr
+covers: pef
+
+[pef_info_short_guid]
+args: -I dummy pef info
+transcript: pef_info_short_guid.tr
+covers: pef
+
+[pef_info_denied]
+args: -I dummy pef info
+transcript: pef_denied.tr
+covers: pef
+
+[pef_status_flags]
+args: -I dummy pef status
+transcript: pef_status.tr
+covers: pef
+
+[pef_status_flags_verbose]
+args: -v -I dummy pef status
+transcript: pef_status.tr
+covers: pef
+
+[pef_capabilities_unimplemented]
+args: -I dummy pef capabilities
+transcript: default.tr
+covers: pef
+
+[pef_timer_unimplemented]
+args: -I dummy pef timer get
+transcript: default.tr
+covers: pef
+
+[pef_event_unimplemented]
+args: -I dummy pef event
+transcript: default.tr
+covers: pef
+
+[pef_pet_unimplemented]
+args: -I dummy pef pet ack
+transcript: default.tr
+covers: pef
+
+[pef_unknown]
+args: -I dummy pef unknown
+transcript: default.tr
+covers: pef

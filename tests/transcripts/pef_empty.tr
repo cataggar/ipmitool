@@ -1,0 +1,12 @@
+default_ccode 0xc1
+respond capabilities
+  netfn 0x04
+  cmd 0x10
+  data 51 00 00
+end
+respond size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  data 11 80
+end

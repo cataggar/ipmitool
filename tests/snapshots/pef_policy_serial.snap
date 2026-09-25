@@ -1,0 +1,42 @@
+#!golden 1
+#!case pef_policy_serial
+#!section exit
+0
+#!section stdout
+ 1 | 1 | enabled | Try-next-entry | 2 | Serial/Modem (RS-232) | TAP page | 0 | 5 | 123456 | {211|213}+ACK
+ 2 | 1 | enabled | Try-next-set | 2 | Serial/Modem (RS-232) | PPP PET | 1 | 6
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=08 00 00
+< rule=size ccode=0x00 len=2 data=11 02
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=09 01 00
+< rule=policy1 ccode=0x00 len=5 data=11 01 19 21 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=02
+< rule=channel ccode=0x00 len=9 data=02 05 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 10 00 00
+< rule=count ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 11 01 00
+< rule=dest1 ccode=0x00 len=6 data=11 01 00 05 12 00
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=00 18 00 00
+< rule=tap_count ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 19 01 00
+< rule=tap_account ccode=0x00 len=3 data=11 01 11
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=00 14 00 00
+< rule=dial_count ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 15 01 01
+< rule=dial_block ccode=0x00 len=19 data=11 19 01 31 32 33 34 35 36 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 19 01 00
+< rule=tap_settings ccode=0x00 len=14 data=11 01 02 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=09 02 00
+< rule=policy2 ccode=0x00 len=5 data=11 02 1a 22 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=02
+< rule=channel ccode=0x00 len=9 data=02 05 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 10 00 00
+< rule=count ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x11 target_cmd=0x00 data=02 11 02 00
+< rule=dest2 ccode=0x00 len=6 data=11 02 01 06 01 00
+bye

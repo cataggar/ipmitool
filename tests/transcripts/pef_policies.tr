@@ -1,0 +1,61 @@
+default_ccode 0xc1
+respond size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  data 11 82
+end
+respond entry1
+  netfn 0x04
+  cmd 0x13
+  match 09 01
+  data 11 01 98 11 80
+end
+respond entry2
+  netfn 0x04
+  cmd 0x13
+  match 09 02
+  data 11 02 24 31 00
+end
+respond channel_lan
+  netfn 0x06
+  cmd 0x42
+  match 01
+  data 81 84 01 84 f2 1b 00 00 00
+end
+respond channel_other
+  netfn 0x06
+  cmd 0x42
+  match 03
+  data 03 01 01 00 f2 1b 00 00 00
+end
+respond dest_count
+  netfn 0x0c
+  cmd 0x02
+  match 01 11
+  data 11 02
+end
+respond dest_type
+  netfn 0x0c
+  cmd 0x02
+  match 01 12
+  data 11 01 00 05 83
+end
+respond community
+  netfn 0x0c
+  cmd 0x02
+  match 01 10
+  data 11 70 75 62 6c 69 63 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond dest_addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 13
+  data 11 01 00 00 c0 00 02 01 00 11 22 33 44 55
+end
+respond set_policy
+  netfn 0x04
+  cmd 0x12
+  match 09
+  data
+end

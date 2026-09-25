@@ -1,0 +1,19 @@
+#!golden 1
+#!case pef_filter_enable
+#!section exit
+0
+#!section stdout
+PEF Filter ID 1 is enabled now.
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=05 00 00
+< rule=size ccode=0x00 len=2 data=11 83
+> netfn=0x04 lun=0x00 cmd=0x12 target_cmd=0x00 data=07 01 00
+< rule=set_filter ccode=0x00 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x12 target_cmd=0x00 data=07 01 80
+< rule=set_filter ccode=0x00 len=0 data=
+bye

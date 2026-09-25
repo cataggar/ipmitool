@@ -1,0 +1,112 @@
+#!golden 1
+#!case pef_status_flags_verbose
+#!section exit
+0
+#!section stdout
+Last SEL addition        : 01/01/20 00:00:00 UTC
+Last SEL record ID       : 0x1234
+Last S/W processed ID    : 0x5678
+Last BMC processed ID    : 0x9abc
+PEF                      : enabled
+PEF event messages       : enabled
+PEF startup delay        : disabled
+Alert startup delay      : enabled
+Alert                    : active
+Power-off                : inactive
+Reset                    : active
+Power-cycle              : inactive
+OEM-defined              : inactive
+Diagnostic-interrupt     : active
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 4
+msg.cmd: 15
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 10
+msg.netfn: 5
+msg.cmd: 15
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x15 target_cmd=0x00 data=
+< rule=event ccode=0x00 len=10 data=00 e1 0b 5e 34 12 78 56 bc 9a
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=01 00 00
+< rule=control ccode=0x00 len=2 data=11 0b
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=02 00 00
+< rule=actions ccode=0x00 len=2 data=11 25
+bye

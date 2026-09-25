@@ -219,6 +219,7 @@ zig build -Dzig-modules=lanp6    # IPv6 LAN configuration (see lanp6.md)
 zig build -Dzig-modules=ekanalyzer # offline FRU/PICMG eKey analyzer
 zig build -Dzig-modules=cli      # use Zig for both the shared CLI and ipmitool main
 zig build test-cli               # diff C and Zig CLI, including PTY/SIGINT tests
+zig build -Dzig-modules=pef      # lib/ipmi_pef.c replaced by src/zig/cmd/pef.zig
 zig build --help                 # lists the available module names
 ```
 
@@ -288,6 +289,15 @@ Run `zig build test-ekanalyzer` for isolated malformed-descriptor bounds
 tests, or `zig build test-golden -Dzig-modules=ekanalyzer -- --filter ek_`
 for C-oracle output, exit-status, and CLI-wire parity (including OEM GUID
 matching and PICMG multirecord rendering).
+
+The PEF replacement preserves all 18 externally visible symbols, including
+the public flag/field printers and configuration getters. Its filter/policy
+table walks and LAN/serial destination decoders are covered by
+`tests/cases/57-pef.cases`; those snapshots were recorded against the C
+implementation before the swap. The Zig decoder rejects truncated BMC
+responses rather than reading bytes beyond the reply, and its table iterator
+terminates when a BMC advertises 255 filter entries (the C `uint8_t` counter
+would wrap).
 
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:

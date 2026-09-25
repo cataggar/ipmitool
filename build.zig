@@ -327,6 +327,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/ekanalyzer.zig",
     },
     .{
+        .name = "pef",
+        .replaces = "lib/ipmi_pef.c",
+        .implementation = "src/zig/cmd/pef.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",

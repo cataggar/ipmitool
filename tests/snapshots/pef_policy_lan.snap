@@ -1,0 +1,32 @@
+#!golden 1
+#!case pef_policy_lan
+#!section exit
+0
+#!section stdout
+ 1 | 9 | enabled | Match-always | true | 1 | 802.3 LAN | PET | public | 5 | 3 | 192.0.2.1 | 00:11:22:33:44:55
+ 2 | 2 | disabled | Try-next-destination | 3 | IPMB (I2C) | 1
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=08 00 00
+< rule=size ccode=0x00 len=2 data=11 82
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=09 01 00
+< rule=entry1 ccode=0x00 len=5 data=11 01 98 11 80
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=channel_lan ccode=0x00 len=9 data=81 84 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 11 00 00
+< rule=dest_count ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 12 01 00
+< rule=dest_type ccode=0x00 len=5 data=11 01 00 05 83
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 10 00 00
+< rule=community ccode=0x00 len=20 data=11 70 75 62 6c 69 63 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 13 01 00
+< rule=dest_addr ccode=0x00 len=14 data=11 01 00 00 c0 00 02 01 00 11 22 33 44 55
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=09 02 00
+< rule=entry2 ccode=0x00 len=5 data=11 02 24 31 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=03
+< rule=channel_other ccode=0x00 len=9 data=03 01 01 00 f2 1b 00 00 00
+bye
