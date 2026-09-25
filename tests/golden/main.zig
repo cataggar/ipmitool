@@ -541,7 +541,7 @@ fn executeCase(
 
     return .{
         .exit = exit_text,
-        .stdout = try normalizePingTimes(gpa, c.name, try normalize(gpa, result.stdout, work_abs, binary)),
+        .stdout = try normalizeImeTimes(gpa, c.name, try normalizePingTimes(gpa, c.name, try normalize(gpa, result.stdout, work_abs, binary))),
         .stderr = try normalize(gpa, result.stderr, work_abs, binary),
         .requests = try normalize(gpa, served.log, work_abs, binary),
         .files = if (c.capture) |name| blk: {
@@ -628,6 +628,54 @@ fn normalizePingTimes(gpa: std.mem.Allocator, name: []const u8, output: []const 
         } else try out.appendSlice(gpa, line);
     }
     return out.toOwnedSlice(gpa);
+}
+
+/// The IME update cases report elapsed wall-clock seconds, including a
+/// possible one-second rollover during an otherwise instantaneous fixture.
+fn normalizeImeTimes(gpa: std.mem.Allocator, name: []const u8, output: []const u8) ![]const u8 {
+    if (!std.mem.startsWith(u8, name, "ime_update_")) return output;
+    const labels = [_][]const u8{ "Elapsed time ", "Update Completed in ", "Time Taken " };
+    var out: std.ArrayList(u8) = .empty;
+    var i: usize = 0;
+    while (i < output.len) {
+        var label_len: usize = 0;
+        for (labels) |label| {
+            if (std.mem.startsWith(u8, output[i..], label)) {
+                label_len = label.len;
+                break;
+            }
+        }
+        if (label_len != 0 and output.len - i >= label_len + 5) {
+            const clock = output[i + label_len ..][0..5];
+            if (clock[0] == '0' and clock[1] == '0' and clock[2] == ':' and
+                clock[3] >= '0' and clock[3] <= '5' and std.ascii.isDigit(clock[4]))
+            {
+                try out.appendSlice(gpa, output[i .. i + label_len]);
+                try out.appendSlice(gpa, "00:00");
+                i += label_len + 5;
+                continue;
+            }
+        }
+        try out.append(gpa, output[i]);
+        i += 1;
+    }
+    return out.toOwnedSlice(gpa);
+}
+
+test "IME timer normalization is case-specific and preserves non-timer output" {
+    const gpa = std.testing.allocator;
+    const output = "Percent: 100,  Elapsed time 00:01\r\nUpdateCompleted, Activate now\nUpdate Completed in 00:02\n";
+    const normalized = try normalizeImeTimes(gpa, "ime_update_one_verbose", output);
+    defer gpa.free(normalized);
+    try std.testing.expectEqualStrings(
+        "Percent: 100,  Elapsed time 00:00\r\nUpdateCompleted, Activate now\nUpdate Completed in 00:00\n",
+        normalized,
+    );
+    try std.testing.expectEqualStrings(output, try normalizeImeTimes(gpa, "ime_info", output));
+
+    const malformed = try normalizeImeTimes(gpa, "ime_update_one", "Elapsed time 00:60\r\nTime Taken 01:00\n");
+    defer gpa.free(malformed);
+    try std.testing.expectEqualStrings("Elapsed time 00:60\r\nTime Taken 01:00\n", malformed);
 }
 
 fn allDigits(s: []const u8) bool {

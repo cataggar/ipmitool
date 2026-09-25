@@ -694,9 +694,12 @@ Normalized - and this is the complete list, three explicit substitutions:
 | the absolute path of the case's scratch directory       | `<WORK>`     | it contains a per-run temporary path                            |
 | the absolute path of the binary under test              | `<BINARY>`   | belt and braces, in case a message embeds the resolved real path |
 
-There is deliberately no regex for timestamps, PIDs or hostnames: every
-timestamp in the output comes from a fixture, and anything that would print a
-PID or a hostname is either not exercised or would be a genuine finding.
+Two case-specific stdout exceptions handle real wall-clock durations: Sun OEM
+`ping` substitutes its millisecond fields, and IME update substitutes only
+well-formed `00:SS` elapsed fields. All other output, including invalid IME
+times, remains byte-exact. There is no blanket regex for timestamps, PIDs or
+hostnames: other timestamps come from fixtures, and a printed PID or hostname
+would be a genuine finding.
 
 ### SEL clock and timezone cases
 
