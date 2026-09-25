@@ -150,9 +150,9 @@ extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
  * a change to either is a C compile error in the defining translation unit
  * rather than a silent ABI mismatch.
  *
- * The `ipmi_spd_print()` line goes away when `lib/dimm_spd.c` is ported; the
- * `ipmi_raw_help()` one when nothing needs to compare against the C signature
- * any more, since `lib/ipmi_raw.c` was its only caller.
+ * `ipmi_spd_print_fru()` is also defined in `lib/dimm_spd.c` but declared
+ * only locally in `lib/ipmi_fru.c`. Both SPD entry points are retained for Zig
+ * ABI signature assertions and the raw SPD reader's call.
  *
  * `struct wdt_string_s` is defined inside `lib/ipmi_mc.c`; only a pointer to
  * it appears in `find_set_wdt_string()`'s signature, so an incomplete type is

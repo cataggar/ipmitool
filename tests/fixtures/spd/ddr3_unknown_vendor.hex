@@ -1,0 +1,8 @@
+# Same DDR3 SPD layout as ddr3.hex, but the manufacturer continuation bank
+# exceeds the nine JEP106 tables the historical decoder knows.
+92 11 0b 02 13 11 02 0b 0b 11 01 08 0a
+@pad 104 0x00
+89 ff 01 15 23 de ad be ef
+@pad 2 0x00
+31 38 4b 53 46 32 35 36 37 32 41 5a 2d 31 47 34 44 31
+@pad 110 0x00

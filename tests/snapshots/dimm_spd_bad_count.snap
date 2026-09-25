@@ -1,0 +1,31 @@
+#!golden 1
+#!case dimm_spd_bad_count
+#!section exit
+1
+#!section stdout
+FRU Device Description : Builtin FRU Device (ID 0)
+FRU Device Description : DIMM SPD1 (ID 1)
+ Not enough buffer size
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 b7 57 01 00 01 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 b7 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=01 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=ff ff 04 00 51 11 14
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 04 00 05 14
+< rule=get_sdr_0004 ccode=0x00 len=22 data=ff ff 20 01 80 00 00 10 01 0b 01 00 c9 44 49 4d 4d 20 53 50 44 31
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=01
+< rule=get_spd_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=01 00 00 10
+< rule=bad_read ccode=0x00 len=2 data=10 ff
+bye

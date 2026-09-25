@@ -1438,7 +1438,7 @@ ipmi_spd_print(uint8_t *spd_data, int len)
 		uint32_t year;
 		uint32_t week;
 
-		if (len < 348)
+		if (len < 349)
 			return -1;
 
 		/* "Logical rank" refers to the individually addressable die
@@ -1643,6 +1643,10 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 		       val2str(rsp->ccode, completion_code_vals));
 		goto end;
 	}
+	if (rsp->data_len < 3) {
+		printf(" Not enough buffer size");
+		goto end;
+	}
 
 	fru.size = (rsp->data[1] << 8) | rsp->data[0];
 	fru.access = rsp->data[2] & 0x1;
@@ -1694,11 +1698,14 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 			goto end;
 		}
 
+		if (rsp->data_len < 1) {
+			printf(" Not enough buffer size");
+			goto end;
+		}
 		len = rsp->data[0];
-		if(rsp->data_len < 1
-		   || len > rsp->data_len - 1
-		   || len > fru.size - offset)
-		{
+		if (len == 0
+		    || len > rsp->data_len - 1
+		    || len > fru.size - offset) {
 			printf(" Not enough buffer size");
 			goto end;
 		}
@@ -1707,8 +1714,7 @@ ipmi_spd_print_fru(struct ipmi_intf * intf, uint8_t id)
 	} while (offset < fru.size);
 
 	/* now print spd info */
-	ipmi_spd_print(spd_data, offset);
-	rc = 0;
+	rc = ipmi_spd_print(spd_data, offset);
 
 end:
 	free_n(&spd_data);

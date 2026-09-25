@@ -297,6 +297,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/fru.zig",
     },
     .{
+        .name = "dimm-spd",
+        .replaces = "lib/dimm_spd.c",
+        .implementation = "src/zig/cmd/dimm_spd.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
@@ -1018,6 +1023,13 @@ pub fn build(b: *std.Build) void {
         .dependOn(&fwum_test_run.step);
 
     test_step.dependOn(unit_step);
+
+    const spd_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{ "SPD decoder", "JEDEC table" },
+    });
+    b.step("test-dimm-spd-unit", "Run Zig DIMM SPD decoder and table unit tests")
+        .dependOn(&b.addRunArtifact(spd_unit).step);
     const serial_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"serial "},
