@@ -1,0 +1,16 @@
+#!golden 1
+#!case raw_log_ccode_hex
+#!section exit
+1
+#!section stdout
+#!section stderr
+Unable to send RAW command (channel=0x0 netfn=0x6 lun=0x0 cmd=0x2b rsp=0xab): Unknown (0xAB)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x2b target_cmd=0x00 data=
+< rule=raw_log_hex ccode=0xab len=0 data=
+bye
+#!section files

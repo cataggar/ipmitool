@@ -227,6 +227,12 @@ args: -I dummy channel setaccess 1 2 privilege=zzz
 transcript: channel_setacc.tr
 covers: channel
 
+[chan_log_priv_bad_numeric]
+desc: C-oracle privilege diagnostic retains %hhu bounds and the quoted input
+args: -I dummy channel setaccess 1 2 privilege=6g
+transcript: channel_setacc.tr
+covers: channel
+
 [chan_setacc_all_opts]
 desc: all four options at once, in reverse order
 args: -I dummy channel setaccess 1 2 privilege=5 ipmi=off link=off callin=off

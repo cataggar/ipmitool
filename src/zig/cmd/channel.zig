@@ -32,10 +32,11 @@
 //!   `#pragma pack` region, so `translate-c` represents them faithfully -
 //!   including the fact that `channel_access_t.alerting` is an `enum`, and so
 //!   four bytes wide with three bytes of padding in front of it.
-//! Everything this module needs from C - `printf`, `lprintf`, `val2str`,
+//! Everything this module needs from C - `printf`, `val2str`,
 //! `str2val`, `str2uchar`, `eval_ccode`, the `is_ipmi_*` validators and the
 //! three `_ipmi_*_user_*` primitives that still live in `lib/ipmi_user.c` - is
-//! reached through the `ipmi_c` bridge.
+//! reached through the `ipmi_c` bridge. Diagnostics use the shared typed
+//! logger, which falls back to C `lprintf` when Zig logging is not selected.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -298,10 +299,10 @@ fn currentChannelInfo(intf: *Intf, chinfo: *ChannelInfo) callconv(.c) void {
     if (ccode != 0) {
         if (ccode != c.IPMI_CC_INV_DATA_FIELD_IN_REQ) {
             if (ccode > 0) {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Get Channel Info command failed: %s",
-                    ccString(@truncate(@as(c_uint, @bitCast(ccode)))),
+                    .{ccString(@truncate(@as(c_uint, @bitCast(ccode))))},
                 );
             } else {
                 _ = c.eval_ccode(ccode);
@@ -338,14 +339,14 @@ fn getChannelAuthCap(intf: *Intf, channel: u8, priv: u8) callconv(.c) c_int {
 
         rsp = sendrecv(intf, &req);
         const retry = rsp orelse {
-            c.lprintf(log.Level.err, "Unable to Get Channel Authentication Capabilities");
+            log.print(log.Level.err, "Unable to Get Channel Authentication Capabilities", .{});
             return -1;
         };
         if (retry.ccode != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Get Channel Authentication Capabilities failed: %s",
-                ccString(retry.ccode),
+                .{ccString(retry.ccode)},
             );
             return -1;
         }
@@ -440,7 +441,7 @@ fn parseCipherSuite(
     if (data[0] == standard_cipher_suite) {
         // Verify that we have at least a full record left; id + 3 algs
         if (data.len < std_record_size) {
-            c.lprintf(log.Level.info, "%s", @as([*:0]const u8, incomplete_msg));
+            log.print(log.Level.info, "%s", .{@as([*:0]const u8, incomplete_msg)});
             return 0;
         }
         // IANA code remains default (0)
@@ -453,7 +454,7 @@ fn parseCipherSuite(
         // OEM record type.  Verify that we have at least a full record left:
         // id + iana + 3 algs
         if (data.len < oem_record_size) {
-            c.lprintf(log.Level.info, "%s", @as([*:0]const u8, incomplete_msg));
+            log.print(log.Level.info, "%s", .{@as([*:0]const u8, incomplete_msg)});
             return 0;
         }
         // Grab the IANA
@@ -465,10 +466,10 @@ fn parseCipherSuite(
         return oem_record_size;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.info,
         "Bad start of record byte in cipher suite data (value %x)",
-        @as(c_uint, data[0]),
+        .{@as(c_uint, data[0])},
     );
     return 0;
 }
@@ -501,10 +502,10 @@ fn parseChannelCipherSuiteData(
         );
 
         if (suite_size == 0) {
-            c.lprintf(
+            log.print(
                 log.Level.info,
                 "Failed to parse cipher suite data at offset %zu",
-                offset,
+                .{offset},
             );
             break;
         }
@@ -567,17 +568,17 @@ fn getChannelCipherSuites(
         // Always ask for cipher suite format
         rqdata[2] = list_algorithms_by_cipher_suite | list_index;
         const rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(log.Level.err, "Unable to Get Channel Cipher Suites");
+            log.print(log.Level.err, "Unable to Get Channel Cipher Suites", .{});
             return -1;
         };
         if (rsp.ccode != 0 or
             rsp.data_len < 1 or
             rsp.data_len > 1 + max_cipher_suite_data_len)
         {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Get Channel Cipher Suites failed: %s",
-                ccString(rsp.ccode),
+                .{ccString(rsp.ccode)},
             );
             return -1;
         }
@@ -667,7 +668,7 @@ fn getChannelInfo(intf: *Intf, channel: u8) callconv(.c) c_int {
     channel_info.channel = channel;
     var ccode = getChannelInfoRaw(intf, &channel_info);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(log.Level.err, "Unable to Get Channel Info");
+        log.print(log.Level.err, "Unable to Get Channel Info", .{});
         return -1;
     }
 
@@ -706,7 +707,7 @@ fn getChannelInfo(intf: *Intf, channel: u8) callconv(.c) c_int {
     channel_access.channel = channel_info.channel;
     ccode = getChannelAccess(intf, &channel_access, 1);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(log.Level.err, "Unable to Get Channel Access (volatile)");
+        log.print(log.Level.err, "Unable to Get Channel Access (volatile)", .{});
         return -1;
     }
 
@@ -718,7 +719,7 @@ fn getChannelInfo(intf: *Intf, channel: u8) callconv(.c) c_int {
     // get non-volatile settings
     ccode = getChannelAccess(intf, &channel_access, 0);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(log.Level.err, "Unable to Get Channel Access (non-volatile)");
+        log.print(log.Level.err, "Unable to Get Channel Access (non-volatile)", .{});
         return -1;
     }
 
@@ -738,10 +739,10 @@ fn getChannelMedium(intf: *Intf, channel: u8) callconv(.c) u8 {
     if (ccode != 0) {
         if (ccode != c.IPMI_CC_INV_DATA_FIELD_IN_REQ) {
             if (ccode > 0) {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Get Channel Info command failed: %s",
-                    ccString(@truncate(@as(c_uint, @bitCast(ccode)))),
+                    .{ccString(@truncate(@as(c_uint, @bitCast(ccode))))},
                 );
             } else {
                 _ = c.eval_ccode(ccode);
@@ -749,10 +750,10 @@ fn getChannelMedium(intf: *Intf, channel: u8) callconv(.c) u8 {
         }
         return @intCast(c.IPMI_CHANNEL_MEDIUM_RESERVED);
     }
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Channel type: %s",
-        c.val2str(channel_info.medium, c.ipmi_channel_medium_vals),
+        .{c.val2str(channel_info.medium, c.ipmi_channel_medium_vals)},
     );
     return channel_info.medium;
 }
@@ -775,11 +776,10 @@ fn printUserAccess(intf: *Intf, channel: u8, user_id: u8) c_int {
         user_access.user_id = @truncate(@as(c_uint, @bitCast(curr_uid)));
         var ccode = c._ipmi_get_user_access(cIntf(intf), &user_access);
         if (c.eval_ccode(ccode) != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Unable to Get User Access (channel %d id %d)",
-                @as(c_int, channel),
-                curr_uid,
+                .{ @as(c_int, channel), curr_uid },
             );
             return -1;
         }
@@ -791,7 +791,7 @@ fn printUserAccess(intf: *Intf, channel: u8, user_id: u8) c_int {
             user_name.user_id = @truncate(@as(c_uint, @bitCast(curr_uid)));
             @memset(user_name.user_name[0..17], 0);
         } else if (c.eval_ccode(ccode) != 0) {
-            c.lprintf(log.Level.err, "Unable to Get User Name (id %d)", curr_uid);
+            log.print(log.Level.err, "Unable to Get User Name (id %d)", .{curr_uid});
             return -1;
         }
         if (init) {
@@ -893,7 +893,7 @@ fn setUserAccess(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) 
         channelUsage();
         return 0;
     } else if (argc < 3) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         channelUsage();
         return -1;
     }
@@ -906,11 +906,10 @@ fn setUserAccess(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) 
     user_access.user_id = user_id;
     var ccode = c._ipmi_get_user_access(cIntf(intf), &user_access);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Unable to Get User Access (channel %d id %d)",
-            @as(c_int, channel),
-            @as(c_int, user_id),
+            .{ @as(c_int, channel), @as(c_int, user_id) },
         );
         return -1;
     }
@@ -944,36 +943,36 @@ fn setUserAccess(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) 
                     break :blk;
                 }
                 if (c.str2uchar(optval, field) != 0) {
-                    c.lprintf(
+                    log.print(
                         log.Level.err,
                         "Numeric [%hhu-%hhu] value expected, but '%s' given.",
-                        @as(c_uint, entry.min),
-                        @as(c_uint, entry.max),
-                        optval,
+                        .{
+                            @as(c_uint, entry.min),
+                            @as(c_uint, entry.max),
+                            optval,
+                        },
                     );
                     return -1;
                 }
             }
-            c.lprintf(
+            log.print(
                 log.Level.debug,
                 "Option %s=%hhu",
-                @as([*:0]const u8, @ptrCast(entry.option.ptr)),
-                @as(c_uint, field.*),
+                .{ @as([*:0]const u8, @ptrCast(entry.option.ptr)), @as(c_uint, field.*) },
             );
             break;
         }
         if (j == set_access_options.len) {
-            c.lprintf(log.Level.err, "Invalid option: %s\n", argv[i]);
+            log.print(log.Level.err, "Invalid option: %s\n", .{argv[i]});
             return -1;
         }
     }
     ccode = c._ipmi_set_user_access(cIntf(intf), &user_access, 0);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Unable to Set User Access (channel %d id %d)",
-            @as(c_int, channel),
-            @as(c_int, user_id),
+            .{ @as(c_int, channel), @as(c_int, user_id) },
         );
         return -1;
     }
@@ -996,7 +995,7 @@ fn channelMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
     var priv: u8 = 0;
 
     if (argc < 1) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         channelUsage();
         return -1;
     } else if (eql(argv[0], "help")) {
@@ -1016,7 +1015,7 @@ fn channelMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
     } else if (eql(argv[0], "getaccess")) {
         var user_id: u8 = 0;
         if (argc < 2 or argc > 3) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             channelUsage();
             return -1;
         }
@@ -1059,7 +1058,7 @@ fn channelMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
         }
         retval = printChannelCipherSuites(intf, argv[1], channel);
     } else {
-        c.lprintf(log.Level.err, "Invalid CHANNEL command: %s\n", argv[0]);
+        log.print(log.Level.err, "Invalid CHANNEL command: %s\n", .{argv[0]});
         channelUsage();
         retval = -1;
     }
@@ -1068,20 +1067,24 @@ fn channelMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
 
 /// `printf_channel_usage()`.
 fn channelUsage() callconv(.c) void {
-    c.lprintf(log.Level.notice, "Channel Commands: authcap   <channel number> <max privilege>");
-    c.lprintf(log.Level.notice, "                  getaccess <channel number> [user id]");
-    c.lprintf(log.Level.notice, "                  setaccess <channel number> " ++
-        "<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]");
-    c.lprintf(log.Level.notice, "                  info      [channel number]");
-    c.lprintf(log.Level.notice, "                  getciphers <ipmi | sol> [channel]");
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(log.Level.notice, "Possible privilege levels are:");
-    c.lprintf(log.Level.notice, "   1   Callback level");
-    c.lprintf(log.Level.notice, "   2   User level");
-    c.lprintf(log.Level.notice, "   3   Operator level");
-    c.lprintf(log.Level.notice, "   4   Administrator level");
-    c.lprintf(log.Level.notice, "   5   OEM Proprietary level");
-    c.lprintf(log.Level.notice, "  15   No access");
+    log.print(log.Level.notice, "Channel Commands: authcap   <channel number> <max privilege>", .{});
+    log.print(log.Level.notice, "                  getaccess <channel number> [user id]", .{});
+    log.print(
+        log.Level.notice,
+        "                  setaccess <channel number> " ++
+            "<user id> [callin=on|off] [ipmi=on|off] [link=on|off] [privilege=level]",
+        .{},
+    );
+    log.print(log.Level.notice, "                  info      [channel number]", .{});
+    log.print(log.Level.notice, "                  getciphers <ipmi | sol> [channel]", .{});
+    log.print(log.Level.notice, "", .{});
+    log.print(log.Level.notice, "Possible privilege levels are:", .{});
+    log.print(log.Level.notice, "   1   Callback level", .{});
+    log.print(log.Level.notice, "   2   User level", .{});
+    log.print(log.Level.notice, "   3   Operator level", .{});
+    log.print(log.Level.notice, "   4   Administrator level", .{});
+    log.print(log.Level.notice, "   5   OEM Proprietary level", .{});
+    log.print(log.Level.notice, "  15   No access", .{});
 }
 
 // ---------------------------------------------------------------------------

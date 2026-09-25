@@ -25,10 +25,11 @@
 //!   the port drift the moment the header changed, so offsets are resolved
 //!   through `ipmi_get_first_event_sensor_type()` /
 //!   `ipmi_get_next_event_sensor_type()` exactly as C does.
-//! * **Formatting and string handling stay in libc.**  `printf`, `lprintf`,
+//! * **Formatting and string handling keep libc behavior.** `printf`,
 //!   `strcmp`, `strcasecmp`, `strchr`, `strtok`, `isspace`, `fgets` and
-//!   `str2uchar` are called through the `ipmi_c` bridge; `%-9s` padding, the
-//!   `(null)` a NULL `%s` prints and `strtok`'s in-place chopping are all
+//!   `str2uchar` use the `ipmi_c` bridge. Diagnostics use the typed logger
+//!   (libc `snprintf` when selected, C `lprintf` otherwise); `%-9s` padding,
+//!   the `(null)` a NULL `%s` prints and `strtok`'s in-place chopping are all
 //!   observable in the golden snapshots.
 //! * **File errors are sticky.**  As in C, a bad token rejects only its line:
 //!   subsequent valid lines are still sent, but the command returns failure
@@ -286,8 +287,12 @@ fn sendPlatformEvent(intf: *Intf, emsg: *const PlatformEventMsg) c_int {
     var chinfo = std.mem.zeroes(c.struct_channel_info_t);
     c.ipmi_current_channel_info(cIntf(intf), &chinfo);
     if (chinfo.channel == c.CH_UNKNOWN) {
-        c.lprintf(log.Level.err, "Failed to send the platform event " ++
-            "via an unknown channel");
+        log.print(
+            log.Level.err,
+            "Failed to send the platform event " ++
+                "via an unknown channel",
+            .{},
+        );
         return -3;
     }
 
@@ -303,14 +308,14 @@ fn sendPlatformEvent(intf: *Intf, emsg: *const PlatformEventMsg) c_int {
     eventMsgPrint(intf, emsg);
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Platform Event Message command failed");
+        log.print(log.Level.err, "Platform Event Message command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Platform Event Message command failed: %s",
-            ccString(rsp.ccode),
+            .{ccString(rsp.ccode)},
         );
         return -1;
     }
@@ -362,7 +367,7 @@ fn sendPlatformEventNum(intf: *Intf, num: c_int) c_int {
             emsg.event_data[2] = 0xff;
         },
         else => {
-            c.lprintf(log.Level.err, "Invalid event number: %d", num);
+            log.print(log.Level.err, "Invalid event number: %d", .{num});
             return -1;
         },
     }
@@ -392,10 +397,10 @@ fn eventFindOffset(
         }
     }
 
-    c.lprintf(
+    log.print(
         log.Level.warn,
         "Unable to find matching event offset for '%s'",
-        wanted,
+        .{wanted},
     );
     return -1;
 }
@@ -422,7 +427,7 @@ fn eventFromSensor(
     evdir: ?[*:0]u8,
 ) c_int {
     const sensor_id = id orelse {
-        c.lprintf(log.Level.err, "No sensor ID supplied");
+        log.print(log.Level.err, "No sensor ID supplied", .{});
         return -1;
     };
 
@@ -435,10 +440,10 @@ fn eventFromSensor(
         } else if (eql(dir_str, "deassert")) {
             emsg.td.event_dir = EVENT_DIR_DEASSERT;
         } else {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Invalid event direction %s.  Must be 'assert' or 'deassert'",
-                dir_str,
+                .{dir_str},
             );
             return -1;
         }
@@ -469,7 +474,7 @@ fn eventFromSensor(
             channel = (common[common_sensor.keys_flags] >> 4) & 0xf;
         },
         else => {
-            c.lprintf(log.Level.err, "Unknown sensor type for id '%s'", sensor_id);
+            log.print(log.Level.err, "Unknown sensor type for id '%s'", .{sensor_id});
             return -1;
         },
     }
@@ -501,7 +506,7 @@ fn eventFromSensor(
             if (!eql(st, "lnr") and !eql(st, "lcr") and !eql(st, "lnc") and
                 !eql(st, "unc") and !eql(st, "ucr") and !eql(st, "unr"))
             {
-                c.lprintf(log.Level.err, "Invalid threshold identifier %s", st);
+                log.print(log.Level.err, "Invalid threshold identifier %s", .{st});
                 return -1;
             }
 
@@ -524,17 +529,18 @@ fn eventFromSensor(
                 lun,
                 channel,
             ) orelse {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Command Get Sensor Thresholds failed: invalid response.",
+                    .{},
                 );
                 return -1;
             });
             if (thr.ccode != 0) {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Command Get Sensor Thresholds failed: %s",
-                    ccString(thr.ccode),
+                    .{ccString(thr.ccode)},
                 );
                 return -1;
             }
@@ -678,7 +684,7 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
         while (tok != null) {
             if (count == @sizeOf(PlatformEventMsg)) break;
             if (0 > c.str2uchar(tok, &rqdata[count])) {
-                c.lprintf(log.Level.err, "Invalid token in file: [%s]", tok);
+                log.print(log.Level.err, "Invalid token in file: [%s]", .{tok});
                 rc = -1;
                 break;
             }
@@ -686,10 +692,10 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
             count += 1;
         }
         if (count < @sizeOf(PlatformEventMsg)) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Invalid Event: %s",
-                c.buf2str(&rqdata, rqdata.len),
+                .{c.buf2str(&rqdata, rqdata.len)},
             );
             continue;
         }
@@ -712,22 +718,22 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
 
 /// `ipmi_event_usage()`.
 fn eventUsage() void {
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(log.Level.notice, "usage: event <num>");
-    c.lprintf(log.Level.notice, "   Send generic test events");
-    c.lprintf(log.Level.notice, "   1 : Temperature - Upper Critical - Going High");
-    c.lprintf(log.Level.notice, "   2 : Voltage Threshold - Lower Critical - Going Low");
-    c.lprintf(log.Level.notice, "   3 : Memory - Correctable ECC");
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(log.Level.notice, "usage: event file <filename>");
-    c.lprintf(log.Level.notice, "   Read and generate events from file");
-    c.lprintf(log.Level.notice, "   Use the 'sel save' command to generate from SEL");
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(log.Level.notice, "usage: event <sensorid> <state> [event_dir]");
-    c.lprintf(log.Level.notice, "   sensorid  : Sensor ID string to use for event data");
-    c.lprintf(log.Level.notice, "   state     : Sensor state, use 'list' to see possible states for sensor");
-    c.lprintf(log.Level.notice, "   event_dir : assert, deassert [default=assert]");
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "", .{});
+    log.print(log.Level.notice, "usage: event <num>", .{});
+    log.print(log.Level.notice, "   Send generic test events", .{});
+    log.print(log.Level.notice, "   1 : Temperature - Upper Critical - Going High", .{});
+    log.print(log.Level.notice, "   2 : Voltage Threshold - Lower Critical - Going Low", .{});
+    log.print(log.Level.notice, "   3 : Memory - Correctable ECC", .{});
+    log.print(log.Level.notice, "", .{});
+    log.print(log.Level.notice, "usage: event file <filename>", .{});
+    log.print(log.Level.notice, "   Read and generate events from file", .{});
+    log.print(log.Level.notice, "   Use the 'sel save' command to generate from SEL", .{});
+    log.print(log.Level.notice, "", .{});
+    log.print(log.Level.notice, "usage: event <sensorid> <state> [event_dir]", .{});
+    log.print(log.Level.notice, "   sensorid  : Sensor ID string to use for event data", .{});
+    log.print(log.Level.notice, "   state     : Sensor state, use 'list' to see possible states for sensor", .{});
+    log.print(log.Level.notice, "   event_dir : assert, deassert [default=assert]", .{});
+    log.print(log.Level.notice, "", .{});
 }
 
 /// `ipmi_event_main()`.

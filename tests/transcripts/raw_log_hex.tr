@@ -1,0 +1,7 @@
+default_ccode 0xc1
+
+respond raw_log_hex
+  netfn 0x06
+  cmd 0x2b
+  ccode 0xab
+end

@@ -24,9 +24,11 @@
 //! The first prompted password must be saved before asking for confirmation;
 //! the bounded copy and request buffer are wiped after use. See issue #39.
 //!
-//! Everything this module needs from C - `printf`, `lprintf`, `val2str`,
+//! Everything this module needs from C - `printf`, `val2str`,
 //! `eval_ccode`, `getpass`, `str2int`, `str2uchar` and the `is_ipmi_*`
-//! validators - is reached through the `ipmi_c` bridge.
+//! validators - is reached through the `ipmi_c` bridge. Diagnostics use the
+//! shared typed logger, which falls back to C `lprintf` when Zig logging is
+//! not selected.
 
 const std = @import("std");
 
@@ -369,21 +371,22 @@ fn userSetUsername(intf: *Intf, user_id_in: u8, name: [*:0]const u8) c_int {
     @memcpy(msg_data[1 .. 1 + name_len], name[0..name_len]);
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set User Name command failed (user %d, name %s)",
-            @as(c_int, user_id),
-            name,
+            .{ @as(c_int, user_id), name },
         );
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set User Name command failed (user %d, name %s): %s",
-            @as(c_int, user_id),
-            name,
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{
+                @as(c_int, user_id),
+                name,
+                c.val2str(rsp.ccode, c.completion_code_vals),
+            },
         );
         return -1;
     }
@@ -423,24 +426,24 @@ fn userTestPassword(
 
 /// `print_user_usage()`.
 fn printUserUsage() void {
-    c.lprintf(log.Level.notice, "User Commands:");
-    c.lprintf(log.Level.notice, "               summary      [<channel number>]");
-    c.lprintf(log.Level.notice, "               list         [<channel number>]");
-    c.lprintf(log.Level.notice, "               set name     <user id> <username>");
-    c.lprintf(log.Level.notice, "               set password <user id> [<password> [<16|20>]]");
-    c.lprintf(log.Level.notice, "               disable      <user id>");
-    c.lprintf(log.Level.notice, "               enable       <user id>");
-    c.lprintf(log.Level.notice, "               priv         <user id> <privilege level> [<channel number>]");
-    c.lprintf(log.Level.notice, "                     Privilege levels:");
-    c.lprintf(log.Level.notice, "                      * 0x1 - Callback");
-    c.lprintf(log.Level.notice, "                      * 0x2 - User");
-    c.lprintf(log.Level.notice, "                      * 0x3 - Operator");
-    c.lprintf(log.Level.notice, "                      * 0x4 - Administrator");
-    c.lprintf(log.Level.notice, "                      * 0x5 - OEM Proprietary");
-    c.lprintf(log.Level.notice, "                      * 0xF - No Access");
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(log.Level.notice, "               test         <user id> <16|20> [<password>]");
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "User Commands:", .{});
+    log.print(log.Level.notice, "               summary      [<channel number>]", .{});
+    log.print(log.Level.notice, "               list         [<channel number>]", .{});
+    log.print(log.Level.notice, "               set name     <user id> <username>", .{});
+    log.print(log.Level.notice, "               set password <user id> [<password> [<16|20>]]", .{});
+    log.print(log.Level.notice, "               disable      <user id>", .{});
+    log.print(log.Level.notice, "               enable       <user id>", .{});
+    log.print(log.Level.notice, "               priv         <user id> <privilege level> [<channel number>]", .{});
+    log.print(log.Level.notice, "                     Privilege levels:", .{});
+    log.print(log.Level.notice, "                      * 0x1 - Callback", .{});
+    log.print(log.Level.notice, "                      * 0x2 - User", .{});
+    log.print(log.Level.notice, "                      * 0x3 - Operator", .{});
+    log.print(log.Level.notice, "                      * 0x4 - Administrator", .{});
+    log.print(log.Level.notice, "                      * 0x5 - OEM Proprietary", .{});
+    log.print(log.Level.notice, "                      * 0xF - No Access", .{});
+    log.print(log.Level.notice, "", .{});
+    log.print(log.Level.notice, "               test         <user id> <16|20> [<password>]", .{});
+    log.print(log.Level.notice, "", .{});
 }
 
 /// `ipmi_user_build_password_prompt()`'s function level `static char
@@ -519,15 +522,15 @@ fn userTest(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
     if (c.str2int(argv[2], &password_length) != 0 or
         (password_length != 16 and password_length != 20))
     {
-        c.lprintf(log.Level.err, "Given password length '%s' is invalid.", argv[2]);
-        c.lprintf(log.Level.err, "Expected value is either 16 or 20.");
+        log.print(log.Level.err, "Given password length '%s' is invalid.", .{argv[2]});
+        log.print(log.Level.err, "Expected value is either 16 or 20.", .{});
         return -1;
     }
     if (argc == 3) {
         // We need to prompt for a password.
         password = askPassword(user_id);
         if (password == null) {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             return -1;
         }
     } else {
@@ -565,10 +568,10 @@ fn userPriv(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
     }
     ccode = setUserAccess(intf, &user_access, 1);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set Privilege Level command failed (user %d)",
-            @as(c_int, user_access.user_id),
+            .{@as(c_int, user_access.user_id)},
         );
         return -1;
     } else {
@@ -598,10 +601,10 @@ fn userMod(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int 
 
     const ccode: c_int = setUserPassword(intf, user_id, operation, null, 0);
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set User Password command failed (user %d)",
-            @as(c_int, user_id),
+            .{@as(c_int, user_id)},
         );
         return -1;
     }
@@ -624,27 +627,27 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
         // We need to prompt for a password.
         password = askPassword(user_id);
         if (password == null) {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             return -1;
         }
         const first_len = c.strnlen(password, pw_max_len + 1);
         if (first_len > pw_max_len) {
-            c.lprintf(log.Level.err, "Password is too long (> %d bytes)", @as(c_int, pw_max_len));
+            log.print(log.Level.err, "Password is too long (> %d bytes)", .{@as(c_int, pw_max_len)});
             return -1;
         }
         @memcpy(saved_password[0..first_len], password.?[0..first_len]);
         saved_password[first_len] = 0;
         const tmp: ?[*:0]const u8 = askPassword(user_id);
         if (tmp == null) {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             return -1;
         }
         const tmplen = c.strnlen(tmp, pw_max_len + 1);
         if (tmplen != first_len or !std.mem.eql(u8, saved_password[0..first_len], tmp.?[0..first_len])) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Passwords do not match or are longer than %d",
-                @as(c_int, pw_max_len),
+                .{@as(c_int, pw_max_len)},
             );
             return -1;
         }
@@ -654,7 +657,7 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
     }
 
     if (password == null) {
-        c.lprintf(log.Level.err, "Unable to parse password argument.");
+        log.print(log.Level.err, "Unable to parse password argument.", .{});
         return -1;
     }
 
@@ -664,7 +667,7 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
         if ((c.str2uchar(argv[4], &password_type) != 0) or
             (password_type != pw_ipmi15_len and password_type != pw_ipmi20_len))
         {
-            c.lprintf(log.Level.err, "Invalid password length '%s'", argv[4]);
+            log.print(log.Level.err, "Invalid password length '%s'", .{argv[4]});
             return -1;
         }
     } else if (password_len > pw_ipmi15_len) {
@@ -672,10 +675,10 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
     }
 
     if (password_len > password_type) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Password is too long (> %d bytes)",
-            @as(c_int, password_type),
+            .{@as(c_int, password_type)},
         );
         return -1;
     }
@@ -688,10 +691,10 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
         @intFromBool(password_type > pw_ipmi15_len),
     );
     if (c.eval_ccode(ccode) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set User Password command failed (user %d)",
-            @as(c_int, user_id),
+            .{@as(c_int, user_id)},
         );
         return -1;
     } else {
@@ -714,7 +717,7 @@ fn userName(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
         return -1;
     }
     if (std.mem.len(argv[3]) > 16) {
-        c.lprintf(log.Level.err, "Username is too long (> 16 bytes)");
+        log.print(log.Level.err, "Username is too long (> 16 bytes)", .{});
         return -1;
     }
 
@@ -724,7 +727,7 @@ fn userName(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
 /// `ipmi_user_main()`: the `user` command.
 fn userMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     if (argc == 0) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         printUserUsage();
         return -1;
     }
@@ -751,7 +754,7 @@ fn userMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
     } else if (eql(argv[0], "disable") or eql(argv[0], "enable")) {
         return userMod(intf, argc, argv);
     } else {
-        c.lprintf(log.Level.err, "Invalid user command: '%s'\n", argv[0]);
+        log.print(log.Level.err, "Invalid user command: '%s'\n", .{argv[0]});
         printUserUsage();
         return -1;
     }
