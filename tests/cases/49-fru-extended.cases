@@ -21,6 +21,13 @@ transcript: fru_write.tr
 blob: inventory.bin fru/board.hex
 covers: fru
 
+[fru_write_verbose]
+desc: verbose FRU write pins protected-block names and the write-size log
+args: -I dummy -v fru write 0 {work}/inventory.bin
+transcript: fru_write.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
 [fru_write_missing]
 desc: writing a non-existent file still queries FRU device info
 args: -I dummy fru write 0 {work}/missing.bin
@@ -94,6 +101,12 @@ covers: fru
 desc: discover a second logical FRU via an SDR locator and read device id 7
 args: -I dummy fru print
 transcript: fru_sdr_locator.tr
+covers: fru sdr
+
+[fru_print_sdr_no_builtin]
+desc: absent builtin FRU support still discovers a logical FRU through SDR
+args: -I dummy fru print
+transcript: fru_sdr_without_builtin.tr
 covers: fru sdr
 
 [fru_write_protected]
