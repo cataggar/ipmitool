@@ -1084,6 +1084,13 @@ pub fn build(b: *std.Build) void {
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
 
+    const stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.stdout.test."},
+    });
+    b.step("test-stdout-unit", "Run Zig stdout formatting and write-failure tests")
+        .dependOn(&b.addRunArtifact(stdout_unit).step);
+
     const helper_valstr_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"util.helper.test.valstr stdout"},

@@ -2,9 +2,11 @@
 //! libc's getopt is retained for its GNU argument permutation, diagnostic
 //! stream, optind/optarg state and in-place mutation of argv.
 
+const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout = @import("../util/stdout.zig");
 const types = @import("../intf/intf.zig");
 const Intf = types.Intf;
 const Cmd = types.Cmd;
@@ -248,7 +250,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
                 return 0;
             },
             'V' => {
-                _ = c.printf("%s version %s\n", progname, c.VERSION);
+                stdout.print("ipmi_main", "{s} version {s}\n", .{ std.mem.span(progname), c.VERSION.* });
                 return 0;
             },
             'd' => {
@@ -522,7 +524,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
         if (c.ipmi_oem_active(@ptrCast(intf), "kontron") == 0 or
             c.ipmi_kontronoem_set_large_buffer(@ptrCast(intf), @truncate(long_packet_size)) == 0)
         {
-            _ = c.printf("Setting large buffer to %i\n", @as(c_int, long_packet_size));
+            stdout.print("ipmi_main", "Setting large buffer to {d}\n", .{@as(c_int, long_packet_size)});
             long_packet_set = true;
             c.ipmi_intf_set_max_request_data_size(@ptrCast(intf), long_packet_size);
         }
