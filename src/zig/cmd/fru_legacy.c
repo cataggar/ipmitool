@@ -8,12 +8,8 @@
 #include "../../../lib/ipmi_fru.c"
 #undef ipmi_fru_main
 
-int
-ipmi_fru_zig_write(struct ipmi_intf *intf, uint16_t size, uint8_t access,
-		   uint8_t id, uint16_t length, uint8_t *data)
+void
+ipmi_fru_zig_picmg_print(uint8_t *data, int offset, int length)
 {
-	struct fru_info fru = {0};
-	fru.size = size;
-	fru.access = access;
-	return write_fru_area(intf, &fru, id, 0, 0, length, data);
+	ipmi_fru_picmg_ext_print(data, offset, length);
 }

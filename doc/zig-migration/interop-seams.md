@@ -224,10 +224,12 @@ Mechanics, all in `build.zig`:
    default build is bit-for-bit the pre-existing all-C build.
 
 **FRU is an incomplete migration.** Selecting `-Dzig-modules=fru` currently
-ports `fru read` (bounded inventory reads), the `fru write` command's file
-handling and non-verbose explicit-id `fru print/list` (bounded chassis, board
-and product area decoding). `write_fru_area()`, verbose/multirecord/SDR print,
-and the other FRU verbs still run C code.
+ports `fru read` (bounded inventory reads), `fru write` (bounded writes with
+section-aware protection), `fru print/list` (including SDR discovery and
+multirecords), and `fru internaluse` (info/print/read/write). The PICMG
+extension decoder is still called through the shim; edit, get, upgEkey, and
+the external FRU helper ABIs remain in C. None of this constitutes a full
+translation-unit port yet.
 The original `lib/ipmi_fru.c` is unchanged: `cmd/fru_legacy.c` includes it
 with its main entry point renamed to `ipmi_fru_main_legacy`, so commands not
 yet ported retain their complete implementation rather than returning dummy
