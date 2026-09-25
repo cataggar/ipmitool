@@ -1542,6 +1542,12 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(support_step);
 
     const lanplus_strings_step = b.step("test-lanplus-strings", "Check C and Zig LAN+ lookup tables and their ABI");
+    const lanplus_data_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/lanplus_strings_data_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    lanplus_strings_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = lanplus_data_mod })).step);
     const c_strings_mod = b.createModule(.{
         .root_source_file = b.path("tests/lanplus_strings.zig"),
         .target = target,
