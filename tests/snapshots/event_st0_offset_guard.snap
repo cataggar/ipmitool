@@ -52,8 +52,8 @@ Finding sensor SZER... ok
 > netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=0e
 < rule=get_channel_info ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 06 00 00 05
-< rule=get_sdr_0006 ccode=0x00 len=7 data=ff ff 06 00 51 03 14
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 06 00 05 14
+< rule=get_sdr_0006 ccode=0x00 len=7 data=ff ff 06 00 51 03 10
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 06 00 05 10
 < rule=get_sdr_0006 ccode=0x00 len=18 data=ff ff 20 00 07 15 01 09 6f 00 00 00 00 c4 45 56 4f 4e
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00

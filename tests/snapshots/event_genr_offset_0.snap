@@ -52,8 +52,8 @@ Finding sensor GENR... ok
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 05 00 1c 08
 < rule=get_sdr_0005 ccode=0x00 len=10 data=06 00 00 00 00 c4 4f 54 48 52
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 06 00 00 05
-< rule=get_sdr_0006 ccode=0x00 len=7 data=ff ff 06 00 51 03 14
-> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 06 00 05 14
+< rule=get_sdr_0006 ccode=0x00 len=7 data=ff ff 06 00 51 03 10
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=01 00 06 00 05 10
 < rule=get_sdr_0006 ccode=0x00 len=18 data=ff ff 20 00 07 15 01 09 6f 00 00 00 00 c4 45 56 4f 4e
 > netfn=0x04 lun=0x00 cmd=0x02 target_cmd=0x00 data=04 15 04 0b 00 ff ff
 < rule=platform_event_message ccode=0x00 len=0 data=
