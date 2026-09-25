@@ -269,3 +269,29 @@ desc: legacy OEM edit clears its FRU size and rejects a nonzero multirecord offs
 args: -I dummy fru edit 0 oem 15000 3 0 TEST 0 ABCDEFGH 20240102 20250102 hgfedcba
 transcript: fru_kontron_get_fields.tr
 covers: fru
+
+[fru_help_public]
+desc: public FRU usage text is available without querying a BMC
+args: -I dummy fru help
+covers: fru
+
+[fru_edit_help_public]
+desc: FRU edit usage includes fields and OEM record editing
+args: -I dummy fru edit help
+covers: fru
+
+[fru_get_help_public]
+desc: FRU get usage describes OEM record arguments
+args: -I dummy fru get help
+covers: fru
+
+[fru_internaluse_help_public]
+desc: internal-use usage enumerates all four area operations
+args: -I dummy fru internaluse help
+covers: fru
+
+[fru_edit_oem_missing]
+desc: absent FRU inventory aborts OEM edit before section lookup
+args: -I dummy fru edit 0 oem 15000 3
+transcript: fru_no_device.tr
+covers: fru
