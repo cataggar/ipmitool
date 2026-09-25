@@ -102,7 +102,7 @@ const Io = struct {
 var io: Io = .{};
 
 fn realIoctl(fd: c_int, request: c_ulong, arg: ?*anyopaque) c_int {
-    return c.ioctl(fd, request, arg);
+    return c.ioctl(fd, open.libcRequest(request), arg);
 }
 fn realPoll(fds: [*c]c.struct_pollfd, count: c.nfds_t, timeout: c_int) c_int {
     return c.poll(fds, count, timeout);
@@ -126,15 +126,30 @@ fn realSignals() void {
     // sigaction, unlike signal(3), does not add SA_RESTART: the blocking poll
     // must return on SIGINT/SIGQUIT/SIGTERM so that cleanup runs in normal code.
     var action = std.mem.zeroes(c.struct_sigaction);
-    action.__sigaction_handler.sa_handler = onSignal;
+    if (comptime builtin.target.abi == .musl) {
+        action.__sa_handler.sa_handler = onSignal;
+    } else {
+        action.__sigaction_handler.sa_handler = onSignal;
+    }
     _ = c.sigemptyset(&action.sa_mask);
     _ = c.sigaction(c.SIGINT, &action, null);
     _ = c.sigaction(c.SIGQUIT, &action, null);
     _ = c.sigaction(c.SIGTERM, &action, null);
 }
 fn realPidExists(path: [*:0]const u8) bool {
-    var st: c.struct_stat = undefined;
-    return c.lstat(path, &st) == 0;
+    if (comptime builtin.target.abi == .musl) {
+        var st: std.os.linux.Statx = undefined;
+        return std.os.linux.errno(std.os.linux.statx(
+            std.os.linux.AT.FDCWD,
+            path,
+            std.os.linux.AT.SYMLINK_NOFOLLOW,
+            .BASIC_STATS,
+            &st,
+        )) == .SUCCESS;
+    } else {
+        var st: c.struct_stat = undefined;
+        return c.lstat(path, &st) == 0;
+    }
 }
 fn realPidWrite(path: [*:0]const u8) bool {
     const fd = c.open(path, c.O_WRONLY | c.O_CREAT | c.O_EXCL, @as(c.mode_t, 0o644));

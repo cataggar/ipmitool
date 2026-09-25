@@ -230,6 +230,30 @@ zig build --help                 # lists the available module names
 translated C headers and libc still remain. The default C build continues to
 serve as the golden oracle until the Phase 7 cutover.
 
+On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
+and opened-file checks because the translated `struct stat` is opaque. Its
+verified-file path requires Linux 4.11 or newer; unsupported kernels or
+missing required file type, mode, link count, inode or owner metadata fail
+closed. Only `ENOENT` allows creation of a new file. The event daemon uses
+`statx` to check whether its PID path exists (including a dangling symlink),
+then uses exclusive creation, so an unsupported `statx` cannot overwrite an
+existing PID file. glibc still uses `lstat`/`fstat`; no C shim was added.
+
+The ISOL, LAN, LAN+ and OpenIPMI ports share a Zig-only `fd_set` helper. It
+accepts a translated libc type only when its size, alignment and single
+long-word-array layout match `FD_SETSIZE`; no private glibc field name or
+production C shim is needed. `zig build test-fdset` checks the word and
+capacity boundaries against libc's `FD_*` macros in a test-only C oracle;
+`test-fdset-compile` checks those ABI assertions on cross targets. OpenIPMI
+also passes `ioctl` requests in the request type declared by the target libc,
+preserving the 32-bit request bits on musl.
+
+CI cross-builds the all-selected `ipmitool` and `ipmievd` binaries in
+`ReleaseSafe` for the opposite runner architecture with musl and verifies
+that neither executable has an ELF interpreter or `NEEDED` library. This
+reduced-feature gate disables readline and OpenSSL/LAN+, and still links musl
+libc and the logging C shim; it is not a pure-Zig or libc-free build.
+
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator

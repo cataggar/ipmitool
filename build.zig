@@ -1051,8 +1051,8 @@ pub fn build(b: *std.Build) void {
 
     // Compiling `src/zig/root.zig` runs every `comptime` layout assertion in
     // the header ports, so this fails the build when a C header and its Zig
-    // mirror drift apart.  Nothing here is exported, so the test binary needs
-    // no C objects.
+    // mirror drift apart. Nothing here is exported; the fd_set C oracle
+    // below is linked into tests only, never into production binaries.
     const abi_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/root.zig"),
         .target = target,
@@ -1060,11 +1060,21 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     abi_mod.addImport("ipmi_c", bridge_mod);
+    abi_mod.addCSourceFile(.{ .file = b.path("tests/fd_set_oracle.c"), .flags = &.{"-std=c11"} });
     addCryptoVectors(b, abi_mod);
     const abi_tests = b.addTest(.{ .root_module = abi_mod });
     const unit_tests = b.addRunArtifact(abi_tests);
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
+
+    const fd_set_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{ "fd_set matches libc macros", "intf.open.test." },
+    });
+    b.step("test-fdset", "Run fd_set boundary and OpenIPMI model tests")
+        .dependOn(&b.addRunArtifact(fd_set_unit).step);
+    b.step("test-fdset-compile", "Cross-compile fd_set ABI parity tests")
+        .dependOn(&fd_set_unit.step);
 
     const shell_unit = b.addTest(.{
         .root_module = abi_mod,

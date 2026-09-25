@@ -68,6 +68,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("intf.zig");
+const fd_set = @import("../util/fd_set.zig");
 const helper = @import("../util/helper.zig");
 const log = @import("../util/log.zig");
 
@@ -199,35 +200,26 @@ fn sysOpen(path: [*:0]const u8, flags: c_int) c_int {
     return c.open(path, flags);
 }
 
+const IoctlRequest = @typeInfo(@TypeOf(c.ioctl)).@"fn".params[1].type.?;
+
+pub fn libcRequest(request: c_ulong) IoctlRequest {
+    // musl takes a signed int, glibc an unsigned long; keep the _IOC bits.
+    const Bits = std.meta.Int(.unsigned, @bitSizeOf(IoctlRequest));
+    const bits: Bits = if (@bitSizeOf(IoctlRequest) < @bitSizeOf(c_ulong))
+        @truncate(request)
+    else
+        @intCast(request);
+    return @bitCast(bits);
+}
+
 fn sysIoctl(fd: c_int, request: c_ulong, arg: ?*anyopaque) c_int {
     if (use_model_driver) return ModelDriver.ioctl(fd, request, arg);
-    return c.ioctl(fd, request, arg);
+    return c.ioctl(fd, libcRequest(request), arg);
 }
 
 fn sysSelect(nfds: c_int, readfds: *c.fd_set, timeout: *c.struct_timeval) c_int {
     if (use_model_driver) return ModelDriver.select(nfds, readfds, timeout);
     return c.select(nfds, readfds, null, null, timeout);
-}
-
-// ---------------------------------------------------------------------------
-// fd_set, which is macros in C
-// ---------------------------------------------------------------------------
-
-const fd_mask_bits = @bitSizeOf(c.__fd_mask);
-
-fn fdZero(set: *c.fd_set) void {
-    @memset(&set.__fds_bits, 0);
-}
-
-fn fdSet(fd: c_int, set: *c.fd_set) void {
-    const bit = @as(usize, @intCast(fd));
-    set.__fds_bits[bit / fd_mask_bits] |= @as(c.__fd_mask, 1) << @intCast(bit % fd_mask_bits);
-}
-
-fn fdIsSet(fd: c_int, set: *const c.fd_set) bool {
-    const bit = @as(usize, @intCast(fd));
-    const mask = @as(c.__fd_mask, 1) << @intCast(bit % fd_mask_bits);
-    return (set.__fds_bits[bit / fd_mask_bits] & mask) != 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -498,8 +490,12 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
 
     // Both of these are filled in once, outside the loop, and `select(2)`
     // overwrites both; see notes 7 and 8.
-    fdZero(&rset);
-    fdSet(intf.fd, &rset);
+    if (!fd_set.valid(intf.fd)) {
+        c.free_n(@ptrCast(&data));
+        return null;
+    }
+    fd_set.zero(&rset);
+    fd_set.set(intf.fd, &rset);
     read_timeout.tv_sec = read_timeout_seconds;
     read_timeout.tv_usec = 0;
     while (true) {
@@ -516,7 +512,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
             c.free_n(@ptrCast(&data));
             return null;
         }
-        if (!fdIsSet(intf.fd, &rset)) {
+        if (!fd_set.isSet(intf.fd, &rset)) {
             log.print(log.Level.err, "No data available", .{});
             c.free_n(@ptrCast(&data));
             return null;
@@ -962,18 +958,18 @@ const ModelDriver = struct {
             select_nfds = nfds;
             select_tv_sec = timeout.tv_sec;
             select_tv_usec = timeout.tv_usec;
-            select_had_fd = fdIsSet(fds[0], readfds);
+            select_had_fd = fd_set.isSet(fds[0], readfds);
         }
         const rc = if (call < select_rc.len) select_rc[call] else 1;
         if (rc <= 0) {
             std.c._errno().* = if (call < select_errno.len) select_errno[call] else 0;
-            fdZero(readfds);
+            fd_set.zero(readfds);
             return rc;
         }
         // A real `select()` narrows the set to what is ready and decrements the
         // timeout; both are what notes 7 and 8 are about.
-        fdZero(readfds);
-        if (!select_clear_fd) fdSet(fds[0], readfds);
+        fd_set.zero(readfds);
+        if (!select_clear_fd) fd_set.set(fds[0], readfds);
         timeout.tv_sec -= 1;
         return rc;
     }
@@ -1082,6 +1078,13 @@ test "the hand-written ioctl numbers agree with src/plugins/open/open.h" {
     try std.testing.expectEqual(@as(c_ulong, c.IPMICTL_SEND_COMMAND), ipmictl_send_command);
     try std.testing.expectEqual(@as(c_ulong, c.IPMICTL_SET_GETS_EVENTS_CMD), ipmictl_set_gets_events_cmd);
     try std.testing.expectEqual(@as(c_ulong, c.IPMICTL_SET_MY_ADDRESS_CMD), ipmictl_set_my_address_cmd);
+}
+
+test "ioctl request preserves high bits for the target libc" {
+    const Bits = std.meta.Int(.unsigned, @bitSizeOf(IoctlRequest));
+    inline for (.{ ipmictl_receive_msg_trunc, ipmictl_send_command }) |request| {
+        try std.testing.expectEqual(@as(Bits, @intCast(request)), @as(Bits, @bitCast(libcRequest(request))));
+    }
 }
 
 test "the vtable matches the C initializer" {

@@ -564,8 +564,8 @@ pub fn ipmiCsum(d: [*]const u8, s: c_int) callconv(.c) u8 {
 }
 
 /// `S_ISREG()`, which `translate-c` cannot bring over from `<sys/stat.h>`.
-fn isRegularFile(mode: c.__mode_t) bool {
-    return (mode & @as(c.__mode_t, @intCast(c.S_IFMT))) == @as(c.__mode_t, @intCast(c.S_IFREG));
+fn isRegularFile(mode: u32) bool {
+    return (mode & @as(u32, @intCast(c.S_IFMT))) == @as(u32, @intCast(c.S_IFREG));
 }
 
 /// C's `(int)` conversion: truncating and never trapping.
@@ -583,23 +583,89 @@ fn toCInt(value: anytype) c_int {
 /// ABI-identical - on both.
 const FilePtr = @typeInfo(@TypeOf(c.fopen)).@"fn".return_type.?;
 
+const FileStat = if (builtin.target.abi == .musl) std.os.linux.Statx else c.struct_stat;
+
+fn statxFile(fd: c_int, path: [*:0]const u8, flags: u32, st: *std.os.linux.Statx) c_int {
+    const linux = std.os.linux;
+    const err = linux.errno(linux.statx(fd, path, flags, .BASIC_STATS, st));
+    if (err != .SUCCESS) {
+        std.c._errno().* = @intFromEnum(err);
+        return -1;
+    }
+    if (!(st.mask.TYPE and st.mask.MODE and st.mask.NLINK and st.mask.UID and st.mask.INO)) {
+        std.c._errno().* = c.EOPNOTSUPP;
+        return -1;
+    }
+    return 0;
+}
+
+fn lstatFile(path: [*:0]const u8, st: *FileStat) c_int {
+    if (comptime builtin.target.abi == .musl) {
+        return statxFile(std.os.linux.AT.FDCWD, path, std.os.linux.AT.SYMLINK_NOFOLLOW, st);
+    } else {
+        return c.lstat(path, st);
+    }
+}
+
+fn fstatFile(fd: c_int, st: *FileStat) c_int {
+    if (comptime builtin.target.abi == .musl) {
+        return statxFile(fd, "", std.os.linux.AT.EMPTY_PATH, st);
+    } else {
+        return c.fstat(fd, st);
+    }
+}
+
+fn fileMode(st: *const FileStat) u32 {
+    if (comptime builtin.target.abi == .musl) {
+        return st.mode;
+    } else {
+        return st.st_mode;
+    }
+}
+
+fn fileNlink(st: *const FileStat) u64 {
+    if (comptime builtin.target.abi == .musl) {
+        return st.nlink;
+    } else {
+        return st.st_nlink;
+    }
+}
+
+fn fileIno(st: *const FileStat) u64 {
+    if (comptime builtin.target.abi == .musl) {
+        return st.ino;
+    } else {
+        return st.st_ino;
+    }
+}
+
+fn fileUid(st: *const FileStat) u32 {
+    if (comptime builtin.target.abi == .musl) {
+        return st.uid;
+    } else {
+        return st.st_uid;
+    }
+}
+
 /// `ipmi_open_file()`: open `file`, refusing links and shared inodes.
-///
-/// Needs a complete `struct stat` from the bridge, which translate-c only
-/// produces for glibc; a musl target renders it `opaque` and this function will
-/// not compile.  glibc is what CI builds and what the autotools oracle used, so
-/// that is accepted for now.
 ///
 /// Returns an owning `FILE *` the caller closes with `fclose()`, or NULL.  The
 /// diagnostics deliberately keep C's mismatched `%d` conversions for
 /// `st_ino`/`st_nlink`: the values are passed with the same widths, so the same
 /// low bits are printed.
 pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
-    var st1: c.struct_stat = undefined;
-    var st2: c.struct_stat = undefined;
+    var st1: FileStat = undefined;
+    var st2: FileStat = undefined;
 
     // Verify existence.
-    if (c.lstat(file, &st1) < 0) {
+    if (lstatFile(file, &st1) < 0) {
+        if (comptime builtin.target.abi == .musl) {
+            // Unsupported statx or missing fields must not permit an unverified write.
+            if (std.c._errno().* != c.ENOENT) {
+                log.perror(log.Level.err, "Unable to stat file %s", .{file});
+                return null;
+            }
+        }
         if (rw != 0) {
             // Does not exist, ok to create.
             const fp = c.fopen(file, "w");
@@ -627,17 +693,17 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
     }
 
     // It exists - only regular files, not links.
-    if (!isRegularFile(st1.st_mode)) {
-        log.print(log.Level.err, "File %s has invalid mode: %d", .{ file, st1.st_mode });
+    if (!isRegularFile(fileMode(&st1))) {
+        log.print(log.Level.err, "File %s has invalid mode: %d", .{ file, fileMode(&st1) });
         return null;
     }
 
     // Allow only files with 1 link (itself).
-    if (st1.st_nlink != 1) {
+    if (fileNlink(&st1) != 1) {
         log.print(
             log.Level.err,
             "File %s has invalid link count: %d != 1",
-            .{ file, toCInt(st1.st_nlink) },
+            .{ file, toCInt(fileNlink(&st1)) },
         );
         return null;
     }
@@ -649,40 +715,40 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
     }
 
     // Stat again.
-    if (c.fstat(c.fileno(fp), &st2) < 0) {
+    if (fstatFile(c.fileno(fp), &st2) < 0) {
         log.perror(log.Level.err, "Unable to stat file %s", .{file});
         _ = c.fclose(fp);
         return null;
     }
 
     // Verify inode.
-    if (st1.st_ino != st2.st_ino) {
+    if (fileIno(&st1) != fileIno(&st2)) {
         log.print(
             log.Level.err,
             "File %s has invalid inode: %d != %d",
-            .{ file, st1.st_ino, st2.st_ino },
+            .{ file, fileIno(&st1), fileIno(&st2) },
         );
         _ = c.fclose(fp);
         return null;
     }
 
     // Verify owner.
-    if (st1.st_uid != st2.st_uid) {
+    if (fileUid(&st1) != fileUid(&st2)) {
         log.print(
             log.Level.err,
             "File %s has invalid user id: %d != %d",
-            .{ file, st1.st_uid, st2.st_uid },
+            .{ file, fileUid(&st1), fileUid(&st2) },
         );
         _ = c.fclose(fp);
         return null;
     }
 
     // Verify inode.
-    if (st2.st_nlink != 1) {
+    if (fileNlink(&st2) != 1) {
         log.print(
             log.Level.err,
             "File %s has invalid link count: %d != 1",
-            .{ file, st2.st_nlink },
+            .{ file, fileNlink(&st2) },
         );
         _ = c.fclose(fp);
         return null;

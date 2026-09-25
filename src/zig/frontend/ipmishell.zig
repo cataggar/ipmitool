@@ -135,7 +135,7 @@ fn readLine(intf: *Intf, history: []const []u8) error{ OutOfMemory, Cancelled, I
     if (interactive) {
         @atomicStore(c_int, &pending_signal, 0, .monotonic);
     }
-    var previous: [handled_signals.len]c.__sighandler_t = undefined;
+    var previous: [handled_signals.len]@TypeOf(c.signal(c.SIGINT, markSignal)) = undefined;
     if (interactive) {
         for (handled_signals, 0..) |sig, i| previous[i] = c.signal(sig, markSignal);
     }
