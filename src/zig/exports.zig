@@ -168,6 +168,9 @@ comptime {
     if (selected("usb")) {
         @import("intf/usb.zig").exportSymbols();
     }
+    if (selected("ipmishell")) {
+        @import("frontend/ipmishell.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

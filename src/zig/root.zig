@@ -81,6 +81,7 @@ test {
     _ = @import("cmd/hpmfwupg.zig");
     _ = @import("cmd/ime.zig");
     _ = @import("cmd/gendev.zig");
+    _ = @import("frontend/ipmishell.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);
