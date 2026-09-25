@@ -78,6 +78,46 @@ args: -I dummy delloem lcd set mode none
 transcript: delloem_12g.tr
 covers: delloem
 
+[delloem_lcd_mode_modelname]
+args: -I dummy delloem lcd set mode modelname
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_ipv4]
+args: -I dummy delloem lcd set mode ipv4address
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_mac]
+args: -I dummy delloem lcd set mode macaddress
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_systemname]
+args: -I dummy delloem lcd set mode systemname
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_service]
+args: -I dummy delloem lcd set mode servicetag
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_ipv6]
+args: -I dummy delloem lcd set mode ipv6address
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_temp]
+args: -I dummy delloem lcd set mode ambienttemp
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_asset]
+args: -I dummy delloem lcd set mode assettag
+transcript: delloem_12g.tr
+covers: delloem
+
 [delloem_lcd_qualifier_watt]
 args: -I dummy delloem lcd set lcdqualifier watt
 transcript: delloem_12g.tr
@@ -110,6 +150,21 @@ covers: delloem
 
 [delloem_lcd_set_lock]
 args: -I dummy delloem lcd set frontpanelaccess viewonly
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_lock_disabled]
+args: -I dummy delloem lcd set frontpanelaccess disabled
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_lock_modify]
+args: -I dummy delloem lcd set frontpanelaccess viewandmodify
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_kvm_inactive]
+args: -I dummy delloem lcd set vkvm inactive
 transcript: delloem_12g.tr
 covers: delloem
 
@@ -215,8 +270,33 @@ args: -I dummy delloem lan get active
 transcript: delloem_12g.tr
 covers: delloem
 
+[delloem_lan_active_10g]
+args: -I dummy delloem lan get active
+transcript: delloem_10g.tr
+covers: delloem
+
 [delloem_lan_set_12g]
 args: -I dummy delloem lan set shared with failover all loms
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_lom1]
+args: -I dummy delloem lan set shared with lom1
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_lom4]
+args: -I dummy delloem lan set shared with lom4
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_failover_none]
+args: -I dummy delloem lan set shared with failover none
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_failover_lom4]
+args: -I dummy delloem lan set shared with failover lom4
 transcript: delloem_12g.tr
 covers: delloem
 
@@ -267,6 +347,11 @@ covers: delloem
 
 [delloem_power_budget_watt]
 args: -I dummy delloem powermonitor getpowerbudget watt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_default]
+args: -I dummy delloem powermonitor getpowerbudget
 transcript: delloem_12g.tr
 covers: delloem
 

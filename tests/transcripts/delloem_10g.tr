@@ -48,3 +48,15 @@ respond nic_set
   netfn 0x30
   cmd 0x24
 end
+respond active_status
+  netfn 0x30
+  cmd 0xc1
+  match 00 00 00
+  data 01 00
+end
+respond active_link
+  netfn 0x30
+  cmd 0xc1
+  match 01 00 00
+  data 00 01
+end
