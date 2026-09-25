@@ -284,6 +284,10 @@ cases assert that Zig rejects without writing while libc either rejects or
 produces the exact expected bytes. The C oracle and golden snapshots remain
 unchanged.
 
+The selected helper writes `printbuf`'s verbose hex dump through Zig stderr
+I/O instead of libc `fprintf`. Sixteen-byte line wraps and header/hex bytes
+remain golden-tested; a failed write terminates explicitly.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or
