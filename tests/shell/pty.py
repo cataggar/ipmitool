@@ -46,6 +46,7 @@ class Dummy:
         self.listener.listen()
         self.listener.settimeout(.2)
         self.stop = threading.Event()
+        self.warm_reset_success = threading.Event()
         self.thread = threading.Thread(target=self.serve)
         self.thread.start()
         return self
@@ -69,8 +70,12 @@ class Dummy:
                         if netfn == 0x3F and command == 0xFF:
                             break
                         # Match the golden harness's default completion code.
+                        ccode = 0 if (
+                            self.warm_reset_success.is_set()
+                            and netfn == 0x06 and command == 0x03
+                        ) else 0xC1
                         conn.sendall(struct.pack(
-                            "@BBBBB3xi4xP", netfn | 1, command, 0, lun, 0xC1, 0, 0
+                            "@BBBBB3xi4xP", netfn | 1, command, 0, lun, ccode, 0, 0
                         ))
                 except (OSError, TimeoutError):
                     pass
@@ -361,14 +366,21 @@ class ShellTests(unittest.TestCase):
                 self.assertIn(b": stdout WriteFailed", run.stderr)
 
     def test_shell_stdout_libc_flush_failure_is_not_success(self):
-        SCRIPT.write_text("sdr entity list\necho after\n", encoding="utf-8")
-        with open("/dev/full", "wb") as full:
-            run = subprocess.run(
-                [ZIG, "-I", "dummy", "exec", str(SCRIPT)], stdout=full,
-                stderr=subprocess.PIPE, env=env(), timeout=5, check=False,
-            )
-        self.assertNotEqual(run.returncode, 0, run.stderr)
-        self.assertIn(b"echo: stdout CStdoutFlushFailed", run.stderr)
+        self.bmc.warm_reset_success.set()
+        try:
+            SCRIPT.write_text("mc reset warm\necho after\n", encoding="utf-8")
+            normal = cli(ZIG, "exec", str(SCRIPT))
+            self.assertEqual(normal.returncode, 0, normal.stderr)
+            self.assertEqual(normal.stdout, b"Sent warm reset command to MC\nafter \n")
+            with open("/dev/full", "wb") as full:
+                run = subprocess.run(
+                    [ZIG, "-I", "dummy", "exec", str(SCRIPT)], stdout=full,
+                    stderr=subprocess.PIPE, env=env(), timeout=5, check=False,
+                )
+            self.assertNotEqual(run.returncode, 0, run.stderr)
+            self.assertIn(b"echo: stdout CStdoutFlushFailed", run.stderr)
+        finally:
+            self.bmc.warm_reset_success.clear()
 
     def test_redirected_input_eof_and_status(self):
         run = subprocess.run(
