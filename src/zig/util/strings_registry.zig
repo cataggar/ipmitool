@@ -58,7 +58,7 @@ const dummy: [*]const ValStr = &tables.ipmi_oem_info_dummy;
 /// opened.
 fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
     const file = openRegistry() orelse {
-        c.lperror(log.Level.err, "IANA PEN registry open failed");
+        log.perror(log.Level.err, "IANA PEN registry open failed", .{});
         return -1;
     };
     defer _ = std.c.fclose(file);
@@ -82,11 +82,11 @@ fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
         if (name.len != 0 and name[name.len - 1] == '\n') name = name[0 .. name.len - 1];
 
         const copy = dupeZ(name) orelse {
-            c.lperror(log.Level.err, "IANA PEN registry string allocation failed");
+            log.perror(log.Level.err, "IANA PEN registry string allocation failed", .{});
             break;
         };
         entries.append(allocator, .{ .val = iana, .str = copy }) catch {
-            c.lperror(log.Level.err, "IANA PEN registry entry allocation failed");
+            log.perror(log.Level.err, "IANA PEN registry entry allocation failed", .{});
             freeStr(copy);
             break;
         };
@@ -204,14 +204,14 @@ fn install(entries: []const ValStr) bool {
     const total = entries.len + head_entries + tail_entries + 1;
 
     const raw = std.c.malloc(total * @sizeOf(ValStr)) orelse {
-        c.lperror(log.Level.err, "IANA PEN registry array allocation failed");
+        log.perror(log.Level.err, "IANA PEN registry array allocation failed", .{});
         oem_info = dummy;
         return false;
     };
     const array: [*]ValStr = @ptrCast(@alignCast(raw));
     oem_info = array;
 
-    c.lprintf(oemlist_debug, "  Allocating %6zu entries", total);
+    log.print(oemlist_debug, "  Allocating %6zu entries", .{total});
 
     // Filled back to front, and logged in that order, so that six -v options
     // produce the same transcript the C did.
@@ -246,12 +246,10 @@ fn install(entries: []const ValStr) bool {
 }
 
 fn logEntry(slot: usize, entry: ValStr) void {
-    c.lprintf(
+    log.print(
         oemlist_debug,
         "  [%6zu] %8d | %s",
-        slot,
-        @as(c_int, @bitCast(entry.val)),
-        entry.str,
+        .{ slot, @as(c_int, @bitCast(entry.val)), entry.str },
     );
 }
 
@@ -261,10 +259,10 @@ fn logEntry(slot: usize, entry: ValStr) void {
 
 /// `ipmi_oem_info_init`.
 fn init() callconv(.c) void {
-    c.lprintf(log.Level.info, "Loading IANA PEN Registry...");
+    log.print(log.Level.info, "Loading IANA PEN Registry...", .{});
 
     if (oem_info != null) {
-        c.lprintf(log.Level.info, "IANA PEN Registry is already loaded");
+        log.print(log.Level.info, "IANA PEN Registry is already loaded", .{});
         return;
     }
 
@@ -272,7 +270,7 @@ fn init() callconv(.c) void {
     defer entries.deinit(allocator);
 
     if (loadRegistry(&entries) < 1) {
-        c.lprintf(log.Level.warn, "Failed to load entries from IANA PEN Registry");
+        log.print(log.Level.warn, "Failed to load entries from IANA PEN Registry", .{});
     }
 
     // On success the array owns the strings; on failure nothing else will.

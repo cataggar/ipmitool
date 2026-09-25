@@ -103,7 +103,7 @@ pub fn hmac(
     md_len: [*c]u32,
 ) callconv(.c) [*c]u8 {
     const selected = mac.algorithmFor(algorithm) orelse {
-        c.lprintf(log.Level.debug, "Invalid mac type 0x%x in lanplus_HMAC\n", @as(c_uint, algorithm));
+        log.print(log.Level.debug, "Invalid mac type 0x%x in lanplus_HMAC\n", .{@as(c_uint, algorithm)});
         cassert.unreachableBranch(.{
             .file = source,
             .line = 138,
@@ -198,7 +198,7 @@ pub fn decryptAesCbc128(
     bytes_written.* = input_length;
 
     if (c.verbose >= 5) {
-        c.lprintf(log.Level.debug, "Decrypted %d encrypted bytes", input_length);
+        log.print(log.Level.debug, "Decrypted %d encrypted bytes", .{input_length});
         c.printbuf(output, @intCast(bytes_written.*), "Decrypted this data");
     }
 }

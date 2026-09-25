@@ -242,12 +242,12 @@ pub fn str2mac(arg: [*:0]const u8, buf: [*]u8) callconv(.c) c_int {
         &m[4],
         &m[5],
     ) != 6) {
-        c.lprintf(log.Level.err, "Invalid MAC address: %s", arg);
+        log.print(log.Level.err, "Invalid MAC address: %s", .{arg});
         return -1;
     }
     for (m) |octet| {
         if (octet > std.math.maxInt(u8)) {
-            c.lprintf(log.Level.err, "Invalid MAC address: %s", arg);
+            log.print(log.Level.err, "Invalid MAC address: %s", .{arg});
             return -1;
         }
     }
@@ -344,7 +344,7 @@ pub fn printValstr(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_int)
         if (loglevel < 0) {
             _ = c.printf("\n%s:\n\n", name);
         } else {
-            c.lprintf(loglevel, "\n%s:\n", name);
+            log.print(loglevel, "\n%s:\n", .{name});
         }
     }
 
@@ -352,8 +352,8 @@ pub fn printValstr(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_int)
         _ = c.printf("  VALUE\tHEX\tSTRING\n");
         _ = c.printf("==============================================\n");
     } else {
-        c.lprintf(loglevel, "  VAL\tHEX\tSTRING");
-        c.lprintf(loglevel, "==============================================");
+        log.print(loglevel, "  VAL\tHEX\tSTRING", .{});
+        log.print(loglevel, "==============================================", .{});
     }
 
     var i: usize = 0;
@@ -367,9 +367,9 @@ pub fn printValstr(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_int)
             }
         } else {
             if (val < 256) {
-                c.lprintf(loglevel, "  %d\t0x%02x\t%s", val, val, str);
+                log.print(loglevel, "  %d\t0x%02x\t%s", .{ val, val, str });
             } else {
-                c.lprintf(loglevel, "  %d\t0x%04x\t%s", val, val, str);
+                log.print(loglevel, "  %d\t0x%04x\t%s", .{ val, val, str });
             }
         }
     }
@@ -377,7 +377,7 @@ pub fn printValstr(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_int)
     if (loglevel < 0) {
         _ = c.printf("\n");
     } else {
-        c.lprintf(loglevel, "");
+        log.print(loglevel, "", .{});
     }
 }
 
@@ -389,7 +389,7 @@ pub fn printValstr2col(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_
         if (loglevel < 0) {
             _ = c.printf("\n%s:\n\n", name);
         } else {
-            c.lprintf(loglevel, "\n%s:\n", name);
+            log.print(loglevel, "\n%s:\n", .{name});
         }
     }
 
@@ -405,13 +405,10 @@ pub fn printValstr2col(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_
                     next,
                 );
             } else {
-                c.lprintf(
+                log.print(
                     loglevel,
                     "  %4d  %-32s    %4d  %-32s\n",
-                    table[i].val,
-                    str,
-                    table[i + 1].val,
-                    next,
+                    .{ table[i].val, str, table[i + 1].val, next },
                 );
             }
             // Consumed two entries; the loop's own increment adds the second.
@@ -421,7 +418,7 @@ pub fn printValstr2col(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_
             if (loglevel < 0) {
                 _ = c.printf("  %4d  %-32s\n", table[i].val, str);
             } else {
-                c.lprintf(loglevel, "  %4d  %-32s\n", table[i].val, str);
+                log.print(loglevel, "  %4d  %-32s\n", .{ table[i].val, str });
             }
         }
     }
@@ -429,7 +426,7 @@ pub fn printValstr2col(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_
     if (loglevel < 0) {
         _ = c.printf("\n");
     } else {
-        c.lprintf(loglevel, "");
+        log.print(loglevel, "", .{});
     }
 }
 
@@ -607,13 +604,13 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
             // Does not exist, ok to create.
             const fp = c.fopen(file, "w");
             if (fp == null) {
-                c.lperror(log.Level.err, "Unable to open file %s for write", file);
+                log.perror(log.Level.err, "Unable to open file %s for write", .{file});
                 return null;
             }
             // Created ok, now return the descriptor.
             return fp;
         }
-        c.lprintf(log.Level.err, "File %s does not exist", file);
+        log.print(log.Level.err, "File %s does not exist", .{file});
         return null;
     }
 
@@ -622,7 +619,7 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
             // On read skip the extra checks.
             const fp = c.fopen(file, "r");
             if (fp == null) {
-                c.lperror(log.Level.err, "Unable to open file %s", file);
+                log.perror(log.Level.err, "Unable to open file %s", .{file});
                 return null;
             }
             return fp;
@@ -631,42 +628,39 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
 
     // It exists - only regular files, not links.
     if (!isRegularFile(st1.st_mode)) {
-        c.lprintf(log.Level.err, "File %s has invalid mode: %d", file, st1.st_mode);
+        log.print(log.Level.err, "File %s has invalid mode: %d", .{ file, st1.st_mode });
         return null;
     }
 
     // Allow only files with 1 link (itself).
     if (st1.st_nlink != 1) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "File %s has invalid link count: %d != 1",
-            file,
-            toCInt(st1.st_nlink),
+            .{ file, toCInt(st1.st_nlink) },
         );
         return null;
     }
 
     const fp = c.fopen(file, if (rw != 0) "w+" else "r");
     if (fp == null) {
-        c.lperror(log.Level.err, "Unable to open file %s", file);
+        log.perror(log.Level.err, "Unable to open file %s", .{file});
         return null;
     }
 
     // Stat again.
     if (c.fstat(c.fileno(fp), &st2) < 0) {
-        c.lperror(log.Level.err, "Unable to stat file %s", file);
+        log.perror(log.Level.err, "Unable to stat file %s", .{file});
         _ = c.fclose(fp);
         return null;
     }
 
     // Verify inode.
     if (st1.st_ino != st2.st_ino) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "File %s has invalid inode: %d != %d",
-            file,
-            st1.st_ino,
-            st2.st_ino,
+            .{ file, st1.st_ino, st2.st_ino },
         );
         _ = c.fclose(fp);
         return null;
@@ -674,12 +668,10 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
 
     // Verify owner.
     if (st1.st_uid != st2.st_uid) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "File %s has invalid user id: %d != %d",
-            file,
-            st1.st_uid,
-            st2.st_uid,
+            .{ file, st1.st_uid, st2.st_uid },
         );
         _ = c.fclose(fp);
         return null;
@@ -687,11 +679,10 @@ pub fn ipmiOpenFile(file: [*:0]const u8, rw: c_int) callconv(.c) FilePtr {
 
     // Verify inode.
     if (st2.st_nlink != 1) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "File %s has invalid link count: %d != 1",
-            file,
-            st2.st_nlink,
+            .{ file, st2.st_nlink },
         );
         _ = c.fclose(fp);
         return null;
@@ -746,11 +737,10 @@ pub fn ipmiStartDaemon(intf: *Intf) callconv(.c) void {
     }
 
     if (c.chdir("/") != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "chdir failed: %s (%d)",
-            c.strerror(std.c._errno().*),
-            std.c._errno().*,
+            .{ c.strerror(std.c._errno().*), std.c._errno().* },
         );
         c.exit(1);
     }
@@ -763,29 +753,26 @@ pub fn ipmiStartDaemon(intf: *Intf) callconv(.c) void {
 
     fd = c.open("/dev/null", c.O_RDWR);
     if (fd != c.STDIN_FILENO) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "failed to reset stdin: %s (%d)",
-            c.strerror(std.c._errno().*),
-            std.c._errno().*,
+            .{ c.strerror(std.c._errno().*), std.c._errno().* },
         );
         c.exit(1);
     }
     if (c.dup(fd) != c.STDOUT_FILENO) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "failed to reset stdout: %s (%d)",
-            c.strerror(std.c._errno().*),
-            std.c._errno().*,
+            .{ c.strerror(std.c._errno().*), std.c._errno().* },
         );
         c.exit(1);
     }
     if (c.dup(fd) != c.STDERR_FILENO) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "failed to reset stderr: %s (%d)",
-            c.strerror(std.c._errno().*),
-            std.c._errno().*,
+            .{ c.strerror(std.c._errno().*), std.c._errno().* },
         );
         c.exit(1);
     }
@@ -804,19 +791,19 @@ pub fn evalCcode(ccode: c_int) callconv(.c) c_int {
 
     if (ccode < 0) {
         switch (ccode) {
-            -1 => c.lprintf(log.Level.err, "IPMI response is NULL."),
-            -2 => c.lprintf(log.Level.err, "Unexpected data length received."),
-            -3 => c.lprintf(log.Level.err, "Invalid function parameter."),
-            -4 => c.lprintf(log.Level.err, "ipmitool: malloc failure."),
+            -1 => log.print(log.Level.err, "IPMI response is NULL.", .{}),
+            -2 => log.print(log.Level.err, "Unexpected data length received.", .{}),
+            -3 => log.print(log.Level.err, "Invalid function parameter.", .{}),
+            -4 => log.print(log.Level.err, "ipmitool: malloc failure.", .{}),
             else => {},
         }
         return -1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.err,
         "IPMI command failed: %s",
-        val2str(@intCast(ccode), completionCodeVals()),
+        .{val2str(@intCast(ccode), completionCodeVals())},
     );
     return -1;
 }
@@ -824,16 +811,16 @@ pub fn evalCcode(ccode: c_int) callconv(.c) c_int {
 /// `is_fru_id()`: parse a FRU ID, `<0..255>`.
 pub fn isFruId(argv_ptr: ?[*:0]const u8, fru_id_ptr: ?*u8) callconv(.c) c_int {
     if (argv_ptr == null or fru_id_ptr == null) {
-        c.lprintf(log.Level.err, "is_fru_id(): invalid argument(s).");
+        log.print(log.Level.err, "is_fru_id(): invalid argument(s).", .{});
         return -1;
     }
 
     if (str2uchar(argv_ptr, fru_id_ptr) == 0) return 0;
 
-    c.lprintf(
+    log.print(
         log.Level.err,
         "FRU ID '%s' is either invalid or out of range.",
-        argv_ptr.?,
+        .{argv_ptr.?},
     );
     return -1;
 }
@@ -842,7 +829,7 @@ pub fn isFruId(argv_ptr: ?[*:0]const u8, fru_id_ptr: ?*u8) callconv(.c) c_int {
 /// `<0xE..0xF>`.
 pub fn isIpmiChannelNum(argv_ptr: ?[*:0]const u8, channel_ptr: ?*u8) callconv(.c) c_int {
     if (argv_ptr == null or channel_ptr == null) {
-        c.lprintf(log.Level.err, "is_ipmi_channel_num(): invalid argument(s).");
+        log.print(log.Level.err, "is_ipmi_channel_num(): invalid argument(s).", .{});
         return -1;
     }
 
@@ -851,19 +838,19 @@ pub fn isIpmiChannelNum(argv_ptr: ?[*:0]const u8, channel_ptr: ?*u8) callconv(.c
         if (channel <= 0xB or (channel >= 0xE and channel <= 0xF)) return 0;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.err,
         "Given Channel number '%s' is either invalid or out of range.",
-        argv_ptr.?,
+        .{argv_ptr.?},
     );
-    c.lprintf(log.Level.err, "Channel number must be from ranges: <0x0..0xB>, <0xE..0xF>");
+    log.print(log.Level.err, "Channel number must be from ranges: <0x0..0xB>, <0xE..0xF>", .{});
     return -1;
 }
 
 /// `is_ipmi_user_id()`: parse a user ID, `<IPMI_UID_MIN..IPMI_UID_MAX>`.
 pub fn isIpmiUserId(argv_ptr: ?[*:0]const u8, ipmi_uid_ptr: ?*u8) callconv(.c) c_int {
     if (argv_ptr == null or ipmi_uid_ptr == null) {
-        c.lprintf(log.Level.err, "is_ipmi_user_id(): invalid argument(s).");
+        log.print(log.Level.err, "is_ipmi_user_id(): invalid argument(s).", .{});
         return -1;
     }
 
@@ -872,16 +859,15 @@ pub fn isIpmiUserId(argv_ptr: ?[*:0]const u8, ipmi_uid_ptr: ?*u8) callconv(.c) c
         if (uid >= uid_min and uid <= uid_max) return 0;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.err,
         "Given User ID '%s' is either invalid or out of range.",
-        argv_ptr.?,
+        .{argv_ptr.?},
     );
-    c.lprintf(
+    log.print(
         log.Level.err,
         "User ID is limited to range <%i..%i>.",
-        @as(c_int, c.IPMI_UID_MIN),
-        @as(c_int, c.IPMI_UID_MAX),
+        .{ @as(c_int, c.IPMI_UID_MIN), @as(c_int, c.IPMI_UID_MAX) },
     );
     return -1;
 }
@@ -892,7 +878,7 @@ pub fn isIpmiUserPrivLimit(
     ipmi_priv_limit_ptr: ?*u8,
 ) callconv(.c) c_int {
     if (argv_ptr == null or ipmi_priv_limit_ptr == null) {
-        c.lprintf(log.Level.err, "is_ipmi_user_priv_limit(): invalid argument(s).");
+        log.print(log.Level.err, "is_ipmi_user_priv_limit(): invalid argument(s).", .{});
         return -1;
     }
 
@@ -902,8 +888,8 @@ pub fn isIpmiUserPrivLimit(
         break :blk (limit < 0x01 or limit > 0x05) and limit != 0x0F;
     } else false;
     if (!parsed or bad_range) {
-        c.lprintf(log.Level.err, "Given Privilege Limit '%s' is invalid.", argv_ptr.?);
-        c.lprintf(log.Level.err, "Privilege Limit is limited to <0x1..0x5> and <0xF>.");
+        log.print(log.Level.err, "Given Privilege Limit '%s' is invalid.", .{argv_ptr.?});
+        log.print(log.Level.err, "Privilege Limit is limited to <0x1..0x5> and <0xF>.", .{});
         return -1;
     }
     return 0;
@@ -917,21 +903,20 @@ pub fn ipmiGetOemId(intf: *Intf) callconv(.c) u16 {
     req.msg.data_len = 0;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Board ID command failed");
+        log.print(log.Level.err, "Get Board ID command failed", .{});
         return 0;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get Board ID command failed: %#x %s",
-            @as(c_uint, rsp.ccode),
-            val2str(rsp.ccode, completionCodeVals()),
+            .{ @as(c_uint, rsp.ccode), val2str(rsp.ccode, completionCodeVals()) },
         );
         return 0;
     }
 
     const oem_id = @as(u16, rsp.data[0]) | @as(u16, rsp.data[1]) << 8;
-    c.lprintf(log.Level.debug, "Board ID: %x", @as(c_uint, oem_id));
+    log.print(log.Level.debug, "Board ID: %x", .{@as(c_uint, oem_id)});
     return oem_id;
 }
 
@@ -950,7 +935,7 @@ pub fn args2buf(
     while (i < count) : (i += 1) {
         var byte: u8 = 0;
         if (str2uchar(argv[i], &byte) != 0) {
-            c.lprintf(log.Level.err, "Bad byte value: %s", argv[i]);
+            log.print(log.Level.err, "Bad byte value: %s", .{argv[i]});
             return false;
         }
         out[i] = byte;

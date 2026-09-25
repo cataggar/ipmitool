@@ -23,6 +23,14 @@ pub fn main() void {
     log.print(log.Level.debug, "%d: %#06x %-9.4s %+d %%", .{
         @as(c_int, 7), @as(c_uint, 42), @as([*:0]const u8, "leftover"), @as(c_int, 3),
     });
+    c.log_level_set(6);
+    log.print(log.Level.debug + 4, "  Allocating %6zu entries", .{@as(usize, 42)});
+    log.print(log.Level.debug + 4, "  [%6zu] %8d | %s", .{
+        @as(usize, 42), @as(c_int, @bitCast(@as(u32, 0xffff_fffd))), @as([*:0]const u8, "Acme"),
+    });
+    log.print(log.Level.notice, "  %d\t0x%02x\t%s", .{
+        @as(u32, 42), @as(u32, 42), @as([*:0]const u8, "Acme"),
+    });
     c.lprintf(log.Level.notice, "ABI %d", @as(c_int, 11));
 
     std.c._errno().* = c.ENOENT;

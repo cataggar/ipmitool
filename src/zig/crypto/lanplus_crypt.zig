@@ -66,7 +66,7 @@ const crypt_aes_cbc_128 = 0x01;
 const allocator = std.heap.c_allocator;
 
 fn mallocFailure() c_int {
-    c.lprintf(log.Level.err, "ipmitool: malloc failure");
+    log.print(log.Level.err, "ipmitool: malloc failure", .{});
     return 1;
 }
 
@@ -145,7 +145,7 @@ fn assertRakpDigestLength(auth_alg: u8, mac_length: u32, comptime site: cassert.
 /// Run one of the RAKP HMACs.
 fn keyedHash(algorithm: u8, key: []const u8, data: []const u8, out: *[max_md_size]u8) u32 {
     const selected = mac_mod.algorithmFor(algorithm) orelse {
-        c.lprintf(log.Level.debug, "Invalid mac type 0x%x in lanplus_HMAC\n", @as(c_uint, algorithm));
+        log.print(log.Level.debug, "Invalid mac type 0x%x in lanplus_HMAC\n", .{@as(c_uint, algorithm)});
         cassert.unreachableBranch(.{
             .file = "src/plugins/lanplus/lanplus_crypt_impl.c",
             .line = 138,
@@ -473,7 +473,7 @@ pub fn encryptPayload(
     payload_mod.pad(input[0..input_length], padded_input);
 
     if (c.lanplus_rand(output, block_size) != 0) {
-        c.lprintf(log.Level.err, "lanplus_encrypt_payload: Error generating IV");
+        log.print(log.Level.err, "lanplus_encrypt_payload: Error generating IV", .{});
         return 1;
     }
 
@@ -526,7 +526,7 @@ pub fn hasValidAuthCode(rs: *ipmi.Response, session: *Session) callconv(.c) c_in
     );
 
     if (c.verbose > 3) {
-        c.lprintf(log.Level.debug + 2, "Validating authcode");
+        log.print(log.Level.debug + 2, "Validating authcode", .{});
         c.printbuf(&session.v2_data.k1, session.v2_data.k1_len, "K1");
         c.printbuf(data.ptr, @intCast(data_length), "Authcode Input Data");
         c.printbuf(&generated, @intCast(generated_length), "Generated authcode");
@@ -592,7 +592,7 @@ pub fn decryptPayload(
     );
 
     if (bytes_decrypted == 0) {
-        c.lprintf(log.Level.err, "ERROR: lanplus_decrypt_aes_cbc_128 decryptd 0 bytes");
+        log.print(log.Level.err, "ERROR: lanplus_decrypt_aes_cbc_128 decryptd 0 bytes", .{});
         cassert.unreachableBranch(.{
             .file = source,
             .line = 1070,
@@ -604,7 +604,7 @@ pub fn decryptPayload(
     std.mem.copyForwards(u8, output[0..bytes_decrypted], decrypted[0..bytes_decrypted]);
 
     const size = payload_mod.payloadLength(decrypted[0..bytes_decrypted]) orelse {
-        c.lprintf(log.Level.err, "Malformed payload padding");
+        log.print(log.Level.err, "Malformed payload padding", .{});
         cassert.unreachableBranch(.{
             .file = source,
             .line = 1063,
