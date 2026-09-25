@@ -1,0 +1,15 @@
+# C-oracle logger diagnostics: the SEL record ID is formatted as lowercase
+# hex while the malformed response length is decimal; the compact sensor
+# record type is zero-padded hex. These remain full-stream snapshots.
+
+[log_sel_short_entry]
+desc: SEL short entry diagnostic formats a nontrivial ID and response length
+args: -I dummy sel get 0x9a3f
+transcript: log_sel_short_entry.tr
+covers: sel
+
+[log_sensor_compact_type]
+desc: sensor threshold rejects a compact record with a zero-padded type
+args: -I dummy sensor thresh FanC unr 200
+transcript: sensor.tr
+covers: sensor

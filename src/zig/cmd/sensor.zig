@@ -41,9 +41,10 @@
 //!   `lib/ipmi_sdr.c` validates SDR body and name lengths before returning a
 //!   record to this module.
 //!
-//! Everything this module needs from C - `printf`, `lprintf`, `val2str`,
-//! `str2double`, the SDR helpers and the sensor-type table - is reached
-//! through the `ipmi_c` bridge.
+//! `printf`, `val2str`, `str2double`, the SDR helpers and the sensor-type
+//! table are reached through the `ipmi_c` bridge.  Diagnostics use the typed
+//! archive logger (`log.print()`), which forwards to C when the Zig logger
+//! is not selected; `printf` formats and promoted argument widths are kept.
 
 const std = @import("std");
 
@@ -245,21 +246,25 @@ fn getSensorReadingFactors(
     req.msg.data_len = req_data.len;
 
     const rsp = sendrecv(in, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Error updating reading factor for sensor %s (#%02x)",
-            &id,
-            @as(c_int, rec[common.sensor_num]),
+            .{
+                &id,
+                @as(c_int, rec[common.sensor_num]),
+            },
         );
         return -1;
     };
     if (rsp.ccode != 0) return -1;
     if (rsp.data_len < 1 + mtol_size + bacc_size) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Short reading factors response for sensor %s (#%02x)",
-            &id,
-            @as(c_int, rec[common.sensor_num]),
+            .{
+                &id,
+                @as(c_int, rec[common.sensor_num]),
+            },
         );
         return -1;
     }
@@ -360,11 +365,11 @@ fn setThresholdOne(
     channel: u8,
 ) c_int {
     const rsp = setSensorThresholds(intf, num, mask, setting, target, lun, channel) orelse {
-        c.lprintf(log.Level.err, "Error setting threshold");
+        log.print(log.Level.err, "Error setting threshold", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error setting threshold: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Error setting threshold: %s", .{ccString(rsp.ccode)});
         return -1;
     }
     return 0;
@@ -805,17 +810,17 @@ fn printFc(
 fn sensorList(intf: *Intf) c_int {
     const rc: c_int = 0;
 
-    c.lprintf(log.Level.debug, "Querying SDR for sensor list");
+    log.print(log.Level.debug, "Querying SDR for sensor list", .{});
 
     const itr = c.ipmi_sdr_start(cIntf(intf), 0) orelse {
-        c.lprintf(log.Level.err, "Unable to open SDR for reading");
+        log.print(log.Level.err, "Unable to open SDR for reading", .{});
         return -1;
     };
 
     while (c.ipmi_sdr_get_next_header(cIntf(intf), itr)) |raw_header| {
         const header: *const SdrGetRs = @ptrCast(raw_header);
         const rec = c.ipmi_sdr_get_record(cIntf(intf), raw_header, itr) orelse {
-            c.lprintf(log.Level.debug, "rec == NULL");
+            log.print(log.Level.debug, "rec == NULL", .{});
             continue;
         };
 
@@ -857,44 +862,46 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
 
     if (eql(thresh, "upper")) {
         if (argc < 5) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "usage: sensor thresh <id> upper <unc> <ucr> <unr>",
+                .{},
             );
             return -1;
         }
         all_upper = true;
         if (c.str2double(argv[2], &setting1) != 0) {
-            c.lprintf(log.Level.err, "Given unc '%s' is invalid.", argv[2]);
+            log.print(log.Level.err, "Given unc '%s' is invalid.", .{argv[2]});
             return -1;
         }
         if (c.str2double(argv[3], &setting2) != 0) {
-            c.lprintf(log.Level.err, "Given ucr '%s' is invalid.", argv[3]);
+            log.print(log.Level.err, "Given ucr '%s' is invalid.", .{argv[3]});
             return -1;
         }
         if (c.str2double(argv[4], &setting3) != 0) {
-            c.lprintf(log.Level.err, "Given unr '%s' is invalid.", argv[4]);
+            log.print(log.Level.err, "Given unr '%s' is invalid.", .{argv[4]});
             return -1;
         }
     } else if (eql(thresh, "lower")) {
         if (argc < 5) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "usage: sensor thresh <id> lower <lnr> <lcr> <lnc>",
+                .{},
             );
             return -1;
         }
         all_lower = true;
         if (c.str2double(argv[2], &setting1) != 0) {
-            c.lprintf(log.Level.err, "Given lnc '%s' is invalid.", argv[2]);
+            log.print(log.Level.err, "Given lnc '%s' is invalid.", .{argv[2]});
             return -1;
         }
         if (c.str2double(argv[3], &setting2) != 0) {
-            c.lprintf(log.Level.err, "Given lcr '%s' is invalid.", argv[3]);
+            log.print(log.Level.err, "Given lcr '%s' is invalid.", .{argv[3]});
             return -1;
         }
         if (c.str2double(argv[4], &setting3) != 0) {
-            c.lprintf(log.Level.err, "Given lnr '%s' is invalid.", argv[4]);
+            log.print(log.Level.err, "Given lnr '%s' is invalid.", .{argv[4]});
             return -1;
         }
     } else {
@@ -911,20 +918,24 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         } else if (eql(thresh, "lnr")) {
             setting_mask = lower_non_recov_specified;
         } else {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Valid threshold '%s' for sensor '%s' not specified!",
-                thresh,
-                id,
+                .{
+                    thresh,
+                    id,
+                },
             );
             return -1;
         }
         if (c.str2double(argv[2], &setting1) != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Given %s threshold value '%s' is invalid.",
-                thresh,
-                argv[2],
+                .{
+                    thresh,
+                    argv[2],
+                },
             );
             return -1;
         }
@@ -942,7 +953,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
             lower_non_recov_specified,
             => {},
             else => {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             },
         }
@@ -952,12 +963,12 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
 
     // lookup by sensor name
     const sdr: *const SdrRecordList = @ptrCast(c.ipmi_sdr_find_sdr_byid(cIntf(intf), id) orelse {
-        c.lprintf(log.Level.err, "Sensor data record not found!");
+        log.print(log.Level.err, "Sensor data record not found!", .{});
         return -1;
     });
 
     if (sdr.type != record_type_full) {
-        c.lprintf(log.Level.err, "Invalid sensor type %02x", @as(c_int, sdr.type));
+        log.print(log.Level.err, "Invalid sensor type %02x", .{@as(c_int, sdr.type)});
         return -1;
     }
 
@@ -966,10 +977,10 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     const full: *FullSensor = @ptrCast(@constCast(record));
 
     if (!isThresholdSensor(sensor)) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Invalid sensor event type %02x",
-            @as(c_int, record[common.event_type]),
+            .{@as(c_int, record[common.event_type])},
         );
         return -1;
     }
@@ -1036,7 +1047,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
             channel,
         ));
         if (rsp == null or rsp.?.ccode != 0 or rsp.?.data_len < 7) {
-            c.lprintf(log.Level.err, "Sensor data record not found!");
+            log.print(log.Level.err, "Sensor data record not found!", .{});
             return -1;
         }
         const data = &rsp.?.data;
@@ -1050,7 +1061,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 (((data[0] & upper_crit_specified) != 0 and setting1 <= val[5]) or
                     ((data[0] & upper_non_crit_specified) != 0 and setting1 <= val[4])))
             {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             }
         } else if (setting_mask & upper_crit_specified != 0) {
@@ -1058,7 +1069,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 (((data[0] & upper_non_recov_specified) != 0 and setting1 >= val[6]) or
                     ((data[0] & upper_non_crit_specified) != 0 and setting1 <= val[4])))
             {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             }
         } else if (setting_mask & upper_non_crit_specified != 0) {
@@ -1067,7 +1078,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                     ((data[0] & upper_crit_specified) != 0 and setting1 >= val[5]) or
                     ((data[0] & lower_non_crit_specified) != 0 and setting1 <= val[1])))
             {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             }
         } else if (setting_mask & lower_non_crit_specified != 0) {
@@ -1076,7 +1087,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                     ((data[0] & lower_non_recov_specified) != 0 and setting1 <= val[3]) or
                     ((data[0] & upper_non_crit_specified) != 0 and setting1 >= val[4])))
             {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             }
         } else if (setting_mask & lower_crit_specified != 0) {
@@ -1084,7 +1095,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 (((data[0] & lower_non_crit_specified) != 0 and setting1 >= val[1]) or
                     ((data[0] & lower_non_recov_specified) != 0 and setting1 <= val[3])))
             {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             }
         } else if (setting_mask & lower_non_recov_specified != 0) {
@@ -1092,7 +1103,7 @@ fn setThreshold(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 (((data[0] & lower_non_crit_specified) != 0 and setting1 >= val[1]) or
                     ((data[0] & lower_crit_specified) != 0 and setting1 >= val[2])))
             {
-                c.lprintf(log.Level.err, invalid_threshold);
+                log.print(log.Level.err, invalid_threshold, .{});
                 return -1;
             }
         }
@@ -1123,8 +1134,8 @@ fn getReading(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     var rc: c_int = 0;
 
     if (argc < 1 or eql(@ptrCast(argv[0]), "help")) {
-        c.lprintf(log.Level.notice, "sensor reading <id> ... [id]");
-        c.lprintf(log.Level.notice, "   id        : name of desired sensor");
+        log.print(log.Level.notice, "sensor reading <id> ... [id]", .{});
+        log.print(log.Level.notice, "   id        : name of desired sensor", .{});
         return -1;
     }
 
@@ -1132,7 +1143,7 @@ fn getReading(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     while (i < @as(usize, @intCast(argc))) : (i += 1) {
         const sdr: *const SdrRecordList = @ptrCast(
             c.ipmi_sdr_find_sdr_byid(cIntf(intf), argv[i]) orelse {
-                c.lprintf(log.Level.err, "Sensor \"%s\" not found!", argv[i]);
+                log.print(log.Level.err, "Sensor \"%s\" not found!", .{argv[i]});
                 rc = -1;
                 continue;
             },
@@ -1154,10 +1165,10 @@ fn getReading(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
                 if (sr.full == null) continue;
                 if (sr.s_reading_valid == 0) continue;
                 if (sr.s_has_analog_value == 0) {
-                    c.lprintf(
+                    log.print(
                         log.Level.err,
                         "Sensor \"%s\" is a discrete sensor!",
-                        argv[i],
+                        .{argv[i]},
                     );
                     continue;
                 }
@@ -1179,7 +1190,7 @@ fn sensorGet(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     var rc: c_int = 0;
 
     if (argc < 1) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         printGetUsage();
         return -1;
     } else if (eql(@ptrCast(argv[0]), "help")) {
@@ -1193,10 +1204,10 @@ fn sensorGet(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     while (i < @as(usize, @intCast(argc))) : (i += 1) {
         const sdr: *const SdrRecordList = @ptrCast(
             c.ipmi_sdr_find_sdr_byid(cIntf(intf), argv[i]) orelse {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Sensor data record \"%s\" not found!",
-                    argv[i],
+                    .{argv[i]},
                 );
                 rc = -1;
                 continue;
@@ -1244,47 +1255,53 @@ const SdrRecordList = extern struct {
 
 /// `print_sensor_get_usage()`.
 fn printGetUsage() callconv(.c) void {
-    c.lprintf(log.Level.notice, "sensor get <id> ... [id]");
-    c.lprintf(log.Level.notice, "   id        : name of desired sensor");
+    log.print(log.Level.notice, "sensor get <id> ... [id]", .{});
+    log.print(log.Level.notice, "   id        : name of desired sensor", .{});
 }
 
 /// `print_sensor_thresh_usage()`.
 fn printThreshUsage() callconv(.c) void {
-    c.lprintf(log.Level.notice, "sensor thresh <id> <threshold> <setting>");
-    c.lprintf(
+    log.print(log.Level.notice, "sensor thresh <id> <threshold> <setting>", .{});
+    log.print(
         log.Level.notice,
         "   id        : name of the sensor for which threshold is to be set",
+        .{},
     );
-    c.lprintf(log.Level.notice, "   threshold : which threshold to set");
-    c.lprintf(log.Level.notice, "                 unr = upper non-recoverable");
-    c.lprintf(log.Level.notice, "                 ucr = upper critical");
-    c.lprintf(log.Level.notice, "                 unc = upper non-critical");
-    c.lprintf(log.Level.notice, "                 lnc = lower non-critical");
-    c.lprintf(log.Level.notice, "                 lcr = lower critical");
-    c.lprintf(log.Level.notice, "                 lnr = lower non-recoverable");
-    c.lprintf(
+    log.print(log.Level.notice, "   threshold : which threshold to set", .{});
+    log.print(log.Level.notice, "                 unr = upper non-recoverable", .{});
+    log.print(log.Level.notice, "                 ucr = upper critical", .{});
+    log.print(log.Level.notice, "                 unc = upper non-critical", .{});
+    log.print(log.Level.notice, "                 lnc = lower non-critical", .{});
+    log.print(log.Level.notice, "                 lcr = lower critical", .{});
+    log.print(log.Level.notice, "                 lnr = lower non-recoverable", .{});
+    log.print(
         log.Level.notice,
         "   setting   : the value to set the threshold to",
+        .{},
     );
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(
+    log.print(log.Level.notice, "", .{});
+    log.print(
         log.Level.notice,
         "sensor thresh <id> lower <lnr> <lcr> <lnc>",
+        .{},
     );
-    c.lprintf(
+    log.print(
         log.Level.notice,
         "   Set all lower thresholds at the same time",
+        .{},
     );
-    c.lprintf(log.Level.notice, "");
-    c.lprintf(
+    log.print(log.Level.notice, "", .{});
+    log.print(
         log.Level.notice,
         "sensor thresh <id> upper <unc> <ucr> <unr>",
+        .{},
     );
-    c.lprintf(
+    log.print(
         log.Level.notice,
         "   Set all upper thresholds at the same time",
+        .{},
     );
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "", .{});
 }
 
 // ---------------------------------------------------------------------------
@@ -1298,7 +1315,7 @@ fn sensorMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (argc == 0) {
         rc = sensorList(intf.?);
     } else if (eql(@ptrCast(argv[0]), "help")) {
-        c.lprintf(log.Level.notice, "Sensor Commands:  list thresh get reading");
+        log.print(log.Level.notice, "Sensor Commands:  list thresh get reading", .{});
     } else if (eql(@ptrCast(argv[0]), "list")) {
         rc = sensorList(intf.?);
     } else if (eql(@ptrCast(argv[0]), "thresh")) {
@@ -1308,7 +1325,7 @@ fn sensorMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     } else if (eql(@ptrCast(argv[0]), "reading")) {
         rc = getReading(intf.?, argc - 1, argv + 1);
     } else {
-        c.lprintf(log.Level.err, "Invalid sensor command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid sensor command: %s", .{argv[0]});
         rc = -1;
     }
 

@@ -41,6 +41,10 @@
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sel` is selected.
+//! * **Diagnostics use the typed archive logger.**  `log.print()` formats
+//!   through the selected Zig logger when `log` is selected, and forwards to
+//!   the C logger when it is not.  Its `printf` formats and argument widths
+//!   match the original C calls.
 //!
 //! Allocation: `malloc`/`calloc`/`free` through the bridge, because the
 //! description strings and the OEM message table cross the C ABI and are freed
@@ -321,13 +325,13 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
     var buf: [15][150]u8 = undefined;
 
     if (filename == null) {
-        c.lprintf(log.Level.err, "No SEL OEM filename provided");
+        log.print(log.Level.err, "No SEL OEM filename provided", .{});
         return -1;
     }
 
     var fp = c.ipmi_open_file_read(filename);
     if (fp == null) {
-        c.lprintf(log.Level.err, "Could not open %s file", filename);
+        log.print(log.Level.err, "Could not open %s file", .{filename});
         return -1;
     }
 
@@ -347,7 +351,7 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
         @sizeOf(OemMsgRec),
     )));
     if (sel_oem_nrecs != 0 and sel_oem_msg == null) {
-        c.lprintf(log.Level.err, "ipmitool: calloc failure");
+        log.print(log.Level.err, "ipmitool: calloc failure", .{});
         _ = c.fclose(fp);
         sel_oem_nrecs = 0;
         return -1;
@@ -379,11 +383,13 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
         );
 
         if (n != 15) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Encountered problems reading line %d of %s",
-                i + 1,
-                filename,
+                .{
+                    i + 1,
+                    filename,
+                },
             );
             _ = c.fclose(fp);
             fp = null;
@@ -402,7 +408,7 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
                     c.strlen(&buf[selByte(byte)]) + 1,
                 ));
                 if (rec.string[selByte(byte)] == null) {
-                    c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                    log.print(log.Level.err, "ipmitool: malloc failure", .{});
                     _ = c.fclose(fp);
                     oemFreeTable(sel_oem_msg, sel_oem_nrecs);
                     sel_oem_msg = null;
@@ -414,7 +420,7 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
         }
         rec.text = @ptrCast(c.malloc(c.strlen(&buf[selByte(17)]) + 1));
         if (rec.text == null) {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             _ = c.fclose(fp);
             oemFreeTable(sel_oem_msg, sel_oem_nrecs);
             sel_oem_msg = null;
@@ -508,22 +514,24 @@ fn getOem(intf: ?*Intf) callconv(.c) c.IPMI_OEM {
     req.msg.data_len = 0;
 
     const rsp = sendrecv(in, &req) orelse {
-        c.lprintf(log.Level.err, "Get Device ID command failed");
+        log.print(log.Level.err, "Get Device ID command failed", .{});
         return oem_unknown;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get Device ID command failed: %#x %s",
-            @as(c_int, rsp.ccode),
-            ccString(rsp.ccode),
+            .{
+                @as(c_int, rsp.ccode),
+                ccString(rsp.ccode),
+            },
         );
         return oem_unknown;
     }
 
     const devid: *c.struct_ipm_devid_rsp = @ptrCast(@alignCast(&rsp.data[0]));
 
-    c.lprintf(log.Level.debug, "Iana: %u", c.ipmi24toh(&devid.manufacturer_id));
+    log.print(log.Level.debug, "Iana: %u", .{c.ipmi24toh(&devid.manufacturer_id)});
 
     return @intCast(c.ipmi24toh(&devid.manufacturer_id));
 }
@@ -543,11 +551,11 @@ fn selAddEntry(intf: *Intf, rec: *SelEventRecord) c_int {
     printStdEntry(intf, rec);
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Add SEL Entry failed");
+        log.print(log.Level.err, "Add SEL Entry failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Add SEL Entry failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Add SEL Entry failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -617,11 +625,13 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
             tok = c.strtok(null, " ");
         }
         if (invalid or i < 7) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Invalid Event on line %d: %s",
-                line,
-                &event_line,
+                .{
+                    line,
+                    &event_line,
+                },
             );
             continue;
         }
@@ -698,16 +708,16 @@ fn getVikingEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
 
     const rsp = sendrecv(in, &req) orelse {
         if (verbose() != 0) {
-            c.lprintf(log.Level.err, "Error issuing OEM command");
+            log.print(log.Level.err, "Error issuing OEM command", .{});
         }
         return null;
     };
     if (rsp.ccode != 0) {
         if (verbose() != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "OEM command returned error code: %s",
-                ccString(rsp.ccode),
+                .{ccString(rsp.ccode)},
             );
         }
         return null;
@@ -715,13 +725,13 @@ fn getVikingEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
 
     // Verify our response before we use it
     if (rsp.data_len < 5) {
-        c.lprintf(log.Level.err, "Viking OEM response too short");
+        log.print(log.Level.err, "Viking OEM response too short", .{});
         return null;
     } else if (rsp.data_len != 4 + @as(c_int, rsp.data[3])) {
-        c.lprintf(log.Level.err, "Viking OEM response has unexpected length");
+        log.print(log.Level.err, "Viking OEM response has unexpected length", .{});
         return null;
     } else if (c.ipmi24toh(&rsp.data[0]) != c.IPMI_OEM_VIKING) {
-        c.lprintf(log.Level.err, "Viking OEM response has unexpected length");
+        log.print(log.Level.err, "Viking OEM response has unexpected length", .{});
         return null;
     }
 
@@ -752,7 +762,7 @@ fn getSupermicroEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8
     // Allocate mem for the Description string
     const desc: [*c]u8 = @ptrCast(c.malloc(size_of_desc));
     if (desc == null) {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     }
     _ = c.memset(desc, '\x00', size_of_desc);
@@ -768,15 +778,15 @@ fn getSupermicroEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8
             req.msg.data_len = 0;
 
             const rsp = sendrecv(in, &req) orelse {
-                c.lprintf(log.Level.err, " Error getting system info");
+                log.print(log.Level.err, " Error getting system info", .{});
                 c.free(desc);
                 return null;
             };
             if (rsp.ccode != 0) {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     " Error getting system info: %s",
-                    ccString(rsp.ccode),
+                    .{ccString(rsp.ccode)},
                 );
                 c.free(desc);
                 return null;
@@ -999,15 +1009,15 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
                 req.msg.data_len = 0;
 
                 const rsp = sendrecv(in, &req) orelse {
-                    c.lprintf(log.Level.err, " Error getting system info");
+                    log.print(log.Level.err, " Error getting system info", .{});
                     c.free(desc);
                     return null;
                 };
                 if (rsp.ccode != 0) {
-                    c.lprintf(
+                    log.print(
                         log.Level.err,
                         " Error getting system info: %s",
-                        ccString(rsp.ccode),
+                        .{ccString(rsp.ccode)},
                     );
                     c.free(desc);
                     return null;
@@ -1510,11 +1520,13 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
             const iana = getOem(intf);
 
             switch (iana) {
-                c.IPMI_OEM_KONTRON => c.lprintf(
+                c.IPMI_OEM_KONTRON => log.print(
                     log.Level.debug,
                     "oem sensor type %x %d using oem type supplied description",
-                    @as(c_int, r.sel_type.standard_type.sensor_type),
-                    iana,
+                    .{
+                        @as(c_int, r.sel_type.standard_type.sensor_type),
+                        iana,
+                    },
                 ),
                 c.IPMI_OEM_DELL => {}, // handled by the Dell block below
                 c.IPMI_OEM_SUPERMICRO, c.IPMI_OEM_SUPERMICRO_47488 => {
@@ -1524,10 +1536,10 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
                 c.IPMI_OEM_QUANTA => {
                     sfx = getOemDesc(intf, rec);
                 },
-                else => c.lprintf(
+                else => log.print(
                     log.Level.debug,
                     "oem sensor type %x  using standard type supplied description",
-                    @as(c_int, r.sel_type.standard_type.sensor_type),
+                    .{@as(c_int, r.sel_type.standard_type.sensor_type)},
                 ),
             }
         } else {
@@ -1574,7 +1586,7 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
             // Increase the malloc size to current size + Dell specific size
             desc.* = @ptrCast(c.malloc(c.strlen(evt.*.desc) + 48 + size_of_desc));
             if (desc.* == null) {
-                c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                log.print(log.Level.err, "ipmitool: malloc failure", .{});
                 c.free(sfx);
                 return;
             }
@@ -1616,7 +1628,7 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
         if (flag != 0) {
             desc.* = @ptrCast(c.malloc(48 + size_of_desc));
             if (desc.* == null) {
-                c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                log.print(log.Level.err, "ipmitool: malloc failure", .{});
                 c.free(sfx);
                 return;
             }
@@ -1732,17 +1744,17 @@ fn selGetInfo(intf: *Intf) c_int {
     req.msg.cmd = cmd_get_sel_info;
 
     var rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get SEL Info command failed");
+        log.print(log.Level.err, "Get SEL Info command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get SEL Info command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get SEL Info command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     } else if (rsp.data_len != 14) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get SEL Info command failed: Invalid data length %d",
-            @as(c_int, rsp.data_len),
+            .{@as(c_int, rsp.data_len)},
         );
         return -1;
     }
@@ -1809,14 +1821,14 @@ fn selGetInfo(intf: *Intf) c_int {
         req.msg.cmd = cmd_get_sel_alloc_info;
 
         rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(log.Level.err, "Get SEL Allocation Info command failed");
+            log.print(log.Level.err, "Get SEL Allocation Info command failed", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Get SEL Allocation Info command failed: %s",
-                ccString(rsp.ccode),
+                .{ccString(rsp.ccode)},
             );
             return -1;
         }
@@ -1850,24 +1862,28 @@ fn getStdEntry(intf: ?*Intf, id: u16, evt: ?*SelEventRecord) callconv(.c) u16 {
     req.msg.data_len = 6;
 
     const rsp = sendrecv(in, &req) orelse {
-        c.lprintf(log.Level.err, "Get SEL Entry %x command failed", @as(c_int, id));
+        log.print(log.Level.err, "Get SEL Entry %x command failed", .{@as(c_int, id)});
         return 0;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get SEL Entry %x command failed: %s",
-            @as(c_int, id),
-            ccString(rsp.ccode),
+            .{
+                @as(c_int, id),
+                ccString(rsp.ccode),
+            },
         );
         return 0;
     }
     if (rsp.data_len < 18) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get SEL Entry %x command failed: Invalid data length %d",
-            @as(c_int, id),
-            rsp.data_len,
+            .{
+                @as(c_int, id),
+                rsp.data_len,
+            },
         );
         return 0;
     }
@@ -1875,10 +1891,10 @@ fn getStdEntry(intf: ?*Intf, id: u16, evt: ?*SelEventRecord) callconv(.c) u16 {
     // save next entry id
     const next: u16 = (@as(u16, rsp.data[1]) << 8) | rsp.data[0];
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "SEL Entry: %s",
-        c.buf2str(&rsp.data[2], @as(c_int, rsp.data_len) - 2),
+        .{c.buf2str(&rsp.data[2], @as(c_int, rsp.data_len) - 2)},
     );
     e.* = .{};
 
@@ -2466,15 +2482,15 @@ fn savelistEntries(intf: *Intf, count_in: c_int, savefile: [*c]const u8, binary:
     req.msg.cmd = cmd_get_sel_info;
 
     var rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get SEL Info command failed");
+        log.print(log.Level.err, "Get SEL Info command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get SEL Info command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get SEL Info command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
     if (rsp.data_len != 14) {
-        c.lprintf(log.Level.err, "Get SEL Info command failed: Invalid data length %d", rsp.data_len);
+        log.print(log.Level.err, "Get SEL Info command failed: Invalid data length %d", .{rsp.data_len});
         return -1;
     }
     if (verbose() > 2) {
@@ -2482,7 +2498,7 @@ fn savelistEntries(intf: *Intf, count_in: c_int, savefile: [*c]const u8, binary:
     }
 
     if (rsp.data[1] == 0 and rsp.data[2] == 0) {
-        c.lprintf(log.Level.err, "SEL has no entries");
+        log.print(log.Level.err, "SEL has no entries", .{});
         return 0;
     }
 
@@ -2490,15 +2506,15 @@ fn savelistEntries(intf: *Intf, count_in: c_int, savefile: [*c]const u8, binary:
         // Show only the most recent 'count' records.
         req.msg.cmd = cmd_get_sel_info;
         rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(log.Level.err, "Get SEL Info command failed");
+            log.print(log.Level.err, "Get SEL Info command failed", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Get SEL Info command failed: %s", ccString(rsp.ccode));
+            log.print(log.Level.err, "Get SEL Info command failed: %s", .{ccString(rsp.ccode)});
             return -1;
         }
         if (rsp.data_len != 14) {
-            c.lprintf(log.Level.err, "Get SEL Info command failed: Invalid data length %d", rsp.data_len);
+            log.print(log.Level.err, "Get SEL Info command failed: Invalid data length %d", .{rsp.data_len});
             return -1;
         }
         const entries: u16 = c.buf2short(&rsp.data[1]);
@@ -2526,7 +2542,7 @@ fn savelistEntries(intf: *Intf, count_in: c_int, savefile: [*c]const u8, binary:
 
     while (next_id != 0xffff) {
         curr_id = next_id;
-        c.lprintf(log.Level.debug, "SEL Next ID: %04x", @as(c_int, curr_id));
+        log.print(log.Level.debug, "SEL Next ID: %04x", .{@as(c_int, curr_id)});
 
         next_id = getStdEntry(intf, curr_id, &evt);
         if (next_id == 0) {
@@ -2578,7 +2594,7 @@ fn saveEntries(intf: *Intf, count: c_int, savefile: [*c]const u8) c_int {
 fn interpretAfter(cursor: [*c]u8, delimiter: c_int, status: *c_int) [*c]u8 {
     const found = c.index(cursor, delimiter);
     if (found == null) {
-        c.lprintf(log.Level.err, "Invalid SEL entry: missing field delimiter.");
+        log.print(log.Level.err, "Invalid SEL entry: missing field delimiter.", .{});
         status.* = -1;
         return null;
     }
@@ -2606,12 +2622,12 @@ fn selInterpret(
         // commonly found in PPS shelf managers.
         const fp = c.ipmi_open_file(readfile, 0);
         if (fp == null) {
-            c.lprintf(log.Level.err, "Failed to open file '%s' for reading.", readfile);
+            log.print(log.Level.err, "Failed to open file '%s' for reading.", .{readfile});
             return -1;
         }
         buffer = @ptrCast(c.malloc(256));
         if (buffer == null) {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             _ = c.fclose(fp);
             return -1;
         }
@@ -2623,7 +2639,7 @@ fn selInterpret(
                 break;
             }
             if (c.strlen(buffer) == 255 and buffer[254] != '\n' and c.fgetc(fp) != c.EOF) {
-                c.lprintf(log.Level.err, "ipmitool: invalid entry found in file.");
+                log.print(log.Level.err, "ipmitool: invalid entry found in file.", .{});
                 status = -1;
                 break;
             }
@@ -2634,7 +2650,7 @@ fn selInterpret(
             setErrno(0);
             evt.record_id = narrow(u16, c.strtol(cursor, null, 16));
             if (errno() != 0) {
-                c.lprintf(log.Level.err, "Invalid record ID.");
+                log.print(log.Level.err, "Invalid record ID.", .{});
                 status = -1;
                 break;
             }
@@ -2661,7 +2677,7 @@ fn selInterpret(
             setErrno(0);
             evt.sel_type.standard_type.sensor_type = narrow(u8, c.strtol(cursor, null, 16));
             if (errno() != 0) {
-                c.lprintf(log.Level.err, "Invalid Sensor Type.");
+                log.print(log.Level.err, "Invalid Sensor Type.", .{});
                 status = -1;
                 break;
             }
@@ -2671,7 +2687,7 @@ fn selInterpret(
             setErrno(0);
             evt.sel_type.standard_type.sensor_num = narrow(u8, c.strtol(cursor, null, 10));
             if (errno() != 0) {
-                c.lprintf(log.Level.err, "Invalid Sensor Number.");
+                log.print(log.Level.err, "Invalid Sensor Number.", .{});
                 status = -1;
                 break;
             }
@@ -2683,7 +2699,7 @@ fn selInterpret(
             setErrno(0);
             evt.sel_type.standard_type.td.event_type = narrow(u7, c.strtol(cursor, null, 16));
             if (errno() != 0) {
-                c.lprintf(log.Level.err, "Invalid Event Type.");
+                log.print(log.Level.err, "Invalid Event Type.", .{});
                 status = -1;
                 break;
             }
@@ -2692,7 +2708,7 @@ fn selInterpret(
             cursor = interpretAfter(cursor, '(', &status);
             if (cursor == null) break;
             if (cursor[0] == 0) {
-                c.lprintf(log.Level.err, "Invalid SEL entry: missing field delimiter.");
+                log.print(log.Level.err, "Invalid SEL entry: missing field delimiter.", .{});
                 status = -1;
                 break;
             }
@@ -2711,7 +2727,7 @@ fn selInterpret(
                     cursor += 1;
                 }
                 if (cursor[0] == 0) {
-                    c.lprintf(log.Level.err, "Invalid SEL entry: missing field delimiter.");
+                    log.print(log.Level.err, "Invalid SEL entry: missing field delimiter.", .{});
                     status = -1;
                     break;
                 }
@@ -2719,7 +2735,7 @@ fn selInterpret(
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[2] = narrow(u8, c.strtol(cursor, null, 10));
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#2.");
+                    log.print(log.Level.err, "Invalid Event Data#2.", .{});
                     status = -1;
                     break;
                 }
@@ -2732,7 +2748,7 @@ fn selInterpret(
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[1] = narrow(u8, c.strtol(cursor, null, 10));
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#1.");
+                    log.print(log.Level.err, "Invalid Event Data#1.", .{});
                     status = -1;
                     break;
                 }
@@ -2746,7 +2762,7 @@ fn selInterpret(
                 evt.sel_type.standard_type.event_data[0] =
                     0xA0 | narrow(u8, c.strtol(cursor, null, 10));
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#0.");
+                    log.print(log.Level.err, "Invalid Event Data#0.", .{});
                     status = -1;
                     break;
                 }
@@ -2757,7 +2773,7 @@ fn selInterpret(
                 setErrno(0);
                 const cause = c.strtol(cursor, null, 16);
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#1.");
+                    log.print(log.Level.err, "Invalid Event Data#1.", .{});
                     status = -1;
                     break;
                 }
@@ -2767,7 +2783,7 @@ fn selInterpret(
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[0] = narrow(u8, c.strtol(cursor, null, 16));
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#0.");
+                    log.print(log.Level.err, "Invalid Event Data#0.", .{});
                     status = -1;
                     break;
                 }
@@ -2777,7 +2793,7 @@ fn selInterpret(
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[1] = narrow(u8, c.strtol(cursor, null, 16));
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#1.");
+                    log.print(log.Level.err, "Invalid Event Data#1.", .{});
                     status = -1;
                     break;
                 }
@@ -2788,12 +2804,12 @@ fn selInterpret(
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[2] = narrow(u8, c.strtol(cursor, null, 16));
                 if (errno() != 0) {
-                    c.lprintf(log.Level.err, "Invalid Event Data#2.");
+                    log.print(log.Level.err, "Invalid Event Data#2.", .{});
                     status = -1;
                     break;
                 }
             } else {
-                c.lprintf(log.Level.err, "ipmitool: can't guess format.");
+                log.print(log.Level.err, "ipmitool: can't guess format.", .{});
             }
             // parse the PPS line into a sel_event_record
             if (verbose() != 0) {
@@ -2809,7 +2825,7 @@ fn selInterpret(
         buffer = null;
         _ = c.fclose(fp);
     } else {
-        c.lprintf(log.Level.err, "Given format '%s' is unknown.", format);
+        log.print(log.Level.err, "Given format '%s' is unknown.", .{format});
         status = -1;
     }
     return status;
@@ -2837,7 +2853,7 @@ fn selReadraw(intf: *Intf, inputfile: [*c]const u8) c_int {
                 }
             } else {
                 if (bytes_read != 0) {
-                    c.lprintf(log.Level.err, "ipmitool: incomplete record found in file.");
+                    log.print(log.Level.err, "ipmitool: incomplete record found in file.", .{});
                     ret = -1;
                 }
                 break;
@@ -2845,7 +2861,7 @@ fn selReadraw(intf: *Intf, inputfile: [*c]const u8) c_int {
         }
         _ = c.fclose(fp);
     } else {
-        c.lprintf(log.Level.err, "ipmitool: could not open input file.");
+        log.print(log.Level.err, "ipmitool: could not open input file.", .{});
         ret = -1;
     }
     return ret;
@@ -2858,7 +2874,7 @@ fn selReserve(intf: *Intf) u16 {
     req.msg.cmd = cmd_reserve_sel;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.warn, "Unable to reserve SEL");
+        log.print(log.Level.warn, "Unable to reserve SEL", .{});
         return 0;
     };
     if (rsp.ccode != 0) {
@@ -2866,7 +2882,7 @@ fn selReserve(intf: *Intf) u16 {
         return 0;
     }
     if (rsp.data_len < 2) {
-        c.lprintf(log.Level.warn, "Unable to reserve SEL: Invalid data length %d", rsp.data_len);
+        log.print(log.Level.warn, "Unable to reserve SEL: Invalid data length %d", .{rsp.data_len});
         return 0;
     }
 
@@ -2882,18 +2898,18 @@ fn selGetTime(intf: *Intf) c_int {
     const rsp = sendrecv(intf, &req);
 
     if (rsp == null or rsp.?.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get SEL Time command failed: %s",
-            if (rsp != null) ccString(rsp.?.ccode) else @as([*c]const u8, "Unknown"),
+            .{if (rsp != null) ccString(rsp.?.ccode) else @as([*c]const u8, "Unknown")},
         );
         return -1;
     }
     if (rsp.?.data_len != 4) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get SEL Time command failed: Invalid data length %d",
-            @as(c_int, rsp.?.data_len),
+            .{@as(c_int, rsp.?.data_len)},
         );
         return -1;
     }
@@ -2932,7 +2948,7 @@ fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
         }
 
         if (err) {
-            c.lprintf(log.Level.err, "Specified time could not be parsed");
+            log.print(log.Level.err, "Specified time could not be parsed", .{});
             return -1;
         }
     }
@@ -2944,10 +2960,10 @@ fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
 
     const rsp = sendrecv(intf, &req);
     if (rsp == null or rsp.?.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set SEL Time command failed: %s",
-            if (rsp != null) ccString(rsp.?.ccode) else @as([*c]const u8, "Unknown"),
+            .{if (rsp != null) ccString(rsp.?.ccode) else @as([*c]const u8, "Unknown")},
         );
         return -1;
     }
@@ -2979,11 +2995,11 @@ fn selClear(intf: *Intf) c_int {
     req.msg.data_len = 6;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Unable to clear SEL");
+        log.print(log.Level.err, "Unable to clear SEL", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Unable to clear SEL: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Unable to clear SEL: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -2997,7 +3013,7 @@ fn selDelete(intf: *Intf, argc_in: c_int, argv: [*c][*c]u8) c_int {
     var rc: c_int = 0;
 
     if (argc == 0 or eql(@ptrCast(argv[0]), "help")) {
-        c.lprintf(log.Level.err, "usage: delete <id>...<id>\n");
+        log.print(log.Level.err, "usage: delete <id>...<id>\n", .{});
         return -1;
     }
 
@@ -3012,10 +3028,10 @@ fn selDelete(intf: *Intf, argc_in: c_int, argv: [*c][*c]u8) c_int {
 
     while (argc != 0) : (argc -= 1) {
         if (c.str2ushort(argv[@intCast(argc - 1)], &id) != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Given SEL ID '%s' is invalid.",
-                argv[@intCast(argc - 1)],
+                .{argv[@intCast(argc - 1)]},
             );
             rc = -1;
             continue;
@@ -3031,14 +3047,16 @@ fn selDelete(intf: *Intf, argc_in: c_int, argv: [*c][*c]u8) c_int {
 
         const rsp = sendrecv(intf, &req);
         if (rsp == null) {
-            c.lprintf(log.Level.err, "Unable to delete entry %d", @as(c_int, id));
+            log.print(log.Level.err, "Unable to delete entry %d", .{@as(c_int, id)});
             rc = -1;
         } else if (rsp.?.ccode != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Unable to delete entry %d: %s",
-                @as(c_int, id),
-                ccString(rsp.?.ccode),
+                .{
+                    @as(c_int, id),
+                    ccString(rsp.?.ccode),
+                },
             );
             rc = -1;
         } else {
@@ -3057,23 +3075,23 @@ fn selShowEntry(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     var id: u16 = undefined;
 
     if (argc == 0 or eql(@ptrCast(argv[0]), "help")) {
-        c.lprintf(log.Level.err, "usage: sel get <id>...<id>");
+        log.print(log.Level.err, "usage: sel get <id>...<id>", .{});
         return -1;
     }
 
     var i: c_int = 0;
     while (i < argc) : (i += 1) {
         if (c.str2ushort(argv[@intCast(i)], &id) != 0) {
-            c.lprintf(log.Level.err, "Given SEL ID '%s' is invalid.", argv[@intCast(i)]);
+            log.print(log.Level.err, "Given SEL ID '%s' is invalid.", .{argv[@intCast(i)]});
             rc = -1;
             continue;
         }
 
-        c.lprintf(log.Level.debug, "Looking up SEL entry 0x%x", @as(c_int, id));
+        log.print(log.Level.debug, "Looking up SEL entry 0x%x", .{@as(c_int, id)});
 
         // lookup SEL entry based on ID
         if (getStdEntry(intf, id, &evt) == 0) {
-            c.lprintf(log.Level.debug, "SEL Entry 0x%x not found.", @as(c_int, id));
+            log.print(log.Level.debug, "SEL Entry 0x%x not found.", .{@as(c_int, id)});
             rc = -1;
             continue;
         }
@@ -3081,7 +3099,7 @@ fn selShowEntry(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
             evt.sel_type.standard_type.sensor_type == 0 and
             evt.record_type == 0)
         {
-            c.lprintf(log.Level.warn, "SEL Entry 0x%x not found", @as(c_int, id));
+            log.print(log.Level.warn, "SEL Entry 0x%x not found", .{@as(c_int, id)});
             rc = -1;
             continue;
         }
@@ -3160,18 +3178,19 @@ fn selMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (argc == 0) {
         rc = selGetInfo(in);
     } else if (eql(@ptrCast(argv[0]), "help")) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "SEL Commands:  info clear delete list elist get add time save readraw writeraw interpret",
+            .{},
         );
     } else if (eql(@ptrCast(argv[0]), "interpret")) {
         var iana: u32 = 0;
         if (argc < 4) {
-            c.lprintf(log.Level.notice, "usage: sel interpret iana filename format(pps)");
+            log.print(log.Level.notice, "usage: sel interpret iana filename format(pps)", .{});
             return 0;
         }
         if (c.str2uint(argv[1], &iana) != 0) {
-            c.lprintf(log.Level.err, "Given IANA '%s' is invalid.", argv[1]);
+            log.print(log.Level.err, "Given IANA '%s' is invalid.", .{argv[1]});
             return -1;
         }
         rc = selInterpret(in, iana, argv[2], argv[3]);
@@ -3179,31 +3198,31 @@ fn selMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         rc = selGetInfo(in);
     } else if (eql(@ptrCast(argv[0]), "save")) {
         if (argc < 2) {
-            c.lprintf(log.Level.notice, "usage: sel save <filename>");
+            log.print(log.Level.notice, "usage: sel save <filename>", .{});
             return 0;
         }
         rc = saveEntries(in, 0, argv[1]);
     } else if (eql(@ptrCast(argv[0]), "add")) {
         if (argc < 2) {
-            c.lprintf(log.Level.notice, "usage: sel add <filename>");
+            log.print(log.Level.notice, "usage: sel add <filename>", .{});
             return 0;
         }
         rc = selAddEntriesFromfile(in, argv[1]);
     } else if (eql(@ptrCast(argv[0]), "writeraw")) {
         if (argc < 2) {
-            c.lprintf(log.Level.notice, "usage: sel writeraw <filename>");
+            log.print(log.Level.notice, "usage: sel writeraw <filename>", .{});
             return 0;
         }
         rc = selWriteraw(in, argv[1]);
     } else if (eql(@ptrCast(argv[0]), "readraw")) {
         if (argc < 2) {
-            c.lprintf(log.Level.notice, "usage: sel readraw <filename>");
+            log.print(log.Level.notice, "usage: sel readraw <filename>", .{});
             return 0;
         }
         rc = selReadraw(in, argv[1]);
     } else if (eql(@ptrCast(argv[0]), "ereadraw")) {
         if (argc < 2) {
-            c.lprintf(log.Level.notice, "usage: sel ereadraw <filename>");
+            log.print(log.Level.notice, "usage: sel ereadraw <filename>", .{});
             return 0;
         }
         sel_extended = 1;
@@ -3231,17 +3250,17 @@ fn selMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             if (eql(@ptrCast(argv[1]), "last")) {
                 sign = -1;
             } else if (!eql(@ptrCast(argv[1]), "first")) {
-                c.lprintf(log.Level.err, "Unknown sel list option");
+                log.print(log.Level.err, "Unknown sel list option", .{});
                 return -1;
             }
         }
 
         if (countstr != null) {
             if (c.str2int(countstr, &count) != 0) {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Numeric argument required; got '%s'",
-                    countstr,
+                    .{countstr},
                 );
                 return -1;
             }
@@ -3253,32 +3272,32 @@ fn selMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         rc = selClear(in);
     } else if (eql(@ptrCast(argv[0]), "delete")) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "usage: sel delete <id>...<id>");
+            log.print(log.Level.err, "usage: sel delete <id>...<id>", .{});
         } else {
             rc = selDelete(in, argc - 1, argv + 1);
         }
     } else if (eql(@ptrCast(argv[0]), "get")) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "usage: sel get <entry>");
+            log.print(log.Level.err, "usage: sel get <entry>", .{});
         } else {
             rc = selShowEntry(in, argc - 1, argv + 1);
         }
     } else if (eql(@ptrCast(argv[0]), "time")) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "sel time commands: get set");
+            log.print(log.Level.err, "sel time commands: get set", .{});
         } else if (eql(@ptrCast(argv[1]), "get")) {
             _ = selGetTime(in);
         } else if (eql(@ptrCast(argv[1]), "set")) {
             if (argc < 3) {
-                c.lprintf(log.Level.err, "usage: sel time set \"mm/dd/yyyy hh:mm:ss\"");
+                log.print(log.Level.err, "usage: sel time set \"mm/dd/yyyy hh:mm:ss\"", .{});
             } else {
                 rc = selSetTime(in, argv[2]);
             }
         } else {
-            c.lprintf(log.Level.err, "sel time commands: get set");
+            log.print(log.Level.err, "sel time commands: get set", .{});
         }
     } else {
-        c.lprintf(log.Level.err, "Invalid SEL command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid SEL command: %s", .{argv[0]});
         rc = -1;
     }
 
