@@ -162,6 +162,8 @@ them, rejects a zero-byte read, and propagates truncation errors. No-response
 and completion-code messages, including the distinct `0xc3` timeout return
 value of 1, stay unchanged. C-backed DDR2/DDR3/DDR4 outputs and malformed FRU
 cases are pinned in `tests/cases/57-dimm-spd.cases`.
+Run `zig build test-dimm-spd-unit` to execute the decoder's boundary and
+JEP106 table tests independently of the unrelated crypto-vector unit tests.
 
 ### C calling Zig: `export` with the original signature
 

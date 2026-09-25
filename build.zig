@@ -1023,6 +1023,13 @@ pub fn build(b: *std.Build) void {
         .dependOn(&fwum_test_run.step);
 
     test_step.dependOn(unit_step);
+
+    const spd_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{ "SPD decoder", "JEDEC table" },
+    });
+    b.step("test-dimm-spd-unit", "Run Zig DIMM SPD decoder and table unit tests")
+        .dependOn(&b.addRunArtifact(spd_unit).step);
     const serial_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"serial "},
