@@ -182,16 +182,37 @@ fn writeSpdPrint(writer: *std.Io.Writer, spd: []const u8, spd_data: [*c]u8, len:
     return 0;
 }
 
-fn flushCStdout() std.Io.Writer.Error!void {
-    if (c.fflush(c.stdout) != 0) return error.WriteFailed;
+const CStdoutFlushError = error{CStdoutFlushFailed};
+const SpdOutputError = std.Io.Writer.Error || CStdoutFlushError;
+
+fn checkCStdoutFlush(result: c_int) CStdoutFlushError!void {
+    if (result != 0) return error.CStdoutFlushFailed;
+}
+
+fn flushCStdout() CStdoutFlushError!void {
+    try checkCStdoutFlush(c.fflush(c.stdout));
 }
 
 fn emitStdout(comptime write: anytype, args: anytype) c_int {
     // C callers may have buffered output on the same file descriptor.
-    flushCStdout() catch return -1;
+    flushCStdout() catch {
+        log.print(c.LOG_ERR, "SPD stdout C preflush failed (errno %d)", .{std.c._errno().*});
+        return -1;
+    };
     var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
-    const status = @call(.auto, write, .{&stdout.interface} ++ args) catch return -1;
-    stdout.interface.flush() catch return -1;
+    const status = @call(.auto, write, .{&stdout.interface} ++ args) catch |err| {
+        const cause: anyerror = err;
+        if (cause == error.CStdoutFlushFailed) {
+            log.print(c.LOG_ERR, "SPD stdout C flush after FRU callback failed (errno %d)", .{std.c._errno().*});
+        } else {
+            log.print(c.LOG_ERR, "SPD stdout Zig write failed: %s", .{@errorName(stdout.err orelse err).ptr});
+        }
+        return -1;
+    };
+    stdout.interface.flush() catch |err| {
+        log.print(c.LOG_ERR, "SPD stdout Zig final flush failed: %s", .{@errorName(stdout.err orelse err).ptr});
+        return -1;
+    };
     return status;
 }
 
@@ -202,7 +223,7 @@ fn spdPrintFru(intf: *Intf, id: u8) callconv(.c) c_int {
     return emitStdout(writeSpdPrintFru, .{ intf, id });
 }
 
-fn writeSpdPrintFru(writer: *std.Io.Writer, intf: *Intf, id: u8) std.Io.Writer.Error!c_int {
+fn writeSpdPrintFru(writer: *std.Io.Writer, intf: *Intf, id: u8) SpdOutputError!c_int {
     const sendrecv = intf.sendrecv orelse return -1;
     var msg_data = [_]u8{ id, 0, 0, 0 };
     var req: Request = std.mem.zeroes(Request);
@@ -427,4 +448,11 @@ test "SPD decoder stdout FRU failure message propagates writer errors" {
     try std.testing.expectError(error.WriteFailed, writeSpdPrintFru(&failing, &intf, 1));
     var late = std.Io.Writer.fixed(storage[0 .. writer.buffered().len - 1]);
     try std.testing.expectError(error.WriteFailed, writeSpdPrintFru(&late, &intf, 1));
+}
+
+test "SPD decoder stdout tags C flush failures separately from Zig write failures" {
+    try checkCStdoutFlush(0);
+    try std.testing.expectError(error.CStdoutFlushFailed, checkCStdoutFlush(-1));
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, printSerial(&failing, &.{ 0, 1, 2, 3 }));
 }

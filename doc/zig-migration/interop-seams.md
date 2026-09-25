@@ -222,8 +222,11 @@ value of 1, stay unchanged. The SPD printer's stdout formatting now uses a
 Zig 0.16 streaming writer: it first checks `fflush(stdout)` to order preceding
 C caller output, checks it again before writing after FRU callbacks, and
 checks both Zig writes and the final writer flush.
-Failures return `-1` through the unchanged C ABI (overriding a normal or
-distinguished timeout result); the verbose `printbuf` remains on stderr.
+Failures log a `LOG_ERR` message distinguishing C preflush, C flush after
+FRU callbacks, Zig write, and Zig final-flush phases, then return `-1`
+through the unchanged C ABI (overriding a normal or distinguished timeout
+result only when a new output failure occurs); the verbose `printbuf`
+remains on stderr.
 DDR3/DDR4 part bytes, including embedded NULs, are emitted verbatim, while
 the legacy `%s` part ends at its first NUL. C-backed DDR2/DDR3/DDR4 outputs
 and malformed FRU cases are pinned in `tests/cases/57-dimm-spd.cases`.
