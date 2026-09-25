@@ -1,0 +1,15 @@
+#!golden 1
+#!case session_info_modem_csv
+#!section exit
+0
+#!section stdout
+3,4,2,2,ADMINISTRATOR,IPMIv2/RMCP+,0x02,Callback Messaging session active,5,10.0.0.1,0
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x3d target_cmd=0x00 data=00
+< rule=session_info_modem ccode=0x00 len=14 data=03 04 02 02 04 12 01 05 0a 00 00 01 6f 02
+bye

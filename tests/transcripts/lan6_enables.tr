@@ -1,0 +1,13 @@
+default_ccode 0xc1
+
+respond get_ipv6_enables
+  netfn 0x0c
+  cmd 0x02
+  data 11 02
+end
+
+respond set_ipv6_enables
+  netfn 0x0c
+  cmd 0x01
+  data
+end

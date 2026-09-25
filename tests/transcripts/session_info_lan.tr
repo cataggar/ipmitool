@@ -1,0 +1,7 @@
+default_ccode 0xc1
+
+respond session_info_lan
+  netfn 0x06
+  cmd 0x3d
+  data 02 04 02 01 04 11 c0 a8 01 02 01 02 03 04 05 06 6f 02
+end

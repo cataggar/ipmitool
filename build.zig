@@ -166,6 +166,21 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/util/time.zig",
     },
     .{
+        .name = "cfgp",
+        .replaces = "lib/ipmi_cfgp.c",
+        .implementation = "src/zig/cmd/cfgp.zig",
+    },
+    .{
+        .name = "session",
+        .replaces = "lib/ipmi_session.c",
+        .implementation = "src/zig/cmd/session.zig",
+    },
+    .{
+        .name = "hpm2",
+        .replaces = "lib/hpm2.c",
+        .implementation = "src/zig/cmd/hpm2.zig",
+    },
+    .{
         .name = "md5",
         .replaces = "src/plugins/lan/md5.c",
         .implementation = "src/zig/crypto/md5.zig",
@@ -997,6 +1012,60 @@ pub fn build(b: *std.Build) void {
         });
         usb_test_step.dependOn(&b.addRunArtifact(usb_unit_tests).step);
     }
+
+    // Compile the same C ABI contract against the original objects and the
+    // three Zig replacements. The harness supplies a scripted sendrecv,
+    // logging and parameter callbacks; neither binary needs a real BMC.
+    const support_c_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, support_c_mod, config_h, default_intf);
+    support_c_mod.addCSourceFiles(.{
+        .files = &.{
+            "tests/command_support.c",
+            "lib/ipmi_cfgp.c",
+            "lib/ipmi_session.c",
+            "lib/hpm2.c",
+        },
+        // The unchanged C oracle has warnings under -Dbuildcheck's -Werror.
+        .flags = &base_cflags,
+    });
+    const support_c = b.addExecutable(.{ .name = "command-support-c", .root_module = support_c_mod });
+
+    const support_zig_options = b.addOptions();
+    support_zig_options.addOption(
+        []const []const u8,
+        "zig_modules",
+        &.{ "cfgp", "session", "hpm2" },
+    );
+    const support_lib_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/exports.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    support_lib_mod.addImport("ipmi_c", bridge_mod);
+    support_lib_mod.addImport("build_options", support_zig_options.createModule());
+    const support_lib = b.addLibrary(.{
+        .name = "command_support_zig",
+        .linkage = .static,
+        .root_module = support_lib_mod,
+    });
+    const support_zig_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, support_zig_mod, config_h, default_intf);
+    support_zig_mod.addCSourceFile(.{ .file = b.path("tests/command_support.c"), .flags = &base_cflags });
+    support_zig_mod.linkLibrary(support_lib);
+    const support_zig = b.addExecutable(.{ .name = "command-support-zig", .root_module = support_zig_mod });
+    const support_step = b.step("test-command-support", "Run C/Zig cfgp, session and HPM.2 ABI contracts");
+    support_step.dependOn(&b.addRunArtifact(support_c).step);
+    support_step.dependOn(&b.addRunArtifact(support_zig).step);
+    test_step.dependOn(support_step);
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.

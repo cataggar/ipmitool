@@ -1,0 +1,20 @@
+#!golden 1
+#!case lan6_save_enables
+#!section exit
+0
+#!section stdout
+lan6 lock 1
+lan6 set 1 nolock enables both
+lan6 commit 1
+lan6 discard 1
+exit
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 33 00 00
+< rule=get_ipv6_enables ccode=0x00 len=2 data=11 02
+bye

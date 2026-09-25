@@ -37,6 +37,9 @@
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sel.h>
 #include <ipmitool/ipmi_channel.h>
+#include <ipmitool/ipmi_cfgp.h>
+#include <ipmitool/ipmi_session.h>
+#include <ipmitool/hpm2.h>
 
 enum ipmitool_abi_layout {
 	/* struct fru_info - opaque because access is a one-bit bitfield. */
@@ -47,6 +50,47 @@ enum ipmitool_abi_layout {
 		offsetof(struct fru_info, max_read_size),
 	ABI_OFFSETOF_fru_info__max_write_size =
 		offsetof(struct fru_info, max_write_size),
+	ABI_SIZEOF_get_session_info_rsp = sizeof(struct get_session_info_rsp),
+	ABI_OFFSETOF_get_session_info_rsp__channel_data =
+		offsetof(struct get_session_info_rsp, channel_data),
+
+	/* cfgp descriptors contain six bitfields in one unsigned int. */
+	ABI_SIZEOF_ipmi_cfgp = sizeof(struct ipmi_cfgp),
+	ABI_ALIGNOF_ipmi_cfgp = _Alignof(struct ipmi_cfgp),
+	ABI_OFFSETOF_ipmi_cfgp__name = offsetof(struct ipmi_cfgp, name),
+	ABI_OFFSETOF_ipmi_cfgp__format = offsetof(struct ipmi_cfgp, format),
+	ABI_OFFSETOF_ipmi_cfgp__size = offsetof(struct ipmi_cfgp, size),
+	ABI_OFFSETOF_ipmi_cfgp__specific = offsetof(struct ipmi_cfgp, specific),
+
+	/* Both HPM.2 structs are wire-packed despite their uint16_t members. */
+	ABI_SIZEOF_hpm2_attach = sizeof(struct hpm2_lan_attach_capabilities),
+	ABI_ALIGNOF_hpm2_attach = _Alignof(struct hpm2_lan_attach_capabilities),
+	ABI_OFFSETOF_hpm2_attach__hpm2_revision_id =
+		offsetof(struct hpm2_lan_attach_capabilities, hpm2_revision_id),
+	ABI_OFFSETOF_hpm2_attach__lan_channel_mask =
+		offsetof(struct hpm2_lan_attach_capabilities, lan_channel_mask),
+	ABI_OFFSETOF_hpm2_attach__hpm2_caps =
+		offsetof(struct hpm2_lan_attach_capabilities, hpm2_caps),
+	ABI_OFFSETOF_hpm2_attach__hpm2_lan_params_start =
+		offsetof(struct hpm2_lan_attach_capabilities, hpm2_lan_params_start),
+	ABI_OFFSETOF_hpm2_attach__hpm2_lan_params_rev =
+		offsetof(struct hpm2_lan_attach_capabilities, hpm2_lan_params_rev),
+	ABI_OFFSETOF_hpm2_attach__hpm2_sol_params_start =
+		offsetof(struct hpm2_lan_attach_capabilities, hpm2_sol_params_start),
+	ABI_OFFSETOF_hpm2_attach__hpm2_sol_params_rev =
+		offsetof(struct hpm2_lan_attach_capabilities, hpm2_sol_params_rev),
+	ABI_SIZEOF_hpm2_channel = sizeof(struct hpm2_lan_channel_capabilities),
+	ABI_ALIGNOF_hpm2_channel = _Alignof(struct hpm2_lan_channel_capabilities),
+	ABI_OFFSETOF_hpm2_channel__capabilities =
+		offsetof(struct hpm2_lan_channel_capabilities, capabilities),
+	ABI_OFFSETOF_hpm2_channel__attach_type =
+		offsetof(struct hpm2_lan_channel_capabilities, attach_type),
+	ABI_OFFSETOF_hpm2_channel__bandwidth_class =
+		offsetof(struct hpm2_lan_channel_capabilities, bandwidth_class),
+	ABI_OFFSETOF_hpm2_channel__max_inbound_pld_size =
+		offsetof(struct hpm2_lan_channel_capabilities, max_inbound_pld_size),
+	ABI_OFFSETOF_hpm2_channel__max_outbound_pld_size =
+		offsetof(struct hpm2_lan_channel_capabilities, max_outbound_pld_size),
 
 	/* struct ipmi_rq - opaque: `msg.netfn:6` / `msg.lun:2` are bitfields. */
 	ABI_SIZEOF_ipmi_rq = sizeof(struct ipmi_rq),
