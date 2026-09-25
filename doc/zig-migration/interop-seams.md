@@ -248,6 +248,14 @@ capacity boundaries against libc's `FD_*` macros in a test-only C oracle;
 also passes `ioctl` requests in the request type declared by the target libc,
 preserving the 32-bit request bits on musl.
 
+The LAN and LAN+ Zig transports use `util/log.zig`'s typed `print` for
+literal C `printf` diagnostics. Both transports and the selected logger are
+imported into the same `exports.zig` archive, so they share one logger state;
+when `log` is not selected, `print` forwards to the C `lprintf` instead.
+The transport fixture `lanplus/open-session-auth-mismatch` pins a warning's
+`%02x` formatting against the C logger (including zero padding). Other
+remaining variadic C callers still use the logging trampoline.
+
 CI cross-builds the all-selected `ipmitool` and `ipmievd` binaries in
 `ReleaseSafe` for the opposite runner architecture with musl and verifies
 that neither executable has an ELF interpreter or `NEEDED` library. This

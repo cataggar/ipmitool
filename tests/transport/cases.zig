@@ -769,6 +769,17 @@ pub const all: []const Case = &.{
     },
 
     .{
+        .name = "lanplus/open-session-auth-mismatch",
+        .desc = "C logger oracle pins zero-padded hex fields in the auth algorithm warning",
+        .args = &.{
+            "-I", "lanplus", "-H", "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P", pass,        "-C", "3",
+            "mc", "info",
+        },
+        .bmc = .{ .username = user, .password = pass, .open_session_auth_alg = 0 },
+    },
+
+    .{
         .name = "lanplus/rakp2-error",
         .desc = "the tool aborts when RAKP 2 carries a non-zero status code",
         .args = &.{

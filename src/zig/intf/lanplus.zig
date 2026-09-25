@@ -434,7 +434,7 @@ var bridge_possible: u8 = 0;
 
 fn reqAddEntry(intf: *Intf, req: *ipmi.Request, req_seq: u8) ?*Entry {
     const e: *Entry = @ptrCast(@alignCast(c.malloc(@sizeOf(Entry)) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     }));
 
@@ -451,11 +451,10 @@ fn reqAddEntry(intf: *Intf, req: *ipmi.Request, req_seq: u8) ?*Entry {
     }
 
     req_entries_tail = e;
-    c.lprintf(
+    log.print(
         log.Level.debug + 3,
         "added list entry seq=0x%02x cmd=0x%02x",
-        @as(c_int, e.rq_seq),
-        @as(c_int, e.req.msg.cmd),
+        .{ @as(c_int, e.rq_seq), @as(c_int, e.req.msg.cmd) },
     );
     return e;
 }
@@ -480,11 +479,10 @@ fn reqRemoveEntry(seq: u8, cmd: u8) void {
         e = cur.next;
     }
     if (e) |cur| {
-        c.lprintf(
+        log.print(
             log.Level.debug + 3,
             "removed list entry seq=0x%02x cmd=0x%02x",
-            @as(c_int, seq),
-            @as(c_int, cmd),
+            .{ @as(c_int, seq), @as(c_int, cmd) },
         );
         const saved_next_entry = cur.next;
         // `p` is `e` itself when the match is the head, so this writes through
@@ -517,11 +515,10 @@ fn reqRemoveEntry(seq: u8, cmd: u8) void {
 fn reqClearEntries() void {
     var e = req_entries;
     while (e) |cur| {
-        c.lprintf(
+        log.print(
             log.Level.debug + 3,
             "cleared list entry seq=0x%02x cmd=0x%02x",
-            @as(c_int, cur.rq_seq),
-            @as(c_int, cur.req.msg.cmd),
+            .{ @as(c_int, cur.rq_seq), @as(c_int, cur.req.msg.cmd) },
         );
         const p = cur.next;
         c.free(cur);
@@ -653,21 +650,21 @@ fn lanPing(intf: *Intf) callconv(.c) c_int {
     const len = @sizeOf(RmcpHdr) + @sizeOf(AsfHdr);
 
     const data: [*]u8 = @ptrCast(c.malloc(len) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return -1;
     });
     @memset(data[0..len], 0);
     @memcpy(data[0..@sizeOf(RmcpHdr)], std.mem.asBytes(&rmcp_ping));
     @memcpy(data[@sizeOf(RmcpHdr)..][0..@sizeOf(AsfHdr)], std.mem.asBytes(&asf_ping));
 
-    c.lprintf(log.Level.debug, "Sending IPMI/RMCP presence ping packet");
+    log.print(log.Level.debug, "Sending IPMI/RMCP presence ping packet", .{});
 
     const rv = sendPacket(intf, data, len);
 
     c.free(data);
 
     if (rv < 0) {
-        c.lprintf(log.Level.err, "Unable to send IPMI presence ping packet");
+        log.print(log.Level.err, "Unable to send IPMI presence ping packet", .{});
         return -1;
     }
 
@@ -738,10 +735,10 @@ fn readRakp2Message(rsp: *ipmi.Response, offset: c_int, auth_alg: u8) void {
                 }
                 return;
             }
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "read_rakp2_message: no support for authentication algorithm 0x%x",
-                @as(c_int, auth_alg),
+                .{@as(c_int, auth_alg)},
             );
             cassert.expect(false, .{
                 .file = "src/plugins/lanplus/lanplus.c",
@@ -782,10 +779,10 @@ fn readRakp4Message(rsp: *ipmi.Response, offset: c_int, auth_alg: u8) void {
                 }
                 return;
             }
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "read_rakp4_message: no support for authentication algorithm 0x%x",
-                @as(c_int, auth_alg),
+                .{@as(c_int, auth_alg)},
             );
             cassert.expect(false, .{
                 .file = "src/plugins/lanplus/lanplus.c",
@@ -881,16 +878,16 @@ fn readSolPacket(rsp: *ipmi.Response, offset: *c_int) void {
     p.break_detected = rsp.data[@intCast(offset.*)] & 0x04;
     offset.* += 1;
 
-    c.lprintf(log.Level.debug, "<<<<<<<<<< RECV FROM BMC <<<<<<<<<<<");
-    c.lprintf(log.Level.debug, "< SOL sequence number     : 0x%02x", @as(c_int, p.packet_sequence_number));
-    c.lprintf(log.Level.debug, "< SOL acked packet        : 0x%02x", @as(c_int, p.acked_packet_number));
-    c.lprintf(log.Level.debug, "< SOL accepted char count : 0x%02x", @as(c_int, p.accepted_character_count));
-    c.lprintf(log.Level.debug, "< SOL is nack             : %s", boolStr(p.is_nack));
-    c.lprintf(log.Level.debug, "< SOL xfer unavailable    : %s", boolStr(p.transfer_unavailable));
-    c.lprintf(log.Level.debug, "< SOL inactive            : %s", boolStr(p.sol_inactive));
-    c.lprintf(log.Level.debug, "< SOL transmit overrun    : %s", boolStr(p.transmit_overrun));
-    c.lprintf(log.Level.debug, "< SOL break detected      : %s", boolStr(p.break_detected));
-    c.lprintf(log.Level.debug, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+    log.print(log.Level.debug, "<<<<<<<<<< RECV FROM BMC <<<<<<<<<<<", .{});
+    log.print(log.Level.debug, "< SOL sequence number     : 0x%02x", .{@as(c_int, p.packet_sequence_number)});
+    log.print(log.Level.debug, "< SOL acked packet        : 0x%02x", .{@as(c_int, p.acked_packet_number)});
+    log.print(log.Level.debug, "< SOL accepted char count : 0x%02x", .{@as(c_int, p.accepted_character_count)});
+    log.print(log.Level.debug, "< SOL is nack             : %s", .{boolStr(p.is_nack)});
+    log.print(log.Level.debug, "< SOL xfer unavailable    : %s", .{boolStr(p.transfer_unavailable)});
+    log.print(log.Level.debug, "< SOL inactive            : %s", .{boolStr(p.sol_inactive)});
+    log.print(log.Level.debug, "< SOL transmit overrun    : %s", .{boolStr(p.transmit_overrun)});
+    log.print(log.Level.debug, "< SOL break detected      : %s", .{boolStr(p.break_detected)});
+    log.print(log.Level.debug, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<", .{});
 
     if (c.verbose >= 5) {
         c.printbuf(rsp.data[@intCast(offset.* - 4)..].ptr, 4, "SOL MSG FROM BMC");
@@ -924,7 +921,7 @@ fn pollSingle(intf: *Intf) PollResult {
     }
 
     if (rmcp_rsp.class != rmcp_class_ipmi) {
-        c.lprintf(log.Level.debug, "Invalid RMCP class: %x", @as(c_int, rmcp_rsp.class));
+        log.print(log.Level.debug, "Invalid RMCP class: %x", .{@as(c_int, rmcp_rsp.class)});
         return .again;
     }
 
@@ -938,18 +935,17 @@ fn pollSingle(intf: *Intf) PollResult {
         rsp.session.authtype == c.IPMI_SESSION_AUTHTYPE_RMCP_PLUS and
         rsp.session.id != session.v2_data.console_id)
     {
-        c.lprintf(
+        log.print(
             log.Level.info,
             "packet session id 0x%x does not match active session 0x%0x",
-            rsp.session.id,
-            session.v2_data.console_id,
+            .{ rsp.session.id, session.v2_data.console_id },
         );
-        c.lprintf(log.Level.err, "ERROR: Received an Unexpected message ID");
+        log.print(log.Level.err, "ERROR: Received an Unexpected message ID", .{});
         return .again;
     }
 
     if (c.lanplus_has_valid_auth_code(cRsp(rsp), cSession(session)) == 0) {
-        c.lprintf(log.Level.err, "ERROR: Received message with invalid authcode!");
+        log.print(log.Level.err, "ERROR: Received message with invalid authcode!", .{});
         return .none;
     }
 
@@ -981,32 +977,32 @@ fn pollSingle(intf: *Intf) PollResult {
             readIpmiResponse(rsp, &offset);
 
             const p = &rsp.payload.ipmi_response;
-            c.lprintf(log.Level.debug + 1, "<< IPMI Response Session Header");
-            c.lprintf(log.Level.debug + 1, "<<   Authtype                : %s", c.val2str(rsp.session.authtype, c.ipmi_authtype_session_vals));
-            c.lprintf(log.Level.debug + 1, "<<   Payload type            : %s", c.val2str(rsp.session.payloadtype, &plus_payload_types_vals));
-            c.lprintf(log.Level.debug + 1, "<<   Session ID              : 0x%08lx", @as(c_long, rsp.session.id));
-            c.lprintf(log.Level.debug + 1, "<<   Sequence                : 0x%08lx", @as(c_long, rsp.session.seq));
-            c.lprintf(log.Level.debug + 1, "<<   IPMI Msg/Payload Length : %d", @as(c_int, rsp.session.msglen));
-            c.lprintf(log.Level.debug + 1, "<< IPMI Response Message Header");
-            c.lprintf(log.Level.debug + 1, "<<   Rq Addr    : %02x", @as(c_int, p.rq_addr));
-            c.lprintf(log.Level.debug + 1, "<<   NetFn      : %02x", @as(c_int, p.netfn));
-            c.lprintf(log.Level.debug + 1, "<<   Rq LUN     : %01x", @as(c_int, p.rq_lun));
-            c.lprintf(log.Level.debug + 1, "<<   Rs Addr    : %02x", @as(c_int, p.rs_addr));
-            c.lprintf(log.Level.debug + 1, "<<   Rq Seq     : %02x", @as(c_int, p.rq_seq));
-            c.lprintf(log.Level.debug + 1, "<<   Rs Lun     : %01x", @as(c_int, p.rs_lun));
-            c.lprintf(log.Level.debug + 1, "<<   Command    : %02x", @as(c_int, p.cmd));
-            c.lprintf(log.Level.debug + 1, "<<   Compl Code : 0x%02x", @as(c_int, rsp.ccode));
+            log.print(log.Level.debug + 1, "<< IPMI Response Session Header", .{});
+            log.print(log.Level.debug + 1, "<<   Authtype                : %s", .{c.val2str(rsp.session.authtype, c.ipmi_authtype_session_vals)});
+            log.print(log.Level.debug + 1, "<<   Payload type            : %s", .{c.val2str(rsp.session.payloadtype, &plus_payload_types_vals)});
+            log.print(log.Level.debug + 1, "<<   Session ID              : 0x%08lx", .{@as(c_long, rsp.session.id)});
+            log.print(log.Level.debug + 1, "<<   Sequence                : 0x%08lx", .{@as(c_long, rsp.session.seq)});
+            log.print(log.Level.debug + 1, "<<   IPMI Msg/Payload Length : %d", .{@as(c_int, rsp.session.msglen)});
+            log.print(log.Level.debug + 1, "<< IPMI Response Message Header", .{});
+            log.print(log.Level.debug + 1, "<<   Rq Addr    : %02x", .{@as(c_int, p.rq_addr)});
+            log.print(log.Level.debug + 1, "<<   NetFn      : %02x", .{@as(c_int, p.netfn)});
+            log.print(log.Level.debug + 1, "<<   Rq LUN     : %01x", .{@as(c_int, p.rq_lun)});
+            log.print(log.Level.debug + 1, "<<   Rs Addr    : %02x", .{@as(c_int, p.rs_addr)});
+            log.print(log.Level.debug + 1, "<<   Rq Seq     : %02x", .{@as(c_int, p.rq_seq)});
+            log.print(log.Level.debug + 1, "<<   Rs Lun     : %01x", .{@as(c_int, p.rs_lun)});
+            log.print(log.Level.debug + 1, "<<   Command    : %02x", .{@as(c_int, p.cmd)});
+            log.print(log.Level.debug + 1, "<<   Compl Code : 0x%02x", .{@as(c_int, rsp.ccode)});
 
             const entry = reqLookupEntry(p.rq_seq, p.cmd) orelse {
-                c.lprintf(log.Level.info, "IPMI Request Match NOT FOUND");
+                log.print(log.Level.info, "IPMI Request Match NOT FOUND", .{});
                 return .again;
             };
 
-            c.lprintf(log.Level.debug + 2, "IPMI Request Match found");
+            log.print(log.Level.debug + 2, "IPMI Request Match found", .{});
 
             if (entry.bridging_level != 0) {
                 if (rsp.ccode != 0) {
-                    c.lprintf(log.Level.debug, "WARNING: Bridged cmd ccode = 0x%02x", @as(c_int, rsp.ccode));
+                    log.print(log.Level.debug, "WARNING: Bridged cmd ccode = 0x%02x", .{@as(c_int, rsp.ccode)});
                 } else {
                     entry.bridging_level -= 1;
                     if (entry.bridging_level == 0) {
@@ -1021,7 +1017,7 @@ fn pollSingle(intf: *Intf) PollResult {
                         );
                         loop += 1;
                     } else {
-                        c.lprintf(log.Level.debug, "Bridged command answer, waiting for next answer... ");
+                        log.print(log.Level.debug, "Bridged command answer, waiting for next answer... ", .{});
                         return .again;
                     }
                 }
@@ -1047,19 +1043,19 @@ fn pollSingle(intf: *Intf) PollResult {
         }
     } else if (rsp.session.payloadtype == @intFromEnum(ipmi.PayloadType.rmcp_open_response)) {
         if (session.v2_data.session_state != .open_session_sent) {
-            c.lprintf(log.Level.err, "Error: Received an Unexpected Open Session Response");
+            log.print(log.Level.err, "Error: Received an Unexpected Open Session Response", .{});
             return .again;
         }
         readOpenSessionResponse(rsp, offset);
     } else if (rsp.session.payloadtype == @intFromEnum(ipmi.PayloadType.rakp_2)) {
         if (session.v2_data.session_state != .rakp_1_sent) {
-            c.lprintf(log.Level.err, "Error: Received an Unexpected RAKP 2 message");
+            log.print(log.Level.err, "Error: Received an Unexpected RAKP 2 message", .{});
             return .again;
         }
         readRakp2Message(rsp, offset, session.v2_data.auth_alg);
     } else if (rsp.session.payloadtype == @intFromEnum(ipmi.PayloadType.rakp_4)) {
         if (session.v2_data.session_state != .rakp_3_sent) {
-            c.lprintf(log.Level.err, "Error: Received an Unexpected RAKP 4 message");
+            log.print(log.Level.err, "Error: Received an Unexpected RAKP 4 message", .{});
             return .again;
         }
         readRakp4Message(rsp, offset, session.v2_data.auth_alg);
@@ -1067,7 +1063,7 @@ fn pollSingle(intf: *Intf) PollResult {
         const payload_start = offset;
 
         if (session.v2_data.session_state != .active) {
-            c.lprintf(log.Level.err, "Error: Received an Unexpected SOL packet");
+            log.print(log.Level.err, "Error: Received an Unexpected SOL packet", .{});
             return .again;
         }
         readSolPacket(rsp, &offset);
@@ -1083,10 +1079,10 @@ fn pollSingle(intf: *Intf) PollResult {
             rsp.data_len = 0;
         }
     } else {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Invalid RMCP+ payload type : 0x%x",
-            @as(c_int, rsp.session.payloadtype),
+            .{@as(c_int, rsp.session.payloadtype)},
         );
         return .again;
     }
@@ -1190,16 +1186,18 @@ fn getIpmiPayloadWireRep(
         }
     }
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "%s RqAddr %#x transit %#x:%#x target %#x:%#x bridgePossible %d",
-        pick(bridged_request != 0, "Bridging", "Local"),
-        @as(c_uint, intf.my_addr),
-        @as(c_uint, intf.transit_addr),
-        @as(c_int, intf.transit_channel),
-        @as(c_uint, intf.target_addr),
-        @as(c_int, intf.target_channel),
-        @as(c_int, bridge_possible),
+        .{
+            pick(bridged_request != 0, "Bridging", "Local"),
+            @as(c_uint, intf.my_addr),
+            @as(c_uint, intf.transit_addr),
+            @as(c_int, intf.transit_channel),
+            @as(c_uint, intf.target_addr),
+            @as(c_int, intf.target_channel),
+            @as(c_int, bridge_possible),
+        },
     );
 
     // rsAddr
@@ -1273,17 +1271,17 @@ fn getSolPayloadWireRep(msg: [*]u8, payload: *ipmi.V2Payload) void {
     var i: usize = 0;
     const sol = &payload.payload.sol_packet;
 
-    c.lprintf(log.Level.debug, ">>>>>>>>>> SENDING TO BMC >>>>>>>>>>");
-    c.lprintf(log.Level.debug, "> SOL sequence number     : 0x%02x", @as(c_int, sol.packet_sequence_number));
-    c.lprintf(log.Level.debug, "> SOL acked packet        : 0x%02x", @as(c_int, sol.acked_packet_number));
-    c.lprintf(log.Level.debug, "> SOL accepted char count : 0x%02x", @as(c_int, sol.accepted_character_count));
-    c.lprintf(log.Level.debug, "> SOL is nack             : %s", boolStr(sol.is_nack));
-    c.lprintf(log.Level.debug, "> SOL assert ring wor     : %s", boolStr(sol.assert_ring_wor));
-    c.lprintf(log.Level.debug, "> SOL generate break      : %s", boolStr(sol.generate_break));
-    c.lprintf(log.Level.debug, "> SOL deassert cts        : %s", boolStr(sol.deassert_cts));
-    c.lprintf(log.Level.debug, "> SOL deassert dcd dsr    : %s", boolStr(sol.deassert_dcd_dsr));
-    c.lprintf(log.Level.debug, "> SOL flush inbound       : %s", boolStr(sol.flush_inbound));
-    c.lprintf(log.Level.debug, "> SOL flush outbound      : %s", boolStr(sol.flush_outbound));
+    log.print(log.Level.debug, ">>>>>>>>>> SENDING TO BMC >>>>>>>>>>", .{});
+    log.print(log.Level.debug, "> SOL sequence number     : 0x%02x", .{@as(c_int, sol.packet_sequence_number)});
+    log.print(log.Level.debug, "> SOL acked packet        : 0x%02x", .{@as(c_int, sol.acked_packet_number)});
+    log.print(log.Level.debug, "> SOL accepted char count : 0x%02x", .{@as(c_int, sol.accepted_character_count)});
+    log.print(log.Level.debug, "> SOL is nack             : %s", .{boolStr(sol.is_nack)});
+    log.print(log.Level.debug, "> SOL assert ring wor     : %s", .{boolStr(sol.assert_ring_wor)});
+    log.print(log.Level.debug, "> SOL generate break      : %s", .{boolStr(sol.generate_break)});
+    log.print(log.Level.debug, "> SOL deassert cts        : %s", .{boolStr(sol.deassert_cts)});
+    log.print(log.Level.debug, "> SOL deassert dcd dsr    : %s", .{boolStr(sol.deassert_dcd_dsr)});
+    log.print(log.Level.debug, "> SOL flush inbound       : %s", .{boolStr(sol.flush_inbound)});
+    log.print(log.Level.debug, "> SOL flush outbound      : %s", .{boolStr(sol.flush_outbound)});
 
     msg[i] = sol.packet_sequence_number;
     i += 1;
@@ -1304,8 +1302,8 @@ fn getSolPayloadWireRep(msg: [*]u8, payload: *ipmi.V2Payload) void {
     // We may have data to add.
     @memcpy(msg[i..][0..sol.character_count], sol.data[0..sol.character_count]);
 
-    c.lprintf(log.Level.debug, "> SOL character count     : %d", @as(c_int, sol.character_count));
-    c.lprintf(log.Level.debug, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    log.print(log.Level.debug, "> SOL character count     : %d", .{@as(c_int, sol.character_count)});
+    log.print(log.Level.debug, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", .{});
 
     if (c.verbose >= 5 and sol.character_count != 0) {
         c.printbuf(&sol.data, sol.character_count, "SOL SEND DATA");
@@ -1348,7 +1346,7 @@ fn buildV2xMsg(
         max_auth_code_size; // authcode
 
     var msg: [*]u8 = @ptrCast(c.malloc(@intCast(len)) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return;
     });
     @memset(msg[0..@intCast(len)], 0);
@@ -1428,10 +1426,10 @@ fn buildV2xMsg(
         },
 
         else => {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "unsupported payload type 0x%x",
-                @as(c_int, payload.payload_type),
+                .{@as(c_int, payload.payload_type)},
             );
             c.free(msg);
             cassert.expect(false, .{
@@ -1465,7 +1463,7 @@ fn buildV2xMsg(
 
             const new_msg = c.realloc(msg, @intCast(len)) orelse {
                 c.free(msg);
-                c.lprintf(log.Level.err, "ipmitool: realloc failure");
+                log.print(log.Level.err, "ipmitool: realloc failure", .{});
                 return;
             };
             msg = @ptrCast(new_msg);
@@ -1653,7 +1651,7 @@ fn buildV15IpmiCmd(intf: *Intf, req: *ipmi.Request) ?*Entry {
     len = @as(c_int, req.msg.data_len) + 21;
 
     const msg: [*]u8 = @ptrCast(c.malloc(@intCast(len)) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     });
     @memset(msg[0..@intCast(len)], 0);
@@ -1710,19 +1708,19 @@ fn buildV15IpmiCmd(intf: *Intf, req: *ipmi.Request) ?*Entry {
     msg[@intCast(len)] = req.msg.cmd;
     len += 1;
 
-    c.lprintf(log.Level.debug + 1, ">> IPMI Request Session Header");
-    c.lprintf(log.Level.debug + 1, ">>   Authtype   : %s", c.val2str(c.IPMI_SESSION_AUTHTYPE_NONE, c.ipmi_authtype_session_vals));
-    c.lprintf(log.Level.debug + 1, ">>   Sequence   : 0x%08lx", @as(c_long, session.out_seq));
-    c.lprintf(log.Level.debug + 1, ">>   Session ID : 0x%08lx", @as(c_long, 0));
+    log.print(log.Level.debug + 1, ">> IPMI Request Session Header", .{});
+    log.print(log.Level.debug + 1, ">>   Authtype   : %s", .{c.val2str(c.IPMI_SESSION_AUTHTYPE_NONE, c.ipmi_authtype_session_vals)});
+    log.print(log.Level.debug + 1, ">>   Sequence   : 0x%08lx", .{@as(c_long, session.out_seq)});
+    log.print(log.Level.debug + 1, ">>   Session ID : 0x%08lx", .{@as(c_long, 0)});
 
-    c.lprintf(log.Level.debug + 1, ">> IPMI Request Message Header");
-    c.lprintf(log.Level.debug + 1, ">>   Rs Addr    : %02x", @as(c_int, ipmi.bmc_slave_addr));
-    c.lprintf(log.Level.debug + 1, ">>   NetFn      : %02x", @as(c_int, req.msg.netfn_lun.netfn));
-    c.lprintf(log.Level.debug + 1, ">>   Rs LUN     : %01x", @as(c_int, 0));
-    c.lprintf(log.Level.debug + 1, ">>   Rq Addr    : %02x", @as(c_int, ipmi.remote_swid));
-    c.lprintf(log.Level.debug + 1, ">>   Rq Seq     : %02x", @as(c_int, entry.rq_seq));
-    c.lprintf(log.Level.debug + 1, ">>   Rq Lun     : %01x", @as(c_int, 0));
-    c.lprintf(log.Level.debug + 1, ">>   Command    : %02x", @as(c_int, req.msg.cmd));
+    log.print(log.Level.debug + 1, ">> IPMI Request Message Header", .{});
+    log.print(log.Level.debug + 1, ">>   Rs Addr    : %02x", .{@as(c_int, ipmi.bmc_slave_addr)});
+    log.print(log.Level.debug + 1, ">>   NetFn      : %02x", .{@as(c_int, req.msg.netfn_lun.netfn)});
+    log.print(log.Level.debug + 1, ">>   Rs LUN     : %01x", .{@as(c_int, 0)});
+    log.print(log.Level.debug + 1, ">>   Rq Addr    : %02x", .{@as(c_int, ipmi.remote_swid)});
+    log.print(log.Level.debug + 1, ">>   Rq Seq     : %02x", .{@as(c_int, entry.rq_seq)});
+    log.print(log.Level.debug + 1, ">>   Rq Lun     : %01x", .{@as(c_int, 0)});
+    log.print(log.Level.debug + 1, ">>   Command    : %02x", .{@as(c_int, req.msg.cmd)});
 
     // Message data.
     if (req.msg.data_len != 0) {
@@ -1789,10 +1787,10 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
             if (payload.payload_type == @intFromEnum(ipmi.PayloadType.ipmi)) {
                 const ipmi_request = payload.payload.ipmi_request.request.?;
 
-                c.lprintf(log.Level.debug, "");
-                c.lprintf(log.Level.debug, ">> Sending IPMI command payload");
-                c.lprintf(log.Level.debug, ">>    netfn   : 0x%02x", @as(c_int, ipmi_request.msg.netfn_lun.netfn));
-                c.lprintf(log.Level.debug, ">>    command : 0x%02x", @as(c_int, ipmi_request.msg.cmd));
+                log.print(log.Level.debug, "", .{});
+                log.print(log.Level.debug, ">> Sending IPMI command payload", .{});
+                log.print(log.Level.debug, ">>    netfn   : 0x%02x", .{@as(c_int, ipmi_request.msg.netfn_lun.netfn)});
+                log.print(log.Level.debug, ">>    command : 0x%02x", .{@as(c_int, ipmi_request.msg.cmd)});
 
                 if (c.verbose > 1) {
                     _ = c.fprintf(c.stderr, ">>    data    : ");
@@ -1810,24 +1808,24 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
                     ipmi_request.msg.cmd == get_channel_auth_cap and
                     session.v2_data.bmc_id == 0)
                 {
-                    c.lprintf(log.Level.debug + 1, "BUILDING A v1.5 COMMAND");
+                    log.print(log.Level.debug + 1, "BUILDING A v1.5 COMMAND", .{});
                     entry = buildV15IpmiCmd(intf, ipmi_request);
                 } else {
                     const is_retry: c_int = if (tries > 0) 1 else 0;
 
-                    c.lprintf(log.Level.debug + 1, "BUILDING A v2 COMMAND");
+                    log.print(log.Level.debug + 1, "BUILDING A v2 COMMAND", .{});
                     entry = buildV2xIpmiCmd(intf, ipmi_request, is_retry);
                 }
 
                 const e = entry orelse {
-                    c.lprintf(log.Level.err, "Aborting send command, unable to build");
+                    log.print(log.Level.err, "Aborting send command, unable to build", .{});
                     return null;
                 };
 
                 msg_data = e.msg_data;
                 msg_length = e.msg_len;
             } else if (payload.payload_type == @intFromEnum(ipmi.PayloadType.rmcp_open_request)) {
-                c.lprintf(log.Level.debug, ">> SENDING AN OPEN SESSION REQUEST\n");
+                log.print(log.Level.debug, ">> SENDING AN OPEN SESSION REQUEST\n", .{});
                 cassert.expect(
                     session.v2_data.session_state == .presession or
                         session.v2_data.session_state == .open_session_sent,
@@ -1842,7 +1840,7 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
 
                 buildV2xMsg(intf, payload, &msg_length, &msg_data, 0);
             } else if (payload.payload_type == @intFromEnum(ipmi.PayloadType.rakp_1)) {
-                c.lprintf(log.Level.debug, ">> SENDING A RAKP 1 MESSAGE\n");
+                log.print(log.Level.debug, ">> SENDING A RAKP 1 MESSAGE\n", .{});
                 cassert.expect(session.v2_data.session_state == .open_session_received, .{
                     .file = "src/plugins/lanplus/lanplus.c",
                     .line = 2228,
@@ -1852,7 +1850,7 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
 
                 buildV2xMsg(intf, payload, &msg_length, &msg_data, 0);
             } else if (payload.payload_type == @intFromEnum(ipmi.PayloadType.rakp_3)) {
-                c.lprintf(log.Level.debug, ">> SENDING A RAKP 3 MESSAGE\n");
+                log.print(log.Level.debug, ">> SENDING A RAKP 3 MESSAGE\n", .{});
                 cassert.expect(session.v2_data.session_state == .rakp_2_received, .{
                     .file = "src/plugins/lanplus/lanplus.c",
                     .line = 2242,
@@ -1862,7 +1860,7 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
 
                 buildV2xMsg(intf, payload, &msg_length, &msg_data, 0);
             } else if (payload.payload_type == @intFromEnum(ipmi.PayloadType.sol)) {
-                c.lprintf(log.Level.debug, ">> SENDING A SOL MESSAGE\n");
+                log.print(log.Level.debug, ">> SENDING A SOL MESSAGE\n", .{});
                 cassert.expect(session.v2_data.session_state == .active, .{
                     .file = "src/plugins/lanplus/lanplus.c",
                     .line = 2256,
@@ -1872,10 +1870,10 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
 
                 buildV2xMsg(intf, payload, &msg_length, &msg_data, 0);
             } else {
-                c.lprintf(
+                log.print(
                     log.Level.err,
                     "Payload type 0x%0x is unsupported!",
-                    @as(c_int, payload.payload_type),
+                    .{@as(c_int, payload.payload_type)},
                 );
                 cassert.expect(false, .{
                     .file = "src/plugins/lanplus/lanplus.c",
@@ -1886,7 +1884,7 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
             }
 
             if (sendPacket(intf, msg_data.?, msg_length) < 0) {
-                c.lprintf(log.Level.err, "IPMI LAN send command failed");
+                log.print(log.Level.err, "IPMI LAN send command failed", .{});
                 return null;
             }
         }
@@ -2199,14 +2197,14 @@ fn getAuthCapabilitiesCmd(intf: *Intf, auth_cap: *AuthCapRsp) c_int {
         rsp = intf.sendrecv.?(intf, &req);
 
         if (rsp == null) {
-            c.lprintf(log.Level.info, "Get Auth Capabilities error");
+            log.print(log.Level.info, "Get Auth Capabilities error", .{});
             return 1;
         }
         if (rsp.?.ccode != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.info,
                 "Get Auth Capabilities error: %s",
-                c.val2str(rsp.?.ccode, c.completion_code_vals),
+                .{c.val2str(rsp.?.ccode, c.completion_code_vals)},
             );
             return 1;
         }
@@ -2246,32 +2244,32 @@ fn closeSessionCmd(intf: *Intf) c_int {
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
         // Looks like the session was closed.
-        c.lprintf(log.Level.err, "Close Session command failed");
+        log.print(log.Level.err, "Close Session command failed", .{});
         return -1;
     };
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "close_session");
 
     if (rsp.ccode == 0x87) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Failed to Close Session: invalid session ID %08lx",
-            @as(c_long, session.v2_data.bmc_id),
+            .{@as(c_long, session.v2_data.bmc_id)},
         );
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Close Session command failed: %s",
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{c.val2str(rsp.ccode, c.completion_code_vals)},
         );
         return -1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Closed Session %08lx\n",
-        @as(c_long, session.v2_data.bmc_id),
+        .{@as(c_long, session.v2_data.bmc_id)},
     );
 
     bridge_possible = backup_bridge_possible;
@@ -2287,7 +2285,7 @@ fn openSession(intf: *Intf) c_int {
     var rc: c_int = 0;
 
     const msg: [*]u8 = @ptrCast(c.malloc(open_session_request_size) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return 1;
     });
 
@@ -2318,10 +2316,10 @@ fn openSession(intf: *Intf) c_int {
         &session.v2_data.requested_integrity_alg,
         &session.v2_data.requested_crypt_alg,
     ) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.warning,
             "Unsupported cipher suite ID : %d\n",
-            @as(c_int, @intCast(@intFromEnum(intf.ssn_params.cipher_suite_id))),
+            .{@as(c_int, @intCast(@intFromEnum(intf.ssn_params.cipher_suite_id)))},
         );
         c.free(msg);
         return 1;
@@ -2365,27 +2363,28 @@ fn openSession(intf: *Intf) c_int {
 
     c.free(msg);
     if (rsp == null) {
-        c.lprintf(log.Level.debug, "Timeout in open session response message.");
+        log.print(log.Level.debug, "Timeout in open session response message.", .{});
         return 2;
     }
     const r = rsp.?;
     if (c.verbose != 0) c.lanplus_dump_open_session_response(cRsp(r));
 
     if (r.payload.open_session_response.rakp_return_code != rakp_status_no_errors) {
-        c.lprintf(
+        log.print(
             log.Level.warning,
             "Error in open session response message : %s\n",
-            c.val2str(
+            .{c.val2str(
                 r.payload.open_session_response.rakp_return_code,
                 c.ipmi_rakp_return_codes,
-            ),
+            )},
         );
         return 1;
     } else {
         if (r.payload.open_session_response.console_id != session.v2_data.console_id) {
-            c.lprintf(
+            log.print(
                 log.Level.warning,
                 "Warning: Console session ID is not what we requested",
+                .{},
             );
         }
 
@@ -2398,31 +2397,28 @@ fn openSession(intf: *Intf) c_int {
 
         // Verify that we have agreed on a cipher suite.
         if (r.payload.open_session_response.auth_alg != session.v2_data.requested_auth_alg) {
-            c.lprintf(
+            log.print(
                 log.Level.warning,
                 "Authentication algorithm 0x%02x is not what we requested 0x%02x\n",
-                @as(c_int, r.payload.open_session_response.auth_alg),
-                @as(c_int, session.v2_data.requested_auth_alg),
+                .{ @as(c_int, r.payload.open_session_response.auth_alg), @as(c_int, session.v2_data.requested_auth_alg) },
             );
             rc = 1;
         } else if (r.payload.open_session_response.integrity_alg !=
             session.v2_data.requested_integrity_alg)
         {
-            c.lprintf(
+            log.print(
                 log.Level.warning,
                 "Integrity algorithm 0x%02x is not what we requested 0x%02x\n",
-                @as(c_int, r.payload.open_session_response.integrity_alg),
-                @as(c_int, session.v2_data.requested_integrity_alg),
+                .{ @as(c_int, r.payload.open_session_response.integrity_alg), @as(c_int, session.v2_data.requested_integrity_alg) },
             );
             rc = 1;
         } else if (r.payload.open_session_response.crypt_alg !=
             session.v2_data.requested_crypt_alg)
         {
-            c.lprintf(
+            log.print(
                 log.Level.warning,
                 "Encryption algorithm 0x%02x is not what we requested 0x%02x\n",
-                @as(c_int, r.payload.open_session_response.crypt_alg),
-                @as(c_int, session.v2_data.requested_crypt_alg),
+                .{ @as(c_int, r.payload.open_session_response.crypt_alg), @as(c_int, session.v2_data.requested_crypt_alg) },
             );
             rc = 1;
         }
@@ -2438,7 +2434,7 @@ fn rakp1(intf: *Intf) c_int {
     var rc: c_int = 0;
 
     const msg: [*]u8 = @ptrCast(c.malloc(rakp1_message_size) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return 1;
     });
     @memset(msg[0..rakp1_message_size], 0);
@@ -2457,7 +2453,7 @@ fn rakp1(intf: *Intf) c_int {
 
     // We need a 16 byte random number.
     if (c.lanplus_rand(&session.v2_data.console_rand, 16) != 0) {
-        c.lprintf(log.Level.err, "ERROR generating random number in ipmi_lanplus_rakp1");
+        log.print(log.Level.err, "ERROR generating random number in ipmi_lanplus_rakp1", .{});
         c.free(msg);
         return 1;
     }
@@ -2477,10 +2473,10 @@ fn rakp1(intf: *Intf) c_int {
     // Username specification.
     msg[27] = @truncate(c.strlen(&intf.ssn_params.username));
     if (msg[27] > max_user_name_length) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "ERROR: user name too long.  (Exceeds %d characters)",
-            @as(c_int, max_user_name_length),
+            .{@as(c_int, max_user_name_length)},
         );
         c.free(msg);
         return 1;
@@ -2503,7 +2499,7 @@ fn rakp1(intf: *Intf) c_int {
     c.free(msg);
 
     const r = rsp orelse {
-        c.lprintf(log.Level.warning, "> Error: no response from RAKP 1 message");
+        log.print(log.Level.warning, "> Error: no response from RAKP 1 message", .{});
         return 2;
     };
 
@@ -2512,10 +2508,10 @@ fn rakp1(intf: *Intf) c_int {
     if (c.verbose != 0) c.lanplus_dump_rakp2_message(cRsp(r), session.v2_data.auth_alg);
 
     if (r.payload.rakp2_message.rakp_return_code != rakp_status_no_errors) {
-        c.lprintf(
+        log.print(
             log.Level.info,
             "RAKP 2 message indicates an error : %s",
-            c.val2str(r.payload.rakp2_message.rakp_return_code, c.ipmi_rakp_return_codes),
+            .{c.val2str(r.payload.rakp2_message.rakp_return_code, c.ipmi_rakp_return_codes)},
         );
         rc = 1;
     } else {
@@ -2531,7 +2527,7 @@ fn rakp1(intf: *Intf) c_int {
             &r.payload.rakp2_message.key_exchange_auth_code,
             cIntf(intf),
         ) == 0) {
-            c.lprintf(log.Level.info, "> RAKP 2 HMAC is invalid");
+            log.print(log.Level.info, "> RAKP 2 HMAC is invalid", .{});
             session.v2_data.rakp2_return_code = rakp_status_invalid_integrity_check_value;
             rc = 1;
         } else {
@@ -2559,7 +2555,7 @@ fn rakp3(intf: *Intf) c_int {
     });
 
     const msg: [*]u8 = @ptrCast(c.malloc(rakp3_message_max_size) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return 1;
     });
     @memset(msg[0..rakp3_message_max_size], 0);
@@ -2587,7 +2583,7 @@ fn rakp3(intf: *Intf) c_int {
         var auth_length: u32 = undefined;
 
         if (c.lanplus_generate_rakp3_authcode(msg + 8, cSession(session), &auth_length, cIntf(intf)) != 0) {
-            c.lprintf(log.Level.info, "> Error generating RAKP 3 authcode");
+            log.print(log.Level.info, "> Error generating RAKP 3 authcode", .{});
             c.free(msg);
             return 1;
         } else {
@@ -2596,15 +2592,15 @@ fn rakp3(intf: *Intf) c_int {
 
         // Generate our session integrity key, K1 and K2.
         if (c.lanplus_generate_sik(cSession(session), cIntf(intf)) != 0) {
-            c.lprintf(log.Level.info, "> Error generating session integrity key");
+            log.print(log.Level.info, "> Error generating session integrity key", .{});
             c.free(msg);
             return 1;
         } else if (c.lanplus_generate_k1(cSession(session)) != 0) {
-            c.lprintf(log.Level.info, "> Error generating K1 key");
+            log.print(log.Level.info, "> Error generating K1 key", .{});
             c.free(msg);
             return 1;
         } else if (c.lanplus_generate_k2(cSession(session)) != 0) {
-            c.lprintf(log.Level.info, "> Error generating K1 key");
+            log.print(log.Level.info, "> Error generating K1 key", .{});
             c.free(msg);
             return 1;
         }
@@ -2620,7 +2616,7 @@ fn rakp3(intf: *Intf) c_int {
     }
 
     const r = rsp orelse {
-        c.lprintf(log.Level.warning, "> Error: no response from RAKP 3 message");
+        log.print(log.Level.warning, "> Error: no response from RAKP 3 message", .{});
         return 2;
     };
 
@@ -2628,10 +2624,10 @@ fn rakp3(intf: *Intf) c_int {
     if (c.verbose != 0) c.lanplus_dump_rakp4_message(cRsp(r), session.v2_data.auth_alg);
 
     if (r.payload.open_session_response.rakp_return_code != rakp_status_no_errors) {
-        c.lprintf(
+        log.print(
             log.Level.info,
             "RAKP 4 message indicates an error : %s",
-            c.val2str(r.payload.rakp4_message.rakp_return_code, c.ipmi_rakp_return_codes),
+            .{c.val2str(r.payload.rakp4_message.rakp_return_code, c.ipmi_rakp_return_codes)},
         );
         return 1;
     } else {
@@ -2642,7 +2638,7 @@ fn rakp3(intf: *Intf) c_int {
         ) != 0) {
             session.v2_data.session_state = .active;
         } else {
-            c.lprintf(log.Level.info, "> RAKP 4 message has invalid integrity check value");
+            log.print(log.Level.info, "> RAKP 4 message has invalid integrity check value", .{});
             return 1;
         }
     }
@@ -2684,10 +2680,10 @@ fn setSessionPrivlvlCmd(intf: *Intf) c_int {
     req.msg.data_len = 1;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set Session Privilege Level to %s failed",
-            c.val2str(privlvl, c.ipmi_privlvl_vals),
+            .{c.val2str(privlvl, c.ipmi_privlvl_vals)},
         );
         bridge_possible = backup_bridge_possible;
         return -1;
@@ -2695,20 +2691,19 @@ fn setSessionPrivlvlCmd(intf: *Intf) c_int {
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "set_session_privlvl");
 
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set Session Privilege Level to %s failed: %s",
-            c.val2str(privlvl, c.ipmi_privlvl_vals),
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{ c.val2str(privlvl, c.ipmi_privlvl_vals), c.val2str(rsp.ccode, c.completion_code_vals) },
         );
         bridge_possible = backup_bridge_possible;
         return -1;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Set Session Privilege Level to %s\n",
-        c.val2str(rsp.data[0], c.ipmi_privlvl_vals),
+        .{c.val2str(rsp.data[0], c.ipmi_privlvl_vals)},
     );
 
     bridge_possible = backup_bridge_possible;
@@ -2761,7 +2756,7 @@ fn findBestCipherSuite(intf: *Intf) u8 {
         // as a fallback.
         best_suite = c.IPMI_LANPLUS_CIPHER_SUITE_3;
     }
-    c.lprintf(log.Level.info, "Using best available cipher suite %d\n", best_suite);
+    log.print(log.Level.info, "Using best available cipher suite %d\n", .{best_suite});
     return @truncate(@as(c_uint, @bitCast(best_suite)));
 }
 
@@ -2780,18 +2775,18 @@ fn open(intf: *Intf) callconv(.c) c_int {
     if (params.retry == 0) params.retry = lan_retry;
 
     if (params.hostname == null or c.strlen(params.hostname) == 0) {
-        c.lprintf(log.Level.err, "No hostname specified!");
+        log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     }
 
     fail: {
         if (c.ipmi_intf_socket_connect(cIntf(intf)) == -1) {
-            c.lprintf(log.Level.err, "Could not open socket!");
+            log.print(log.Level.err, "Could not open socket!", .{});
             break :fail;
         }
 
         const session: *Session = @ptrCast(@alignCast(c.malloc(@sizeOf(Session)) orelse {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             break :fail;
         }));
 
@@ -2812,9 +2807,10 @@ fn open(intf: *Intf) callconv(.c) c_int {
         if (c.ipmi_oem_active(cIntf(intf), "i82571spt") == 0 and
             getAuthCapabilitiesCmd(intf, &auth_cap) != 0)
         {
-            c.lprintf(
+            log.print(
                 log.Level.info,
                 "Error issuing Get Channel Authentication Capabilities request",
+                .{},
             );
             break :fail;
         }
@@ -2822,7 +2818,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
         if (c.ipmi_oem_active(cIntf(intf), "i82571spt") == 0 and
             auth_cap.b1.v20_data_available == 0)
         {
-            c.lprintf(log.Level.info, "This BMC does not support IPMI v2 / RMCP+");
+            log.print(log.Level.info, "This BMC does not support IPMI v2 / RMCP+", .{});
             break :fail;
         }
 
@@ -2842,24 +2838,24 @@ fn open(intf: *Intf) callconv(.c) c_int {
             rc = openSession(intf);
             if (rc == 1) break :fail;
             if (rc == 2) {
-                c.lprintf(log.Level.debug, "Retry lanplus open session, %d", retry);
+                log.print(log.Level.debug, "Retry lanplus open session, %d", .{retry});
                 continue;
             }
 
             rc = rakp1(intf);
             if (rc == 1) break :fail;
             if (rc == 2) {
-                c.lprintf(log.Level.debug, "Retry lanplus rakp1, %d", retry);
+                log.print(log.Level.debug, "Retry lanplus rakp1, %d", .{retry});
                 continue;
             }
 
             rc = rakp3(intf);
             if (rc == 1) break :fail;
             if (rc == 0) break;
-            c.lprintf(log.Level.debug, "Retry lanplus rakp3, %d", retry);
+            log.print(log.Level.debug, "Retry lanplus rakp3, %d", .{retry});
         }
 
-        c.lprintf(log.Level.debug, "IPMIv2 / RMCP+ SESSION OPENED SUCCESSFULLY\n");
+        log.print(log.Level.debug, "IPMIv2 / RMCP+ SESSION OPENED SUCCESSFULLY\n", .{});
 
         intf.abort = 0;
 
@@ -2880,7 +2876,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
         return intf.fd;
     }
 
-    c.lprintf(log.Level.err, "Error: Unable to establish IPMI v2 / RMCP+ session");
+    log.print(log.Level.err, "Error: Unable to establish IPMI v2 / RMCP+ session", .{});
     intf.close.?(intf);
     return -1;
 }
@@ -2916,7 +2912,7 @@ fn testCrypt1() callconv(.c) void {
         &encrypt_buffer,
         &bytes_encrypted,
     ) != 0) {
-        c.lprintf(log.Level.err, "Encrypt test failed");
+        log.print(log.Level.err, "Encrypt test failed", .{});
         cassert.expect(false, .{
             .file = "src/plugins/lanplus/lanplus.c",
             .line = 3623,
@@ -2934,7 +2930,7 @@ fn testCrypt1() callconv(.c) void {
         &decrypt_buffer,
         &bytes_decrypted,
     ) != 0) {
-        c.lprintf(log.Level.err, "Decrypt test failed\n");
+        log.print(log.Level.err, "Decrypt test failed\n", .{});
         cassert.expect(false, .{
             .file = "src/plugins/lanplus/lanplus.c",
             .line = 3636,
@@ -2944,7 +2940,7 @@ fn testCrypt1() callconv(.c) void {
     }
     c.printbuf(&decrypt_buffer, bytes_decrypted, "decrypted payload");
 
-    c.lprintf(log.Level.debug, "\nDone testing the encrypt/decyrpt methods!\n");
+    log.print(log.Level.debug, "\nDone testing the encrypt/decyrpt methods!\n", .{});
     c.exit(0);
 }
 
@@ -2986,7 +2982,7 @@ fn testCrypt2() callconv(.c) void {
     );
     c.printbuf(&decrypt_buffer, @intCast(bytes_decrypted), "decrypt_buffer");
 
-    c.lprintf(log.Level.info, "\nDone testing the encrypt/decyrpt methods!\n");
+    log.print(log.Level.info, "\nDone testing the encrypt/decyrpt methods!\n", .{});
     c.exit(0);
 }
 
