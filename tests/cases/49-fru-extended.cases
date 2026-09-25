@@ -72,6 +72,12 @@ args: -I dummy fru read 0 {work}/inventory.bin
 transcript: fru_short_data.tr
 covers: fru
 
+[fru_read_word_aligned]
+desc: word-access FRU read interprets reply count in words and copies eight bytes
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru_word_access.tr
+covers: fru
+
 [fru_print_word_access]
 desc: word-addressed eight-byte FRU common header with no additional areas
 args: -I dummy fru print 0
@@ -89,3 +95,17 @@ desc: discover a second logical FRU via an SDR locator and read device id 7
 args: -I dummy fru print
 transcript: fru_sdr_locator.tr
 covers: fru sdr
+
+[fru_write_protected]
+desc: a write-protected chassis area is skipped while subsequent areas are written
+args: -I dummy fru write 0 {work}/inventory.bin
+transcript: fru_write_protected.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
+[fru_write_rejected]
+desc: first FRU write receives a BMC invalid-length completion code
+args: -I dummy fru write 0 {work}/inventory.bin
+transcript: fru_write_rejected.tr
+blob: inventory.bin fru/board.hex
+covers: fru
