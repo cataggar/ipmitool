@@ -46,6 +46,11 @@ args: -I dummy picmg portstate set 1 1 5 2 3 4 1
 transcript: picmg_depth.tr
 covers: picmg
 
+[picmg_port_getall]
+args: -I dummy picmg portstate getall
+transcript: picmg_depth.tr
+covers: picmg
+
 [picmg_depth_amc_get]
 args: -I dummy picmg amcportstate get 2 3
 transcript: picmg_depth.tr
@@ -53,6 +58,11 @@ covers: picmg
 
 [picmg_depth_amc_set]
 args: -I dummy picmg amcportstate set 2 5 2 3 4 1 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_amc_getdenied]
+args: -I dummy picmg amcportstate getdenied
 transcript: picmg_depth.tr
 covers: picmg
 
@@ -98,6 +108,11 @@ covers: picmg
 
 [picmg_depth_clk_set]
 args: -I dummy picmg clk set 2 1 12 2 3 0x12345678 3
+transcript: picmg_depth.tr
+covers: picmg
+
+[picmg_clk_getgranted]
+args: -I dummy picmg clk getgranted
 transcript: picmg_depth.tr
 covers: picmg
 

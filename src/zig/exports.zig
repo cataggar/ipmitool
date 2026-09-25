@@ -67,6 +67,9 @@ comptime {
     if (selected("event")) {
         @import("cmd/event.zig").exportSymbols();
     }
+    if (selected("picmg")) {
+        @import("cmd/picmg.zig").exportSymbols();
+    }
     if (selected("sensor")) {
         @import("cmd/sensor.zig").exportSymbols();
     }

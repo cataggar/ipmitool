@@ -131,6 +131,18 @@ the argument count and the size/alignment of every argument and of the result
 against the `translate-c` view of the real prototype. A header change that the
 port does not follow is a compile error.
 
+### PICMG and the FRU port
+
+`-Dzig-modules=picmg` replaces all of `lib/ipmi_picmg.c`. Its exported command
+functions, argument validators, discovery helpers, `picmg_led_color_str` and
+`amcAddrMap` retain their C names and ABI. PICMG functions absent from
+`include/ipmitool/ipmi_picmg.h` are declared in `ipmi_c.h` for compile-time
+signature checks. The PICMG port calls `is_fru_id` through the shared helper
+ABI and decodes FRU link-descriptor bitfields from checked wire bytes; it does
+not depend on whether `lib/ipmi_fru.c` has been swapped for a Zig FRU port.
+`tests/cases/57-picmg-depth.cases` records the C requests, output and errors
+for this seam before substituting the PICMG translation unit.
+
 ## The swap flag
 
 ```
