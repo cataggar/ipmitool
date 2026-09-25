@@ -1,0 +1,8 @@
+# An exact all-ones delete timestamp is the negative control.
+default_ccode 0xc1
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 34 12 78 56 44 33 22 11 ff ff ff ff 0a
+end
