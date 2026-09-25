@@ -1,0 +1,11 @@
+# Valid header/action checksums and MD5, but the record declares 0xffffffff
+# payload bytes even though the file only contains 16. Zig must reject it
+# before trying to transmit data; C oracle only runs `check`, not `upgrade`.
+@mark image
+@hpm/image.hex
+@truncate 88
+@poke image 68 0xff
+@poke image 69 0xff
+@poke image 70 0xff
+@poke image 71 0xff
+@md5 image

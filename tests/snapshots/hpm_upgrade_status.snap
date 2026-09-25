@@ -1,0 +1,35 @@
+#!golden 1
+#!case hpm_upgrade_status
+#!section exit
+0
+#!section stdout
+#!section stderr
+
+PICMG HPM.1 Upgrade Agent 1.0.9:\x20
+
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 34
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: 2d
+msg.cmd: 34
+msg.seq: 0
+msg.lun: 0
+<<<
+Upgrade status:
+ Command in progress:          31
+ Last command completion code: 0
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_discover ccode=0x00 len=2 data=00 23
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x34 target_cmd=0x00 data=00
+< rule=hpm_status ccode=0x00 len=3 data=00 31 00
+bye

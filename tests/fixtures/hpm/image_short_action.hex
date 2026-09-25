@@ -1,0 +1,6 @@
+# First action stops after its component mask (missing checksum).
+# The trailing MD5 begins immediately afterward.
+@mark image
+@hpm/image.hex
+@truncate 37
+@md5 image

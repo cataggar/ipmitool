@@ -1,0 +1,11 @@
+# Valid 64-byte upload, spanning multiple dummy-transport request blocks.
+# Reuse the original header/record metadata (first 72 bytes), replace the
+# firmware size and recalculate the MD5 after extending the payload.
+@mark image
+@hpm/image.hex
+@truncate 72
+@poke image 19 0x00
+@poke image 34 0xc8
+@poke image 68 0x40
+@pad 64 0x5a
+@md5 image

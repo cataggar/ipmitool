@@ -1,0 +1,6 @@
+# Header checksum is corrupt but MD5 is valid.
+@mark image
+@hpm/image.hex
+@truncate 88
+@poke image 34 0x00
+@md5 image

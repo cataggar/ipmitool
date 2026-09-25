@@ -1,0 +1,67 @@
+#!golden 1
+#!case hpm_upgrade_retry
+#!section exit
+0
+#!section stdout
+Validating firmware image integrity...OK
+Performing preparation stage...OK
+
+-------------------------------------------------------------------------------
+|ID  | Name        |                     Versions                        | %  |
+|    |             |      Active     |      Backup     |      File       |    |
+|----|-------------|-----------------|-----------------|-----------------|----|
+|   0|IPMC         |   1.02 34000000 |   1.01 22000000 |   1.00 00000000 |  0%|\x08\x08\x08\x08\x08 34%|\x08\x08\x08\x08\x08 68%|\x08\x08\x08\x08\x08100%|
+|    |Upload Time: 00:00             | Image Size:      64 bytes              |
+-------------------------------------------------------------------------------
+#!section stderr
+
+PICMG HPM.1 Upgrade Agent 1.0.9:\x20
+
+
+Performing upgrade stage:
+(*) Component requires Payload Cold Reset
+
+Firmware upgrade procedure successful
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_discover ccode=0x00 len=2 data=00 23
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=caps ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=general ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 02
+< rule=description ccode=0x00 len=13 data=00 49 50 4d 43 20 20 20 20 20 20 20 20
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 01
+< rule=current ccode=0x00 len=7 data=00 01 02 34 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 03
+< rule=rollback_version ccode=0x00 len=7 data=00 01 01 22 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 04
+< rule=deferred ccode=0x00 len=7 data=00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=caps ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=general ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x31 target_cmd=0x00 data=00 01 01
+< rule=initiate ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x31 target_cmd=0x00 data=00 01 02
+< rule=initiate ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 00 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=block_too_long ccode=0xc7 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 00 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=block_ok ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 01 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=block_transient_error ccode=0x83 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 01 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=block_ok ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 02 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a
+< rule=block_ok ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x33 target_cmd=0x00 data=00 00 40 00 00 00
+< rule=finish ccode=0x00 len=1 data=00
+bye

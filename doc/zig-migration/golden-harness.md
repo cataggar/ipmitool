@@ -446,7 +446,7 @@ Current parser fixtures:
 | `fixtures/fru/`        | common header, chassis/board/product/multirecord areas, plus bad checksum, bad common header, truncated and out-of-range-offset variants |
 | `fixtures/sel/`        | threshold event, discrete event, OEM timestamped, OEM non-timestamped, short entry |
 | `fixtures/spd/`        | JEDEC DDR3 SPD image and a short-read variant                          |
-| `fixtures/hpm/`        | valid HPM.1 image, bad MD5, bad signature, truncated                    |
+| `fixtures/hpm/`        | valid 16/64-byte HPM.1 images, empty action list, bad MD5/signature/header/action checksums, truncated action and impossible upload length |
 | `fixtures/mc/`         | Get Device ID response, system GUID                                     |
 | `fixtures/iana/`       | trimmed IANA enterprise-numbers registry                                |
 
@@ -467,6 +467,16 @@ non-memory records, zero-length platform/device responses, rejected
 platform/device requests, and malformed SEL IDs. The snapshots pin the OEM
 magic request as well as the printed descriptions and errors. Run them with
 `./tests/run.sh --filter slq_` and `./tests/run.sh --filter sl_quanta_`.
+
+The HPM.1 `hpm_flow.tr`, `hpm_retry.tr`, `hpm_offset.tr`,
+`hpm_progress.tr` and `hpm_autorollback.tr` transcripts exercise target
+queries, chunked upload, block resizing/transient retry, optional section
+offsets, activation, status and rollback. They are
+served exclusively by the dummy BMC; the suite never flashes real firmware.
+The `image_oversize_length.hex` fixture intentionally has a valid MD5 but
+declares more firmware than it contains. The C oracle accepts it in `check`
+mode because its action-record cursor advances beyond the image; Zig rejects
+that malformed image instead, with a focused parser unit test.
 
 ## Snapshots
 

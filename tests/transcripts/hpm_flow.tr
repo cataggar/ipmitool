@@ -1,0 +1,107 @@
+# HPM.1 one-component BMC, backed by dummy only (no real firmware flashing).
+default_ccode 0xc1
+
+respond picmg_discover
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 23
+end
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond hpm_target_capabilities
+  netfn 0x2c
+  cmd 0x2e
+  data 00 00 17 05 05 05 05 01
+end
+respond hpm_comp0_general_properties
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 00
+  data 00 1e
+end
+respond hpm_comp0_current_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 01
+  data 00 01 02 34 00 00 00
+end
+respond hpm_comp0_description
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 02
+  data 00 49 50 4d 43 20 20 20 20 20 20 20 20
+end
+respond hpm_comp0_rollback_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 03
+  data 00 01 01 22 00 00 00
+end
+respond hpm_comp0_deferred_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 04
+  data 00 00 00 00 00 00 00
+end
+respond hpm_prepare
+  netfn 0x2c
+  cmd 0x31
+  match 00 01 01
+  data 00
+end
+respond hpm_upload
+  netfn 0x2c
+  cmd 0x31
+  match 00 01 02
+  data 00
+end
+respond hpm_compare
+  netfn 0x2c
+  cmd 0x31
+  match 00 01 03
+  data 00
+end
+respond hpm_block
+  netfn 0x2c
+  cmd 0x32
+  data 00
+end
+respond hpm_finish
+  netfn 0x2c
+  cmd 0x33
+  data 00
+end
+respond hpm_status
+  netfn 0x2c
+  cmd 0x34
+  data 00 31 00
+end
+respond hpm_activate
+  netfn 0x2c
+  cmd 0x35
+  data 00
+end
+respond hpm_selftest
+  netfn 0x2c
+  cmd 0x36
+  data 00 55 00
+end
+respond hpm_rollback_status
+  netfn 0x2c
+  cmd 0x37
+  data 00 01
+end
+respond hpm_manual_rollback
+  netfn 0x2c
+  cmd 0x38
+  data 00
+end
+respond hpm_abort
+  netfn 0x2c
+  cmd 0x30
+  data 00
+end

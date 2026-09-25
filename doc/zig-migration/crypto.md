@@ -504,9 +504,11 @@ It describes an available *algorithm*, which is now supplied by `std.crypto`.
 
 ## `md5_state_t` layout
 
-`md5.c` is not only used by `auth.c`; `lib/ipmi_hpmfwupg.c` uses it
-unconditionally and embeds `md5_state_t` by value. The struct layout is
-therefore part of the ABI and is preserved exactly:
+`md5.c` is not only used by `auth.c`; the C version of
+`lib/ipmi_hpmfwupg.c` uses it unconditionally and embeds `md5_state_t` by
+value. The Zig `hpmfwupg` module validates its image digest using
+`std.crypto.hash.Md5` instead; the C MD5 entry points and their ABI remain
+available independently for C builds and LAN authentication:
 
 ```c
 typedef struct md5_state_s {

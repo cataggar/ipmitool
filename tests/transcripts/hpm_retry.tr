@@ -1,0 +1,77 @@
+# First upload is rejected as too long; next block 1 upload has one transient
+# 0x83 error. The C oracle must shrink, retry and still finish successfully.
+default_ccode 0xc1
+respond picmg_discover
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 23
+end
+respond device
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond caps
+  netfn 0x2c
+  cmd 0x2e
+  data 00 00 17 05 05 05 05 01
+end
+respond general
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 00
+  data 00 1e
+end
+respond description
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 02
+  data 00 49 50 4d 43 20 20 20 20 20 20 20 20
+end
+respond current
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 01
+  data 00 01 02 34 00 00 00
+end
+respond rollback_version
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 03
+  data 00 01 01 22 00 00 00
+end
+respond deferred
+  netfn 0x2c
+  cmd 0x2f
+  match 00 00 04
+  data 00 00 00 00 00 00 00
+end
+respond initiate
+  netfn 0x2c
+  cmd 0x31
+  data 00
+end
+respond block_too_long
+  netfn 0x2c
+  cmd 0x32
+  times 1
+  ccode 0xc7
+end
+respond block_transient_error
+  netfn 0x2c
+  cmd 0x32
+  match 00 01
+  times 1
+  ccode 0x83
+end
+respond block_ok
+  netfn 0x2c
+  cmd 0x32
+  data 00
+end
+respond finish
+  netfn 0x2c
+  cmd 0x33
+  data 00
+end

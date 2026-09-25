@@ -1,0 +1,8 @@
+# Same valid 16-byte payload, with "services affected" unset so upgrade can
+# be exercised non-interactively against the dummy BMC.
+@mark image
+@hpm/image.hex
+@truncate 88
+@poke image 19 0x00
+@poke image 34 0xc8
+@md5 image

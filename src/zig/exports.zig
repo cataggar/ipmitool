@@ -14,6 +14,8 @@ const std = @import("std");
 const selection = @import("build_options").zig_modules;
 
 comptime {
+    // ABI checks for every selected module run in this single comptime root.
+    @setEvalBranchQuota(1_000_000);
     if (selected("tsol")) {
         @import("cmd/tsol.zig").exportSymbols();
     }
@@ -126,6 +128,9 @@ comptime {
     }
     if (selected("dimm-spd")) {
         @import("cmd/dimm_spd.zig").exportSymbols();
+    }
+    if (selected("hpmfwupg")) {
+        @import("cmd/hpmfwupg.zig").exportSymbols();
     }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
