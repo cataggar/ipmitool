@@ -1,0 +1,33 @@
+# Issue #50: pin the PPS FRU decoder and the full four-byte SEL timestamps.
+
+[sl_int_fru_state]
+desc: PPS FRU ID, old/new states, nonzero cause and pre-init timestamp
+args: -I dummy -v sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_fru_state.txt
+covers: sel
+
+[sl_int_missing_state_m]
+desc: PPS FRU record missing the delimiter before the current state
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_state_m.txt
+covers: sel
+
+[sl_info_near_ff_add]
+desc: add time differs from all-ff in byte 4; delete differs from zero in byte 4
+args: -I dummy sel info
+transcript: sel_info_near_ff_add.tr
+covers: sel
+
+[sl_info_near_zero_add]
+desc: add time differs from zero in byte 4; delete differs from all-ff in byte 4
+args: -I dummy sel info
+transcript: sel_info_near_zero_add.tr
+covers: sel
+
+[sl_info_ffdel]
+desc: all-ff delete time still reports Not Available
+args: -I dummy sel info
+transcript: sel_info_ffdel.tr
+covers: sel
