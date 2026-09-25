@@ -1322,6 +1322,15 @@ pub fn build(b: *std.Build) void {
     });
     b.step("test-dimm-spd-unit", "Run Zig DIMM SPD decoder and table unit tests")
         .dependOn(&b.addRunArtifact(spd_unit).step);
+    const spd_tables_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/spd_tables_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const spd_tables_run = b.addRunArtifact(b.addTest(.{ .root_module = spd_tables_mod }));
+    b.step("test-dimm-spd-tables", "Test generated SPD tables without the translated C bridge")
+        .dependOn(&spd_tables_run.step);
+    test_step.dependOn(&spd_tables_run.step);
     const serial_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"serial "},

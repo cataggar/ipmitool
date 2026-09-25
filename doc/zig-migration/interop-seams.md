@@ -184,7 +184,13 @@ another Zig module uses it or the port needs its C signature for an assertion.
 The `dimm-spd` swap replaces the complete printer and FRU reader, including
 all twenty externally linked SPD/JEP106 lookup tables. Regenerate the Zig tables
 from the original C data with `python3 tools/gen-spd-tables.py`; `--check`
-verifies that the generated file is current. The printer retains the C output:
+verifies that the generated file is current. The file imports the pure-Zig
+`util/table_types.zig` rather than `ipmi_c`; `dimm_spd.zig` checks its `ValStr`
+layout against `c.struct_valstr` at compile time and casts only at its
+`val2str` call boundary. All 20 generated arrays retain their C export names,
+entry order and terminators. `zig build test-dimm-spd-tables` checks the
+standalone data without any translated C module. The printer retains the C
+output:
 the type byte is at index 2 and a file shorter than 92 bytes fails without
 output. Otherwise it prints `Memory Type` before checking its type-specific
 length:
