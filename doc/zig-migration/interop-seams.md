@@ -222,8 +222,13 @@ zig build -Dzig-modules=cli      # use Zig for both the shared CLI and ipmitool 
 zig build test-cli               # diff C and Zig CLI, including PTY/SIGINT tests
 zig build -Dzig-modules=pef      # lib/ipmi_pef.c replaced by src/zig/cmd/pef.zig
 zig build -Dzig-modules=sunoem   # Sun/Oracle ILOM commands, including LED SDR lookups and CLI
+zig build -Dzig-modules=all      # every registered Zig replacement in both installed binaries
 zig build --help                 # lists the available module names
 ```
+
+`all` is a selection alias, not a pure-Zig switch: the logging varargs shim,
+translated C headers and libc still remain. The default C build continues to
+serve as the golden oracle until the Phase 7 cutover.
 
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;

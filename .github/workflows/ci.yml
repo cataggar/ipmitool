@@ -171,6 +171,15 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Build all registered Zig replacements
+        run: |
+          set -euo pipefail
+          zig build -Dzig-modules=all --summary all
+          test -x zig-out/bin/ipmitool
+          test -x zig-out/sbin/ipmievd
+          zig-out/bin/ipmitool -V
+          zig-out/sbin/ipmievd -V
+
   test:
     name: test
     strategy:

@@ -105,6 +105,7 @@ defaults:
 | `-Dintf-dummy` | on | test interface used by the golden test harness |
 | `-Dintf-usb` | off | AMI USB |
 | `-Dzig-modules=usb` | off | Replace `usb.c` with the Zig AMI USB transport; combine with `-Dintf-usb=true` |
+| `-Dzig-modules=all` | off | Select every registered Zig replacement; the default remains C |
 | `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
 | `-Dipmishell` | on | expose `ipmitool shell` (and keep `exec`/`set`/`echo`) |
@@ -120,6 +121,11 @@ defaults:
 `zig build test` currently runs smoke tests only: both binaries must print
 their version, exit successfully for `-h`, and list exactly the interfaces
 that were enabled. The golden transcript suite is built on top of this.
+
+`zig build -Dzig-modules=all` builds the installable binaries with every
+registered Zig replacement selected. This is not yet a pure-Zig release: the
+logging varargs shim still compiles as C, Zig imports translated C headers, and
+the binaries link libc. The default build remains the C regression oracle.
 
 `-Dipmishell` is on by default so that the command table matches the autotools
 baseline. Select `-Dzig-modules=ipmishell` for the native Zig line editor with
