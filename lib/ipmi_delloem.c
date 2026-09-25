@@ -1279,7 +1279,7 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 static int
 ipmi_lcd_set_single_line_text(struct ipmi_intf * intf, char * text)
 {
-	uint8_t data[18];
+	uint8_t data[18] = {0};
 	int bytes_to_store = strlen(text);
 	int bytes_stored = 0;
 	int ii;
@@ -1663,7 +1663,7 @@ static int
 ipmi_macinfo_drac_idrac_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
 	uint8_t iDRAC6MacAddressByte[MACADDRESSLENGH];
@@ -1732,7 +1732,7 @@ static int
 ipmi_macinfo_10g(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t msg_data[30];
 	uint8_t input_length=0;
 	uint8_t j;
@@ -1795,7 +1795,7 @@ static int
 ipmi_macinfo_11g(struct ipmi_intf* intf, uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t input_length = 0;
 	uint8_t i;
 	uint8_t j;
@@ -2037,7 +2037,7 @@ get_nic_selection_mode_12g(struct ipmi_intf* intf,int current_arg,
 {
 	/* First get the current settings. */
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	int failover = 0;
 	uint8_t input_length = 0;
 	uint8_t msg_data[30];
@@ -2251,7 +2251,7 @@ static int
 ipmi_lan_set_nic_selection_12g(struct ipmi_intf * intf, uint8_t * nic_selection)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t input_length = 0;
 	uint8_t msg_data[30];
 
@@ -2287,7 +2287,7 @@ static int
 ipmi_lan_set_nic_selection(struct ipmi_intf * intf, uint8_t nic_selection)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t input_length = 0;
 	uint8_t msg_data[30];
 
@@ -2315,7 +2315,7 @@ static int
 ipmi_lan_get_nic_selection(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t input_length=0;
 	uint8_t msg_data[30];
 	uint8_t nic_selection=-1;
@@ -2372,7 +2372,7 @@ static int
 ipmi_lan_get_active_nic(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t active_nic=0;
 	uint8_t current_lom =0;
 	uint8_t input_length=0;
@@ -2615,7 +2615,7 @@ static int
 ipmi_get_sensor_reading(struct ipmi_intf *intf, unsigned char sensorNumber,
 		SensorReadingType* pSensorReadingData)
 {
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	struct ipmi_rs * rsp;
 	int rc = 0;
 	memset(&req, 0, sizeof(req));
@@ -2747,7 +2747,7 @@ static int
 ipmi_powermgmt(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t msg_data[2];
 	uint32_t cumStartTime;
 	uint32_t cumReading;
@@ -2860,7 +2860,7 @@ static int
 ipmi_powermgmt_clear(struct ipmi_intf * intf, uint8_t clearValue)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t clearType = 1;
 	uint8_t msg_data[3];
 	if (clearValue) {
@@ -3765,7 +3765,7 @@ ipmi_delloem_vFlash_main(struct ipmi_intf * intf, int __UNUSED__(argc), char ** 
 static int
 ipmi_get_sd_card_info(struct ipmi_intf * intf) {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t msg_data[2];
 	uint8_t input_length=0;
 	uint8_t cardstatus=0x00;

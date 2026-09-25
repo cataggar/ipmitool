@@ -63,6 +63,7 @@ const Options = struct {
     allow_uncovered: bool = false,
     zig_gendev: bool = false,
     verbose: bool = false,
+    zig_deviations: bool = false,
 };
 
 pub fn main(init: std.process.Init) !u8 {
@@ -126,6 +127,8 @@ fn dispatch(gpa: std.mem.Allocator, io: Io, init: std.process.Init, out: *Io.Wri
             opts.allow_uncovered = true;
         } else if (std.mem.eql(u8, arg, "--zig-gendev")) {
             opts.zig_gendev = true;
+        } else if (std.mem.eql(u8, arg, "--zig-deviations")) {
+            opts.zig_deviations = true;
         } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--verbose")) {
             opts.verbose = true;
         } else if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
@@ -251,6 +254,7 @@ const usage_text =
     \\  --binary <path>      binary under test
     \\  --candidate <path>   differential mode: diff --binary against --candidate
     \\  --filter <substr>    only run matching cases
+    \\  --zig-deviations    use *.zig.snap for cases marked zig_deviation: true
     \\  --update, --accept   rewrite snapshots
     \\  --list               list cases
     \\  --coverage           print the command coverage report only
@@ -314,7 +318,9 @@ fn runCase(
     report: *std.ArrayList(u8),
 ) !Outcome {
     const snapshot_path = try std.fmt.allocPrint(gpa, "{s}/snapshots/{s}{s}.snap", .{
-        opts.tests_dir, c.name, if (opts.zig_gendev and c.zig_diff) ".zig" else "",
+        opts.tests_dir,
+        c.name,
+        if ((opts.zig_gendev and c.zig_diff) or (opts.zig_deviations and c.zig_deviation)) ".zig" else "",
     });
     const root_abs = try realPath(gpa, io, work_root);
     const directory_name = try scratchName(gpa, root_abs, c.name, opts.candidate != null);

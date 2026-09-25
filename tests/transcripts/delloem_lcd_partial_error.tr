@@ -1,0 +1,28 @@
+respond lcd_support
+  netfn 0x06
+  cmd 0x59
+  match 00 e7
+  data 11 01 00 00 00
+end
+respond caps
+  netfn 0x06
+  cmd 0x59
+  match 00 cf
+  data 11 01 01 3e 00 00 00
+end
+respond first_block_failure
+  netfn 0x06
+  cmd 0x58
+  match c1 00
+  ccode 0xc1
+end
+respond second_block_success
+  netfn 0x06
+  cmd 0x58
+  match c1 01
+end
+respond config
+  netfn 0x06
+  cmd 0x58
+  match c2
+end

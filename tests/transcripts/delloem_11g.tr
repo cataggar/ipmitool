@@ -1,0 +1,23 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd 02 00
+  data @pad 10 0x00 0a
+end
+respond lom_header
+  netfn 0x06
+  cmd 0x59
+  match 00 da 00 00 00 00
+  data 11 08
+end
+respond lom_fragment
+  netfn 0x06
+  cmd 0x59
+  match 00 da 00 00 00 08
+  data 11 00 03 de ad be ef 00 01
+end
+respond virtual
+  netfn 0x30
+  cmd 0xc9
+  data 00 02 aa bb cc dd ee
+end

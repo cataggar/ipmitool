@@ -180,6 +180,20 @@ harness has to be listening on that socket before it spawns ipmitool. The
 harness creates a private socket per case under its scratch directory and points
 `IPMI_DUMMY_SOCK` at it, so cases never collide and never touch `/tmp`.
 
+For local-interface-only OEM operations (`delloem vFlash info Card`), a case
+can set `env: IPMI_DUMMY_EMULATE_OPEN=1`. Both the C and Zig dummy plugins then
+identify the already-connected dummy transport as `open`. Requests still use
+the same recorded socket, never the host IPMI device. The override is opt-in
+and scoped to that process.
+
+Cases marked `zig_deviation: true` have both an original C-oracle `.snap` and
+an explicit `.zig.snap` selected with `--zig-deviations`. This is reserved for
+documented safety fixes (for example, rejecting short OEM replies that C
+decodes using stale or out-of-bounds response bytes), not ordinary mismatches.
+The default C run always checks the original oracle snapshot; the Zig-swapped
+build checks the corresponding Zig snapshot. An unmarked case must remain
+byte-identical on both runs.
+
 The wire protocol is the raw C structs, in native byte order, with no framing
 beyond their fixed sizes. On aarch64/x86-64 LP64 that is:
 

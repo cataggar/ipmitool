@@ -206,6 +206,11 @@ ipmi_dummyipmi_open(struct ipmi_intf *intf)
 		intf->session = &isol_session;
 	}
 	intf->opened = 1;
+	/* Opt-in fixture mode: exercise local-only OEM commands without hardware. */
+	if (getenv("IPMI_DUMMY_EMULATE_OPEN") &&
+			!strcmp(getenv("IPMI_DUMMY_EMULATE_OPEN"), "1")) {
+		strcpy(intf->name, "open");
+	}
 	return intf->fd;
 }
 

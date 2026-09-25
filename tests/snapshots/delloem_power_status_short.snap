@@ -1,0 +1,27 @@
+#!golden 1
+#!case delloem_power_status_short
+#!section exit
+0
+#!section stdout
+Power Tracking Statistics
+Statistic      : Cumulative Energy Consumption
+Start Time     : 10/23/23 22:06:56 UTCFinish Time    : S+ 00:02:08Reading        : 1000.0 kWh
+
+Statistic      : System Peak Power
+Start Time     : 10/23/23 22:06:56 UTCPeak Time      : 10/23/23 22:06:56 UTCPeak Reading   : 400 W
+
+Statistic      : System Peak Amperage
+Start Time     : 10/23/23 22:06:56 UTCPeak Time      : 10/23/23 22:06:56 UTCPeak Reading   : 12.3 A
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x0a lun=0x00 cmd=0x48 target_cmd=0x00 data=
+< rule=time_short ccode=0x00 len=1 data=80
+> netfn=0x30 lun=0x00 cmd=0x9c target_cmd=0x00 data=07 01
+< rule=statistics ccode=0x00 len=24 data=80 ee 36 65 40 42 0f 00 80 ee 36 65 80 ee 36 65 7b 00 80 ee 36 65 90 01
+bye

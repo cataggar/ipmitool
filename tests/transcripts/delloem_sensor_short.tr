@@ -1,0 +1,38 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data @pad 10 0x00 10
+end
+respond device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 34 12 00 e3 0b 5e 08 19 2a 3b 02
+end
+respond reserve
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+respond system_level
+  netfn 0x0a
+  cmd 0x23
+  data ff ff
+  partial 4 1 5
+  blob @sdr/dell_system_level.hex
+end
+respond sensor
+  netfn 0x04
+  cmd 0x2d
+  data 2a c0 00 00
+end
+respond thresholds_short
+  netfn 0x04
+  cmd 0x27
+  data 3f 00
+end

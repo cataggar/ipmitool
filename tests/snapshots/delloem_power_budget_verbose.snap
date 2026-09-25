@@ -1,0 +1,92 @@
+#!golden 1
+#!case delloem_power_budget_verbose
+#!section exit
+0
+#!section stdout
+getsysinfo: dd/02/00
+getsysinfo: ea/00/00
+power cap  Data               :2c 1 0 f4 1 c8 0 1 0 58 Maximum power: 500 Watt
+Minimum power: 200 Watt
+Power cap    : 300 Watt
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: 6
+msg.cmd: 59
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 11
+msg.netfn: 7
+msg.cmd: 59
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: 6
+msg.cmd: 59
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 16
+msg.netfn: 7
+msg.cmd: 59
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 ea 00 00
+< rule=power_budget ccode=0x00 len=16 data=ea 2c 01 00 f4 01 c8 00 01 00 58 02 00 00 00 00
+bye

@@ -1,0 +1,18 @@
+#!golden 1
+#!case delloem_vflash_no_card
+#!section exit
+1
+#!section stdout
+#!section stderr
+vFlash SD card is unavailable, please insert the card of
+size 256MB or greater
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x30 lun=0x00 cmd=0xa4 target_cmd=0x00 data=00 00
+< rule=sd_card ccode=0x00 len=12 data=00 00 00 02 00 00 00 01 00 00 00 00
+bye

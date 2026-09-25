@@ -1,0 +1,16 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data @pad 10 0x00 10
+end
+respond time_short
+  netfn 0x0a
+  cmd 0x48
+  data 80
+end
+respond statistics
+  netfn 0x30
+  cmd 0x9c
+  data 80 ee 36 65 40 42 0f 00 80 ee 36 65 80 ee 36 65 7b 00 80 ee 36 65 90 01
+end

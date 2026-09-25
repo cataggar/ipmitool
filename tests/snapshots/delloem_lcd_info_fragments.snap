@@ -1,0 +1,28 @@
+#!golden 1
+#!case delloem_lcd_info_fragments
+#!section exit
+0
+#!section stdout
+LCD info
+    Setting: User defined
+    Text:    Binary LCD text with two block
+    Error Display:  Simple
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 e7 00 00
+< rule=support ccode=0x00 len=5 data=11 09 02 00 00
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 c2 00 00
+< rule=mode ccode=0x00 len=13 data=11 00 00 00 00 00 00 00 00 00 00 02 00
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 cf 00 00
+< rule=caps ccode=0x00 len=7 data=11 01 01 3e 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 c1 00 00
+< rule=line0 ccode=0x00 len=18 data=11 00 00 1e 42 69 6e 61 72 79 20 4c 43 44 20 74 65 78
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 c1 01 00
+< rule=line1 ccode=0x00 len=18 data=11 01 74 20 77 69 74 68 20 74 77 6f 20 62 6c 6f 63 6b
+bye
