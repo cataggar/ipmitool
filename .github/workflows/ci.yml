@@ -181,6 +181,9 @@ jobs:
           test -x zig-out/sbin/ipmievd
           zig-out/bin/ipmitool -V
           zig-out/sbin/ipmievd -V
+          help="$(zig-out/bin/ipmitool -h 2>&1)"
+          grep -Fq 'IPMI v2.0 RMCP+ LAN Interface' <<<"$help"
+          grep -Fq 'Launch interactive IPMI shell' <<<"$help"
 
       - name: Cross-build static all-selected binaries
         run: |
@@ -199,6 +202,29 @@ jobs:
           zig build test-no-log-varargs -Dzig-modules=all -Dtarget="$target" \
             -Doptimize=ReleaseSafe -Dipmishell=false -Dopenssl=false \
             -Dinternal-md5=true -Dintf-lanplus=false
+          for binary in "$prefix/bin/ipmitool" "$prefix/sbin/ipmievd"; do
+            test -x "$binary"
+            readelf -h "$binary" | grep -Fq "$machine"
+            if readelf -l "$binary" | grep -q INTERP ||
+               readelf -d "$binary" | grep -q NEEDED; then
+              echo "::error::$binary is not statically linked"
+              exit 1
+            fi
+          done
+
+      - name: Cross-build static all-feature Zig binaries
+        run: |
+          set -euo pipefail
+          case '${{ matrix.os }}' in
+            ubuntu-latest) target=aarch64-linux-musl; machine=AArch64 ;;
+            ubuntu-24.04-arm) target=x86_64-linux-musl; machine=X86-64 ;;
+            *) echo "::error::unexpected runner"; exit 1 ;;
+          esac
+          prefix="zig-out/cross-full-$target"
+          zig build -Dzig-modules=all -Dtarget="$target" -Doptimize=ReleaseSafe \
+            --prefix "$prefix" --summary all
+          zig build test-no-log-varargs -Dzig-modules=all -Dtarget="$target" \
+            -Doptimize=ReleaseSafe
           for binary in "$prefix/bin/ipmitool" "$prefix/sbin/ipmievd"; do
             test -x "$binary"
             readelf -h "$binary" | grep -Fq "$machine"

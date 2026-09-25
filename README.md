@@ -99,14 +99,14 @@ defaults:
 | Option | Default | Notes |
 | --- | --- | --- |
 | `-Dintf-lan` | on | IPMIv1.5 LAN |
-| `-Dintf-lanplus` | on | IPMIv2.0 RMCP+, requires `libcrypto` |
+| `-Dintf-lanplus` | on | IPMIv2.0 RMCP+; C crypto requires `libcrypto`, selected Zig crypto does not |
 | `-Dintf-open` | on for Linux | Linux OpenIPMI driver |
 | `-Dintf-serial` | on | serial basic/terminal mode |
 | `-Dintf-dummy` | on | test interface used by the golden test harness |
 | `-Dintf-usb` | off | AMI USB |
 | `-Dzig-modules=usb` | off | Replace `usb.c` with the Zig AMI USB transport; combine with `-Dintf-usb=true` |
 | `-Dzig-modules=all` | off | Select every registered Zig replacement; the default remains C |
-| `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
+| `-Dopenssl` | on | link `libcrypto` only when C crypto still needs it; `false` disables C lanplus unless Zig crypto is selected |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
 | `-Dipmishell` | on | expose `ipmitool shell` (and keep `exec`/`set`/`echo`) |
 | `-Dreadline-libs` | autodetected | override readline libraries for the C shell only |
@@ -127,6 +127,12 @@ registered Zig replacement selected. This is not yet a pure-Zig release: the
 fully selected tools omit the C logging varargs shim, but mixed C/Zig builds
 still need it. Zig also imports translated C headers and the binaries link
 libc. The default build remains the C regression oracle.
+
+Both binaries also cross-build as static `ReleaseSafe` musl executables with
+the default shell, LAN+ and crypto features enabled when every Zig module is
+selected. The selected shell needs no readline library and the selected LAN+
+crypto needs no OpenSSL library; the binaries still link musl libc. CI checks
+both this configuration and a reduced-feature variant on x86_64 and aarch64.
 
 `-Dipmishell` is on by default so that the command table matches the autotools
 baseline. Select `-Dzig-modules=ipmishell` for the native Zig line editor with
