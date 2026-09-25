@@ -64,6 +64,7 @@ pub const util = struct {
 
 test {
     _ = @import("cmd/channel.zig");
+    _ = @import("cmd/lanp.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);

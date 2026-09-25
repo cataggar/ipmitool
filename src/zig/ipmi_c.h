@@ -53,6 +53,7 @@
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_quantaoem.h>
