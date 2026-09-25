@@ -22,12 +22,11 @@
 //! module reaches them through the `ipmi_c` bridge so that a
 //! `-Dzig-modules=lanplus` binary contains exactly one implementation of each.
 //!
-//! `tests/transport/` is what actually verifies this module: every datagram it
-//! writes is byte-compared against a checked-in transcript *and* independently
-//! validated by the model BMC in `tests/transport/Bmc.zig`, which recomputes
-//! checksums, RAKP authcodes, integrity codes and AES padding from its own
-//! `std.crypto` oracle.  The golden CLI suite runs through `dummy` and cannot
-//! see any of it.
+//! `tests/transport/` checks every datagram against a transcript and an
+//! independent model BMC that recomputes RAKP, integrity and AES values.  The
+//! in-module tests below additionally pin parsing lengths and packet layout
+//! against literal bytes and `std.crypto` HMAC/AES oracles.  The golden CLI
+//! suite runs through `dummy` and cannot see the transport.
 //!
 //! ## Upstream behaviour reproduced deliberately
 //!
@@ -3136,4 +3135,388 @@ pub fn exportSymbols() void {
     @export(&testCrypt2, .{ .name = "test_crypt2" });
 
     @export(&lanplus_intf, .{ .name = "ipmi_lanplus_intf" });
+}
+
+// ---------------------------------------------------------------------------
+// In-module tests: RMCP+ headers, RAKP lengths, and integrity trailer
+// ---------------------------------------------------------------------------
+
+const testing = std.testing;
+const crypto_test_stubs = @import("../crypto/test_stubs.zig");
+
+test "RMCP+ session header parses both flags, the full length and little-endian ids" {
+    var rsp = std.mem.zeroes(ipmi.Response);
+    @memcpy(rsp.data[5..17], &[_]u8{
+        0x06, 0xc1, 0x73, 0x62, 0x51, 0x40,
+        0x84, 0x73, 0x62, 0x51, 0x39, 0x02,
+    });
+    var offset: c_int = 5;
+    readSessionData(&rsp, &offset);
+    try testing.expectEqual(@as(c_int, 17), offset);
+    try testing.expectEqual(@as(u8, 0x06), rsp.session.authtype);
+    try testing.expectEqual(@as(u8, 1), rsp.session.payloadtype);
+    try testing.expectEqual(@as(u8, 1), rsp.session.bEncrypted);
+    try testing.expectEqual(@as(u8, 1), rsp.session.bAuthenticated);
+    try testing.expectEqual(@as(u32, 0x40516273), rsp.session.id);
+    try testing.expectEqual(@as(u32, 0x51627384), rsp.session.seq);
+    try testing.expectEqual(@as(u16, 0x0239), rsp.session.msglen);
+
+    @memcpy(rsp.data[5..15], &[_]u8{
+        0x00, 0x31, 0x42, 0x53, 0x64,
+        0x75, 0x86, 0x97, 0xa8, 0x29,
+    });
+    offset = 5;
+    readSessionData(&rsp, &offset);
+    try testing.expectEqual(@as(c_int, 15), offset);
+    try testing.expectEqual(@as(u8, 0), rsp.session.payloadtype);
+    try testing.expectEqual(@as(u8, 0), rsp.session.bEncrypted);
+    try testing.expectEqual(@as(u8, 0), rsp.session.bAuthenticated);
+    try testing.expectEqual(@as(u16, 0x29), rsp.session.msglen);
+}
+
+test "open-session response reads algorithms only on success" {
+    var rsp = std.mem.zeroes(ipmi.Response);
+    const start = 9;
+    rsp.data[start] = 0x71;
+    rsp.data[start + 2] = 0x04;
+    @memcpy(rsp.data[start + 4 ..][0..8], &[_]u8{
+        0x39, 0x4a, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f, 0xa1,
+    });
+    rsp.data[start + 16] = 0x03;
+    rsp.data[start + 24] = 0x04;
+    rsp.data[start + 32] = 0x01;
+    readOpenSessionResponse(&rsp, start);
+    const p = rsp.payload.open_session_response;
+    try testing.expectEqual(@as(u8, 0x71), p.message_tag);
+    try testing.expectEqual(@as(u8, 0x04), p.max_priv_level);
+    try testing.expectEqual(@as(u32, 0x6c5b4a39), p.console_id);
+    try testing.expectEqual(@as(u32, 0xa19f8e7d), p.bmc_id);
+    try testing.expectEqual(@as(u8, 3), p.auth_alg);
+    try testing.expectEqual(@as(u8, 4), p.integrity_alg);
+    try testing.expectEqual(@as(u8, 1), p.crypt_alg);
+
+    rsp.data[start + 1] = 0x0f;
+    readOpenSessionResponse(&rsp, start);
+    try testing.expectEqual(@as(u8, 0x0f), rsp.payload.open_session_response.rakp_return_code);
+    try testing.expectEqual(@as(u32, 0x6c5b4a39), rsp.payload.open_session_response.console_id);
+    try testing.expectEqual(@as(u32, 0), rsp.payload.open_session_response.bmc_id);
+    try testing.expectEqual(@as(u8, 0), rsp.payload.open_session_response.auth_alg);
+    try testing.expectEqual(@as(u8, 0), rsp.payload.open_session_response.integrity_alg);
+    try testing.expectEqual(@as(u8, 0), rsp.payload.open_session_response.crypt_alg);
+}
+
+fn expectRakpLengths(algorithm: u8, rakp2_length: usize, rakp4_length: usize) !void {
+    const start = 7;
+    var rsp = std.mem.zeroes(ipmi.Response);
+    for (0..80) |i| rsp.data[start + i] = @intCast(i + 1);
+    readRakp2Message(&rsp, start, algorithm);
+    const r2 = rsp.payload.rakp2_message;
+    try testing.expectEqual(@as(u8, 1), r2.message_tag);
+    try testing.expectEqual(@as(u8, 2), r2.rakp_return_code);
+    try testing.expectEqual(@as(u32, 0x08070605), r2.console_id);
+    try testing.expectEqualSlices(u8, rsp.data[start + 8 ..][0..16], &r2.bmc_rand);
+    try testing.expectEqualSlices(u8, rsp.data[start + 24 ..][0..16], &r2.bmc_guid);
+    try testing.expectEqualSlices(u8, rsp.data[start + 40 ..][0..rakp2_length], r2.key_exchange_auth_code[0..rakp2_length]);
+    for (r2.key_exchange_auth_code[rakp2_length..]) |byte| try testing.expectEqual(@as(u8, 0), byte);
+
+    rsp.payload = std.mem.zeroes(ipmi.Response.Payload);
+    readRakp4Message(&rsp, start, algorithm);
+    const r4 = rsp.payload.rakp4_message;
+    try testing.expectEqual(@as(u8, 1), r4.message_tag);
+    try testing.expectEqual(@as(u8, 2), r4.rakp_return_code);
+    try testing.expectEqual(@as(u32, 0x08070605), r4.console_id);
+    try testing.expectEqualSlices(u8, rsp.data[start + 8 ..][0..rakp4_length], r4.integrity_check_value[0..rakp4_length]);
+    for (r4.integrity_check_value[rakp4_length..]) |byte| try testing.expectEqual(@as(u8, 0), byte);
+}
+
+test "RAKP 2 digests and RAKP 4 check values have distinct per-algorithm lengths" {
+    try expectRakpLengths(c.IPMI_AUTH_RAKP_NONE, 0, 0);
+    try expectRakpLengths(c.IPMI_AUTH_RAKP_HMAC_SHA1, 20, 12);
+    try expectRakpLengths(c.IPMI_AUTH_RAKP_HMAC_MD5, 16, 16);
+    if (have_sha256) try expectRakpLengths(c.IPMI_AUTH_RAKP_HMAC_SHA256, 32, 16);
+}
+
+test "cipher suites select distinct authentication, integrity and encryption algorithms" {
+    const suites = [_]struct { id: c.enum_cipher_suite_ids, auth: u8, integrity: u8, crypt: u8 }{
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_0, .auth = 0, .integrity = 0, .crypt = 0 },
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_1, .auth = 1, .integrity = 0, .crypt = 0 },
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_2, .auth = 1, .integrity = 1, .crypt = 0 },
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_3, .auth = 1, .integrity = 1, .crypt = 1 },
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_7, .auth = 2, .integrity = 2, .crypt = 0 },
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_8, .auth = 2, .integrity = 2, .crypt = 1 },
+        .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_14, .auth = 2, .integrity = 3, .crypt = 3 },
+    };
+    for (suites) |s| {
+        var auth: u8 = 0xff;
+        var integrity: u8 = 0xff;
+        var crypt: u8 = 0xff;
+        try testing.expectEqual(@as(c_int, 0), getRequestedCiphers(s.id, &auth, &integrity, &crypt));
+        try testing.expectEqual(s.auth, auth);
+        try testing.expectEqual(s.integrity, integrity);
+        try testing.expectEqual(s.crypt, crypt);
+    }
+    if (have_sha256) {
+        const sha_suites = [_]struct { id: c.enum_cipher_suite_ids, integrity: u8, crypt: u8 }{
+            .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_15, .integrity = 0, .crypt = 0 },
+            .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_16, .integrity = 4, .crypt = 0 },
+            .{ .id = c.IPMI_LANPLUS_CIPHER_SUITE_17, .integrity = 4, .crypt = 1 },
+        };
+        for (sha_suites) |s| {
+            var auth: u8 = 0xff;
+            var integrity: u8 = 0xff;
+            var crypt: u8 = 0xff;
+            try testing.expectEqual(@as(c_int, 0), getRequestedCiphers(s.id, &auth, &integrity, &crypt));
+            try testing.expectEqual(@as(u8, 3), auth);
+            try testing.expectEqual(s.integrity, integrity);
+            try testing.expectEqual(s.crypt, crypt);
+        }
+    }
+    var auth: u8 = 0x5a;
+    var integrity: u8 = 0x6b;
+    var crypt: u8 = 0x7c;
+    try testing.expectEqual(@as(c_int, 1), getRequestedCiphers(@as(c.enum_cipher_suite_ids, 0xfe), &auth, &integrity, &crypt));
+    try testing.expectEqual(@as(u8, 0x5a), auth);
+    try testing.expectEqual(@as(u8, 0x6b), integrity);
+    try testing.expectEqual(@as(u8, 0x7c), crypt);
+}
+
+fn expectIntegrityPacket(algorithm: u8, data_length: usize, oem: []const u8) !void {
+    const previous_oem = crypto_test_stubs.active_oem;
+    crypto_test_stubs.active_oem = oem;
+    defer crypto_test_stubs.active_oem = previous_oem;
+    const previous_bridge = bridge_possible;
+    bridge_possible = 0;
+    defer bridge_possible = previous_bridge;
+
+    var intf = std.mem.zeroes(Intf);
+    var session = std.mem.zeroes(Session);
+    intf.session = &session;
+    intf.my_addr = ipmi.bmc_slave_addr;
+    intf.target_addr = ipmi.bmc_slave_addr;
+    session.v2_data.session_state = .active;
+    session.v2_data.bmc_id = 0x78563412;
+    session.v2_data.crypt_alg = c.IPMI_CRYPT_NONE;
+    session.v2_data.integrity_alg = algorithm;
+    session.out_seq = 0xe5c3a791;
+    session.v2_data.k1_len = 20;
+    for (&session.v2_data.k1, 0..) |*byte, i| byte.* = @intCast(0x21 + i);
+
+    var data = [_]u8{ 0x31, 0x42, 0x53 };
+    var req = std.mem.zeroes(ipmi.Request);
+    req.msg.netfn_lun.netfn = 6;
+    req.msg.netfn_lun.lun = 2;
+    req.msg.cmd = 0x9b;
+    req.msg.data = &data;
+    req.msg.data_len = @intCast(data_length);
+    var payload = std.mem.zeroes(ipmi.V2Payload);
+    payload.payload_type = @intFromEnum(ipmi.PayloadType.ipmi);
+    payload.payload_length = @intCast(7 + data_length);
+    payload.payload.ipmi_request.request = &req;
+    payload.payload.ipmi_request.rq_seq = 0x0b;
+
+    var length: c_int = -1;
+    var packet: ?[*]u8 = null;
+    defer if (packet) |ptr| c.free(ptr);
+    buildV2xMsg(&intf, &payload, &length, &packet, 0x0b);
+    const msg = packet orelse return error.NoPacket;
+    try testing.expectEqual(@as(u16, @intCast(7 + data_length)), payload.payload_length);
+    try testing.expectEqual(@as(u32, 0xe5c3a792), session.out_seq);
+    try testing.expectEqualSlices(u8, &.{
+        0x06, 0x00, 0xff, 0x07, 0x06,
+    }, msg[0..5]);
+    try testing.expectEqual(if (algorithm == c.IPMI_INTEGRITY_NONE) @as(u8, 0) else @as(u8, 0x40), msg[off_payload_type]);
+    try testing.expectEqualSlices(u8, &.{
+        0x12, 0x34, 0x56, 0x78, 0x91, 0xa7, 0xc3, 0xe5,
+    }, msg[off_session_id..off_payload_size]);
+    try testing.expectEqualSlices(u8, &.{ @as(u8, @intCast(7 + data_length)), 0x00 }, msg[off_payload_size..off_payload]);
+    try testing.expectEqualSlices(u8, &.{ 0x20, 0x1a, 0xc6, 0x81, 0x2c, 0x9b }, msg[off_payload .. off_payload + 6]);
+    try testing.expectEqualSlices(u8, data[0..data_length], msg[off_payload + 6 ..][0..data_length]);
+    const checksums = [_]u8{ 0xb8, 0x87, 0x45, 0xf2 };
+    try testing.expectEqual(checksums[data_length], msg[off_payload + 6 + data_length]);
+
+    const payload_end: usize = off_payload + payload.payload_length;
+    if (algorithm == c.IPMI_INTEGRITY_NONE) {
+        try testing.expectEqual(@as(c_int, @intCast(payload_end)), length);
+        return;
+    }
+
+    const pad_base: usize = if (std.mem.eql(u8, oem, "icts")) 12 else 14;
+    const pad = (4 - (pad_base + payload.payload_length) % 4) % 4;
+    const auth_length: usize = if (algorithm == c.IPMI_INTEGRITY_HMAC_SHA1_96) 12 else 16;
+    const auth_start = payload_end + pad + 2;
+    try testing.expectEqual(@as(c_int, @intCast(auth_start + auth_length)), length);
+    for (msg[payload_end .. payload_end + pad]) |byte| try testing.expectEqual(@as(u8, 0xff), byte);
+    try testing.expectEqual(@as(u8, @intCast(pad)), msg[payload_end + pad]);
+    try testing.expectEqual(@as(u8, 0x07), msg[payload_end + pad + 1]);
+
+    var digest: [32]u8 = @splat(0);
+    const signed = msg[off_authtype..auth_start];
+    const key = session.v2_data.k1[0..20];
+    switch (algorithm) {
+        c.IPMI_INTEGRITY_HMAC_SHA1_96 => std.crypto.auth.hmac.HmacSha1.create(digest[0..20], signed, key),
+        c.IPMI_INTEGRITY_HMAC_MD5_128 => std.crypto.auth.hmac.HmacMd5.create(digest[0..16], signed, key),
+        else => std.crypto.auth.hmac.sha2.HmacSha256.create(&digest, signed, key),
+    }
+    try testing.expectEqualSlices(u8, digest[0..auth_length], msg[auth_start .. auth_start + auth_length]);
+}
+
+test "active RMCP+ packets sign exactly the header, payload and integrity padding" {
+    const algorithms = [_]u8{
+        c.IPMI_INTEGRITY_NONE,
+        c.IPMI_INTEGRITY_HMAC_SHA1_96,
+        c.IPMI_INTEGRITY_HMAC_MD5_128,
+    };
+    for (algorithms) |algorithm| {
+        for (0..4) |n| try expectIntegrityPacket(algorithm, n, "");
+    }
+    if (have_sha256) {
+        for (0..4) |n| try expectIntegrityPacket(c.IPMI_INTEGRITY_HMAC_SHA256_128, n, "");
+    }
+    try expectIntegrityPacket(c.IPMI_INTEGRITY_HMAC_SHA1_96, 0, "icts");
+}
+
+test "AES payload expansion and integrity length span the block boundary" {
+    const previous_bridge = bridge_possible;
+    bridge_possible = 0;
+    defer bridge_possible = previous_bridge;
+    const previous_oem = crypto_test_stubs.active_oem;
+    crypto_test_stubs.active_oem = "";
+    defer crypto_test_stubs.active_oem = previous_oem;
+
+    for ([_]usize{ 0, 8, 9, 24 }) |data_length| {
+        var intf = std.mem.zeroes(Intf);
+        var session = std.mem.zeroes(Session);
+        intf.session = &session;
+        intf.my_addr = ipmi.bmc_slave_addr;
+        intf.target_addr = ipmi.bmc_slave_addr;
+        session.v2_data.session_state = .active;
+        session.v2_data.bmc_id = 0x78563412;
+        session.v2_data.crypt_alg = c.IPMI_CRYPT_AES_CBC_128;
+        session.v2_data.integrity_alg = c.IPMI_INTEGRITY_HMAC_SHA1_96;
+        session.v2_data.k1_len = 20;
+        for (&session.v2_data.k1, 0..) |*byte, i| byte.* = @intCast(0x21 + i);
+        for (session.v2_data.k2[0..16], 0..) |*byte, i| byte.* = @intCast(0x61 + i);
+
+        var data: [24]u8 = undefined;
+        for (&data, 0..) |*byte, i| byte.* = @intCast(0x31 + i);
+        var req = std.mem.zeroes(ipmi.Request);
+        req.msg.netfn_lun.netfn = 6;
+        req.msg.cmd = 0x9b;
+        req.msg.data = &data;
+        req.msg.data_len = @intCast(data_length);
+        var payload = std.mem.zeroes(ipmi.V2Payload);
+        payload.payload_type = @intFromEnum(ipmi.PayloadType.ipmi);
+        payload.payload_length = @intCast(7 + data_length);
+        payload.payload.ipmi_request.request = &req;
+        payload.payload.ipmi_request.rq_seq = 0x0b;
+        var length: c_int = -1;
+        var packet: ?[*]u8 = null;
+        defer if (packet) |ptr| c.free(ptr);
+        buildV2xMsg(&intf, &payload, &length, &packet, 0x0b);
+        const msg = packet orelse return error.NoPacket;
+        const plain_length = 7 + data_length;
+        const conf_pad = (16 - (plain_length + 1) % 16) % 16;
+        const encrypted_length = plain_length + conf_pad + 1;
+        const wire_length = 16 + encrypted_length;
+        try testing.expectEqual(@as(u8, 0xc0), msg[off_payload_type]);
+        try testing.expectEqual(@as(u16, @intCast(wire_length)), payload.payload_length);
+        try testing.expectEqualSlices(u8, &.{ @as(u8, @intCast(wire_length)), 0 }, msg[off_payload_size..off_payload]);
+
+        const aes = std.crypto.core.aes.Aes128.initDec(session.v2_data.k2[0..16].*);
+        var chain: [16]u8 = undefined;
+        @memcpy(&chain, msg[off_payload..][0..16]);
+        var decoded: [48]u8 = undefined;
+        for (0..encrypted_length / 16) |block_index| {
+            const offset = off_payload + 16 + block_index * 16;
+            var ciphertext: [16]u8 = undefined;
+            @memcpy(&ciphertext, msg[offset..][0..16]);
+            var plaintext: [16]u8 = undefined;
+            aes.decrypt(&plaintext, &ciphertext);
+            for (decoded[block_index * 16 ..][0..16], &plaintext, &chain) |*byte, value, iv| byte.* = value ^ iv;
+            chain = ciphertext;
+        }
+        try testing.expectEqualSlices(u8, &.{ 0x20, 0x18, 0xc8, 0x81, 0x2c, 0x9b }, decoded[0..6]);
+        try testing.expectEqualSlices(u8, data[0..data_length], decoded[6 .. 6 + data_length]);
+        var sum: u8 = 0;
+        for (decoded[3 .. 6 + data_length]) |byte| sum +%= byte;
+        try testing.expectEqual(@as(u8, 0) -% sum, decoded[6 + data_length]);
+        for (0..conf_pad) |i| try testing.expectEqual(@as(u8, @intCast(i + 1)), decoded[plain_length + i]);
+        try testing.expectEqual(@as(u8, @intCast(conf_pad)), decoded[encrypted_length - 1]);
+
+        const integrity_pad = (4 - (14 + wire_length) % 4) % 4;
+        const auth_start = off_payload + wire_length + integrity_pad + 2;
+        try testing.expectEqual(@as(c_int, @intCast(auth_start + 12)), length);
+        for (msg[off_payload + wire_length ..][0..integrity_pad]) |byte| try testing.expectEqual(@as(u8, 0xff), byte);
+        try testing.expectEqual(@as(u8, @intCast(integrity_pad)), msg[auth_start - 2]);
+        try testing.expectEqual(@as(u8, 7), msg[auth_start - 1]);
+        var hmac: [20]u8 = undefined;
+        std.crypto.auth.hmac.HmacSha1.create(&hmac, msg[off_authtype..auth_start], session.v2_data.k1[0..20]);
+        try testing.expectEqualSlices(u8, hmac[0..12], msg[auth_start .. auth_start + 12]);
+    }
+}
+
+test "active RMCP+ sequence skips zero on wrap" {
+    var intf = std.mem.zeroes(Intf);
+    var session = std.mem.zeroes(Session);
+    intf.session = &session;
+    intf.my_addr = ipmi.bmc_slave_addr;
+    intf.target_addr = ipmi.bmc_slave_addr;
+    session.v2_data.session_state = .active;
+    session.v2_data.integrity_alg = c.IPMI_INTEGRITY_NONE;
+    session.v2_data.crypt_alg = c.IPMI_CRYPT_NONE;
+    session.out_seq = std.math.maxInt(u32);
+
+    var req = std.mem.zeroes(ipmi.Request);
+    req.msg.netfn_lun.netfn = 6;
+    var payload = std.mem.zeroes(ipmi.V2Payload);
+    payload.payload_type = @intFromEnum(ipmi.PayloadType.ipmi);
+    payload.payload_length = 7;
+    payload.payload.ipmi_request.request = &req;
+    var length: c_int = -1;
+    var packet: ?[*]u8 = null;
+    defer if (packet) |ptr| c.free(ptr);
+    buildV2xMsg(&intf, &payload, &length, &packet, 0);
+    try testing.expect(packet != null);
+    try testing.expectEqualSlices(u8, &.{ 0xff, 0xff, 0xff, 0xff }, packet.?[off_sequence_num .. off_sequence_num + 4]);
+    try testing.expectEqual(@as(u32, 1), session.out_seq);
+    try testing.expectEqual(@as(c_int, 23), length);
+}
+
+test "outbound RMCP+ length retains its high byte beyond 255" {
+    const previous_bridge = bridge_possible;
+    bridge_possible = 0;
+    defer bridge_possible = previous_bridge;
+    var intf = std.mem.zeroes(Intf);
+    var session = std.mem.zeroes(Session);
+    intf.session = &session;
+    intf.my_addr = ipmi.bmc_slave_addr;
+    intf.target_addr = ipmi.bmc_slave_addr;
+    session.v2_data.session_state = .active;
+    session.v2_data.crypt_alg = c.IPMI_CRYPT_NONE;
+    session.v2_data.integrity_alg = c.IPMI_INTEGRITY_NONE;
+
+    var data: [255]u8 = undefined;
+    for (&data, 0..) |*byte, i| byte.* = @intCast(i + 1);
+    var req = std.mem.zeroes(ipmi.Request);
+    req.msg.netfn_lun.netfn = 6;
+    req.msg.cmd = 0x9b;
+    req.msg.data = &data;
+    req.msg.data_len = data.len;
+    var payload = std.mem.zeroes(ipmi.V2Payload);
+    payload.payload_type = @intFromEnum(ipmi.PayloadType.ipmi);
+    payload.payload_length = data.len + 7;
+    payload.payload.ipmi_request.request = &req;
+    payload.payload.ipmi_request.rq_seq = 0x0b;
+    var length: c_int = -1;
+    var packet: ?[*]u8 = null;
+    defer if (packet) |ptr| c.free(ptr);
+    buildV2xMsg(&intf, &payload, &length, &packet, 0x0b);
+    const msg = packet orelse return error.NoPacket;
+    try testing.expectEqual(@as(u16, 262), payload.payload_length);
+    try testing.expectEqualSlices(u8, &.{ 0x06, 0x01 }, msg[off_payload_size..off_payload]);
+    try testing.expectEqual(@as(c_int, 278), length);
+    try testing.expectEqualSlices(u8, &data, msg[off_payload + 6 ..][0..data.len]);
+    var sum: u8 = 0;
+    for (msg[off_payload + 3 .. off_payload + 6 + data.len]) |byte| sum +%= byte;
+    try testing.expectEqual(@as(u8, 0) -% sum, msg[off_payload + 6 + data.len]);
 }

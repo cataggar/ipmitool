@@ -854,7 +854,10 @@ pub fn build(b: *std.Build) void {
     abi_mod.addImport("ipmi_c", bridge_mod);
     addCryptoVectors(b, abi_mod);
     const abi_tests = b.addTest(.{ .root_module = abi_mod });
-    test_step.dependOn(&b.addRunArtifact(abi_tests).step);
+    const unit_tests = b.addRunArtifact(abi_tests);
+    const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
+    unit_step.dependOn(&unit_tests.step);
+    test_step.dependOn(unit_step);
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.

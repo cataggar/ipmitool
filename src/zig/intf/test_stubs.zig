@@ -36,6 +36,11 @@ comptime {
     @export(&ipmiGetOem, .{ .name = "ipmi_get_oem", .linkage = .strong });
     @export(&val2str, .{ .name = "val2str", .linkage = .strong });
     @export(&ipmiCsum, .{ .name = "ipmi_csum", .linkage = .strong });
+    // RAKP 2 parsing calls the bridge's array_letoh; exercise the real helper.
+    @export(&@import("../util/helper.zig").arrayLetoh, .{
+        .name = "array_letoh",
+        .linkage = .strong,
+    });
 }
 
 /// `ipmi_csum()` is not a stub in the usual sense.  The transports call it
