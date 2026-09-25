@@ -102,13 +102,13 @@ golden differential cases plus both shell editor/history suites with C and
 Zig loggers. Native aarch64 tests and
 `zig build test-log-compile -Dtarget=x86_64-linux-gnu` cover both ABIs.
 
-`log_varargs.c` remains a production dependency whenever `log` is selected:
-5 Zig files still directly call the C-variadic ABI. The selected daemon and
-shell frontends use the nonvariadic shared-state bridge, and `cli/main.zig`
-uses the archive's typed logger; the bridge still calls the C logger when
-that fallback is selected. Other Zig command modules and C callers still
-require the shim. It can be removed only after all Zig and C callers have
-migrated; an all-selected build today is **not** shim-free.
+`log_varargs.c` is still compiled whenever `log` is selected, but no Zig file
+directly calls the C-variadic logger anymore. The selected daemon and shell
+frontends use the nonvariadic shared-state bridge; the CLI and command modules
+use the archive's typed logger. The bridge calls the C logger when that
+fallback is selected. Remaining C callers in mixed-module builds still need
+the shim when `log` is selected; removing it requires addressing those callers
+and the C logging ABI. An all-selected build today is **not** shim-free.
 
 The `nm_discover_ccode_hex` and `vita_properties_log_hex` golden cases pin C
 stderr for named `%x` error codes and `%#x` discovery addresses, respectively.
