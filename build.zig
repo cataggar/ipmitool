@@ -135,6 +135,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/channel.zig",
     },
     .{
+        .name = "lanp",
+        .replaces = "lib/ipmi_lanp.c",
+        .implementation = "src/zig/cmd/lanp.zig",
+    },
+    .{
         .name = "user",
         .replaces = "lib/ipmi_user.c",
         .implementation = "src/zig/cmd/user.zig",
@@ -908,6 +913,18 @@ pub fn build(b: *std.Build) void {
     });
     b.step("test-serial-unit", "Run Zig serial framing and ABI unit tests")
         .dependOn(&b.addRunArtifact(serial_unit).step);
+
+    const lanp_test_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/lanp_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    lanp_test_mod.addImport("ipmi_c", bridge_mod);
+    const lanp_unit = b.addTest(.{ .root_module = lanp_test_mod });
+    const lanp_step = b.step("test-lanp", "Run LAN parameter encoding and reply validation tests");
+    lanp_step.dependOn(&b.addRunArtifact(lanp_unit).step);
+    test_step.dependOn(lanp_step);
 
     // The golden harness cannot supply getpass()'s static buffer or a NULL
     // prompt result. Exercise the actual C and Zig user modules with the same

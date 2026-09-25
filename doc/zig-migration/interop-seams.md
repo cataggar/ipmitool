@@ -159,8 +159,18 @@ for this seam before substituting the PICMG translation unit.
 zig build                        # all C, byte-identical to the oracle
 zig build -Dzig-modules=oem      # lib/ipmi_oem.c replaced by src/zig/cmd/oem.zig
 zig build -Dzig-modules=oem,raw  # several at once
+zig build -Dzig-modules=lanp,channel,user  # LAN configuration and its helpers
 zig build --help                 # lists the available module names
 ```
+
+`lanp` replaces `lib/ipmi_lanp.c` and exports both `ipmi_lanp_main` and
+`find_lan_channel`. The latter is also used by the separate IPv6 `lan6` command
+(`lib/ipmi_lanp6.c`), so `lanp` and `lanp6` can be selected independently.
+The C/Zig parity fixtures for LAN print, alert destinations, stats and writes
+are in `tests/cases/57-lanp.cases`; run them with
+`tests/run.sh --binary zig-out/bin/ipmitool --filter lanp_`.
+`zig build test-lanp` runs the focused Zig parameter and short-reply tests
+without depending on unrelated crypto vector fixtures.
 
 Mechanics, all in `build.zig`:
 

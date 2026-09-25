@@ -1,0 +1,89 @@
+# Each command reads back its own changed parameter after the Set LAN request.
+default_ccode 0x80
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+respond progress
+  netfn 0x0c
+  cmd 0x02
+  match 01 00
+  ccode 0x80
+end
+respond ip
+  netfn 0x0c
+  cmd 0x02
+  match 01 03
+  data 11 c0 00 02 0a
+end
+respond mask
+  netfn 0x0c
+  cmd 0x02
+  match 01 06
+  data 11 ff ff 00 00
+end
+respond mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 05
+  data 11 02 11 22 33 44 55
+end
+respond source
+  netfn 0x0c
+  cmd 0x02
+  match 01 04
+  data 11 02
+end
+respond gateway
+  netfn 0x0c
+  cmd 0x02
+  match 01 0c
+  data 11 c0 00 02 01
+end
+respond gateway_mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 0d
+  data 11 02 11 22 33 44 55
+end
+respond backup
+  netfn 0x0c
+  cmd 0x02
+  match 01 0e
+  data 11 c0 00 02 01
+end
+respond backup_mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 0f
+  data 11 02 11 22 33 44 55
+end
+respond snmp
+  netfn 0x0c
+  cmd 0x02
+  match 01 10
+  data 11 70 75 62 6c 69 63 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond vlan_priority
+  netfn 0x0c
+  cmd 0x02
+  match 01 15
+  data 11 03
+end
+respond cipher
+  netfn 0x0c
+  cmd 0x02
+  match 01 18
+  data 11 00 21 43 05 00 00 00 00 00
+end
+respond threshold
+  netfn 0x0c
+  cmd 0x02
+  match 01 1a
+  data 11 01 04 06 00 0c 00
+end
+respond write
+  netfn 0x0c
+  cmd 0x01
+end

@@ -1,0 +1,117 @@
+#!golden 1
+#!case lanp_stats_verbose
+#!section exit
+0
+#!section stdout
+--- Rx Stats ---
+00 01 - 00 02 - 01 00 - 00 FF - 00 03 - 00 04 - 00 05 - 00 06 - 00 07 -\x20
+IP Rx Packet              : 1
+IP Rx Header Errors       : 2
+IP Rx Address Errors      : 256
+IP Rx Fragmented          : 255
+IP Tx Packet              : 3
+UDP Rx Packet             : 4
+RMCP Rx Valid             : 5
+UDP Proxy Packet Received : 6
+UDP Proxy Packet Dropped  : 7
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 6
+msg.cmd: 42
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: 7
+msg.cmd: 42
+msg.seq: 0
+msg.lun: 0
+<<<
+Channel type: 802.3 LAN
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 6
+msg.cmd: 42
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: 7
+msg.cmd: 42
+msg.seq: 0
+msg.lun: 0
+<<<
+Channel type: 802.3 LAN
+>>> IPMI req
+msg.data_len: 2
+msg.netfn: c
+msg.cmd: 4
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: d
+msg.cmd: 4
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x04 target_cmd=0x00 data=01 00
+< rule=stats ccode=0x00 len=18 data=00 01 00 02 01 00 00 ff 00 03 00 04 00 05 00 06 00 07
+bye

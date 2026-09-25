@@ -1,0 +1,93 @@
+#!golden 1
+#!case lanp_print_auto
+#!section exit
+0
+#!section stdout
+Set in Progress         : Set Complete
+Auth Type Support       : NONE MD2 MD5 PASSWORD\x20
+Auth Type Enable        : Callback : NONE\x20
+                        : User     : MD2\x20
+                        : Operator : MD5\x20
+                        : Admin    : PASSWORD\x20
+                        : OEM      :\x20
+IP Address Source       : DHCP Address
+IP Address              : 192.168.1.10
+Subnet Mask             : 255.255.255.0
+MAC Address             : 00:11:22:33:44:55
+SNMP Community String   : public
+IP Header               : TTL=0x40 Flags=0xe0 Precedence=0xa0 TOS=0x1e
+BMC ARP Control         : ARP Responses Enabled, Gratuitous ARP Enabled
+Gratuitous ARP Intrvl   : 3.0 seconds
+Default Gateway IP      : 192.168.1.1
+Default Gateway MAC     : aa:bb:cc:dd:ee:ff
+Backup Gateway IP       : 10.0.0.1
+Backup Gateway MAC      : 01:02:03:04:05:06
+802.1q VLAN ID          : 291
+802.1q VLAN Priority    : 5
+RMCP+ Cipher Suites     : 1,2,3,4
+Cipher Suite Priv Max   : cuoaOXucaoXOcXu
+                        :     X=Cipher Suite Unused
+                        :     c=CALLBACK
+                        :     u=USER
+                        :     o=OPERATOR
+                        :     a=ADMIN
+                        :     O=OEM
+Bad Password Threshold  : 4
+Invalid password disable: yes
+Attempt Count Reset Int.: 60
+User Lockout Interval   : 120
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 00 00 00
+< rule=in_progress ccode=0x00 len=2 data=11 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 01 00 00
+< rule=auth_support ccode=0x00 len=2 data=11 17
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 02 00 00
+< rule=auth_enable ccode=0x00 len=6 data=11 01 02 04 10 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 04 00 00
+< rule=source ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 03 00 00
+< rule=address ccode=0x00 len=5 data=11 c0 a8 01 0a
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 06 00 00
+< rule=mask ccode=0x00 len=5 data=11 ff ff ff 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 05 00 00
+< rule=mac ccode=0x00 len=7 data=11 00 11 22 33 44 55
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 10 00 00
+< rule=snmp ccode=0x00 len=19 data=11 70 75 62 6c 69 63 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 07 00 00
+< rule=header ccode=0x00 len=4 data=11 40 e0 bf
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0a 00 00
+< rule=arp ccode=0x00 len=2 data=11 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0b 00 00
+< rule=grat ccode=0x00 len=2 data=11 05
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0c 00 00
+< rule=gateway ccode=0x00 len=5 data=11 c0 a8 01 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0d 00 00
+< rule=gateway_mac ccode=0x00 len=7 data=11 aa bb cc dd ee ff
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0e 00 00
+< rule=backup ccode=0x00 len=5 data=11 0a 00 00 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0f 00 00
+< rule=backup_mac ccode=0x00 len=7 data=11 01 02 03 04 05 06
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 14 00 00
+< rule=vlan ccode=0x00 len=3 data=11 23 81
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 15 00 00
+< rule=vlan_priority ccode=0x00 len=2 data=11 05
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 16 00 00
+< rule=cipher_count ccode=0x00 len=2 data=11 04
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 17 00 00
+< rule=ciphers ccode=0x00 len=6 data=11 00 01 02 03 04
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 18 00 00
+< rule=cipher_privs ccode=0x00 len=10 data=11 00 21 43 05 12 34 50 01 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 1a 00 00
+< rule=bad_password ccode=0x00 len=7 data=11 01 04 06 00 0c 00
+bye

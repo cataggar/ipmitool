@@ -1,0 +1,27 @@
+#!golden 1
+#!case lanp_stats_get
+#!section exit
+0
+#!section stdout
+IP Rx Packet              : 1
+IP Rx Header Errors       : 2
+IP Rx Address Errors      : 256
+IP Rx Fragmented          : 255
+IP Tx Packet              : 3
+UDP Rx Packet             : 4
+RMCP Rx Valid             : 5
+UDP Proxy Packet Received : 6
+UDP Proxy Packet Dropped  : 7
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x04 target_cmd=0x00 data=01 00
+< rule=stats ccode=0x00 len=18 data=00 01 00 02 01 00 00 ff 00 03 00 04 00 05 00 06 00 07
+bye

@@ -40,6 +40,9 @@ comptime {
     if (selected("channel")) {
         @import("cmd/channel.zig").exportSymbols();
     }
+    if (selected("lanp")) {
+        @import("cmd/lanp.zig").exportSymbols();
+    }
     if (selected("user")) {
         @import("cmd/user.zig").exportSymbols();
     }

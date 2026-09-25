@@ -1,0 +1,22 @@
+default_ccode 0x80
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+respond in_progress
+  netfn 0x0c
+  cmd 0x02
+  match 01 00
+  ccode 0x80
+end
+respond rejected_write
+  netfn 0x0c
+  cmd 0x01
+  match 01 03
+  ccode 0x82
+end
+respond unlock
+  netfn 0x0c
+  cmd 0x01
+end

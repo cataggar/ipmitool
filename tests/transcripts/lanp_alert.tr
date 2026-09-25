@@ -1,0 +1,28 @@
+default_ccode 0xc1
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+respond count
+  netfn 0x0c
+  cmd 0x02
+  match 01 11
+  data 11 02
+end
+respond type
+  netfn 0x0c
+  cmd 0x02
+  match 01 12
+  data 11 01 06 0a 03
+end
+respond address
+  netfn 0x0c
+  cmd 0x02
+  match 01 13
+  data 11 01 00 01 c0 00 02 01 01 02 03 04 05 06
+end
+respond write
+  netfn 0x0c
+  cmd 0x01
+end

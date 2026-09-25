@@ -1,0 +1,8 @@
+#!golden 1
+#!case lanp_bad_port
+#!section exit
+1
+#!section stdout
+#!section stderr
+Invalid parameter given or out of range for '-p'.
+#!section requests
