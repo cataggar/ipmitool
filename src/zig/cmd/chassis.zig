@@ -12,12 +12,13 @@
 //!
 //! Four things are worth knowing before reading on:
 //!
-//! * **Formatting stays in libc.**  `printf`, `snprintf` and `lprintf` are
-//!   called through the `ipmi_c` bridge rather than reimplemented, because
-//!   `%3d`, `%08lXh`, `%-22s` and `%s` on a `buf2str()` result are all
-//!   observable.  So are `strcmp`, `strncmp`, `strtok_r` and `str2uchar`: the
-//!   module hands them the same pointers C handed them, including the writable
-//!   `argv` strings `strtok_r()` chops up in place.
+//! * **Formatting stays in libc.** `printf` and `snprintf` still use `ipmi_c`;
+//!   diagnostics use `log.print()` from the selected logger archive, with the
+//!   C `lprintf` fallback when `log` is not selected. libc still renders
+//!   `%3d`, `%08lXh`, `%-22s` and `%s` on a `buf2str()` result. `strcmp`,
+//!   `strncmp`, `strtok_r` and `str2uchar` receive the same pointers as C,
+//!   including writable `argv` strings that `strtok_r()` splits in place.
+//!   The `power_usage` format is a compile-time constant, never user input.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -192,11 +193,11 @@ fn chassisPowerStatus(intf: *Intf) callconv(.c) c_int {
     req.msg.data_len = 0;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Unable to get Chassis Power Status");
+        log.print(log.Level.err, "Unable to get Chassis Power Status", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Chassis Power Status failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Chassis Power Status failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -223,19 +224,23 @@ fn chassisPowerControl(intf: *Intf, ctl: u8) callconv(.c) c_int {
     req.msg.data_len = 1;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Unable to set Chassis Power Control to %s",
-            c.val2str(ctl, c.ipmi_chassis_power_control_vals),
+            .{
+                c.val2str(ctl, c.ipmi_chassis_power_control_vals),
+            },
         );
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Set Chassis Power Control to %s failed: %s",
-            c.val2str(ctl, c.ipmi_chassis_power_control_vals),
-            ccString(rsp.ccode),
+            .{
+                c.val2str(ctl, c.ipmi_chassis_power_control_vals),
+                ccString(rsp.ccode),
+            },
         );
         return -1;
     }
@@ -271,9 +276,9 @@ fn chassisIdentify(intf: *Intf, arg: ?[*:0]const u8) c_int {
             const rc = c.str2uchar(a, interval);
             if (rc != 0) {
                 if (rc == -2) {
-                    c.lprintf(log.Level.err, "Invalid interval given.");
+                    log.print(log.Level.err, "Invalid interval given.", .{});
                 } else {
-                    c.lprintf(log.Level.err, "Given interval is too big.");
+                    log.print(log.Level.err, "Given interval is too big.", .{});
                 }
                 return -1;
             }
@@ -283,15 +288,15 @@ fn chassisIdentify(intf: *Intf, arg: ?[*:0]const u8) c_int {
     }
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Unable to set Chassis Identify");
+        log.print(log.Level.err, "Unable to set Chassis Identify", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Set Chassis Identify failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Set Chassis Identify failed: %s", .{ccString(rsp.ccode)});
         if (force_on.* != 0) {
             // Intel SE7501WV2 F/W 1.2 returns CC 0xC7, but the IPMI v1.5 spec
             // does not standardize a CC if unsupported, so we warn.
-            c.lprintf(log.Level.warning, "Chassis may not support Force Identify On\n");
+            log.print(log.Level.warning, "Chassis may not support Force Identify On\n", .{});
         }
         return -1;
     }
@@ -324,11 +329,11 @@ fn chassisPoh(intf: *Intf) c_int {
     req.msg.cmd = 0xf;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Unable to get Chassis Power-On-Hours");
+        log.print(log.Level.err, "Unable to get Chassis Power-On-Hours", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Chassis Power-On-Hours failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Chassis Power-On-Hours failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -366,11 +371,11 @@ fn chassisRestartCause(intf: *Intf) c_int {
     req.msg.cmd = 0x7;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Unable to get Chassis Restart Cause");
+        log.print(log.Level.err, "Unable to get Chassis Restart Cause", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Chassis Restart Cause failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Chassis Restart Cause failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -388,11 +393,11 @@ fn chassisStatus(intf: *Intf) callconv(.c) c_int {
     req.msg.cmd = 0x1;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error sending Chassis Status command");
+        log.print(log.Level.err, "Error sending Chassis Status command", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error sending Chassis Status command: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Error sending Chassis Status command: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -474,11 +479,11 @@ fn chassisSelftest(intf: *Intf) c_int {
     req.msg.cmd = 0x4;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error sending Get Self Test command");
+        log.print(log.Level.err, "Error sending Get Self Test command", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error sending Get Self Test command: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Error sending Get Self Test command: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -538,28 +543,32 @@ fn chassisSetBootparam(intf: *Intf, param: u8, data: [*]const u8, len: c_int) c_
     req.msg.data_len = @intCast(msgsize);
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error setting Chassis Boot Parameter %d", @as(c_int, param));
+        log.print(log.Level.err, "Error setting Chassis Boot Parameter %d", .{@as(c_int, param)});
         return -1;
     };
 
     rc = rsp.ccode;
     if (rc != 0) {
         if (param != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Set Chassis Boot Parameter %d failed: %s",
-                @as(c_int, param),
-                bootparamCcString(rsp.ccode, &set_bootparam_cc_vals),
+                .{
+                    @as(c_int, param),
+                    bootparamCcString(rsp.ccode, &set_bootparam_cc_vals),
+                },
             );
         }
         return rc;
     }
 
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Chassis Set Boot Parameter %d to %s",
-        @as(c_int, param),
-        c.buf2str(data, len),
+        .{
+            @as(c_int, param),
+            c.buf2str(data, len),
+        },
     );
 
     return rc;
@@ -644,10 +653,12 @@ fn chassisGetBootparam(
     if (argc < 1) return -1;
 
     if (c.str2uchar(argv[0], &param_id) != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Invalid parameter '%s' given instead of bootparam.",
-            argv[0],
+            .{
+                argv[0],
+            },
         );
         return -1;
     }
@@ -660,11 +671,13 @@ fn chassisGetBootparam(
 
     if (argc != 0) {
         if (c.str2uchar(argv[0], &msg_data[1]) != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Invalid argument '%s' given to bootparam %u",
-                argv[0],
-                @as(c_uint, msg_data[0]),
+                .{
+                    argv[0],
+                    @as(c_uint, msg_data[0]),
+                },
             );
             return -1;
         }
@@ -677,10 +690,12 @@ fn chassisGetBootparam(
     req.msg.data_len = 3;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Error Getting Chassis Boot Parameter %u",
-            @as(c_uint, msg_data[0]),
+            .{
+                @as(c_uint, msg_data[0]),
+            },
         );
         return -1;
     };
@@ -688,11 +703,13 @@ fn chassisGetBootparam(
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get Chassis Boot Parameter %u failed: %s",
-            @as(c_uint, msg_data[0]),
-            bootparamCcString(rsp.ccode, &get_bootparam_cc_vals),
+            .{
+                @as(c_uint, msg_data[0]),
+                bootparamCcString(rsp.ccode, &get_bootparam_cc_vals),
+            },
         );
         return -1;
     }
@@ -912,7 +929,7 @@ fn getBootparamOptions(optstring: [*:0]u8, set_flag: *u8, clr_flag: *u8) c_int {
 
     const optkw: [*:0]const u8 = "options=";
     if (c.strncmp(optstring, optkw, c.strlen(optkw)) != 0) {
-        c.lprintf(log.Level.err, "No options= keyword found \"%s\"", optstring);
+        log.print(log.Level.err, "No options= keyword found \"%s\"", .{optstring});
         return -1;
     }
 
@@ -944,20 +961,17 @@ fn getBootparamOptions(optstring: [*:0]u8, set_flag: *u8, clr_flag: *u8) c_int {
             // Option not found.
             option_error = true;
             if (setbit) name -= 3;
-            c.lprintf(log.Level.err, "Invalid option: %s", name);
+            log.print(log.Level.err, "Invalid option: %s", .{name});
         }
     }
 
     if (option_error) {
-        c.lprintf(log.Level.notice, " Legal options are:");
-        c.lprintf(log.Level.notice, "  %-8s: print this message", @as([*:0]const u8, "help"));
+        log.print(log.Level.notice, " Legal options are:", .{});
+        log.print(log.Level.notice, "  %-8s: print this message", .{@as([*:0]const u8, "help")});
         for (bootparam_options) |op| {
-            c.lprintf(log.Level.notice, "  %-8s: %s", op.name, op.desc);
+            log.print(log.Level.notice, "  %-8s: %s", .{ op.name, op.desc });
         }
-        c.lprintf(
-            log.Level.notice,
-            " Any Option may be prepended with no- to invert sense of operation\n",
-        );
+        log.print(log.Level.notice, " Any Option may be prepended with no- to invert sense of operation\n", .{});
         return -1;
     }
     return 0;
@@ -979,19 +993,23 @@ fn chassisGetBootvalid(intf: *Intf) c_int {
     req.msg.data_len = 3;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Error Getting Chassis Boot Parameter %d",
-            @as(c_int, param_id),
+            .{
+                @as(c_int, param_id),
+            },
         );
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get Chassis Boot Parameter %d failed: %s",
-            @as(c_int, param_id),
-            bootparamCcString(rsp.ccode, &get_bootparam_cc_vals),
+            .{
+                @as(c_int, param_id),
+                bootparamCcString(rsp.ccode, &get_bootparam_cc_vals),
+            },
         );
         return -1;
     }
@@ -1047,7 +1065,7 @@ fn chassisSetBootvalid(intf: *Intf, set_flag: u8, clr_flag: u8) c_int {
     if (rc == 0) {
         const bootvalid = chassisGetBootvalid(intf);
         if (bootvalid < 0) {
-            c.lprintf(log.Level.err, "Failed to read boot valid flag");
+            log.print(log.Level.err, "Failed to read boot valid flag", .{});
             rc = bootvalid;
         } else {
             const flags = [1]u8{(@as(u8, @intCast(bootvalid)) & ~clr_flag) | set_flag};
@@ -1092,7 +1110,7 @@ fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_
             } else if (eqlArg(a, "bios") or eqlArg(a, "force_bios")) {
                 flags[1] |= 0x18;
             } else {
-                c.lprintf(log.Level.err, "Invalid argument: %s", a);
+                log.print(log.Level.err, "Invalid argument: %s", .{a});
                 rc = -1;
                 known = false;
             }
@@ -1134,7 +1152,7 @@ const Mbox = extern struct {
 
 /// `chassis_bootmailbox_help()`.
 fn chassisBootmailboxHelp() void {
-    c.lprintf(log.Level.notice,
+    const usage =
         \\bootmbox get [text] [block <block>]
         \\  Read the entire Boot Initiator Mailbox or the specified <block>.
         \\  If 'text' option is specified, the data is output as plain text, otherwise
@@ -1153,7 +1171,8 @@ fn chassisBootmailboxHelp() void {
         \\
         \\bootmbox help
         \\  Show this help.
-    );
+    ;
+    log.print(log.Level.notice, usage, .{});
 }
 
 /// `chassis_set_bootmailbox()`.
@@ -1174,10 +1193,10 @@ fn chassisSetBootmailbox(
     var datasize: usize = 0;
     var string_offset: usize = 0;
 
-    c.lprintf(log.Level.info, "Writing Boot Mailbox...");
+    log.print(log.Level.info, "Writing Boot Mailbox...", .{});
 
     if (argc < 1 or c.str2int(argv[0], &iana) != 0) {
-        c.lprintf(log.Level.err, "No valid IANA PEN specified!\n");
+        log.print(log.Level.err, "No valid IANA PEN specified!\n", .{});
         chassisBootmailboxHelp();
         return rc;
     }
@@ -1185,7 +1204,7 @@ fn chassisSetBootmailbox(
     argc -= 1;
 
     if (argc < 1) {
-        c.lprintf(log.Level.err, "No data provided!\n");
+        log.print(log.Level.err, "No data provided!\n", .{});
         chassisBootmailboxHelp();
         return rc;
     }
@@ -1199,7 +1218,7 @@ fn chassisSetBootmailbox(
         datasize = c.strlen(argv[0]) + 1;
     }
 
-    c.lprintf(log.Level.info, "Data size: %u", datasize);
+    log.print(log.Level.info, "Data size: %u", .{datasize});
 
     // Decide how many blocks we will be writing.
     if (block >= 0) {
@@ -1213,15 +1232,17 @@ fn chassisSetBootmailbox(
         block = 0;
     }
 
-    c.lprintf(log.Level.info, "Blocks to write: %d", blocks);
+    log.print(log.Level.info, "Blocks to write: %d", .{blocks});
 
     if (blocks > CHASSIS_BOOT_MBOX_MAX_BLOCKS) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Data size %zu exceeds maximum (%d)",
-            datasize,
-            @as(c_int, (CHASSIS_BOOT_MBOX_BLOCK_SZ * CHASSIS_BOOT_MBOX_MAX_BLOCKS) -
-                CHASSIS_BOOT_MBOX_IANA_SZ),
+            .{
+                datasize,
+                @as(c_int, (CHASSIS_BOOT_MBOX_BLOCK_SZ * CHASSIS_BOOT_MBOX_MAX_BLOCKS) -
+                    CHASSIS_BOOT_MBOX_IANA_SZ),
+            },
         );
         return rc;
     }
@@ -1231,7 +1252,7 @@ fn chassisSetBootmailbox(
         for (0..@as(usize, @intCast(argc))) |i| {
             var byte: u8 = 0;
             if (c.str2uchar(argv[i], &byte) != 0) {
-                c.lprintf(log.Level.err, "Bad byte value: %s", argv[i]);
+                log.print(log.Level.err, "Bad byte value: %s", .{argv[i]});
                 return rc;
             }
         }
@@ -1270,11 +1291,13 @@ fn chassisSetBootmailbox(
             string_offset += blocksize;
         }
 
-        c.lprintf(
+        log.print(
             log.Level.info,
             "Block %3d: %s",
-            @as(c_int, block),
-            c.buf2str_extended(data, @intCast(blocksize), " "),
+            .{
+                @as(c_int, block),
+                c.buf2str_extended(data, @intCast(blocksize), " "),
+            },
         );
 
         const unused = maxblocksize - blocksize;
@@ -1285,7 +1308,7 @@ fn chassisSetBootmailbox(
             @intCast(@sizeOf(Mbox) - unused),
         );
         if (rc == IPMI_CC_PARAM_OUT_OF_RANGE) {
-            c.lprintf(log.Level.err, "Hit end of mailbox writing block %d", @as(c_int, block));
+            log.print(log.Level.err, "Hit end of mailbox writing block %d", .{@as(c_int, block)});
         }
         if (rc != 0) {
             hit_error = true;
@@ -1294,7 +1317,7 @@ fn chassisSetBootmailbox(
     }
 
     if (!hit_error) {
-        c.lprintf(log.Level.info, "Wrote %zu blocks of Boot Initiator Mailbox", blocks);
+        log.print(log.Level.info, "Wrote %zu blocks of Boot Initiator Mailbox", .{blocks});
         chassisBootparamSetInProgress(intf, COMMIT_WRITE);
 
         rc = chassisBootparamClearAck(intf, BIOS_POST_ACK | OS_LOADER_ACK);
@@ -1388,7 +1411,7 @@ fn chassisBootmailbox(intf: *Intf, argc_in: c_int, argv_in: [*]const [*:0]u8) c_
             return rc;
         }
         if (c.str2short(argv[1], &block) != 0) {
-            c.lprintf(log.Level.err, "Invalid block %s", argv[1]);
+            log.print(log.Level.err, "Invalid block %s", .{argv[1]});
             return rc;
         }
         argv += 2;
@@ -1419,11 +1442,11 @@ fn chassisPowerPolicy(intf: *Intf, policy: u8) c_int {
     req.msg.data_len = 1;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error in Power Restore Policy command");
+        log.print(log.Level.err, "Error in Power Restore Policy command", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Power Restore Policy command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Power Restore Policy command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -1469,7 +1492,7 @@ fn powerControlByte(arg: [*:0]const u8) ?u8 {
 /// `ipmi_power_main()`.
 fn powerMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     if (argc < 1 or eqlArg(argv[0], "help")) {
-        c.lprintf(log.Level.notice, power_usage);
+        log.print(log.Level.notice, power_usage, .{});
         return 0;
     }
     if (eqlArg(argv[0], "status")) {
@@ -1477,7 +1500,7 @@ fn powerMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_in
     }
 
     const ctl = powerControlByte(argv[0]) orelse {
-        c.lprintf(log.Level.err, "Invalid chassis power command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid chassis power command: %s", .{argv[0]});
         return -1;
     };
 
@@ -1488,16 +1511,16 @@ fn powerMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_in
 fn chassisSetBootflagHelp() callconv(.c) void {
     var set_flag: u8 = undefined;
     var clr_flag: u8 = undefined;
-    c.lprintf(log.Level.notice, "bootparam set bootflag <device> [options=...]");
-    c.lprintf(log.Level.notice, " Legal devices are:");
-    c.lprintf(log.Level.notice, "  none           : No override");
-    c.lprintf(log.Level.notice, "  force_pxe      : Force PXE boot");
-    c.lprintf(log.Level.notice, "  force_disk     : Force boot from default Hard-drive");
-    c.lprintf(log.Level.notice, "  force_safe     : Force boot from default Hard-drive, request Safe Mode");
-    c.lprintf(log.Level.notice, "  force_diag     : Force boot from Diagnostic Partition");
-    c.lprintf(log.Level.notice, "  force_cdrom    : Force boot from CD/DVD");
-    c.lprintf(log.Level.notice, "  force_bios     : Force boot into BIOS Setup");
-    c.lprintf(log.Level.notice, "  force_remotecd : Force boot from remote CD/DVD");
+    log.print(log.Level.notice, "bootparam set bootflag <device> [options=...]", .{});
+    log.print(log.Level.notice, " Legal devices are:", .{});
+    log.print(log.Level.notice, "  none           : No override", .{});
+    log.print(log.Level.notice, "  force_pxe      : Force PXE boot", .{});
+    log.print(log.Level.notice, "  force_disk     : Force boot from default Hard-drive", .{});
+    log.print(log.Level.notice, "  force_safe     : Force boot from default Hard-drive, request Safe Mode", .{});
+    log.print(log.Level.notice, "  force_diag     : Force boot from Diagnostic Partition", .{});
+    log.print(log.Level.notice, "  force_cdrom    : Force boot from CD/DVD", .{});
+    log.print(log.Level.notice, "  force_bios     : Force boot into BIOS Setup", .{});
+    log.print(log.Level.notice, "  force_remotecd : Force boot from remote CD/DVD", .{});
     _ = getBootparamOptions(@constCast(@as([*:0]const u8, "options=help")), &set_flag, &clr_flag);
 }
 
@@ -1567,20 +1590,22 @@ fn bootdevParseOptions(optstring: [*:0]u8, flags: *[BF_BYTE_COUNT]u8) bool {
         if (!found) {
             // Option not found.
             option_error = true;
-            c.lprintf(log.Level.err, "Invalid option: %s", token);
+            log.print(log.Level.err, "Invalid option: %s", .{token});
         }
     }
 
     if (option_error) {
-        c.lprintf(log.Level.notice, "Legal options settings are:");
-        c.lprintf(
+        log.print(log.Level.notice, "Legal options settings are:", .{});
+        log.print(
             log.Level.notice,
             "  %-22s: %s",
-            @as([*:0]const u8, "help"),
-            @as([*:0]const u8, "print this message"),
+            .{
+                @as([*:0]const u8, "help"),
+                @as([*:0]const u8, "print this message"),
+            },
         );
         for (bootdev_options) |op| {
-            c.lprintf(log.Level.notice, "  %-22s: %s", op.name, op.desc);
+            log.print(log.Level.notice, "  %-22s: %s", .{ op.name, op.desc });
         }
         return false;
     }
@@ -1593,26 +1618,27 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
     var rc: c_int = -1;
 
     if (argc == 0 or eqlArg(argv[0], "help")) {
-        c.lprintf(log.Level.notice,
+        const usage =
             \\Chassis Commands:
             \\  status, power, policy, restart_cause
             \\  poh, identify, selftest,
             \\  bootdev, bootparam, bootmbox
-        );
+        ;
+        log.print(log.Level.notice, usage, .{});
     } else if (eqlArg(argv[0], "status")) {
         rc = chassisStatus(intf);
     } else if (eqlArg(argv[0], "selftest")) {
         rc = chassisSelftest(intf);
     } else if (eqlArg(argv[0], "power")) {
         if (argc < 2 or eqlArg(argv[1], "help")) {
-            c.lprintf(log.Level.notice, power_usage);
+            log.print(log.Level.notice, power_usage, .{});
             return 0;
         }
         if (eqlArg(argv[1], "status")) {
             return chassisPrintPowerStatus(intf);
         }
         const ctl = powerControlByte(argv[1]) orelse {
-            c.lprintf(log.Level.err, "Invalid chassis power command: %s", argv[1]);
+            log.print(log.Level.err, "Invalid chassis power command: %s", .{argv[1]});
             return rc;
         };
         rc = chassisPowerControl(intf, ctl);
@@ -1620,10 +1646,10 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
         if (argc < 2) {
             rc = chassisIdentify(intf, null);
         } else if (eqlArg(argv[1], "help")) {
-            c.lprintf(log.Level.notice, "chassis identify <interval>");
-            c.lprintf(log.Level.notice, "                 default is 15 seconds");
-            c.lprintf(log.Level.notice, "                 0 to turn off");
-            c.lprintf(log.Level.notice, "                 force to turn on indefinitely");
+            log.print(log.Level.notice, "chassis identify <interval>", .{});
+            log.print(log.Level.notice, "                 default is 15 seconds", .{});
+            log.print(log.Level.notice, "                 0 to turn off", .{});
+            log.print(log.Level.notice, "                 force to turn on indefinitely", .{});
         } else {
             rc = chassisIdentify(intf, argv[1]);
         }
@@ -1633,11 +1659,11 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
         rc = chassisRestartCause(intf);
     } else if (eqlArg(argv[0], "policy")) {
         if (argc < 2 or eqlArg(argv[1], "help")) {
-            c.lprintf(log.Level.notice, "chassis policy <state>");
-            c.lprintf(log.Level.notice, "   list        : return supported policies");
-            c.lprintf(log.Level.notice, "   always-on   : turn on when power is restored");
-            c.lprintf(log.Level.notice, "   previous    : return to previous state when power is restored");
-            c.lprintf(log.Level.notice, "   always-off  : stay off after power is restored");
+            log.print(log.Level.notice, "chassis policy <state>", .{});
+            log.print(log.Level.notice, "   list        : return supported policies", .{});
+            log.print(log.Level.notice, "   always-on   : turn on when power is restored", .{});
+            log.print(log.Level.notice, "   previous    : return to previous state when power is restored", .{});
+            log.print(log.Level.notice, "   always-off  : stay off after power is restored", .{});
         } else {
             var ctl: u8 = undefined;
             if (eqlArg(argv[1], "list")) {
@@ -1649,14 +1675,14 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
             } else if (eqlArg(argv[1], "always-off")) {
                 ctl = IPMI_CHASSIS_POLICY_ALWAYS_OFF;
             } else {
-                c.lprintf(log.Level.err, "Invalid chassis policy: %s", argv[1]);
+                log.print(log.Level.err, "Invalid chassis policy: %s", .{argv[1]});
                 return -1;
             }
             rc = chassisPowerPolicy(intf, ctl);
         }
     } else if (eqlArg(argv[0], "bootparam")) {
         if (argc < 3 or eqlArg(argv[1], "help")) {
-            c.lprintf(log.Level.notice, "bootparam get <param #>");
+            log.print(log.Level.notice, "bootparam get <param #>", .{});
             chassisSetBootflagHelp();
         } else if (eqlArg(argv[1], "get")) {
             rc = chassisGetBootparam(intf, argc - 2, argv + 2, 0);
@@ -1675,21 +1701,21 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
                 }
             }
         } else {
-            c.lprintf(log.Level.notice, "bootparam get|set <option> [value ...]");
+            log.print(log.Level.notice, "bootparam get|set <option> [value ...]", .{});
         }
     } else if (eqlArg(argv[0], "bootdev")) {
         if (argc < 2 or eqlArg(argv[1], "help")) {
-            c.lprintf(log.Level.notice, "bootdev <device> [clear-cmos=yes|no]");
-            c.lprintf(log.Level.notice, "bootdev <device> [options=help,...]");
-            c.lprintf(log.Level.notice, "  none     : Do not change boot device order");
-            c.lprintf(log.Level.notice, "  pxe      : Force PXE boot");
-            c.lprintf(log.Level.notice, "  disk     : Force boot from default Hard-drive");
-            c.lprintf(log.Level.notice, "  safe     : Force boot from default Hard-drive, request Safe Mode");
-            c.lprintf(log.Level.notice, "  diag     : Force boot from Diagnostic Partition");
-            c.lprintf(log.Level.notice, "  cdrom    : Force boot from CD/DVD");
-            c.lprintf(log.Level.notice, "  bios     : Force boot into BIOS Setup");
-            c.lprintf(log.Level.notice, "  floppy   : Force boot from Floppy/primary removable media");
-            c.lprintf(log.Level.notice, "  remotecd : Force boot from remote CD/DVD");
+            log.print(log.Level.notice, "bootdev <device> [clear-cmos=yes|no]", .{});
+            log.print(log.Level.notice, "bootdev <device> [options=help,...]", .{});
+            log.print(log.Level.notice, "  none     : Do not change boot device order", .{});
+            log.print(log.Level.notice, "  pxe      : Force PXE boot", .{});
+            log.print(log.Level.notice, "  disk     : Force boot from default Hard-drive", .{});
+            log.print(log.Level.notice, "  safe     : Force boot from default Hard-drive, request Safe Mode", .{});
+            log.print(log.Level.notice, "  diag     : Force boot from Diagnostic Partition", .{});
+            log.print(log.Level.notice, "  cdrom    : Force boot from CD/DVD", .{});
+            log.print(log.Level.notice, "  bios     : Force boot into BIOS Setup", .{});
+            log.print(log.Level.notice, "  floppy   : Force boot from Floppy/primary removable media", .{});
+            log.print(log.Level.notice, "  remotecd : Force boot from remote CD/DVD", .{});
         } else {
             const kw: [*:0]const u8 = "options=";
             var optstr: ?[*:0]u8 = null;
@@ -1713,7 +1739,7 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
     } else if (eqlArg(argv[0], "bootmbox")) {
         rc = chassisBootmailbox(intf, argc - 1, argv + 1);
     } else {
-        c.lprintf(log.Level.err, "Invalid chassis command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid chassis command: %s", .{argv[0]});
     }
 
     return rc;

@@ -12,7 +12,8 @@
 # Where a value could plausibly be produced by more than one implementation -
 # a completion code, a bit position, a byte offset, a boot device selector -
 # the transcripts use values that disagree between the candidates rather than
-# values that happen to coincide.
+# values that happen to coincide. The numeric diagnostic snapshots the C
+# oracle's `%u`, `%d`, `%3d`, `%s` and `%zu` mailbox logging at info level.
 
 # --- top level dispatch ---------------------------------------------------
 
@@ -1510,6 +1511,12 @@ covers: chassis
 [chassis_bootmbox_set_text_verbose]
 desc: -v exposes the block-by-block progress messages
 args: -I dummy -v chassis bootmbox set text 343 abcdefghijklm
+transcript: chassis.tr
+covers: chassis
+
+[chassis_bootmbox_numeric_diagnostic]
+desc: verbose block 255 logs unsigned size, signed block index, padded hex bytes and size_t block count
+args: -I dummy -v chassis bootmbox set block 255 343 0 255
 transcript: chassis.tr
 covers: chassis
 
