@@ -34,6 +34,7 @@ const builtin = @import("builtin");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("log.zig");
+const stdout_io = @import("stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 
@@ -398,10 +399,7 @@ pub fn printValstr2col(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_
 
 fn emitValstr(comptime two_columns: bool, table: [*]const ValStr, title: ?[*:0]const u8) void {
     const name = if (two_columns) "print_valstr_2col" else "print_valstr";
-    // libc may have buffered preceding printf output even when Zig writes
-    // directly to the same file descriptor.
-    if (c.fflush(c.stdout) != 0)
-        std.debug.panic("{s}: libc stdout flush failed: {d}", .{ name, std.c._errno().* });
+    stdout_io.syncC(name);
 
     var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
     const heading: ?[]const u8 = if (title) |text| std.mem.span(text) else null;

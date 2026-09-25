@@ -341,6 +341,12 @@ goldens `raw_missing_args` (one-column logging path) and `sd_entity_list`
 without readline/OpenSSL headers, use `-Dipmishell=false -Dopenssl=false
 -Dinternal-md5=true -Dintf-lanplus=false`.
 
+The selected CLI's `-V` and `-z` output uses the shared Zig stdout writer in
+`util/stdout.zig`. It checks a libc stdout pre-flush to preserve preceding C
+output and propagates Zig write and flush failures. The helper's value-table
+stdout path reuses that pre-flush. SIGINT diagnostics still use the legacy
+C stdio path pending the signal-handler cutover.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or
