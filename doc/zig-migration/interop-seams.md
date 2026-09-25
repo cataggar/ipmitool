@@ -150,15 +150,16 @@ length:
 | `0x0c` DDR4 | package/technology, 3DS logical ranks, density, widths, voltage/ECC, date, 20-byte part | **349** | bank/code at 320/321 |
 | all other types (including DDR, DDR2 and unknown types) | legacy size/voltage/ECC, optional 18-byte part, serial | 100 | `0x7f` continuations at 64–71, code through 72 |
 
-The C DDR4 check accepted 348 bytes, then read part-number byte 348 out of
-bounds; the Zig check requires 349. Manufacturer banks 0–8 use the original
-JEP106 tables; newer DDR3/DDR4 banks print `JEDEC JEP106 update required`.
+The original C DDR4 check accepted 348 bytes, then read part-number byte 348
+out of bounds; both implementations now require 349. Manufacturer banks 0–8
+use the original JEP106 tables; newer DDR3/DDR4 banks print
+`JEDEC JEP106 update required`.
 The C decoder does not validate SPD-header byte counts or JEDEC CRCs; the Zig
 decoder intentionally does not discard otherwise readable SPD images on those
-grounds. The C FRU wrapper read 16-byte chunks but ignored the decoder's
-return status and could spin on a successful zero-byte read. The Zig wrapper
-validates Get FRU Info and Read FRU Data response lengths before accessing
-them, rejects a zero-byte read, and propagates truncation errors. No-response
+grounds. The original C FRU wrapper read 16-byte chunks but ignored the decoder's
+return status and could spin on a successful zero-byte read. Both wrappers
+validate Get FRU Info and Read FRU Data response lengths before accessing
+them, reject a zero-byte read, and propagate truncation errors. No-response
 and completion-code messages, including the distinct `0xc3` timeout return
 value of 1, stay unchanged. C-backed DDR2/DDR3/DDR4 outputs and malformed FRU
 cases are pinned in `tests/cases/57-dimm-spd.cases`.
