@@ -12,8 +12,8 @@
 //!     [ head entries | registry entries, in file order | tail | terminator ]
 //!
 //! The head entries shadow whatever IANA registered for 0 and 0x0FFFFF, the
-//! tail entry must not shadow a real IANA assignment, and everything between
-//! them is `malloc`ed and owned by the array.
+//! tail entry must not shadow a real IANA assignment, and the array and its
+//! registry strings share one Zig arena freed by `ipmi_oem_info_free`.
 
 const std = @import("std");
 
@@ -37,9 +37,11 @@ const registry_file = "enterprise-numbers";
 /// `LOG_DEBUG + 4` in `oem_info_init_from_list`: six `-v` options.
 const oemlist_debug: c_int = log.Level.debug + 4;
 
-/// Allocator for the temporary entry list. The registry strings and the array
-/// `ipmi_oem_info` points at still use `malloc`/`free` together.
+/// Allocator for the temporary entry list and file contents.
 const allocator = std.heap.page_allocator;
+
+/// The exported array and strings stay valid until `ipmi_oem_info_free`.
+var registry_arena = std.heap.ArenaAllocator.init(allocator);
 
 /// `ipmi_oem_info`: an array filled from IANA's enterprise number registry,
 /// or `ipmi_oem_info_dummy` when it could not be allocated.
@@ -86,13 +88,13 @@ fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
         if (name.len != 0 and name[name.len - 1] == '\n') name = name[0 .. name.len - 1];
 
         const copy = dupeZ(name) orelse {
+            std.c._errno().* = c.ENOMEM;
             log.perror(log.Level.err, "IANA PEN registry string allocation failed", .{});
             break;
         };
         entries.append(allocator, .{ .val = iana, .str = copy }) catch {
             std.c._errno().* = c.ENOMEM;
             log.perror(log.Level.err, "IANA PEN registry entry allocation failed", .{});
-            freeStr(copy);
             break;
         };
     }
@@ -192,32 +194,30 @@ fn leadingSpaces(line: []const u8) usize {
 }
 
 fn dupeZ(text: []const u8) ?[*:0]const u8 {
-    const raw = std.c.malloc(text.len + 1) orelse return null;
-    const bytes: [*]u8 = @ptrCast(raw);
-    @memcpy(bytes[0..text.len], text);
-    bytes[text.len] = 0;
-    return @ptrCast(bytes);
+    const visible = text[0 .. std.mem.indexOfScalar(u8, text, 0) orelse text.len];
+    const copy = registry_arena.allocator().dupeZ(u8, visible) catch return null;
+    return copy.ptr;
 }
 
 // ---------------------------------------------------------------------------
 // Building the array
 // ---------------------------------------------------------------------------
 
-/// `oem_info_init_from_list`.  Returns false when the array could not be
-/// allocated, in which case the caller still owns the registry strings.
+/// `oem_info_init_from_list`. Returns false when the array could not be
+/// allocated; the registry arena still owns the strings in that case.
 fn install(entries: []const ValStr) bool {
     // The terminators of the static arrays are not copied.
     const head_entries = tables.ipmi_oem_info_head.len - 1;
     const tail_entries = tables.ipmi_oem_info_tail.len - 1;
     const total = entries.len + head_entries + tail_entries + 1;
 
-    const raw = std.c.malloc(total * @sizeOf(ValStr)) orelse {
+    const array = registry_arena.allocator().alloc(ValStr, total) catch {
+        std.c._errno().* = c.ENOMEM;
         log.perror(log.Level.err, "IANA PEN registry array allocation failed", .{});
         oem_info = dummy;
         return false;
     };
-    const array: [*]ValStr = @ptrCast(@alignCast(raw));
-    oem_info = array;
+    oem_info = array.ptr;
 
     log.print(oemlist_debug, "  Allocating %6zu entries", .{total});
 
@@ -281,35 +281,15 @@ fn init() callconv(.c) void {
         log.print(log.Level.warn, "Failed to load entries from IANA PEN Registry", .{});
     }
 
-    // On success the array owns the strings; on failure nothing else will.
-    if (!install(entries.items)) {
-        for (entries.items) |entry| freeStr(entry.str);
-    }
+    _ = install(entries.items);
 }
 
 /// `ipmi_oem_info_free`.
 fn deinit() callconv(.c) void {
     const info = oem_info orelse return;
-    if (info == dummy) return;
-
-    // Everything from the end of the head entries up to the statically
-    // allocated tail was allocated by `loadRegistry`.
-    var i = tables.ipmi_oem_info_head.len - 1;
-    while (info[i].val < std.math.maxInt(u32) and
-        info[i].str != tables.ipmi_oem_info_tail[0].str) : (i += 1)
-    {
-        const slot = &@as([*]ValStr, @constCast(info))[i];
-        freeStr(slot.str);
-        slot.str = null;
-    }
-
-    std.c.free(@constCast(@as(*const anyopaque, @ptrCast(info))));
-    oem_info = null;
-}
-
-fn freeStr(str: ?[*:0]const u8) void {
-    const text = str orelse return;
-    std.c.free(@constCast(@as(*const anyopaque, @ptrCast(text))));
+    registry_arena.deinit();
+    registry_arena = std.heap.ArenaAllocator.init(allocator);
+    if (info != dummy) oem_info = null;
 }
 
 /// `assertCallSignature` for a function the C declares without a prototype.

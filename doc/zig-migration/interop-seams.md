@@ -253,6 +253,11 @@ zig build --help                 # lists the available module names
 translated C headers and libc still remain. The default C build continues to
 serve as the golden oracle until the Phase 7 cutover.
 
+The selected IANA registry keeps its C ABI pointer, but its value array and
+registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. The C
+oracle retains its original `malloc`/`free` behavior; registry file I/O and
+error reporting still call libc.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or
