@@ -1,9 +1,9 @@
 //! Port of `lib/log.c` and `include/ipmitool/log.h`.
 //!
 //! Selected with `zig build -Dzig-modules=log`, which drops `lib/log.c` from
-//! the compile and links this module plus `log_varargs.c` instead.  Most
-//! callers still use the C-variadic `lprintf()` / `lperror()` ABI; Zig modules
-//! can call the typed `print()` / `perror()` path without the trampoline.
+//! the compile and links this module instead.  Mixed C/Zig selections retain
+//! `log_varargs.c` for C callers of `lprintf()` / `lperror()`; fully selected
+//! tools omit it. Zig modules use the typed `print()` / `perror()` path.
 //!
 //! Two things are worth knowing before reading on:
 //!

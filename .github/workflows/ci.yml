@@ -176,6 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           zig build -Dzig-modules=all --summary all
+          zig build test-no-log-varargs -Dzig-modules=all
           test -x zig-out/bin/ipmitool
           test -x zig-out/sbin/ipmievd
           zig-out/bin/ipmitool -V
@@ -195,6 +196,9 @@ jobs:
           zig build -Dzig-modules=all -Dtarget="$target" -Doptimize=ReleaseSafe \
             -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
             -Dintf-lanplus=false --prefix "$prefix" --summary all
+          zig build test-no-log-varargs -Dzig-modules=all -Dtarget="$target" \
+            -Doptimize=ReleaseSafe -Dipmishell=false -Dopenssl=false \
+            -Dinternal-md5=true -Dintf-lanplus=false
           for binary in "$prefix/bin/ipmitool" "$prefix/sbin/ipmievd"; do
             test -x "$binary"
             readelf -h "$binary" | grep -Fq "$machine"

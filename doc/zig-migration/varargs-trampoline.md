@@ -58,10 +58,11 @@ Two details matter when you copy this:
   That resolves to `[*c]c.struct___va_list_tag` on x86-64 and to
   `c.va_list` (a struct) on aarch64.
 
-* **The shim is only compiled when the module is selected.**  `build.zig`'s
-  `ZigModule` entries carry a `c_shims` list; `addZigCShims()` adds them to
-  `libipmitool_zig` only for the modules named in `-Dzig-modules=`.  Otherwise
-  the trampoline's `lprintf` would collide with `lib/log.c`'s.
+* **The shim is only compiled when selected C callers need it.** `build.zig`'s
+  `ZigModule` entries carry a `c_shims` list; `addZigCShims()` adds
+  `log_varargs.c` when `log` is selected alongside remaining C modules.
+  A fully selected tool has no C logger callers and omits the shim. Without
+  `log` selected, its `lprintf` would collide with `lib/log.c`'s.
 
 `util/log.zig` also offers typed `print`/`perror` functions to Zig callers.
 When `log` is selected, they call libc `snprintf` with a compile-time argument
@@ -102,13 +103,15 @@ golden differential cases plus both shell editor/history suites with C and
 Zig loggers. Native aarch64 tests and
 `zig build test-log-compile -Dtarget=x86_64-linux-gnu` cover both ABIs.
 
-`log_varargs.c` is still compiled whenever `log` is selected, but no Zig file
-directly calls the C-variadic logger anymore. The selected daemon and shell
-frontends use the nonvariadic shared-state bridge; the CLI and command modules
-use the archive's typed logger. The bridge calls the C logger when that
-fallback is selected. Remaining C callers in mixed-module builds still need
-the shim when `log` is selected; removing it requires addressing those callers
-and the C logging ABI. An all-selected build today is **not** shim-free.
+No Zig file directly calls the C-variadic logger anymore. The selected daemon
+and shell frontends use the nonvariadic shared-state bridge; the CLI and
+command modules use the archive's typed logger. The bridge calls the C logger
+when that fallback is selected. Remaining C callers in mixed-module builds
+still need `log_varargs.c` when `log` is selected. A fully selected tool omits
+the shim; `zig build test-no-log-varargs -Dzig-modules=all` checks the archive
+members and defined symbols. The separate C-ABI logger fixture deliberately
+still includes it. Neither a shim-free binary nor typed formatting is
+libc-free, and the retained C fallback still requires the shim.
 
 The `nm_discover_ccode_hex` and `vita_properties_log_hex` golden cases pin C
 stderr for named `%x` error codes and `%#x` discovery addresses, respectively.
