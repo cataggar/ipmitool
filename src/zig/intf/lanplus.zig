@@ -39,7 +39,7 @@
 //!     datagram fills it.
 //!  3. `ipmi_handle_pong()` reads a `struct rmcp_pong` out of the response
 //!     without checking that `data_len` is at least that long, and prints with
-//!     `printf` rather than `lprintf`, so the two halves are not prefixed and
+//!     stdout rather than `lprintf`, so the two halves are not prefixed and
 //!     go to stdout.
 //!  4. `ipmi_lan_poll_single()` parses the RMCP class byte and then the whole
 //!     session header before checking that the datagram is long enough to
@@ -89,6 +89,7 @@ const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("intf.zig");
 const fd_set = @import("../util/fd_set.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 
 const Intf = intf_mod.Intf;
 const Session = intf_mod.Session;
@@ -598,7 +599,7 @@ fn recvPacket(intf: *Intf) ?*ipmi.Response {
     return &recv_rsp;
 }
 
-/// `ipmi_handle_pong()`.  Note 3: no length check, and `printf` rather than
+/// `ipmi_handle_pong()`.  Note 3: no length check, and stdout rather than
 /// `lprintf`.
 fn handlePong(rsp: ?*ipmi.Response) c_int {
     const r = rsp orelse return -1;
@@ -609,27 +610,39 @@ fn handlePong(rsp: ?*ipmi.Response) c_int {
     const pong: *align(1) const RmcpPong = @ptrCast(&r.data);
 
     if (c.verbose != 0) {
-        _ = c.printf(
-            "Received IPMI/RMCP response packet: " ++
-                "IPMI%s Supported\n",
-            pick((pong.sup_entities & 0x80) != 0, "", " NOT"),
-        );
+        stdout_io.syncC("ipmi_handle_pong");
+        var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+        writePong(&stdout.interface, c.verbose, pong) catch
+            std.debug.panic("ipmi_handle_pong: stdout write failed: {t}", .{stdout.err orelse error.WriteFailed});
+        stdout.interface.flush() catch
+            std.debug.panic("ipmi_handle_pong: stdout flush failed: {t}", .{stdout.err orelse error.WriteFailed});
     }
 
-    if (c.verbose > 1) {
-        _ = c.printf(
-            "  ASF Version %s\n" ++
-                "  RMCP Version %s\n" ++
-                "  RMCP Sequence %d\n" ++
-                "  IANA Enterprise %lu\n\n",
-            pick((pong.sup_entities & 0x01) != 0, "1.0", "unknown"),
-            pick(pong.rmcp.ver == 6, "1.0", "unknown"),
-            @as(c_int, pong.rmcp.seq),
-            @as(c_ulong, std.mem.bigToNative(u32, pong.iana)),
-        );
-    }
+    return pongStatus(pong);
+}
 
+fn pongStatus(pong: *align(1) const RmcpPong) c_int {
     return if ((pong.sup_entities & 0x80) != 0) 1 else 0;
+}
+
+fn writePong(writer: *std.Io.Writer, verbosity: c_int, pong: *align(1) const RmcpPong) std.Io.Writer.Error!void {
+    if (verbosity != 0) {
+        const support: []const u8 = if ((pong.sup_entities & 0x80) != 0) "" else " NOT";
+        try stdout_io.write(writer, "Received IPMI/RMCP response packet: IPMI{s} Supported\n", .{support});
+    }
+
+    if (verbosity > 1) {
+        const asf_version: []const u8 = if ((pong.sup_entities & 0x01) != 0) "1.0" else "unknown";
+        const rmcp_version: []const u8 = if (pong.rmcp.ver == 6) "1.0" else "unknown";
+        try stdout_io.write(
+            writer,
+            "  ASF Version {s}\n" ++
+                "  RMCP Version {s}\n" ++
+                "  RMCP Sequence {d}\n" ++
+                "  IANA Enterprise {d}\n\n",
+            .{ asf_version, rmcp_version, @as(c_int, pong.rmcp.seq), @as(c_ulong, std.mem.bigToNative(u32, pong.iana)) },
+        );
+    }
 }
 
 /// `ipmiv2_lan_ping()`: build and send the RMCP presence ping.
@@ -3125,6 +3138,84 @@ pub fn exportSymbols() void {
 
 const testing = std.testing;
 const crypto_test_stubs = @import("../crypto/test_stubs.zig");
+
+test "pong stdout matches C at all verbosity levels and field boundaries" {
+    var pong = std.mem.zeroes(RmcpPong);
+    pong.sup_entities = 0x81;
+    pong.rmcp.ver = 6;
+    pong.rmcp.seq = 255;
+    pong.iana = std.mem.nativeToBig(u32, 0xffffffff);
+    try testing.expectEqual(@as(c_int, 1), pongStatus(&pong));
+
+    var storage: [192]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, 0, &pong);
+    try testing.expectEqualStrings("", writer.buffered());
+
+    try writePong(&writer, 1, &pong);
+    try testing.expectEqualStrings("Received IPMI/RMCP response packet: IPMI Supported\n", writer.buffered());
+
+    writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, 2, &pong);
+    try testing.expectEqualStrings(
+        "Received IPMI/RMCP response packet: IPMI Supported\n" ++
+            "  ASF Version 1.0\n" ++
+            "  RMCP Version 1.0\n" ++
+            "  RMCP Sequence 255\n" ++
+            "  IANA Enterprise 4294967295\n\n",
+        writer.buffered(),
+    );
+
+    pong.sup_entities = 0;
+    pong.rmcp.ver = 0;
+    pong.rmcp.seq = 0;
+    pong.iana = std.mem.nativeToBig(u32, 0);
+    try testing.expectEqual(@as(c_int, 0), pongStatus(&pong));
+    writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, 2, &pong);
+    try testing.expectEqualStrings(
+        "Received IPMI/RMCP response packet: IPMI NOT Supported\n" ++
+            "  ASF Version unknown\n" ++
+            "  RMCP Version unknown\n" ++
+            "  RMCP Sequence 0\n" ++
+            "  IANA Enterprise 0\n\n",
+        writer.buffered(),
+    );
+
+    writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, -1, &pong);
+    try testing.expectEqualStrings("Received IPMI/RMCP response packet: IPMI NOT Supported\n", writer.buffered());
+
+    pong.iana = std.mem.nativeToBig(u32, 0x80000000);
+    writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, 2, &pong);
+    try testing.expect(std.mem.endsWith(u8, writer.buffered(), "  IANA Enterprise 2147483648\n\n"));
+
+    pong.iana = std.mem.nativeToBig(u32, 0x01020304);
+    writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, 2, &pong);
+    try testing.expect(std.mem.endsWith(u8, writer.buffered(), "  IANA Enterprise 16909060\n\n"));
+
+    pong.iana = std.mem.nativeToBig(u32, 0x000011be);
+    writer = std.Io.Writer.fixed(&storage);
+    try writePong(&writer, 2, &pong);
+    try testing.expect(std.mem.endsWith(u8, writer.buffered(), "  IANA Enterprise 4542\n\n"));
+}
+
+test "pong stdout reports first and second write failures" {
+    var pong = std.mem.zeroes(RmcpPong);
+    pong.sup_entities = 0x81;
+    pong.rmcp.ver = 6;
+    var failing: std.Io.Writer = .failing;
+    try writePong(&failing, 0, &pong);
+    try testing.expectError(error.WriteFailed, writePong(&failing, 1, &pong));
+
+    const first_line = "Received IPMI/RMCP response packet: IPMI Supported\n";
+    var storage: [first_line.len]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try testing.expectError(error.WriteFailed, writePong(&writer, 2, &pong));
+    try testing.expectEqualStrings(first_line, writer.buffered());
+}
 
 test "RMCP+ session header parses both flags, the full length and little-endian ids" {
     var rsp = std.mem.zeroes(ipmi.Response);

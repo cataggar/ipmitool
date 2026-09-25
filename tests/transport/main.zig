@@ -369,7 +369,14 @@ fn runCase(
         .unknown => |code| try transcript.print("exit unknown {d}\n", .{code}),
     }
     try transcript.outputBlock("out", try scrub(gpa, result.stdout, work_abs, port_text));
-    try transcript.outputBlock("err", try scrub(gpa, result.stderr, work_abs, port_text));
+    const stderr = try scrub(gpa, result.stderr, work_abs, port_text);
+    try transcript.outputBlock(
+        "err",
+        if (std.mem.eql(u8, c.name, "lanplus/pong-details"))
+            try scrubPongDetails(gpa, stderr)
+        else
+            stderr,
+    );
 
     return .{ .text = transcript.text(), .violations = bmc.violations };
 }
@@ -393,9 +400,7 @@ fn realPath(gpa: std.mem.Allocator, io: Io, path: []const u8) ![]const u8 {
     return gpa.dupe(u8, buf[0..len]);
 }
 
-/// The only two things in the tool's output that are not reproducible between
-/// runs: the ephemeral port and the scratch directory.  Everything else is
-/// controlled, not scrubbed.
+/// The ephemeral port and scratch directory are not reproducible between runs.
 fn scrub(gpa: std.mem.Allocator, text: []const u8, work_abs: []const u8, port: []const u8) ![]const u8 {
     var stage = text;
     if (std.mem.indexOf(u8, stage, work_abs) != null) {
@@ -405,6 +410,47 @@ fn scrub(gpa: std.mem.Allocator, text: []const u8, work_abs: []const u8, port: [
         stage = try std.mem.replaceOwned(u8, gpa, stage, port, "${port}");
     }
     return stage;
+}
+
+fn scrubPongDetails(gpa: std.mem.Allocator, text: []const u8) ![]const u8 {
+    var stage = text;
+    const version_prefix = "ipmitool version ";
+    if (std.mem.startsWith(u8, stage, version_prefix)) {
+        const end = std.mem.indexOfScalar(u8, stage, '\n') orelse return stage;
+        stage = try std.fmt.allocPrint(gpa, "{s}<version>{s}", .{ version_prefix, stage[end..] });
+    }
+
+    const random_prefix = ">> Console generated random number (16 bytes)\n ";
+    const marker = std.mem.indexOf(u8, stage, random_prefix) orelse return stage;
+    const start = marker + random_prefix.len;
+    const end = start + (16 * 3 - 1);
+    if (end >= stage.len or stage[end] != '\n') return stage;
+    for (0..16) |i| {
+        _ = std.fmt.parseInt(u8, stage[start + i * 3 ..][0..2], 16) catch return stage;
+        if (i < 15 and stage[start + i * 3 + 2] != ' ') return stage;
+    }
+    const normalized = try std.fmt.allocPrint(gpa, "{s}<16 random bytes>{s}", .{ stage[0..start], stage[end..] });
+    return std.mem.replaceOwned(u8, gpa, normalized, " \n", "\n");
+}
+
+test "pong details scrub only the volatile version and random bytes" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const debug =
+        "ipmitool version 1.0\n" ++
+        ">> Console generated random number (16 bytes)\n" ++
+        " 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n" ++
+        ">>    data    : 0x04 \n" ++
+        "Sending IPMI/RMCP presence ping packet\n";
+    try std.testing.expectEqualStrings(
+        "ipmitool version <version>\n" ++
+            ">> Console generated random number (16 bytes)\n" ++
+            " <16 random bytes>\n" ++
+            ">>    data    : 0x04\n" ++
+            "Sending IPMI/RMCP presence ping packet\n",
+        try scrubPongDetails(arena.allocator(), debug),
+    );
+    try std.testing.expectEqualStrings("not random\n", try scrubPongDetails(arena.allocator(), "not random\n"));
 }
 
 test {

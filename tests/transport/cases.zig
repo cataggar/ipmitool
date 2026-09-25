@@ -1043,6 +1043,37 @@ pub const all: []const Case = &.{
     },
 
     .{
+        .name = "lanplus/pong-quiet",
+        .desc = "DCMI RMCP ping without verbose stdout",
+        .args = &.{
+            "-I",   "lanplus",      "-H", "127.0.0.1", "-p", "${port}",
+            "-U",   user,           "-P", pass,        "-C", "0",
+            "dcmi", "oob_discover",
+        },
+        .bmc = .{ .username = user, .password = pass },
+    },
+    .{
+        .name = "lanplus/pong-verbose",
+        .desc = "DCMI RMCP ping with supported status stdout",
+        .args = &.{
+            "-I", "lanplus", "-H",           "127.0.0.1", "-p", "${port}",
+            "-U", user,      "-P",           pass,        "-C", "0",
+            "-v", "dcmi",    "oob_discover",
+        },
+        .bmc = .{ .username = user, .password = pass },
+    },
+    .{
+        .name = "lanplus/pong-details",
+        .desc = "DCMI RMCP ping with both verbose stdout lines",
+        .args = &.{
+            "-I", "lanplus", "-H",   "127.0.0.1",    "-p", "${port}",
+            "-U", user,      "-P",   pass,           "-C", "0",
+            "-v", "-v",      "dcmi", "oob_discover",
+        },
+        .bmc = .{ .username = user, .password = pass },
+    },
+
+    .{
         .name = "lanplus/cipher3-bridged",
         .desc = "a bridged RMCP+ request: Send Message inside an encrypted payload",
         .args = &.{
