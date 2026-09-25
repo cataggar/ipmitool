@@ -347,8 +347,8 @@ args: -I dummy spd 0 0xa0 9
 transcript: spd.tr
 covers: spd
 
-[spd_short_chunk_keeps_stale]
-desc: a short chunk still copies maxread bytes, so the previous response's tail is reused
+[spd_short_chunk_fails]
+desc: a successful but short BMC read at offset 64 fails instead of copying stale response bytes
 args: -I dummy spd 0 0xa0
 transcript: spd_hole.tr
 covers: spd
@@ -363,6 +363,43 @@ covers: spd
 desc: the optional fourth argument is the read size, which drives the 512-byte loop
 args: -I dummy spd 0 0xa0 0 32
 transcript: spd.tr
+covers: spd
+
+[spd_maxread_0]
+desc: maxread 0 is rejected before an I2C request instead of looping forever
+args: -I dummy spd 0 0xa0 0 0
+transcript: spd.tr
+covers: spd
+
+[spd_maxread_1]
+desc: maxread 1 progresses through exactly 512 one-byte reads
+args: -I dummy spd 0 0xa0 0 1
+transcript: spd.tr
+covers: spd
+timeout_ms: 30000
+
+[spd_maxread_63]
+desc: maxread 63 ends with an eight-byte read at offset 504, never overrunning SPD
+args: -I dummy spd 0 0xa0 0 63
+transcript: spd.tr
+covers: spd
+
+[spd_maxread_64]
+desc: maxread 64 is the largest accepted chunk size
+args: -I dummy spd 0 0xa0 0 64
+transcript: spd.tr
+covers: spd
+
+[spd_maxread_65]
+desc: maxread 65 is rejected before an I2C request
+args: -I dummy spd 0 0xa0 0 65
+transcript: spd.tr
+covers: spd
+
+[spd_final_chunk_short]
+desc: a short successful final eight-byte response at offset 504 is not printed
+args: -I dummy spd 0 0xa0 0 63
+transcript: spd_final_hole.tr
 covers: spd
 
 [spd_maxread_invalid]

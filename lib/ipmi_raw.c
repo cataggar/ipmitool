@@ -50,7 +50,7 @@ int ipmi_spd_print(uint8_t *, int);
 /* ipmi_master_write_read  -  Perform I2C write/read transactions
  *
  * This function performs an I2C master write-read function through
- * IPMI interface.  It has a maximum transfer size of 32 bytes.
+ * IPMI interface.  It has a maximum transfer size of 64 bytes.
  *
  * @intf:	ipmi interface
  * @bus:	channel number, i2c bus id and type
@@ -141,6 +141,7 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 	uint8_t i2cbus = 0;
 	uint8_t i2caddr = 0;
 	uint8_t spd_data[RAW_SPD_SIZE];
+	uint8_t chunk;
 	int i;
 
 	memset(spd_data, 0, RAW_SPD_SIZE);
@@ -166,17 +167,30 @@ ipmi_rawspd_main(struct ipmi_intf * intf, int argc, char ** argv)
 			return (-1);
 	}
 
+	if (msize == 0 || msize > IPMI_I2C_MASTER_MAX_SIZE) {
+		lprintf(LOG_ERR, "SPD maxread must be between 1 and %d bytes",
+			IPMI_I2C_MASTER_MAX_SIZE);
+		return -1;
+	}
+
 	i2cbus = ((channel & 0xF) << 4) | ((i2cbus & 7) << 1) | 1;
 
-	for (i = 0; i < RAW_SPD_SIZE; i+= msize) {
+	for (i = 0; i < RAW_SPD_SIZE; i += chunk) {
+		chunk = RAW_SPD_SIZE - i < msize ? RAW_SPD_SIZE - i : msize;
 		rsp = ipmi_master_write_read(intf, i2cbus, i2caddr,
-					     (uint8_t *)&i, 1, msize );
+					     (uint8_t *)&i, 1, chunk);
 		if (!rsp) {
 			lprintf(LOG_ERR, "Unable to perform I2C Master Write-Read");
 			return -1;
 		}
 
-		memcpy(spd_data+i, rsp->data, msize);
+		if (rsp->data_len < chunk) {
+			lprintf(LOG_ERR, "SPD read at offset %d returned %d bytes, expected %d",
+				i, rsp->data_len, chunk);
+			return -1;
+		}
+
+		memcpy(spd_data+i, rsp->data, chunk);
 	}
 
 	ipmi_spd_print(spd_data, i);
