@@ -258,6 +258,29 @@ registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. The C
 oracle retains its original `malloc`/`free` behavior; registry file I/O and
 error reporting still call libc.
 
+The selected `helper.zig` scans six width-two MAC fields in Zig and formats
+the `Unknown (0x...)` fallback with `std.fmt`. Unit tests keep libc
+`sscanf`/`snprintf` as oracles, including every two-byte pair in each field
+and the full 16-bit fallback range; the invalid-MAC diagnostic and value
+fallbacks remain golden-tested. General numeric parsers and printf-style
+formatting paths still use libc.
+
+**Intentional MAC deviation:** Zig always rejects a width-two incomplete
+`0x`/`0X` prefix, leaving the output buffer unchanged and reporting the usual
+invalid-MAC error. libc's behavior for this prefix changed across versions.
+The *same* binary linked to
+`sscanf@GLIBC_2.17` parses `0x:00:00:00:00:00` as six zero bytes on Ubuntu
+24.04 glibc 2.39, but returns no conversions on glibc 2.43; musl also returns
+no conversions. With `00:00:00:00:00:0Xf`, glibc 2.39 accepts six zero bytes
+but glibc 2.43 and musl stop after five conversions. A fixed libc-free scanner
+cannot emulate both runtime libc versions. This narrowly scoped difference
+from the C oracle on glibc 2.39 is accepted for the selected Zig helper; no
+other MAC inputs are exempted from libc differential checks. The tests compare
+all other two-byte field pairs against libc, and for the incomplete-prefix
+cases assert that Zig rejects without writing while libc either rejects or
+produces the exact expected bytes. The C oracle and golden snapshots remain
+unchanged.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or

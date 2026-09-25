@@ -20,6 +20,7 @@ here; everything else is a bug.
 | Deviation | Since | Rationale |
 | --- | --- | --- |
 | The `imb`, `lipmi`, `bmc`, `free` and `dbus` interface plugins have been **removed**. `ipmitool -h` no longer lists `imb`, and `--enable-intf-{imb,lipmi,bmc,free,dbus}` / `-Dintf-{imb,lipmi,bmc,free,dbus}` no longer exist. | issue #10 | None of the five can be built or tested on any platform this fork supports, so a Zig port of them would be unverifiable dead code. See [doc/zig-migration/dropped-transports.md](doc/zig-migration/dropped-transports.md). |
+| When Zig `helper` is selected, a width-two MAC field containing only `0x` or `0X` is always rejected, even though glibc 2.39 `sscanf` accepts it as zero. The default C parser is unchanged. | Zig helper cutover | Use a portable rule rather than depend on glibc 2.39's version-specific acceptance: glibc 2.43 and musl reject the incomplete prefix. See [interop seams](doc/zig-migration/interop-seams.md). |
 
 ## Overview
 

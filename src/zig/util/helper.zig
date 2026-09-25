@@ -13,9 +13,11 @@
 //!   remain unchanged.  Byte-to-hex formatting uses Zig's fixed ASCII digits;
 //!   unlike locale-sensitive formatting, `%2.2x` of a byte is always two
 //!   lowercase hexadecimal characters.
-//! * **Parsing stays in libc** for the same reason: `str2long()` and friends
+//! * **General numeric parsing stays in libc:** `str2long()` and friends
 //!   accept exactly what `strtol()` accepts, including the `0x`/`0` prefixes,
 //!   leading whitespace and a lone `+`, and report overflow through `errno`.
+//!   The bounded `str2mac()` scanner instead preserves `sscanf()`'s two-column
+//!   `%x` conversions without calling libc.
 //! * **Static buffers keep their C lifetimes.**  `buf2str()`, `mac2str()` and
 //!   the `Unknown (0x..)` fallback all return pointers into module-level
 //!   storage that the next call overwrites; callers must not free them.  No
@@ -214,32 +216,53 @@ pub fn arrayLetoh(buffer: [*]u8, length: usize) callconv(.c) [*]u8 {
     return buffer;
 }
 
-/// `str2mac()`: parse `xx:xx:xx:xx:xx:xx` into six bytes.
-///
-/// `sscanf()` does the parsing so that the accepted syntax - which the `%02x`
-/// width makes laxer than it looks - is unchanged.  Returns 0 or -1.
+/// `sscanf("%02x:%02x:%02x:%02x:%02x:%02x")`, limited to six byte values.
+/// Stage all six before writing to the caller's buffer, including on a
+/// delimiter or range failure in the last field.
+fn scanMac(arg: [*:0]const u8, buf: [*]u8) bool {
+    var parsed: [6]u8 = undefined;
+    var pos: usize = 0;
+    for (&parsed, 0..) |*octet, i| {
+        while (std.ascii.isWhitespace(arg[pos])) : (pos += 1) {}
+
+        var remaining: usize = 2;
+        const negative = arg[pos] == '-';
+        if (negative or arg[pos] == '+') {
+            pos += 1;
+            remaining -= 1;
+        }
+
+        // With a width of two, "0x" has no hex digit. glibc 2.39 accepts it
+        // as zero, unlike glibc 2.43 and musl; see interop-seams.md.
+        if (remaining == 2 and arg[pos] == '0' and
+            (arg[pos + 1] == 'x' or arg[pos + 1] == 'X')) return false;
+
+        var value: u8 = 0;
+        var digits: usize = 0;
+        while (digits < remaining and std.ascii.isHex(arg[pos])) : (digits += 1) {
+            value = value * 16 + (std.fmt.charToDigit(arg[pos], 16) catch unreachable);
+            pos += 1;
+        }
+        // A negative nonzero %x converts to an unsigned value above UINT8_MAX.
+        if (digits == 0 or (negative and value != 0)) return false;
+        octet.* = value;
+
+        if (i != parsed.len - 1) {
+            if (arg[pos] != ':') return false;
+            pos += 1;
+        }
+    }
+    @memcpy(buf[0..parsed.len], &parsed);
+    return true;
+}
+
+/// `str2mac()`: parse the six width-two hex fields, ignoring text after the
+/// sixth, with the same invalid-address diagnostic as `lib/helper.c`.
 pub fn str2mac(arg: [*:0]const u8, buf: [*]u8) callconv(.c) c_int {
-    var m = [_]c_uint{0} ** 6;
-    if (c.sscanf(
-        arg,
-        "%02x:%02x:%02x:%02x:%02x:%02x",
-        &m[0],
-        &m[1],
-        &m[2],
-        &m[3],
-        &m[4],
-        &m[5],
-    ) != 6) {
+    if (!scanMac(arg, buf)) {
         log.print(log.Level.err, "Invalid MAC address: %s", .{arg});
         return -1;
     }
-    for (m) |octet| {
-        if (octet > std.math.maxInt(u8)) {
-            log.print(log.Level.err, "Invalid MAC address: %s", .{arg});
-            return -1;
-        }
-    }
-    for (m, 0..) |octet, i| buf[i] = @intCast(octet);
     return 0;
 }
 
@@ -273,7 +296,7 @@ var unknown_val_storage: [32]u8 = undefined;
 /// Returns module-level storage, like the rest of ipmitool's string helpers.
 fn unknownValStr(val: u32) [*:0]const u8 {
     @memset(&unknown_val_storage, 0);
-    _ = c.snprintf(&unknown_val_storage, unknown_val_storage.len, "Unknown (0x%02X)", val);
+    _ = std.fmt.bufPrint(&unknown_val_storage, "Unknown (0x{X:0>2})", .{val}) catch unreachable;
     return @ptrCast(&unknown_val_storage);
 }
 
@@ -1136,10 +1159,149 @@ pub fn exportSymbols() void {
 // Tests
 //
 // The test binary built from `src/zig/root.zig` links no ipmitool C objects, so
-// only the functions that stay inside libc are exercised here.  The rest -
-// everything that calls `lprintf()` or reads `verbose` - is covered by the
-// differential runs against the baseline oracle described in the pull request.
+// the MAC scanner and static fallback are checked here against libc's scanf
+// and printf.  Functions that call `lprintf()` or read `verbose` also need the
+// golden CLI differential tests, which link the selected archive.
 // ---------------------------------------------------------------------------
+
+fn libcMac(arg: [*:0]const u8) ?[6]u8 {
+    var values = [_]c_uint{0} ** 6;
+    if (c.sscanf(
+        arg,
+        "%02x:%02x:%02x:%02x:%02x:%02x",
+        &values[0],
+        &values[1],
+        &values[2],
+        &values[3],
+        &values[4],
+        &values[5],
+    ) != 6) return null;
+
+    var result: [6]u8 = undefined;
+    for (values, 0..) |value, i| {
+        if (value > std.math.maxInt(u8)) return null;
+        result[i] = @intCast(value);
+    }
+    return result;
+}
+
+test "libc scanf MAC field width and delimiter baseline" {
+    const cases = [_]struct { input: [*:0]const u8, expected: ?[6]u8 }{
+        .{ .input = "00:12:AB:ff:1:2", .expected = .{ 0, 0x12, 0xab, 0xff, 1, 2 } },
+        .{ .input = "  +F:\t-0:0a:0B:01:02tail", .expected = .{ 15, 0, 10, 11, 1, 2 } },
+        .{ .input = "0:0:0:0:0:0:extra", .expected = .{0} ** 6 },
+        .{ .input = "\n0:\x0b0:\x0c0:\r0:\t0: 0", .expected = .{0} ** 6 },
+        .{ .input = "-0:+f:0:0:0:0", .expected = .{ 0, 15, 0, 0, 0, 0 } },
+        .{ .input = "-1:0:0:0:0:0", .expected = null },
+        .{ .input = "0:-f:0:0:0:0", .expected = null },
+        .{ .input = "0:0:0:0:0:-f", .expected = null },
+        .{ .input = "0Xf:0:0:0:0:0", .expected = null },
+        .{ .input = "0:+:0:0:0:0", .expected = null },
+        .{ .input = "0:0:0:0:0", .expected = null },
+        .{ .input = "00:00:00:00:00:0g", .expected = .{0} ** 6 },
+        .{ .input = "0g:0:0:0:0:0", .expected = null },
+        .{ .input = "fg:0:0:0:0:0", .expected = null },
+        .{ .input = "0 :0:0:0:0:0", .expected = null },
+        .{ .input = "0::0:0:0:0:0", .expected = null },
+        .{ .input = ":0:0:0:0:0:0", .expected = null },
+        .{ .input = "0;0:0:0:0:0", .expected = null },
+    };
+    for (cases) |case| {
+        const actual = libcMac(case.input);
+        if (!std.meta.eql(case.expected, actual)) {
+            std.debug.print(
+                "MAC baseline input=\"{s}\" bytes={any} expected={any} libc={any}\n",
+                .{ std.mem.span(case.input), std.mem.span(case.input), case.expected, actual },
+            );
+        }
+        try std.testing.expectEqual(case.expected, actual);
+        try expectMacMatchesLibc(case.input, null);
+    }
+}
+
+fn expectIncompletePrefixRejected(arg: [*:0]const u8, field: usize, accepted_by_old_libc: [6]u8) !void {
+    if (libcMac(arg)) |octets| {
+        if (!std.mem.eql(u8, &accepted_by_old_libc, &octets)) {
+            std.debug.print(
+                "MAC prefix field={d} input bytes={any} libc={any} expected={any}\n",
+                .{ field, std.mem.span(arg), octets, accepted_by_old_libc },
+            );
+        }
+        try std.testing.expectEqualSlices(u8, &accepted_by_old_libc, &octets);
+    }
+
+    const untouched = [_]u8{0xa5} ** 6;
+    var actual = untouched;
+    if (scanMac(arg, &actual)) {
+        std.debug.print(
+            "MAC prefix field={d} input bytes={any} unexpectedly accepted as {any}\n",
+            .{ field, std.mem.span(arg), actual },
+        );
+        return error.UnexpectedMacPrefixAcceptance;
+    }
+    try std.testing.expectEqualSlices(u8, &untouched, &actual);
+}
+
+test "incomplete width-two MAC prefixes are rejected regardless of libc" {
+    const cases = [_]struct { input: [*:0]const u8, field: usize, old: [6]u8 }{
+        .{ .input = "0x:0:0:0:0:0", .field = 0, .old = .{0} ** 6 },
+        .{ .input = "00:0X:00:00:00:00", .field = 1, .old = .{0} ** 6 },
+        .{ .input = "00:00:00:00:00:0Xf", .field = 5, .old = .{0} ** 6 },
+        .{ .input = " 0x:12:34:56:78:9a", .field = 0, .old = .{ 0, 0x12, 0x34, 0x56, 0x78, 0x9a } },
+        .{ .input = "12:34:56:78:9a:\t0Xtail", .field = 5, .old = .{ 0x12, 0x34, 0x56, 0x78, 0x9a, 0 } },
+    };
+    for (cases) |case| try expectIncompletePrefixRejected(case.input, case.field, case.old);
+}
+
+fn expectMacMatchesLibc(arg: [*:0]const u8, field: ?usize) !void {
+    const expected = libcMac(arg);
+    const untouched = [_]u8{0xa5} ** 6;
+    var actual = untouched;
+    const success = scanMac(arg, &actual);
+    const parsed: ?[6]u8 = if (success) actual else null;
+    if (!std.meta.eql(expected, parsed) or (!success and !std.mem.eql(u8, &actual, &untouched))) {
+        std.debug.print(
+            "MAC differential zero-based field={any} input bytes={any} libc={any} zig={any} output={any}\n",
+            .{ field, std.mem.span(arg), expected, parsed, actual },
+        );
+    }
+    if (expected) |octets| {
+        try std.testing.expect(success);
+        try std.testing.expectEqualSlices(u8, &octets, &actual);
+    } else {
+        try std.testing.expect(!success);
+        try std.testing.expectEqualSlices(u8, &untouched, &actual);
+    }
+}
+
+test "MAC scanning matches libc for every stable two-byte field and trailing byte" {
+    var input = [_]u8{
+        '0', '0', ':', '0', '0', ':', '0', '0', ':',
+        '0', '0', ':', '0', '0', ':', '0', '0', 0,
+        0,
+    };
+    const arg: [*:0]const u8 = @ptrCast(&input);
+    for (0..6) |field| {
+        const start = field * 3;
+        for (0..256) |first| {
+            input[start] = @intCast(first);
+            for (0..256) |second| {
+                input[start + 1] = @intCast(second);
+                if (first == '0' and (second == 'x' or second == 'X')) {
+                    try expectIncompletePrefixRejected(arg, field, .{0} ** 6);
+                } else {
+                    try expectMacMatchesLibc(arg, field);
+                }
+            }
+        }
+        input[start] = '0';
+        input[start + 1] = '0';
+    }
+    for (0..256) |trailing| {
+        input[17] = @intCast(trailing);
+        try expectMacMatchesLibc(arg, null);
+    }
+}
 
 test "buf2long and buf2short are little endian" {
     const buf = [_]u8{ 0x78, 0x56, 0x34, 0x12 };
@@ -1264,6 +1426,30 @@ test "val2str falls back to the Unknown form" {
     try std.testing.expectEqualStrings("Unknown (0xFF)", std.mem.span(val2str(0xff, &table)));
     try std.testing.expectEqualStrings("Unknown (0x123)", std.mem.span(val2str(0x123, &table)));
     try std.testing.expectEqualStrings("Unknown (0x2A)", std.mem.span(val2str(0x2a, null)));
+}
+
+test "Unknown fallback matches libc printf and reuses zero-terminated static storage" {
+    const first = unknownValStr(0xff);
+    try std.testing.expectEqualStrings("Unknown (0xFF)", std.mem.span(first));
+    const next = unknownValStr(0x100);
+    try std.testing.expectEqual(@intFromPtr(first), @intFromPtr(next));
+    try std.testing.expectEqualStrings("Unknown (0x100)", std.mem.span(first));
+
+    for ([_]u32{ 0x10000, 0xffffff, 0xffffffff }) |value| {
+        var expected = [_]u8{0} ** 32;
+        const len = c.snprintf(&expected, expected.len, "Unknown (0x%02X)", value);
+        try std.testing.expect(len > 0 and len < expected.len);
+        _ = unknownValStr(value);
+        try std.testing.expectEqualSlices(u8, &expected, &unknown_val_storage);
+    }
+    for (0..0x10000) |value| {
+        var expected = [_]u8{0} ** 32;
+        const len = c.snprintf(&expected, expected.len, "Unknown (0x%02X)", @as(c_uint, @intCast(value)));
+        try std.testing.expect(len > 0 and len < expected.len);
+        const output = unknownValStr(@intCast(value));
+        try std.testing.expectEqualSlices(u8, &expected, &unknown_val_storage);
+        try std.testing.expectEqual(@as(u8, 0), output[@intCast(len)]);
+    }
 }
 
 test "specific_val2str prefers the specific table" {
