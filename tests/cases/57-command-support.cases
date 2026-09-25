@@ -1,0 +1,33 @@
+# The retained lan6 command uses ipmi_cfgp for parsing, GET, SAVE and SET.
+# Exercise the callback and selector/file-output boundaries through the
+# public CLI in addition to the direct C/Zig ABI contract.
+
+[lan6_print_enables]
+desc: Parse selector, GET and print an IPv6 addressing parameter
+args: -I dummy lan6 print 1 enables
+transcript: lan6_enables.tr
+covers: lan6
+
+[lan6_save_enables]
+desc: Save a parameter as a replayable lan6 command
+args: -I dummy lan6 save 1 enables
+transcript: lan6_enables.tr
+covers: lan6
+
+[lan6_set_enables]
+desc: Parse data and SET a parameter without locking
+args: -I dummy lan6 set 1 nolock enables both
+transcript: lan6_enables.tr
+covers: lan6
+
+[lan6_invalid_param]
+desc: Reject an unknown IPv6 configuration selector
+args: -I dummy lan6 print 1 unknown
+transcript: lan6_enables.tr
+covers: lan6
+
+[lan6_missing_set]
+desc: A set-based IPv6 parameter needs a set selector
+args: -I dummy lan6 set 1 nolock static_addr
+transcript: lan6_enables.tr
+covers: lan6

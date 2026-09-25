@@ -61,6 +61,8 @@
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_event.h>
 #include <ipmitool/ipmi_channel.h>
+#include <ipmitool/ipmi_cfgp.h>
+#include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_intf.h>
@@ -200,6 +202,10 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 int ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr);
 int ipmi_parse_range_list(const char *rangeList, unsigned char *pHexList);
 int ipmi_hex_to_dec(char *rangeList, unsigned char *pDecValue);
+/* `lib/ipmi_session.c` defines this without a public prototype. Its
+ * file-local enum has C int representation; the four values are 0..3. */
+int ipmi_get_session_info(struct ipmi_intf *intf, int request_type,
+			  uint32_t id_or_handle);
 int ipmi_sdr_get_info(struct ipmi_intf *intf,
 		      struct get_sdr_repository_info_rsp *sdr_repository_info);
 int ipmi_sdr_print_type(struct ipmi_intf *intf, char *type);

@@ -1,0 +1,26 @@
+#!golden 1
+#!case session_info_modem
+#!section exit
+0
+#!section stdout
+session handle                : 3
+slot count                    : 4
+active sessions               : 2
+user id                       : 2
+privilege level               : ADMINISTRATOR
+session type                  : IPMIv2/RMCP+
+channel number                : 0x02
+Session/Channel Activity Type : Callback Messaging session active
+Destination selector          : 5
+console ip                    : 10.0.0.1
+console port                  : 0
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x3d target_cmd=0x00 data=00
+< rule=session_info_modem ccode=0x00 len=14 data=03 04 02 02 04 12 01 05 0a 00 00 01 6f 02
+bye

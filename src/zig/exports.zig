@@ -49,6 +49,15 @@ comptime {
     if (selected("time")) {
         @import("util/time.zig").exportSymbols();
     }
+    if (selected("cfgp")) {
+        @import("cmd/cfgp.zig").exportSymbols();
+    }
+    if (selected("session")) {
+        @import("cmd/session.zig").exportSymbols();
+    }
+    if (selected("hpm2")) {
+        @import("cmd/hpm2.zig").exportSymbols();
+    }
     if (selected("md5")) {
         _ = @import("crypto/md5.zig");
     }

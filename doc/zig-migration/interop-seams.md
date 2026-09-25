@@ -214,6 +214,38 @@ comptime {
 }
 ```
 
+### Retained command-support modules
+
+`-Dzig-modules=cfgp,session,hpm2` replaces three independent C translation
+units, each with all its externally visible symbols:
+
+* `cfgp` (`lib/ipmi_cfgp.c`) is used by the retained `lan6` command in
+  `lib/ipmi_lanp6.c`. Its nine C ABI entry points accept borrowed descriptor,
+  selector and callback pointers. `ipmi_cfgp_parse_data` and `ipmi_cfgp_get`
+  allocate list nodes with libc `malloc`; callers own the context and call
+  `ipmi_cfgp_uninit` to free its nodes, including after a partial GET. Null,
+  invalid and allocation failures return `-1`; the handler's nonzero GET
+  result is mapped to `-1` at the public entry point.
+* `session` (`lib/ipmi_session.c`) supplies `ipmi_session_main` and the
+  externally linked `ipmi_get_session_info`. Both only *query* the BMC; they
+  do not create or destroy a transport session. Session establishment,
+  keepalive and cleanup live in the retained LAN/LAN+ transport plugins and
+  `src/plugins/ipmi_intf.c`, so none is dropped by this substitution. Requests
+  and response decoding need no dynamic memory.
+* `hpm2` (`lib/hpm2.c`) exports both capability queries and
+  `hpm2_detect_max_payload_size`; `src/plugins/{lan,lanplus}` and their Zig
+  alternatives call the latter during transport setup. Buffers are
+  stack-owned and failures leave the capability outputs zeroed or partially
+  populated just as the C implementation does.
+
+The C behavior was characterized before the swap. Run
+`zig build test-command-support` to execute `tests/command_support.c` both
+against the C objects and against the three Zig replacements. The golden
+cases `session_info_*` and `lan6_*` additionally compare CLI output, status
+and request bytes against C snapshots (including truncated responses,
+selectors and errors). A standalone selection still builds with
+`zig build -Dzig-modules=cfgp,session,hpm2`.
+
 ## The ABI parity harness
 
 Each header port is an `extern struct` mirror plus a `comptime` block that

@@ -191,6 +191,8 @@ static void cfgp_contract(void)
 	assert(ipmi_cfgp_set(&ctx, &sel) == 0 && state.sets == 1);
 	assert(ipmi_cfgp_parse_data(&ctx, &sel, 1, (const char *[]){"not-a-number"}) == -1);
 	assert(ctx.v && !ctx.v->next);
+	assert(ipmi_cfgp_save(&ctx, &sel, NULL) == -1);
+	assert(ipmi_cfgp_print(&ctx, &sel, NULL) == -1);
 	assert(ipmi_cfgp_uninit(&ctx) == 0 && !ctx.v);
 	assert(ipmi_cfgp_uninit(NULL) == -1);
 
@@ -211,6 +213,9 @@ static void cfgp_contract(void)
 	assert(ipmi_cfgp_parse_sel(&ctx, 3, (const char *[]){"matrix", "1", "0"}, &sel) == -1);
 	assert(ipmi_cfgp_parse_sel(&ctx, 1, (const char *[]){"readonly"}, &sel) == 1);
 	assert(sel.param == 1 && sel.set == 0 && sel.block == 0);
+	assert(ipmi_cfgp_parse_data(&ctx, &sel, 1, (const char *[]){"7"}) == 0);
+	assert(ipmi_cfgp_set(&ctx, &sel) == 0 && state.sets == 1);
+	assert(ipmi_cfgp_uninit(&ctx) == 0);
 	assert(ipmi_cfgp_parse_sel(&ctx, 1, (const char *[]){"bogus"}, &sel) == -1);
 }
 
@@ -247,10 +252,30 @@ static void hpm2_contract(void)
 	reply(bad, sizeof(bad), 0);
 	assert(hpm2_get_capabilities(&intf, &caps) == -1);
 	memcpy(bad, good, sizeof(bad));
+	bad[3] = bad[4] = 0;
+	reply(bad, sizeof(bad), 0);
+	assert(hpm2_get_capabilities(&intf, &caps) == -1);
+	memcpy(bad, good, sizeof(bad));
 	bad[6] = 0xbf;
 	reply(bad, sizeof(bad), 0);
 	assert(hpm2_get_capabilities(&intf, &caps) == -1);
+	memcpy(bad, good, sizeof(bad));
+	bad[7] = 2;
+	reply(bad, sizeof(bad), 0);
+	assert(hpm2_get_capabilities(&intf, &caps) == -1);
 	reply(good, 8, 0); /* SOL extension requires ten bytes */
+	assert(hpm2_get_capabilities(&intf, &caps) == -1);
+	memcpy(bad, good, sizeof(bad));
+	bad[5] = 0; /* Without SOL extension, eight bytes suffice. */
+	reply(bad, 8, 0);
+	assert(hpm2_get_capabilities(&intf, &caps) == 0);
+	memcpy(bad, good, sizeof(bad));
+	bad[8] = 0xbf;
+	reply(bad, sizeof(bad), 0);
+	assert(hpm2_get_capabilities(&intf, &caps) == -1);
+	memcpy(bad, good, sizeof(bad));
+	bad[9] = 2;
+	reply(bad, sizeof(bad), 0);
 	assert(hpm2_get_capabilities(&intf, &caps) == -1);
 	reply(channel, sizeof(channel), 0);
 	assert(hpm2_get_lan_channel_capabilities(&intf, 0xc0, &chan) == 0);
@@ -261,6 +286,10 @@ static void hpm2_contract(void)
 	assert(hpm2_get_lan_channel_capabilities(&intf, 0xc0, &chan) == 0x80);
 	reply(channel, 7, 0);
 	assert(hpm2_get_lan_channel_capabilities(&intf, 0xc0, &chan) == -1);
+	reply(channel, sizeof(channel), 0);
+	no_response = 1;
+	assert(hpm2_get_lan_channel_capabilities(&intf, 0xc0, &chan) == -1);
+	no_response = 0;
 	memcpy(bad, channel, sizeof(channel));
 	bad[0] = 0x10;
 	reply(bad, sizeof(channel), 0);
@@ -299,13 +328,19 @@ static void session_contract(void)
 	assert(ipmi_session_main(&intf, 2, all) == 0 && sends == 2);
 	assert(wire_len == 1 && wire[0] == 2);
 	assert(ipmi_session_main(&intf, 2, missing) == -1);
+	assert(sends == 2);
 	assert(ipmi_session_main(&intf, 3, invalid) == -1);
+	assert(sends == 2);
 	reply(current, sizeof(current), 0xc1);
 	assert(ipmi_session_main(&intf, 2, active) == -1);
 	reply(current, sizeof(current), 0);
 	no_response = 1;
 	assert(ipmi_session_main(&intf, 2, active) == -1);
 	no_response = 0;
+	reply(current, 2, 0);
+	assert(ipmi_session_main(&intf, 2, all) == -1 && sends == 1);
+	reply(current, 3, 0xcc);
+	assert(ipmi_session_main(&intf, 2, all) == 0 && sends == 4);
 }
 
 int main(void)

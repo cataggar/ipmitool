@@ -141,6 +141,18 @@ args: -c -I dummy session info active
 transcript: session_info_lan.tr
 covers: session
 
+[session_info_modem]
+desc: Decode async serial/PPP channel data and its original port field
+args: -I dummy session info active
+transcript: session_info_modem.tr
+covers: session
+
+[session_info_modem_csv]
+desc: Decode async serial/PPP session data in CSV mode
+args: -c -I dummy session info active
+transcript: session_info_modem.tr
+covers: session
+
 [session_info_short]
 desc: A two-byte session response follows the original C zero-fill behavior
 args: -I dummy session info active
