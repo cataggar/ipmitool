@@ -1,0 +1,14 @@
+# Full-stream C-oracle logging diagnostics; keep the record ID, typed numeric
+# formats and BMC traffic pinned before converting the FRU logger calls.
+
+[log_fru_bad_version]
+desc: verbose FRU header rejects 0x0f and logs the nontrivial 0x1234 size
+args: -I dummy -vv fru print 0
+transcript: log_fru_bad_version.tr
+covers: fru
+
+[log_fru_short_management]
+desc: management multirecord reports three size_t values in a short-body warning
+args: -I dummy -vv fru print 0
+transcript: log_fru_short_management.tr
+covers: fru

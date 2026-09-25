@@ -1,0 +1,16 @@
+# Unknown version 0x0f prints as two hex digits; FRU size 0x1234 renders
+# as decimal under -vv before the header is rejected.
+default_ccode 0xc1
+
+respond get_fru_area_info
+  netfn 0x0a
+  cmd 0x10
+  data 34 12 00
+end
+
+respond read_fru_header
+  netfn 0x0a
+  cmd 0x11
+  match 00 00 00 08
+  data 08 0f 00 00 00 00 00 00 f1
+end

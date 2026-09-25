@@ -1,0 +1,24 @@
+# 256-byte inventory retaining the standard FRU areas. Replace only the
+# final management multirecord with a four-byte body: subtype 3 ("System
+# Ping Address") needs at least eight text bytes but has only three.
+@fru/common_header.hex
+@fru/chassis_area.hex
+@fru/board_area.hex
+@fru/product_area.hex
+
+@mark hdr
+03
+82
+@mark length
+00
+@mark body_sum
+00
+@mark header_sum
+00
+@mark body
+03 61 62 63
+@fill_size length body
+@fill_checksum body_sum body
+@fill_checksum header_sum hdr
+
+@pad 87 0x00

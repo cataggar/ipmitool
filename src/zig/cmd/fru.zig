@@ -1,6 +1,9 @@
 //! Port of `lib/ipmi_fru.c`: inventory reads, section-aware writes, print/list
 //! (including SDR discovery, area strings, multirecords and PICMG), get,
 //! upgEkey, internal-use, field editing, OEM editing and the C helper ABI.
+//! Diagnostics use `util/log.zig`'s typed archive logger.  Its `printf` formats
+//! and promoted argument widths are unchanged; when the Zig logger is not
+//! selected, the typed entry point forwards to the C logger and its state.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -38,16 +41,16 @@ fn equals(a: [*c]u8, b: []const u8) bool {
 
 fn validFilename(path: [*c]u8) bool {
     if (path == null) {
-        c.lprintf(log.Level.err, "ERROR: NULL pointer passed.");
+        log.print(log.Level.err, "ERROR: NULL pointer passed.", .{});
         return false;
     }
     const length = c.strlen(path);
     if (length < 1) {
-        c.lprintf(log.Level.err, "File/path is invalid.");
+        log.print(log.Level.err, "File/path is invalid.", .{});
         return false;
     }
     if (length >= 512) {
-        c.lprintf(log.Level.err, "File/path must be shorter than 512 bytes.");
+        log.print(log.Level.err, "File/path must be shorter than 512 bytes.", .{});
         return false;
     }
     return true;
@@ -70,7 +73,7 @@ fn getInfo(intf: *Intf, id: u8) ?Info {
         return null;
     }
     if (rsp.data_len < 3) {
-        c.lprintf(log.Level.err, "FRU info response too short");
+        log.print(log.Level.err, "FRU info response too short", .{});
         return null;
     }
     return .{
@@ -89,23 +92,25 @@ fn isTooLarge(code: u8) bool {
 /// destination slice. Callers choose whether a failed transfer is fatal.
 fn readArea(intf: *Intf, id: u8, info: *Info, offset: usize, dest: []u8) ReadError!void {
     if (offset > info.size) {
-        c.lprintf(log.Level.err, "Read FRU Area offset incorrect: %d > %d", @as(c_int, @intCast(offset)), @as(c_int, info.size));
+        log.print(log.Level.err, "Read FRU Area offset incorrect: %d > %d", .{ @as(c_int, @intCast(offset)), @as(c_int, info.size) });
         return error.OutOfRange;
     }
     const finish = @min(offset + dest.len, @as(usize, info.size));
     if (offset + dest.len > info.size) {
-        c.lprintf(
+        log.print(
             log.Level.notice,
             "Read FRU Area length %d too large, Adjusting to %d",
-            @as(c_int, @intCast(offset + dest.len)),
-            @as(c_int, @intCast(finish - offset)),
+            .{
+                @as(c_int, @intCast(offset + dest.len)),
+                @as(c_int, @intCast(finish - offset)),
+            },
         );
     }
 
     if (info.max_read == 0) {
         const max_response = c.ipmi_intf_get_max_response_data_size(cIntf(intf));
         if (max_response <= 2) {
-            c.lprintf(log.Level.@"error", "Maximum response size is too small to send a read request");
+            log.print(log.Level.@"error", "Maximum response size is too small to send a read request", .{});
             return error.InvalidMaxSize;
         }
         info.max_read = @min(@as(usize, max_response) - 2, 255);
@@ -128,16 +133,16 @@ fn readArea(intf: *Intf, id: u8, info: *Info, offset: usize, dest: []u8) ReadErr
         request_data[3] = @intCast(@min(finish - off, info.max_read));
 
         const rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(log.Level.notice, "FRU Read failed");
+            log.print(log.Level.notice, "FRU Read failed", .{});
             return error.Failed;
         };
         if (rsp.ccode != 0) {
             if (isTooLarge(rsp.ccode) and info.max_read > 8) {
                 info.max_read -= if (info.max_read > 32) 8 else 1;
-                c.lprintf(log.Level.info, "Retrying FRU read with request size %d", @as(c_int, @intCast(info.max_read)));
+                log.print(log.Level.info, "Retrying FRU read with request size %d", .{@as(c_int, @intCast(info.max_read))});
                 continue;
             }
-            c.lprintf(log.Level.notice, "FRU Read failed: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+            log.print(log.Level.notice, "FRU Read failed: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
             return error.Failed;
         }
 
@@ -236,7 +241,7 @@ fn areaPrint(intf: *Intf, id: u8, info: *Info, offset: usize, kind: AreaKind, al
     const area_len: usize = @as(usize, length_bytes[1]) * 8;
     if (area_len == 0) return;
     const area = allocator.alloc(u8, area_len) catch {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return;
     };
     defer allocator.free(area);
@@ -379,12 +384,12 @@ fn showMultirecord(body: []const u8, record_type: u8) void {
             const minimum = [_]usize{ 0, 16, 8, 8, 16, 8, 8, 16 };
             const maximum = [_]usize{ 0, 256, 64, 64, 256, 64, 64, 16 };
             if (subtype < 1 or subtype >= names.len) {
-                c.lprintf(log.Level.warn, "Unsupported subtype 0x%02x found for multi-record area management record\n", @as(c_uint, subtype));
+                log.print(log.Level.warn, "Unsupported subtype 0x%02x found for multi-record area management record\n", .{@as(c_uint, subtype)});
                 return;
             }
             const text = body[1..];
             if (text.len < minimum[subtype] or text.len > maximum[subtype])
-                c.lprintf(log.Level.warn, "Wrong data length %zu, must be %zu < X < %zu\n", text.len, minimum[subtype], maximum[subtype]);
+                log.print(log.Level.warn, "Wrong data length %zu, must be %zu < X < %zu\n", .{ text.len, minimum[subtype], maximum[subtype] });
             var value: [257]u8 = @splat(0);
             if (subtype == 7) {
                 if (text.len < 16) return;
@@ -410,7 +415,7 @@ fn multirecordPrint(intf: *Intf, id: u8, info: *Info, offset: usize) void {
         showMultirecord(record[5..][0..body_len], record[0]);
         if ((record[1] & 0x80) != 0 or off >= info.size) break;
     }
-    c.lprintf(log.Level.debug, "Multi-Record area ends at: %i (%xh)", @as(c_int, @intCast(off)), @as(c_uint, @intCast(off)));
+    log.print(log.Level.debug, "Multi-Record area ends at: %i (%xh)", .{ @as(c_int, @intCast(off)), @as(c_uint, @intCast(off)) });
 }
 
 /// `__ipmi_fru_print()` for builtin and SDR-located FRU devices.
@@ -431,16 +436,16 @@ fn printFru(intf: *Intf, id: u8, allocator: Allocator) c_int {
         return -1;
     }
     if (info_rsp.data_len < 3) {
-        c.lprintf(log.Level.err, "FRU info response too short");
+        log.print(log.Level.err, "FRU info response too short", .{});
         return -1;
     }
     var info = Info{
         .size = @as(u16, info_rsp.data[0]) | (@as(u16, info_rsp.data[1]) << 8),
         .access = (info_rsp.data[2] & 1) != 0,
     };
-    c.lprintf(log.Level.debug, "fru.size = %d bytes (accessed by %s)", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    log.print(log.Level.debug, "fru.size = %d bytes (accessed by %s)", .{ @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes") });
     if (info.size < 1) {
-        c.lprintf(log.Level.err, " Invalid FRU size %d", @as(c_int, info.size));
+        log.print(log.Level.err, " Invalid FRU size %d", .{@as(c_int, info.size)});
         return -1;
     }
 
@@ -472,15 +477,15 @@ fn printFru(intf: *Intf, id: u8, allocator: Allocator) c_int {
         header[0] = @truncate(info.size >> 8);
     }
     if (header[0] != 1) {
-        c.lprintf(log.Level.err, " Unknown FRU header version 0x%02x", @as(c_uint, header[0]));
+        log.print(log.Level.err, " Unknown FRU header version 0x%02x", .{@as(c_uint, header[0])});
         return -1;
     }
-    c.lprintf(log.Level.debug, "fru.header.version:         0x%x", @as(c_uint, header[0]));
-    c.lprintf(log.Level.debug, "fru.header.offset.internal: 0x%x", @as(c_uint, header[1]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.chassis:  0x%x", @as(c_uint, header[2]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.board:    0x%x", @as(c_uint, header[3]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.product:  0x%x", @as(c_uint, header[4]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.multi:    0x%x", @as(c_uint, header[5]) * 8);
+    log.print(log.Level.debug, "fru.header.version:         0x%x", .{@as(c_uint, header[0])});
+    log.print(log.Level.debug, "fru.header.offset.internal: 0x%x", .{@as(c_uint, header[1]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.chassis:  0x%x", .{@as(c_uint, header[2]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.board:    0x%x", .{@as(c_uint, header[3]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.product:  0x%x", .{@as(c_uint, header[4]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.multi:    0x%x", .{@as(c_uint, header[5]) * 8});
     if (header[2] != 0) areaPrint(intf, id, &info, @as(usize, header[2]) * 8, .chassis, allocator);
     if (header[3] != 0) areaPrint(intf, id, &info, @as(usize, header[3]) * 8, .board, allocator);
     if (header[4] != 0) areaPrint(intf, id, &info, @as(usize, header[4]) * 8, .product, allocator);
@@ -543,15 +548,15 @@ fn printAll(intf: *Intf, allocator: Allocator) c_int {
     req.msg.netfn_lun.netfn = ipmi.NetFn.app;
     req.msg.cmd = c.BMC_GET_DEVICE_ID;
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Device ID command failed");
+        log.print(log.Level.err, "Get Device ID command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Device ID command failed: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, "Get Device ID command failed: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
         return -1;
     }
     if (rsp.data_len < 6) {
-        c.lprintf(log.Level.err, "Get Device ID response too short");
+        log.print(log.Level.err, "Get Device ID response too short", .{});
         return -1;
     }
     var rc: c_int = 0;
@@ -625,26 +630,26 @@ fn buildBlocks(intf: *Intf, id: u8, info: *Info, allocator: Allocator) !std.Arra
     req.msg.data = &request_data;
     req.msg.data_len = request_data.len;
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, " Device not present (No Response)");
+        log.print(log.Level.err, " Device not present (No Response)", .{});
         return blocks;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, " Device not present (%s)", c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, " Device not present (%s)", .{c.val2str(rsp.ccode, c.completion_code_vals)});
         return blocks;
     }
     if (rsp.data_len < 9) {
-        c.lprintf(log.Level.err, " Bad header checksum");
+        log.print(log.Level.err, " Bad header checksum", .{});
         return blocks;
     }
     const header = rsp.data[1..9];
     var checksum: u8 = 0;
     for (header) |byte| checksum +%= byte;
     if (checksum != 0) {
-        c.lprintf(log.Level.err, " Bad header checksum");
+        log.print(log.Level.err, " Bad header checksum", .{});
         return blocks;
     }
     if (header[0] != 1) {
-        c.lprintf(log.Level.err, " Unknown FRU header version 0x%02x", @as(c_uint, header[0]));
+        log.print(log.Level.err, " Unknown FRU header version 0x%02x", .{@as(c_uint, header[0])});
         return blocks;
     }
 
@@ -662,7 +667,7 @@ fn buildBlocks(intf: *Intf, id: u8, info: *Info, allocator: Allocator) !std.Arra
         var off: usize = @as(usize, header[5]) * 8;
         while (off < info.size) {
             if (info.access and (off & 1) != 0) {
-                c.lprintf(log.Level.err, " Unaligned offset for a block: %d", @as(c_int, @intCast(off)));
+                log.print(log.Level.err, " Unaligned offset for a block: %d", .{@as(c_int, @intCast(off))});
                 off += 1;
                 break;
             }
@@ -687,11 +692,11 @@ fn buildBlocks(intf: *Intf, id: u8, info: *Info, allocator: Allocator) !std.Arra
     }
     for (blocks.items, 0..) |block, index| {
         var storage: [32]u8 = undefined;
-        c.lprintf(log.Level.debug, "Bloc Numb : %i", @as(c_int, @intCast(index)));
-        c.lprintf(log.Level.debug, "Bloc Id   : %s", blockName(block, &storage));
-        c.lprintf(log.Level.debug, "Bloc Start: %i", @as(c_int, @intCast(block.start)));
-        c.lprintf(log.Level.debug, "Bloc Size : %i", @as(c_int, @intCast(block.end -| block.start)));
-        c.lprintf(log.Level.debug, "");
+        log.print(log.Level.debug, "Bloc Numb : %i", .{@as(c_int, @intCast(index))});
+        log.print(log.Level.debug, "Bloc Id   : %s", .{blockName(block, &storage)});
+        log.print(log.Level.debug, "Bloc Start: %i", .{@as(c_int, @intCast(block.start))});
+        log.print(log.Level.debug, "Bloc Size : %i", .{@as(c_int, @intCast(block.end -| block.start))});
+        log.print(log.Level.debug, "", .{});
     }
     return blocks;
 }
@@ -701,11 +706,11 @@ fn buildBlocks(intf: *Intf, id: u8, info: *Info, allocator: Allocator) !std.Arra
 /// the same bytes; all allocations and the interface response stay borrowed.
 fn writeArea(intf: *Intf, id: u8, info: *Info, dest_offset: usize, source: []const u8, allocator: Allocator) !bool {
     if (dest_offset > info.size or source.len > info.size - dest_offset) {
-        c.lprintf(log.Level.@"error", "Return error");
+        log.print(log.Level.@"error", "Return error", .{});
         return false;
     }
     if (info.access and ((dest_offset | source.len) & 1) != 0) {
-        c.lprintf(log.Level.@"error", "Odd offset or length specified");
+        log.print(log.Level.@"error", "Odd offset or length specified", .{});
         return false;
     }
     const finish = dest_offset + source.len;
@@ -713,7 +718,7 @@ fn writeArea(intf: *Intf, id: u8, info: *Info, dest_offset: usize, source: []con
     defer blocks.deinit(allocator);
     const max_request = if (info.max_write == 0) c.ipmi_intf_get_max_request_data_size(cIntf(intf)) else 0;
     if (info.max_write == 0 and max_request <= 3) {
-        c.lprintf(log.Level.@"error", "Maximum request size is too small to send a write request");
+        log.print(log.Level.@"error", "Maximum request size is too small to send a write request", .{});
         return false;
     }
     var max_write: usize = if (info.max_write != 0) info.max_write else @min(@as(usize, max_request) - 3, 255);
@@ -747,31 +752,31 @@ fn writeArea(intf: *Intf, id: u8, info: *Info, dest_offset: usize, source: []con
         req.msg.data_len = @intCast(length + 3);
         if (block) |b| {
             var storage: [32]u8 = undefined;
-            c.lprintf(log.Level.info, "Writing %d bytes (Bloc #%i: %s)", @as(c_int, @intCast(length)), @as(c_int, @intCast(block_index)), blockName(b, &storage));
+            log.print(log.Level.info, "Writing %d bytes (Bloc #%i: %s)", .{ @as(c_int, @intCast(length)), @as(c_int, @intCast(block_index)), blockName(b, &storage) });
         } else {
-            c.lprintf(log.Level.info, "Writing %d bytes", @as(c_int, @intCast(length)));
+            log.print(log.Level.info, "Writing %d bytes", .{@as(c_int, @intCast(length))});
         }
 
         const rsp = sendrecv(intf, &req) orelse break;
         if (isTooLarge(rsp.ccode) and max_write > 32) {
             max_write -= 8;
             info.max_write = max_write;
-            c.lprintf(log.Level.info, "Retrying FRU write with request size %d", @as(c_int, @intCast(max_write)));
+            log.print(log.Level.info, "Retrying FRU write with request size %d", .{@as(c_int, @intCast(max_write))});
             continue;
         }
         if (rsp.ccode == c.IPMI_CC_FRU_WRITE_PROTECTED_OFFSET) {
             if (block) |b| {
                 var storage: [32]u8 = undefined;
-                c.lprintf(log.Level.info, "Bloc [%s] protected at offset: %i (size %i bytes)", blockName(b, &storage), @as(c_int, @intCast(b.start)), @as(c_int, @intCast(b.end -| b.start)));
-                c.lprintf(log.Level.info, "Jumping over this bloc");
+                log.print(log.Level.info, "Bloc [%s] protected at offset: %i (size %i bytes)", .{ blockName(b, &storage), @as(c_int, @intCast(b.start)), @as(c_int, @intCast(b.end -| b.start)) });
+                log.print(log.Level.info, "Jumping over this bloc", .{});
             } else {
-                c.lprintf(log.Level.info, "Remaining FRU is protected following offset: %i", @as(c_int, @intCast(offset)));
+                log.print(log.Level.info, "Remaining FRU is protected following offset: %i", .{@as(c_int, @intCast(offset))});
             }
             offset = end;
         } else if (rsp.ccode != 0) {
             break;
         } else {
-            c.lprintf(log.Level.info, "Wrote %d bytes", @as(c_int, @intCast(length)));
+            log.print(log.Level.info, "Wrote %d bytes", .{@as(c_int, @intCast(length))});
             offset += length;
         }
     }
@@ -804,9 +809,9 @@ fn internalUseInfo(intf: *Intf, id: u8) ?InternalUse {
         .size = @as(u16, rsp.data[0]) | (@as(u16, rsp.data[1]) << 8),
         .access = (rsp.data[2] & 1) != 0,
     };
-    c.lprintf(log.Level.debug, "fru.size = %d bytes (accessed by %s)", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    log.print(log.Level.debug, "fru.size = %d bytes (accessed by %s)", .{ @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes") });
     if (info.size == 0) {
-        c.lprintf(log.Level.err, " Invalid FRU size %d", @as(c_int, info.size));
+        log.print(log.Level.err, " Invalid FRU size %d", .{@as(c_int, info.size)});
         return null;
     }
     request_data = .{ id, 0, 0, 8 };
@@ -826,15 +831,15 @@ fn internalUseInfo(intf: *Intf, id: u8) ?InternalUse {
         @memcpy(header[0..count], header_rsp.data[1..][0..count]);
     }
     if (header[0] != 1) {
-        c.lprintf(log.Level.err, " Unknown FRU header version 0x%02x", @as(c_uint, header[0]));
+        log.print(log.Level.err, " Unknown FRU header version 0x%02x", .{@as(c_uint, header[0])});
         return null;
     }
-    c.lprintf(log.Level.debug, "fru.header.version:         0x%x", @as(c_uint, header[0]));
-    c.lprintf(log.Level.debug, "fru.header.offset.internal: 0x%x", @as(c_uint, header[1]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.chassis:  0x%x", @as(c_uint, header[2]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.board:    0x%x", @as(c_uint, header[3]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.product:  0x%x", @as(c_uint, header[4]) * 8);
-    c.lprintf(log.Level.debug, "fru.header.offset.multi:    0x%x", @as(c_uint, header[5]) * 8);
+    log.print(log.Level.debug, "fru.header.version:         0x%x", .{@as(c_uint, header[0])});
+    log.print(log.Level.debug, "fru.header.offset.internal: 0x%x", .{@as(c_uint, header[1]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.chassis:  0x%x", .{@as(c_uint, header[2]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.board:    0x%x", .{@as(c_uint, header[3]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.product:  0x%x", .{@as(c_uint, header[4]) * 8});
+    log.print(log.Level.debug, "fru.header.offset.multi:    0x%x", .{@as(c_uint, header[5]) * 8});
 
     if (header[1] == 0) return .{ .info = info, .offset = 0, .size = 0 };
     const offset: usize = @as(usize, header[1]) * 8;
@@ -849,10 +854,10 @@ fn internalUseInfo(intf: *Intf, id: u8) ?InternalUse {
 
 fn internalUse(intf: *Intf, id: u8, verb: [*c]u8, filename: [*c]u8, allocator: Allocator) c_int {
     var internal = internalUseInfo(intf, id) orelse {
-        c.lprintf(log.Level.err, "Cannot access internal use area");
+        log.print(log.Level.err, "Cannot access internal use area", .{});
         return if (equals(verb, "info")) -1 else 0;
     };
-    c.lprintf(log.Level.debug, "Internal Use Area Offset: %i", @as(c_int, @intCast(internal.offset)));
+    log.print(log.Level.debug, "Internal Use Area Offset: %i", .{@as(c_int, @intCast(internal.offset))});
     _ = c.printf("Internal Use Area Size  : %i\n", @as(c_int, @intCast(internal.size)));
     if (equals(verb, "info")) return 0;
 
@@ -861,10 +866,10 @@ fn internalUse(intf: *Intf, id: u8, verb: [*c]u8, filename: [*c]u8, allocator: A
         defer _ = c.fclose(file);
         if (c.fseek(file, 0, c.SEEK_END) != 0) return 0;
         const file_length = c.ftell(file);
-        c.lprintf(log.Level.err, "File Size: %i", @as(c_int, @truncate(file_length)));
-        c.lprintf(log.Level.err, "Area Size: %i", @as(c_int, @intCast(internal.size)));
+        log.print(log.Level.err, "File Size: %i", .{@as(c_int, @truncate(file_length))});
+        log.print(log.Level.err, "Area Size: %i", .{@as(c_int, @intCast(internal.size))});
         if (file_length < 0 or @as(usize, @intCast(file_length)) != internal.size) {
-            c.lprintf(log.Level.err, "File size does not fit Eeprom Size");
+            log.print(log.Level.err, "File size does not fit Eeprom Size", .{});
             return 0;
         }
         _ = c.fseek(file, 0, c.SEEK_SET);
@@ -872,7 +877,7 @@ fn internalUse(intf: *Intf, id: u8, verb: [*c]u8, filename: [*c]u8, allocator: A
         defer allocator.free(data);
         if (c.fread(data.ptr, 1, data.len, file) != data.len) return 0;
         const wrote = writeArea(intf, id, &internal.info, internal.offset, data, allocator) catch false;
-        if (!wrote) c.lprintf(log.Level.info, "Done\n");
+        if (!wrote) log.print(log.Level.info, "Done\n", .{});
         return 0;
     }
 
@@ -889,7 +894,7 @@ fn internalUse(intf: *Intf, id: u8, verb: [*c]u8, filename: [*c]u8, allocator: A
             }
         } else {
             const file = c.fopen(filename, "wb") orelse {
-                c.lprintf(log.Level.err, "Error opening file %s\n", filename);
+                log.print(log.Level.err, "Error opening file %s\n", .{filename});
                 return -1;
             };
             defer _ = c.fclose(file);
@@ -908,7 +913,7 @@ fn transfer(intf: *Intf, id: u8, path: [*c]u8, allocator: Allocator, write: bool
         _ = c.printf("Fru Access = %xh\n", @as(c_uint, @intFromBool(info.access)));
     }
     const data = allocator.alloc(u8, info.size) catch {
-        c.lprintf(log.Level.err, "Cannot allocate %d bytes\n", @as(c_int, info.size));
+        log.print(log.Level.err, "Cannot allocate %d bytes\n", .{@as(c_int, info.size)});
         return;
     };
     defer allocator.free(data);
@@ -922,11 +927,11 @@ fn transfer(intf: *Intf, id: u8, path: [*c]u8, allocator: Allocator, write: bool
             _ = c.printf("Size to Write    : %d bytes\n", @as(c_int, @intCast(length)));
             _ = c.fclose(file);
         } else {
-            c.lprintf(log.Level.err, "Error opening file %s\n", path);
+            log.print(log.Level.err, "Error opening file %s\n", .{path});
         }
         if (length > 0) {
             _ = writeArea(intf, id, &info, 0, data[0..length], allocator) catch false;
-            c.lprintf(log.Level.info, "Done");
+            log.print(log.Level.info, "Done", .{});
         }
     } else {
         _ = c.printf("Fru Size         : %d bytes\n", @as(c_int, info.size));
@@ -934,7 +939,7 @@ fn transfer(intf: *Intf, id: u8, path: [*c]u8, allocator: Allocator, write: bool
         // observable CLI behavior, but never write uninitialized bytes.
         readArea(intf, id, &info, 0, data) catch {};
         const file = c.fopen(path, "wb") orelse {
-            c.lprintf(log.Level.err, "Error opening file %s\n", path);
+            log.print(log.Level.err, "Error opening file %s\n", .{path});
             return;
         };
         defer _ = c.fclose(file);
@@ -1008,7 +1013,7 @@ fn adjustMultirecordSize(data: []const u8) ?usize {
         }
         if (c.verbose != 0) _ = c.printf(")");
         if (checksum != 0) {
-            c.lprintf(log.Level.err, "Bad checksum in Multi Records");
+            log.print(log.Level.err, "Bad checksum in Multi Records", .{});
             if (c.verbose != 0) _ = c.printf("--> FAIL");
         } else if (c.verbose != 0) {
             _ = c.printf("--> OK");
@@ -1016,7 +1021,7 @@ fn adjustMultirecordSize(data: []const u8) ?usize {
         const length = @as(usize, header[2]) + 5;
         if (length > data.len - offset) {
             if (c.verbose != 0) _ = c.printf("\n");
-            c.lprintf(log.Level.err, "Bad checksum in Multi Records");
+            log.print(log.Level.err, "Bad checksum in Multi Records", .{});
             return null;
         }
         if (c.verbose > 1 and checksum == 0) {
@@ -1027,25 +1032,25 @@ fn adjustMultirecordSize(data: []const u8) ?usize {
         if (c.verbose != 0) _ = c.printf("\n");
         offset += length;
         if (checksum != 0) {
-            c.lprintf(log.Level.debug, "Size of multirec: %lu\n", @as(c_ulong, @intCast(offset)));
+            log.print(log.Level.debug, "Size of multirec: %lu\n", .{@as(c_ulong, @intCast(offset))});
             return null;
         }
         if ((header[1] & 0x80) != 0) {
-            c.lprintf(log.Level.debug, "Size of multirec: %lu\n", @as(c_ulong, @intCast(offset)));
+            log.print(log.Level.debug, "Size of multirec: %lu\n", .{@as(c_ulong, @intCast(offset))});
             return offset;
         }
     }
-    c.lprintf(log.Level.err, "Bad checksum in Multi Records");
+    log.print(log.Level.err, "Bad checksum in Multi Records", .{});
     return null;
 }
 
 fn upgradeEkey(intf: *Intf, id: u8, filename: [*c]u8, allocator: Allocator) c_int {
     const location = multirecordLocation(intf, id) orelse {
-        c.lprintf(log.Level.err, "Failed to get multirec location from FRU.");
+        log.print(log.Level.err, "Failed to get multirec location from FRU.", .{});
         return -1;
     };
-    c.lprintf(log.Level.debug, "FRU Size        : %lu\n", @as(c_ulong, @intCast(location.size)));
-    c.lprintf(log.Level.debug, "Multi Rec offset: %lu\n", @as(c_ulong, @intCast(location.offset)));
+    log.print(log.Level.debug, "FRU Size        : %lu\n", .{@as(c_ulong, @intCast(location.size))});
+    log.print(log.Level.debug, "Multi Rec offset: %lu\n", .{@as(c_ulong, @intCast(location.offset))});
 
     const file = c.fopen(filename, "rb");
     var file_length: usize = 0;
@@ -1059,53 +1064,53 @@ fn upgradeEkey(intf: *Intf, id: u8, filename: [*c]u8, allocator: Allocator) c_in
             if (length >= 0) file_length = @intCast(length);
         }
     }
-    c.lprintf(log.Level.debug, "File Size = %lu\n", @as(c_ulong, @intCast(file_length)));
-    c.lprintf(log.Level.debug, "Len = %u\n", @as(c_uint, @intCast(header_length)));
+    log.print(log.Level.debug, "File Size = %lu\n", .{@as(c_ulong, @intCast(file_length))});
+    log.print(log.Level.debug, "Len = %u\n", .{@as(c_uint, @intCast(header_length))});
     if (header_length != 8) {
         _ = c.printf("Error with file %s in getting size\n", filename);
     } else if (header[0] != 1) {
         _ = c.printf("Unknown FRU header version %02x.\n", @as(c_uint, header[0]));
     }
     if (header_length != 8 or header[0] != 1 or file_length < @as(usize, header[5]) * 8) {
-        c.lprintf(log.Level.err, "Failed to get multirec size from file '%s'.", filename);
+        log.print(log.Level.err, "Failed to get multirec size from file '%s'.", .{filename});
         return -1;
     }
     const file_offset = @as(usize, header[5]) * 8;
     const size = file_length - file_offset;
     const data = allocator.alloc(u8, size) catch {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return -1;
     };
     defer allocator.free(data);
 
     const source = c.fopen(filename, "rb") orelse {
-        c.lprintf(log.Level.err, "Error opening file '%s': %i -> %s.", filename, c.__errno_location().*, c.strerror(c.__errno_location().*));
-        c.lprintf(log.Level.err, "Failed to get multirec from file '%s'.", filename);
+        log.print(log.Level.err, "Error opening file '%s': %i -> %s.", .{ filename, c.__errno_location().*, c.strerror(c.__errno_location().*) });
+        log.print(log.Level.err, "Failed to get multirec from file '%s'.", .{filename});
         return -1;
     };
     defer _ = c.fclose(source);
     if (c.fseek(source, @intCast(file_offset), c.SEEK_SET) != 0 or c.fread(data.ptr, size, 1, source) != 1) {
-        c.lprintf(log.Level.err, "Error in file '%s'.", filename);
-        c.lprintf(log.Level.err, "Failed to get multirec from file '%s'.", filename);
+        log.print(log.Level.err, "Error in file '%s'.", .{filename});
+        log.print(log.Level.err, "Failed to get multirec from file '%s'.", .{filename});
         return -1;
     }
     const used = adjustMultirecordSize(data) orelse {
-        c.lprintf(log.Level.err, "Failed to adjust size from buffer.");
+        log.print(log.Level.err, "Failed to adjust size from buffer.", .{});
         return -1;
     };
     var info = location.info;
     if (writeArea(intf, id, &info, location.offset, data[0..used], allocator) catch false) {
-        c.lprintf(log.Level.err, "Failed to write FRU area.");
+        log.print(log.Level.err, "Failed to write FRU area.", .{});
         return -1;
     }
-    c.lprintf(log.Level.info, "Done upgrading Ekey.");
+    log.print(log.Level.info, "Done upgrading Ekey.", .{});
     return 0;
 }
 
 fn upgradeEkeyHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "fru upgEkey <fru id> <fru file>");
-    c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
-    c.lprintf(log.Level.notice, "Example: ipmitool fru upgEkey 0 /root/fru.bin");
+    log.print(log.Level.notice, "fru upgEkey <fru id> <fru file>", .{});
+    log.print(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.", .{});
+    log.print(log.Level.notice, "Example: ipmitool fru upgEkey 0 /root/fru.bin", .{});
 }
 
 fn kontronGet(body: []const u8, argc: c_int, argv: [*c][*c]u8) void {
@@ -1118,7 +1123,7 @@ fn kontronGet(body: []const u8, argc: c_int, argv: [*c][*c]u8) void {
     _ = c.printf("Kontron OEM Information Record\n");
     var instance: u8 = 0;
     if (c.str2uchar(argv[7], &instance) != 0) {
-        c.lprintf(log.Level.err, "Instance argument '%s' is either invalid or out of range.", argv[7]);
+        log.print(log.Level.err, "Instance argument '%s' is either invalid or out of range.", .{argv[7]});
         return;
     }
     const version = body[4];
@@ -1153,19 +1158,19 @@ fn kontronGet(body: []const u8, argc: c_int, argv: [*c][*c]u8) void {
 
 fn getMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator: Allocator) c_int {
     const location = multirecordLocation(intf, id) orelse return 0xffff;
-    c.lprintf(log.Level.debug, "FRU Size        : %lu\n", @as(c_ulong, @intCast(location.size)));
-    c.lprintf(log.Level.debug, "Multi Rec offset: %lu\n", @as(c_ulong, @intCast(location.offset)));
+    log.print(log.Level.debug, "FRU Size        : %lu\n", .{@as(c_ulong, @intCast(location.size))});
+    log.print(log.Level.debug, "Multi Rec offset: %lu\n", .{@as(c_ulong, @intCast(location.offset))});
 
     // The C command separately queries the inventory size after locating
     // the multirecord area. Preserve both requests for wire-level parity.
     var info = getInfo(intf, id) orelse return -1;
-    c.lprintf(log.Level.debug, "fru.size = %d bytes (accessed by %s)", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    log.print(log.Level.debug, "fru.size = %d bytes (accessed by %s)", .{ @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes") });
     if (info.size == 0) {
-        c.lprintf(log.Level.err, " Invalid FRU size %d", @as(c_int, info.size));
+        log.print(log.Level.err, " Invalid FRU size %d", .{@as(c_int, info.size)});
         return -1;
     }
     const data = allocator.alloc(u8, @as(usize, info.size) + 1) catch {
-        c.lprintf(log.Level.err, " Out of memory!");
+        log.print(log.Level.err, " Out of memory!", .{});
         return -1;
     };
     defer allocator.free(data);
@@ -1188,17 +1193,17 @@ fn getMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator:
             var supplied: u32 = 0;
             if (argc >= 3 and equals(argv[2], "oem")) {
                 if (argc <= 3) {
-                    c.lprintf(log.Level.err, "oem iana <record> <format>");
+                    log.print(log.Level.err, "oem iana <record> <format>", .{});
                     break;
                 }
                 if (c.str2uint(argv[3], &supplied) != 0) {
-                    c.lprintf(log.Level.err, "Given IANA '%s' is invalid.", argv[3]);
+                    log.print(log.Level.err, "Given IANA '%s' is invalid.", .{argv[3]});
                     break;
                 }
-                c.lprintf(log.Level.debug, "using iana: %d", @as(c_int, @bitCast(supplied)));
+                log.print(log.Level.debug, "using iana: %d", .{@as(c_int, @bitCast(supplied))});
             }
             if (supplied == iana) {
-                c.lprintf(log.Level.debug, "Matching record found");
+                log.print(log.Level.debug, "Matching record found", .{});
                 if (iana == c.IPMI_OEM_KONTRON) {
                     kontronGet(body, argc, argv);
                 } else {
@@ -1271,7 +1276,7 @@ fn kontronEdit(body: []u8, argc: c_int, argv: [*c][*c]u8) bool {
     }
     var record_id: u8 = 0;
     if (c.str2uchar(argv[4], &record_id) != 0) {
-        c.lprintf(log.Level.err, "Record ID argument '%s' is either invalid or out of range.", argv[4]);
+        log.print(log.Level.err, "Record ID argument '%s' is either invalid or out of range.", .{argv[4]});
         return false;
     }
     if (record_id != 3 or body.len < 6 or body[3] != 3) return false;
@@ -1284,7 +1289,7 @@ fn kontronEdit(body: []u8, argc: c_int, argv: [*c][*c]u8) bool {
     }
     var format: u8 = 0;
     if (c.str2uchar(argv[5], &format) != 0) {
-        c.lprintf(log.Level.err, "Format argument '%s' is either invalid or out of range.", argv[5]);
+        log.print(log.Level.err, "Format argument '%s' is either invalid or out of range.", .{argv[5]});
         return false;
     }
     _ = c.printf("   Kontron OEM Information Record\n");
@@ -1295,7 +1300,7 @@ fn kontronEdit(body: []u8, argc: c_int, argv: [*c][*c]u8) bool {
     }
     var instance: u8 = 0;
     if (c.str2uchar(argv[7], &instance) != 0) {
-        c.lprintf(log.Level.err, "Instance argument '%s' is either invalid or out of range.", argv[7]);
+        log.print(log.Level.err, "Instance argument '%s' is either invalid or out of range.", .{argv[7]});
         return false;
     }
     const count = body[5];
@@ -1338,14 +1343,14 @@ fn kontronEdit(body: []u8, argc: c_int, argv: [*c][*c]u8) bool {
 
 fn editMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator: Allocator) c_int {
     const location = multirecordLocation(intf, id) orelse return 0xffff;
-    c.lprintf(log.Level.debug, "FRU Size        : %lu\n", @as(c_ulong, @intCast(location.size)));
-    c.lprintf(log.Level.debug, "Multi Rec offset: %lu\n", @as(c_ulong, @intCast(location.offset)));
+    log.print(log.Level.debug, "FRU Size        : %lu\n", .{@as(c_ulong, @intCast(location.size))});
+    log.print(log.Level.debug, "Multi Rec offset: %lu\n", .{@as(c_ulong, @intCast(location.offset))});
     var info = getInfo(intf, id) orelse return -1;
-    c.lprintf(log.Level.debug, "fru.size = %d bytes (accessed by %s)", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    log.print(log.Level.debug, "fru.size = %d bytes (accessed by %s)", .{ @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes") });
     if (info.size == 0 or location.offset >= info.size) return -1;
 
     const image = allocator.alloc(u8, info.size) catch {
-        c.lprintf(log.Level.err, " Out of memory!");
+        log.print(log.Level.err, " Out of memory!", .{});
         return -1;
     };
     defer allocator.free(image);
@@ -1363,17 +1368,17 @@ fn editMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator
             var supplied_iana: u32 = c.IPMI_OEM_PICMG;
             if (argc > 2 and equals(argv[2], "oem")) {
                 if (argc <= 3) {
-                    c.lprintf(log.Level.err, "oem iana <record> <format> [<args>]");
+                    log.print(log.Level.err, "oem iana <record> <format> [<args>]", .{});
                     break;
                 }
                 if (c.str2uint(argv[3], &supplied_iana) != 0) {
-                    c.lprintf(log.Level.err, "Given IANA '%s' is invalid.", argv[3]);
+                    log.print(log.Level.err, "Given IANA '%s' is invalid.", .{argv[3]});
                     break;
                 }
-                c.lprintf(log.Level.debug, "using iana: %d", @as(c_int, @bitCast(supplied_iana)));
+                log.print(log.Level.debug, "using iana: %d", .{@as(c_int, @bitCast(supplied_iana))});
             }
             if (iana == supplied_iana) {
-                c.lprintf(log.Level.debug, "Matching record found");
+                log.print(log.Level.debug, "Matching record found", .{});
                 const changed = if (iana == c.IPMI_OEM_PICMG)
                     picmgEdit(body)
                 else if (iana == c.IPMI_OEM_KONTRON)
@@ -1399,7 +1404,7 @@ fn editMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator
 }
 
 fn getHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "fru get <fruid> oem iana <record> <format> <args> - limited OEM support");
+    log.print(log.Level.notice, "fru get <fruid> oem iana <record> <format> <args> - limited OEM support", .{});
 }
 
 fn fieldEditHeader(intf: *Intf, id: u8, info: *Info) ?[8]u8 {
@@ -1625,31 +1630,31 @@ fn editField(intf: *Intf, id: u8, kind: u8, field_index: u8, new_value: [*c]u8, 
 }
 
 fn editHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "fru edit <fruid> field <section> <index> <string> - edit FRU string");
-    c.lprintf(log.Level.notice, "fru edit <fruid> oem iana <record> <format> <args> - limited OEM support");
+    log.print(log.Level.notice, "fru edit <fruid> field <section> <index> <string> - edit FRU string", .{});
+    log.print(log.Level.notice, "fru edit <fruid> oem iana <record> <format> <args> - limited OEM support", .{});
 }
 
 fn internalUseHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "fru internaluse <fru id> info             - get internal use area size");
-    c.lprintf(log.Level.notice, "fru internaluse <fru id> print            - print internal use area in hex");
-    c.lprintf(log.Level.notice, "fru internaluse <fru id> read  <fru file> - read internal use area to file");
-    c.lprintf(log.Level.notice, "fru internaluse <fru id> write <fru file> - write internal use area from file");
+    log.print(log.Level.notice, "fru internaluse <fru id> info             - get internal use area size", .{});
+    log.print(log.Level.notice, "fru internaluse <fru id> print            - print internal use area in hex", .{});
+    log.print(log.Level.notice, "fru internaluse <fru id> read  <fru file> - read internal use area to file", .{});
+    log.print(log.Level.notice, "fru internaluse <fru id> write <fru file> - write internal use area from file", .{});
 }
 
 fn readHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "fru read <fru id> <fru file>");
-    c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
-    c.lprintf(log.Level.notice, "Example: ipmitool fru read 0 /root/fru.bin");
+    log.print(log.Level.notice, "fru read <fru id> <fru file>", .{});
+    log.print(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.", .{});
+    log.print(log.Level.notice, "Example: ipmitool fru read 0 /root/fru.bin", .{});
 }
 
 fn writeHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "fru write <fru id> <fru file>");
-    c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
-    c.lprintf(log.Level.notice, "Example: ipmitool fru write 0 /root/fru.bin");
+    log.print(log.Level.notice, "fru write <fru id> <fru file>", .{});
+    log.print(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.", .{});
+    log.print(log.Level.notice, "Example: ipmitool fru write 0 /root/fru.bin", .{});
 }
 
 fn fruHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "FRU Commands:  print read write upgEkey edit internaluse get");
+    log.print(log.Level.notice, "FRU Commands:  print read write upgEkey edit internaluse get", .{});
 }
 
 fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
@@ -1668,7 +1673,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     }
     if (argc >= 3 and equals(argv[0], "edit") and equals(argv[2], "field")) {
         if (argc != 6) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             editHelp();
             return -1;
         }
@@ -1679,7 +1684,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     }
     if (argc >= 1 and equals(argv[0], "edit")) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             editHelp();
             return -1;
         }
@@ -1687,7 +1692,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         if (c.is_fru_id(argv[1], &id) != 0) return -1;
         if (c.verbose != 0) _ = c.printf("FRU ID           : %d\n", @as(c_int, id));
         if (argc >= 3 and !equals(argv[2], "oem")) {
-            c.lprintf(log.Level.err, "Invalid command: %s", argv[2]);
+            log.print(log.Level.err, "Invalid command: %s", .{argv[2]});
             editHelp();
             return -1;
         }
@@ -1699,7 +1704,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             return 0;
         }
         if (argc < 2) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             getHelp();
             return -1;
         }
@@ -1707,7 +1712,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         if (c.is_fru_id(argv[1], &id) != 0) return -1;
         if (c.verbose != 0) _ = c.printf("FRU ID           : %d\n", @as(c_int, id));
         if (argc >= 3 and !equals(argv[2], "oem")) {
-            c.lprintf(log.Level.err, "Invalid command: %s", argv[2]);
+            log.print(log.Level.err, "Invalid command: %s", .{argv[2]});
             getHelp();
             return -1;
         }
@@ -1719,7 +1724,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             return 0;
         }
         if (argc < 3) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             upgradeEkeyHelp();
             return -1;
         }
@@ -1744,7 +1749,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         return printAll(in, std.heap.page_allocator);
     if (argc > 1 and (equals(argv[0], "print") or equals(argv[0], "list"))) {
         if (equals(argv[1], "help")) {
-            c.lprintf(log.Level.notice, "fru print [fru id] - print information about FRU(s)");
+            log.print(log.Level.notice, "fru print [fru id] - print information about FRU(s)", .{});
             return 0;
         }
         var id: u8 = 0;
@@ -1753,10 +1758,10 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     }
     if (!equals(argv[0], "read") and !equals(argv[0], "write")) {
         if (equals(argv[0], "internaluse")) {
-            c.lprintf(log.Level.err, "Either unknown command or not enough parameters given.");
+            log.print(log.Level.err, "Either unknown command or not enough parameters given.", .{});
             internalUseHelp();
         } else {
-            c.lprintf(log.Level.err, "Invalid FRU command: %s", argv[0]);
+            log.print(log.Level.err, "Invalid FRU command: %s", .{argv[0]});
             fruHelp();
         }
         return -1;
@@ -1768,7 +1773,7 @@ fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         return 0;
     }
     if (argc < 3) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         if (write) writeHelp() else readHelp();
         return -1;
     }
@@ -1814,16 +1819,16 @@ const CBloc = extern struct {
 
 fn filenameStatus(filename: [*c]const u8) callconv(.c) c_int {
     if (filename == null) {
-        c.lprintf(log.Level.err, "ERROR: NULL pointer passed.");
+        log.print(log.Level.err, "ERROR: NULL pointer passed.", .{});
         return -1;
     }
     const length = c.strlen(filename);
     if (length < 1) {
-        c.lprintf(log.Level.err, "File/path is invalid.");
+        log.print(log.Level.err, "File/path is invalid.", .{});
         return -2;
     }
     if (length >= 512) {
-        c.lprintf(log.Level.err, "File/path must be shorter than 512 bytes.");
+        log.print(log.Level.err, "File/path must be shorter than 512 bytes.", .{});
         return -3;
     }
     return 0;
@@ -1867,7 +1872,7 @@ fn buildFruBloc(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8) 
     for (blocks.items) |block| {
         const memory = c.malloc(@sizeOf(CBloc)) orelse {
             freeFruBloc(@ptrCast(first));
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             return null;
         };
         const node: *CBloc = @ptrCast(@alignCast(memory));
@@ -1888,7 +1893,7 @@ fn readFruArea(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8, o
     var info = layout.fromC();
     defer layout.update(&info);
     if (offset > info.size) {
-        c.lprintf(log.Level.err, "Read FRU Area offset incorrect: %d > %d", @as(c_uint, offset), @as(c_uint, info.size));
+        log.print(log.Level.err, "Read FRU Area offset incorrect: %d > %d", .{ @as(c_uint, offset), @as(c_uint, info.size) });
         return -1;
     }
     const count: usize = @min(@as(usize, length), @as(usize, info.size) - offset);
@@ -1908,7 +1913,7 @@ fn readFruAreaSection(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id
     if (info.access and section_read_max > 16) section_read_max = 16;
     info.max_read = section_read_max;
     if (offset > info.size) {
-        c.lprintf(log.Level.err, "Read FRU Area offset incorrect: %d > %d", @as(c_uint, offset), @as(c_uint, info.size));
+        log.print(log.Level.err, "Read FRU Area offset incorrect: %d > %d", .{ @as(c_uint, offset), @as(c_uint, info.size) });
         return -1;
     }
     const count: usize = @min(@as(usize, length), @as(usize, info.size) - offset);
@@ -1926,11 +1931,11 @@ fn writeFruArea(intf: [*c]c.struct_ipmi_intf, fru: ?*c.struct_fru_info, id: u8, 
     var info = layout.fromC();
     defer layout.update(&info);
     if (destination_offset > info.size or length > info.size - destination_offset) {
-        c.lprintf(log.Level.@"error", "Return error");
+        log.print(log.Level.@"error", "Return error", .{});
         return -1;
     }
     if (info.access and ((destination_offset | length) & 1) != 0) {
-        c.lprintf(log.Level.@"error", "Odd offset or length specified");
+        log.print(log.Level.@"error", "Odd offset or length specified", .{});
         return -1;
     }
     const bytes: [*]u8 = @ptrCast(data);
