@@ -572,6 +572,27 @@ step degrades to the unit tests only, because there is nothing to check.
 is active: once against the default binary and once against the swapped one,
 matching how `test-golden` works.
 
+## Serial Basic and Terminal modes
+
+`zig build test-serial -Dzig-modules=serial-basic,serial-terminal` uses fresh
+Linux PTYs to run each real CLI against the retained C implementation and the
+Zig implementation. `tests/transport/serial_test.py` checks exit status,
+stdout, stderr and **every unescaped request byte**, rather than just unit
+testing an encoder. The device emulator covers both modes' framing and special
+characters, unrelated packets, invalid checksums/sequences, malformed
+escape/hex data, retries, timeouts, open errors, one- and two-hop IPMB bridging,
+and the system-interface Get Message queue. All bridged cases must complete
+successfully, not merely agree on an error. `zig build test-serial-unit` runs
+the focused Zig framing, size-limit and response-validation tests.
+
+The PTY step also runs under `zig build test` when the serial plugin is enabled
+on Linux. The C oracle remains in the repository: selecting one serial Zig
+module drops only its matching `.c`, and the PTY step builds the other
+implementation as needed to keep the comparison independent of the selection.
+Neither suite requires a serial device or elevated privileges. If readline or
+OpenSSL development headers are unavailable, run with
+`-Dipmishell=false -Dintf-lanplus=false -Dopenssl=false -Dinternal-md5=true`.
+
 ## How a port PR uses this as evidence
 
 A PR that ports any part of `lan`, `lanplus`, `ipmi_intf` or `helper.c`'s

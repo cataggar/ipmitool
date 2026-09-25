@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <paths.h>
 #include <signal.h>
+#include <poll.h>
+#include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
