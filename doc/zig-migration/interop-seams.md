@@ -219,8 +219,8 @@ validate Get FRU Info and Read FRU Data response lengths before accessing
 them, reject a zero-byte read, and propagate truncation errors. No-response
 and completion-code messages, including the distinct `0xc3` timeout return
 value of 1, stay unchanged. The SPD printer's stdout formatting now uses a
-Zig 0.16 streaming writer: it first checks `fflush(stdout)` to order preceding
-C caller output, checks it again before writing after FRU callbacks, and
+Zig 0.16 streaming writer: it calls the shared `util/stdout.zig` `trySyncC()`
+to check `fflush(stdout)` before output and again after FRU callbacks, then
 checks both Zig writes and the final writer flush.
 Failures log a `LOG_ERR` message distinguishing C preflush, C flush after
 FRU callbacks, Zig write, and Zig final-flush phases, then return `-1`

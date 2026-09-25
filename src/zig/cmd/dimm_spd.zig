@@ -13,6 +13,7 @@ const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("../intf/intf.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const ValStr = @import("../util/table_types.zig").ValStr;
 const tables = @import("dimm_spd_tables.zig");
 
@@ -182,20 +183,11 @@ fn writeSpdPrint(writer: *std.Io.Writer, spd: []const u8, spd_data: [*c]u8, len:
     return 0;
 }
 
-const CStdoutFlushError = error{CStdoutFlushFailed};
-const SpdOutputError = std.Io.Writer.Error || CStdoutFlushError;
-
-fn checkCStdoutFlush(result: c_int) CStdoutFlushError!void {
-    if (result != 0) return error.CStdoutFlushFailed;
-}
-
-fn flushCStdout() CStdoutFlushError!void {
-    try checkCStdoutFlush(c.fflush(c.stdout));
-}
+const SpdOutputError = error{CStdoutFlushFailed} || std.Io.Writer.Error;
 
 fn emitStdout(comptime write: anytype, args: anytype) c_int {
     // C callers may have buffered output on the same file descriptor.
-    flushCStdout() catch {
+    stdout_io.trySyncC() catch {
         log.print(c.LOG_ERR, "SPD stdout C preflush failed (errno %d)", .{std.c._errno().*});
         return -1;
     };
@@ -232,17 +224,17 @@ fn writeSpdPrintFru(writer: *std.Io.Writer, intf: *Intf, id: u8) SpdOutputError!
     req.msg.data = &msg_data;
     req.msg.data_len = 1;
     var rsp: *Response = sendrecv(intf, &req) orelse {
-        try flushCStdout();
+        try stdout_io.trySyncC();
         try writer.writeAll(" Device not present (No Response)\n");
         return -1;
     };
     if (rsp.ccode != 0) {
-        try flushCStdout();
+        try stdout_io.trySyncC();
         try writer.print(" Device not present ({s})\n", .{cText(c.val2str(rsp.ccode, c.completion_code_vals))});
         return -1;
     }
     if (rsp.data_len < 3) {
-        try flushCStdout();
+        try stdout_io.trySyncC();
         try writer.writeAll(" Not enough buffer size");
         return -1;
     }
@@ -257,7 +249,7 @@ fn writeSpdPrintFru(writer: *std.Io.Writer, intf: *Intf, id: u8) SpdOutputError!
         return -1;
     }
     const spd = std.heap.c_allocator.alloc(u8, fru_size) catch {
-        try flushCStdout();
+        try stdout_io.trySyncC();
         try writer.print(" Unable to malloc memory for spd array of size={d}\n", .{@as(c_int, @intCast(fru_size))});
         return -1;
     };
@@ -272,30 +264,30 @@ fn writeSpdPrintFru(writer: *std.Io.Writer, intf: *Intf, id: u8) SpdOutputError!
         msg_data[2] = @truncate(offset >> 8);
         msg_data[3] = 16;
         rsp = sendrecv(intf, &req) orelse {
-            try flushCStdout();
+            try stdout_io.trySyncC();
             try writer.writeAll(" Device not present (No Response)\n");
             return -1;
         };
         if (rsp.ccode != 0) {
-            try flushCStdout();
+            try stdout_io.trySyncC();
             try writer.print(" Device not present ({s})\n", .{cText(c.val2str(rsp.ccode, c.completion_code_vals))});
             return if (rsp.ccode == 0xc3) 1 else -1;
         }
         if (rsp.data_len < 1) {
-            try flushCStdout();
+            try stdout_io.trySyncC();
             try writer.writeAll(" Not enough buffer size");
             return -1;
         }
         const count: usize = rsp.data[0];
         if (count == 0 or count > @as(usize, @intCast(rsp.data_len - 1)) or count > fru_size - offset) {
-            try flushCStdout();
+            try stdout_io.trySyncC();
             try writer.writeAll(" Not enough buffer size");
             return -1;
         }
         @memcpy(spd[offset..][0..count], rsp.data[1..][0..count]);
         offset += count;
     }
-    try flushCStdout();
+    try stdout_io.trySyncC();
     return writeSpdPrint(writer, spd, @ptrCast(spd.ptr), @intCast(offset), c.verbose != 0);
 }
 
@@ -448,11 +440,4 @@ test "SPD decoder stdout FRU failure message propagates writer errors" {
     try std.testing.expectError(error.WriteFailed, writeSpdPrintFru(&failing, &intf, 1));
     var late = std.Io.Writer.fixed(storage[0 .. writer.buffered().len - 1]);
     try std.testing.expectError(error.WriteFailed, writeSpdPrintFru(&late, &intf, 1));
-}
-
-test "SPD decoder stdout tags C flush failures separately from Zig write failures" {
-    try checkCStdoutFlush(0);
-    try std.testing.expectError(error.CStdoutFlushFailed, checkCStdoutFlush(-1));
-    var failing: std.Io.Writer = .failing;
-    try std.testing.expectError(error.WriteFailed, printSerial(&failing, &.{ 0, 1, 2, 3 }));
 }
