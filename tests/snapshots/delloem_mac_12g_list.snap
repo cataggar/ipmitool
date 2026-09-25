@@ -1,0 +1,30 @@
+#!golden 1
+#!case delloem_mac_12g_list
+#!section exit
+0
+#!section stdout
+
+System LOMs
+NIC Number\tMAC Address\t\tStatus
+
+1\t\t00:12:34:56:78:9a\tEnabled
+2\t\taa:bb:cc:dd:ee:ff\tEnabled
+
+iDRAC7 MAC Address 02:04:06:08:0a:0c
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 da 00 00 00 00
+< rule=lom_header ccode=0x00 len=2 data=11 10
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 da 00 00 00 08
+< rule=lom_fragment0 ccode=0x00 len=9 data=11 00 01 00 12 34 56 78 9a
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 da 00 00 08 08
+< rule=lom_fragment1 ccode=0x00 len=9 data=11 00 02 aa bb cc dd ee ff
+> netfn=0x30 lun=0x00 cmd=0xc9 target_cmd=0x00 data=01
+< rule=virtual_mac ccode=0x00 len=13 data=00 00 00 00 00 00 00 02 04 06 08 0a 0c
+bye

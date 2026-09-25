@@ -1,0 +1,37 @@
+#!golden 1
+#!case delloem_lan_help
+#!section exit
+0
+#!section stdout
+#!section stderr
+
+   lan set <Mode>
+      sets the NIC Selection Mode :
+          on iDRAC12g OR iDRAC13g  :
+              dedicated, shared with lom1, shared with lom2,shared with lom3,shared
+              with lom4,shared with failover lom1,shared with failover lom2,shared
+              with failover lom3,shared with failover lom4,shared with Failover all
+              loms, shared with Failover None).
+          on other systems :
+              dedicated, shared, shared with failover lom2,
+              shared with Failover all loms.
+
+   lan get\x20
+          on iDRAC12g or iDRAC13g  :
+              returns the current NIC Selection Mode (dedicated, shared with lom1, shared
+              with lom2, shared with lom3, shared with lom4,shared with failover lom1,
+              shared with failover lom2,shared with failover lom3,shared with failover
+              lom4,shared with Failover all loms,shared with Failover None).
+          on other systems :
+              dedicated, shared, shared with failover,
+              lom2, shared with Failover all loms.
+
+   lan get active
+      returns the current active NIC (dedicated, LOM1, LOM2, LOM3, LOM4).
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

@@ -1,0 +1,200 @@
+# iDRAC7: LCD, fragmented 11g NIC list, NIC selection, power and drive LEDs.
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd 02 00
+  data @pad 10 0x00 10
+end
+
+respond lcd_support
+  netfn 0x06
+  cmd 0x59
+  match 00 e7 00 00
+  data 11 01 00 00 00
+end
+
+respond lcd_config
+  netfn 0x06
+  cmd 0x59
+  match 00 c2 00 00
+  # rev, mode (system watts), qualifier (BTU), capabilities, error display
+  data 11 00 01 00 00 01 00 00 00 00 00 01 00
+end
+
+respond lcd_caps
+  netfn 0x06
+  cmd 0x59
+  match 00 cf 00 00
+  data 11 01 01 3e 00 00 00
+end
+
+respond lcd_text0
+  netfn 0x06
+  cmd 0x59
+  match 00 c1 00 00
+  data 11 00 00 1e 44 65 6c 6c 20 52 61 63 6b 20 4c 43 44 20
+end
+
+respond lcd_text1
+  netfn 0x06
+  cmd 0x59
+  match 00 c1 01 00
+  data 11 01 66 72 61 67 6d 65 6e 74 20 74 65 78 74 21 21 21
+end
+
+respond lcd_set
+  netfn 0x06
+  cmd 0x58
+end
+
+respond lom_header
+  netfn 0x06
+  cmd 0x59
+  match 00 da 00 00 00 00
+  data 11 10
+end
+
+respond lom_fragment0
+  netfn 0x06
+  cmd 0x59
+  match 00 da 00 00 00 08
+  # rev, two bitfield bytes, 6-byte MAC
+  data 11 00 01 00 12 34 56 78 9a
+end
+
+respond lom_fragment1
+  netfn 0x06
+  cmd 0x59
+  match 00 da 00 00 08 08
+  data 11 00 02 aa bb cc dd ee ff
+end
+
+respond virtual_mac
+  netfn 0x30
+  cmd 0xc9
+  match 01
+  # zero chassis MAC, nonzero server MAC
+  data 00 00 00 00 00 00 00 02 04 06 08 0a 0c
+end
+
+respond nic_get
+  netfn 0x30
+  cmd 0x29
+  data 02 03
+end
+
+respond nic_set
+  netfn 0x30
+  cmd 0x28
+end
+
+respond active_status
+  netfn 0x30
+  cmd 0xc1
+  match 00 00 00
+  data 02 00
+end
+
+respond active_link
+  netfn 0x30
+  cmd 0xc1
+  match 01 00 00
+  data 00 01
+end
+
+respond power_cap_status
+  netfn 0x30
+  cmd 0xba
+  match 01 ff
+  data 03
+end
+
+respond power_cap_toggle
+  netfn 0x30
+  cmd 0xba
+  match 00
+end
+
+respond bmc_time
+  netfn 0x0a
+  cmd 0x48
+  data 80 ee 36 65
+end
+
+respond power_status
+  netfn 0x30
+  cmd 0x9c
+  match 07 01
+  data 80 ee 36 65 40 42 0f 00 80 ee 36 65 80 ee 36 65 7b 00 80 ee 36 65 90 01
+end
+
+respond clear
+  netfn 0x30
+  cmd 0x9d
+end
+
+respond headroom
+  netfn 0x30
+  cmd 0xbb
+  data 96 00 fa 00
+end
+
+respond instant
+  netfn 0x30
+  cmd 0xb3
+  match 0a 00
+  data 2c 01 7b 00 00 00 00
+end
+
+respond avg_history
+  netfn 0x06
+  cmd 0x59
+  match 00 eb 00 00
+  data eb 64 00 c8 00 2c 01 90 01
+end
+
+respond peak_history
+  netfn 0x06
+  cmd 0x59
+  match 00 ec 00 00
+  data ec 78 00 dc 00 40 01 a4 01 80 ee 36 65 80 ee 36 65 80 ee 36 65 80 ee 36 65
+end
+
+respond min_history
+  netfn 0x06
+  cmd 0x59
+  match 00 ed 00 00
+  data ed 32 00 96 00 fa 00 5e 01 80 ee 36 65 80 ee 36 65 80 ee 36 65 80 ee 36 65
+end
+
+respond power_budget
+  netfn 0x06
+  cmd 0x59
+  match 00 ea 00 00
+  data ea 2c 01 00 f4 01 c8 00 01 00 58 02 00 00 00 00
+end
+
+respond set_sysinfo
+  netfn 0x06
+  cmd 0x58
+end
+
+respond led_supported
+  netfn 0x30
+  cmd 0xd5
+  match 01 00
+  data 00
+end
+
+respond led_mapping
+  netfn 0x30
+  cmd 0xd5
+  match 01 07
+  data 00 00 00 00 00 00 00 03 05
+end
+
+respond led_set
+  netfn 0x30
+  cmd 0xd5
+  match 00 04
+end

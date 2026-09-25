@@ -1,0 +1,28 @@
+#!golden 1
+#!case delloem_mac_10g_list
+#!section exit
+0
+#!section stdout
+
+System LOMs
+NIC Number\tMAC Address
+
+0\t\t00:11:22:33:44:55
+1\t\t66:77:88:99:aa:bb
+
+DRAC MAC Address 08:07:06:05:04:03
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 cb 00 00
+< rule=lom10 ccode=0x00 len=14 data=11 02 00 11 22 33 44 55 66 77 88 99 aa bb
+> netfn=0x30 lun=0x00 cmd=0xc9 target_cmd=0x00 data=01
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 05 00 00
+< rule=lan_mac ccode=0x00 len=7 data=11 08 07 06 05 04 03
+bye

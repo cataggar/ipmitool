@@ -1,0 +1,52 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data @pad 10 0x00 10
+end
+respond lcd_support
+  netfn 0x06
+  cmd 0x59
+  match 00 e7
+  data 11 01 00 00 00
+end
+respond lcd_config_error
+  netfn 0x06
+  cmd 0x59
+  match 00 c2
+  ccode 0xc1
+end
+respond lom_header_bad
+  netfn 0x06
+  cmd 0x59
+  match 00 da
+  ccode 0xc9
+end
+respond nic_get_bad
+  netfn 0x30
+  cmd 0x29
+  ccode 0xc9
+end
+respond led_supported
+  netfn 0x30
+  cmd 0xd5
+  match 01 00
+  data 00
+end
+respond led_mapping_bad
+  netfn 0x30
+  cmd 0xd5
+  match 01 07
+  ccode 0xc9
+end
+respond power_license
+  netfn 0x30
+  cmd 0xba
+  ccode 0x6f
+end
+respond get_budget_license
+  netfn 0x06
+  cmd 0x59
+  match 00 ea
+  ccode 0x6f
+end

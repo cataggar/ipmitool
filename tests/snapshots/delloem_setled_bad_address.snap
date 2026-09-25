@@ -1,0 +1,21 @@
+#!golden 1
+#!case delloem_setled_bad_address
+#!section exit
+1
+#!section stdout
+#!section stderr
+
+   setled <b:d.f> <state..>
+      Set backplane LED state
+      b:d.f = PCI Bus:Device.Function of drive (lspci format)
+      state = present|online|hotspare|identify|rebuilding|
+              fault|predict|critical|failed
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x30 lun=0x00 cmd=0xd5 target_cmd=0x00 data=01 00 08 00 00 00 00 00 00 00
+< rule=led_supported ccode=0x00 len=1 data=00
+bye

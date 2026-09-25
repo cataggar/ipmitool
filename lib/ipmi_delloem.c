@@ -808,7 +808,7 @@ ipmi_lcd_set_configure_command_wh(struct ipmi_intf * intf, uint32_t  mode,
 		uint16_t lcdquallifier, uint8_t errordisp)
 {
 	#define LSCC_DATA_LEN 2
-	uint8_t data[13];
+	uint8_t data[13] = {0};
 	int rc;
 	ipmi_lcd_get_configure_command_wh(intf);
 	data[0] = IPMI_DELL_LCD_CONFIG_SELECTOR;
@@ -1192,7 +1192,7 @@ ipmi_lcd_set_kvm(struct ipmi_intf * intf, char status)
 	int rc=0;
 	struct ipmi_rs * rsp = NULL;
 	struct ipmi_rq req = {0};
-	uint8_t data[5];
+	uint8_t data[5] = {0};
 	rc = ipmi_lcd_get_status_val(intf,&lcdstatus);
 	if (rc < 0) {
 		return -1;
@@ -1238,7 +1238,7 @@ ipmi_lcd_set_lock(struct ipmi_intf * intf,  char lock)
 	int rc =0;
 	struct ipmi_rs * rsp = NULL;
 	struct ipmi_rq req = {0};
-	uint8_t data[5];
+	uint8_t data[5] = {0};
 	rc = ipmi_lcd_get_status_val(intf,&lcdstatus);
 	if (rc < 0) {
 		return -1;
@@ -1573,7 +1573,7 @@ static int
 ipmi_macinfo_drac_idrac_virtual_mac(struct ipmi_intf* intf,uint8_t NicNum)
 {
 	struct ipmi_rs * rsp;
-	struct ipmi_rq req;
+	struct ipmi_rq req = {0};
 	uint8_t msg_data[30];
 	uint8_t VirtualMacAddress [MACADDRESSLENGH];
 	uint8_t input_length=0;
