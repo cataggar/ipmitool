@@ -61,6 +61,48 @@ pub const Section = enum {
 
 pub const Error = error{BadSnapshot} || std.mem.Allocator.Error;
 
+/// Preserve the full reset run while keeping its 98,000-line snapshot
+/// reviewable. Only stdout and the request log are summarized; exit and stderr
+/// remain literal. Differential runs still compare the original byte streams.
+pub fn summarize(gpa: std.mem.Allocator, snap: Snapshot) std.mem.Allocator.Error!Snapshot {
+    return .{
+        .exit = snap.exit,
+        .stdout = try summarizeSection(gpa, snap.stdout, 2, 2),
+        .stderr = snap.stderr,
+        .requests = try summarizeSection(gpa, snap.requests, 20, 5),
+    };
+}
+
+fn summarizeSection(
+    gpa: std.mem.Allocator,
+    body: []const u8,
+    first_lines: usize,
+    last_lines: usize,
+) std.mem.Allocator.Error![]const u8 {
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(body, &digest, .{});
+    const hex = std.fmt.bytesToHex(digest, .lower);
+
+    var first_end: usize = 0;
+    for (0..first_lines) |_| {
+        first_end = if (std.mem.indexOfScalarPos(u8, body, first_end, '\n')) |at| at + 1 else body.len;
+        if (first_end == body.len) break;
+    }
+    var last_start = body.len;
+    if (last_start > 0 and body[last_start - 1] == '\n') last_start -= 1;
+    for (0..last_lines) |_| {
+        last_start = if (std.mem.lastIndexOfScalar(u8, body[0..last_start], '\n')) |at| at else 0;
+        if (last_start == 0) break;
+    }
+    if (last_start > 0) last_start += 1;
+
+    return std.fmt.allocPrint(
+        gpa,
+        "bytes={d} sha256={s}\nfirst {d} lines:\n{s}...\nlast {d} lines:\n{s}",
+        .{ body.len, &hex, first_lines, body[0..first_end], last_lines, body[last_start..] },
+    );
+}
+
 pub fn render(gpa: std.mem.Allocator, case_name: []const u8, snap: Snapshot) Error![]u8 {
     var out: std.ArrayList(u8) = .empty;
     errdefer out.deinit(gpa);
@@ -76,7 +118,44 @@ pub fn render(gpa: std.mem.Allocator, case_name: []const u8, snap: Snapshot) Err
         try escapeInto(gpa, &out, body);
         if (needs_flag) try out.append(gpa, '\n');
     }
+
     return out.toOwnedSlice(gpa);
+}
+
+test "compact snapshots detect changes outside the visible samples" {
+    const gpa = std.testing.allocator;
+    var requests: std.ArrayList(u8) = .empty;
+    defer requests.deinit(gpa);
+    for (0..40) |i| try requests.print(gpa, "request-{d}\n", .{i});
+    const modified_requests = try gpa.dupe(u8, requests.items);
+    defer gpa.free(modified_requests);
+    const changed_at = std.mem.indexOf(u8, modified_requests, "request-25").?;
+    modified_requests[changed_at + "request-".len] = '9';
+
+    const original: Snapshot = .{
+        .exit = "0\n",
+        .stdout = "first\nsecond\nhidden\nmore\npenultimate\nlast\n",
+        .requests = requests.items,
+    };
+    const changed: Snapshot = .{
+        .exit = "0\n",
+        .stdout = "first\nsecond\nHIDDEN\nmore\npenultimate\nlast\n",
+        .requests = modified_requests,
+    };
+    const a = try summarize(gpa, original);
+    defer gpa.free(a.stdout);
+    defer gpa.free(a.requests);
+    const b = try summarize(gpa, changed);
+    defer gpa.free(b.stdout);
+    defer gpa.free(b.requests);
+    try std.testing.expect(!std.mem.eql(u8, a.stdout, b.stdout));
+    try std.testing.expect(!std.mem.eql(u8, a.requests, b.requests));
+    const stdout_header_end = std.mem.indexOfScalar(u8, a.stdout, '\n').? + 1;
+    const requests_header_end = std.mem.indexOfScalar(u8, a.requests, '\n').? + 1;
+    try std.testing.expectEqualStrings(a.stdout[stdout_header_end..], b.stdout[stdout_header_end..]);
+    try std.testing.expectEqualStrings(a.requests[requests_header_end..], b.requests[requests_header_end..]);
+    try std.testing.expectEqualStrings(original.exit, a.exit);
+    try std.testing.expect(std.mem.indexOf(u8, a.requests, "request-0\n") != null);
 }
 
 pub fn parse(gpa: std.mem.Allocator, path: []const u8, text: []const u8, diag: *std.ArrayList(u8)) Error!Snapshot {

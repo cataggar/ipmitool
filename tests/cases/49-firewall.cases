@@ -266,6 +266,7 @@ covers: firewall
 desc: reset walks every LUN, NetFn pair, command and subfunction mask
 args: -I dummy firewall reset channel 14
 transcript: firewall_rich.tr
+snapshot: sha256
 timeout_ms: 120000
 covers: firewall
 

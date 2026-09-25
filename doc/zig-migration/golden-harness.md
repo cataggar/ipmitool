@@ -269,6 +269,7 @@ covers: fru
 | `text`       | `<dest> <fixture.txt>` - materialize a text file in the scratch dir        |
 | `registry`   | `default` (plant the IANA PEN fixture) or `none` (test the lookup failure) |
 | `timeout_ms` | per-case wall-clock budget, default 10000                                  |
+| `snapshot`   | `full` (default) or `sha256`: hash large stdout/request streams with byte counts and visible edge samples |
 
 For `fixed_time`, the harness compiles `tests/golden/fixed_time.c` into the
 case's scratch directory and preloads it **only in the ipmitool child**. This
@@ -450,9 +451,14 @@ committing: an unreviewed snapshot update is how a real regression gets blessed.
 The firewall depth cases are in `tests/cases/49-firewall.cases`. Their model BMC
 uses different low/high command masks and channel/LUN discovery bitmaps, and
 the request log verifies reads, masked writes, force, short/denied responses,
-and validation failures. `fw_reset_all` intentionally records the full
-4-LUN × 32-NetFn-pair × 256-command reset sweep: reset sends writes even to
-unsupported pairs, and the large snapshot guards that wire behavior.
+and validation failures. `fw_reset_all` executes the full 4-LUN ×
+32-NetFn-pair × 256-command reset sweep even on unsupported pairs: the C reset
+ignores the selected LUN and NetFn when writing, so arguments cannot narrow
+it. Its compact snapshot keeps exit/stderr verbatim and records SHA-256 and
+byte count of **all** stdout and request-log bytes, plus visible first/last
+lines. This preserves full-run regression detection without committing 99,000
+repetitive lines. Differential mode still compares the raw streams byte for
+byte; `snapshot: sha256` changes only snapshot-mode storage and comparison.
 
 ## Differential mode
 
