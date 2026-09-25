@@ -1098,6 +1098,67 @@ pub fn build(b: *std.Build) void {
     b.step("test-lanplus-pong-stdout", "Check RMCP pong stdout formatting and write failures")
         .dependOn(&b.addRunArtifact(pong_stdout_unit).step);
 
+    const dump_stdout_step = b.step("test-lanplus-dump-stdout", "Compare C/Zig LAN+ dump bytes and test writer failures");
+    const dump_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.lanplus_dump.test.dump stdout"},
+    });
+    dump_stdout_step.dependOn(&b.addRunArtifact(dump_stdout_unit).step);
+    if (enabled[pluginIndex("lanplus")]) {
+        inline for (.{ false, true }) |sha256| {
+            const feature = if (sha256) "1" else "0";
+            const suffix = if (sha256) "sha256" else "no-sha256";
+            const dump_bridge = b.addTranslateC(.{
+                .root_source_file = b.path("tests/lanplus_dump_bridge.h"),
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+            });
+            dump_bridge.addConfigHeader(config_h);
+            dump_bridge.addIncludePath(b.path("include"));
+            dump_bridge.defineCMacro("HAVE_CONFIG_H", "1");
+            dump_bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{default_intf}));
+            dump_bridge.defineCMacro("LANPLUS_DUMP_TEST_SHA256", feature);
+
+            const c_dump_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+            configure(b, c_dump_mod, config_h, default_intf);
+            c_dump_mod.addCMacro("LANPLUS_DUMP_TEST_SHA256", feature);
+            c_dump_mod.addCSourceFiles(.{
+                .files = &.{ "tests/lanplus_dump_stdout.c", "tests/lanplus_dump_oracle.c" },
+                .flags = &base_cflags,
+            });
+            const c_dump = b.addExecutable(.{ .name = "lanplus-dump-c-" ++ suffix, .root_module = c_dump_mod });
+
+            const dump_options = b.addOptions();
+            dump_options.addOption([]const []const u8, "zig_modules", &.{"lanplus-dump"});
+            dump_options.addOption(bool, "have_crypto_sha256", sha256);
+            const zig_dump_lib_mod = b.createModule(.{
+                .root_source_file = b.path(zig_root ++ "/exports.zig"),
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+            });
+            zig_dump_lib_mod.addImport("ipmi_c", dump_bridge.createModule());
+            zig_dump_lib_mod.addImport("build_options", dump_options.createModule());
+            const zig_dump_lib = b.addLibrary(.{
+                .name = "lanplus-dump-zig-" ++ suffix,
+                .linkage = .static,
+                .root_module = zig_dump_lib_mod,
+            });
+            const zig_dump_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+            configure(b, zig_dump_mod, config_h, default_intf);
+            zig_dump_mod.addCSourceFile(.{ .file = b.path("tests/lanplus_dump_stdout.c"), .flags = &base_cflags });
+            zig_dump_mod.linkLibrary(zig_dump_lib);
+            const zig_dump = b.addExecutable(.{ .name = "lanplus-dump-zig-" ++ suffix, .root_module = zig_dump_mod });
+
+            const compare = b.addSystemCommand(&.{ "python3", "tests/lanplus_dump_stdout.py", suffix });
+            compare.addFileArg(c_dump.getEmittedBin());
+            compare.addFileArg(zig_dump.getEmittedBin());
+            dump_stdout_step.dependOn(&compare.step);
+        }
+    }
+    test_step.dependOn(dump_stdout_step);
+
     const helper_valstr_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"util.helper.test.valstr stdout"},
