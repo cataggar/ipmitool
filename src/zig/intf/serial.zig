@@ -30,6 +30,7 @@
 
 //! Shared device configuration and IPMB encapsulation for the two serial modes.
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @import("ipmi_c");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("intf.zig").Intf;
@@ -176,9 +177,19 @@ pub fn nextSequence(mode: Mode) u8 {
 }
 
 pub fn monotonicMs() i64 {
-    var ts: c.struct_timespec = undefined;
-    _ = c.clock_gettime(c.CLOCK_MONOTONIC, &ts);
-    return @as(i64, ts.tv_sec) * 1000 + @divTrunc(@as(i64, ts.tv_nsec), 1_000_000);
+    if (comptime builtin.target.abi == .musl) {
+        var ts: std.os.linux.timespec = undefined;
+        const err = std.os.linux.errno(std.os.linux.clock_gettime(.MONOTONIC, &ts));
+        if (err != .SUCCESS) {
+            std.c._errno().* = @intFromEnum(err);
+            @panic("clock_gettime(CLOCK_MONOTONIC) failed");
+        }
+        return @as(i64, ts.sec) * 1000 + @divTrunc(@as(i64, ts.nsec), 1_000_000);
+    } else {
+        var ts: c.struct_timespec = undefined;
+        _ = c.clock_gettime(c.CLOCK_MONOTONIC, &ts);
+        return @as(i64, ts.tv_sec) * 1000 + @divTrunc(@as(i64, ts.tv_nsec), 1_000_000);
+    }
 }
 
 pub fn build(mode: Mode, intf: *const Intf, req: *const ipmi.Request, out: []u8, system: bool) Error!Built {
