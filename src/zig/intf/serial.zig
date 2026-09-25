@@ -59,7 +59,7 @@ const rates = [_]Rate{
 
 pub fn open(intf: *Intf, system: *bool) c_int {
     const dev = intf.devfile orelse {
-        c.lprintf(log.Level.err, "Serial device is not specified");
+        log.print(log.Level.err, "Serial device is not specified", .{});
         return -1;
     };
     system.* = false;
@@ -72,7 +72,7 @@ pub fn open(intf: *Intf, system: *bool) c_int {
             system.* = second[1] == 'S' or second[1] == 's';
         }
         if (c.str2uint(text, &rate) != 0) {
-            c.lprintf(log.Level.err, "Invalid baud rate specified");
+            log.print(log.Level.err, "Invalid baud rate specified", .{});
             return -1;
         }
     }
@@ -81,12 +81,12 @@ pub fn open(intf: *Intf, system: *bool) c_int {
         if (rate == r.value) baud = r.baud;
     }
     if (baud == null) {
-        c.lprintf(log.Level.err, "Unsupported baud rate %u specified", rate);
+        log.print(log.Level.err, "Unsupported baud rate %u specified", .{rate});
         return -1;
     }
     const fd = c.open(dev, c.O_RDWR | c.O_NONBLOCK, @as(c_int, 0));
     if (fd < 0) {
-        c.lperror(log.Level.err, "Could not open device at %s", dev);
+        log.perror(log.Level.err, "Could not open device at %s", .{dev});
         return -1;
     }
     var ti: c.struct_termios = undefined;

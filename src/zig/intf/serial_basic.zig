@@ -108,12 +108,12 @@ const Parser = struct {
         if (self.escape) {
             self.escape = false;
             const decoded = unescaped(b) orelse {
-                c.lprintf(log.Level.err, "ipmitool: bad response");
+                log.print(log.Level.err, "ipmitool: bad response", .{});
                 self.started = false;
                 return null;
             };
             if (self.len == self.msg.len) {
-                c.lprintf(log.Level.err, "ipmitool: response is too long");
+                log.print(log.Level.err, "ipmitool: response is too long", .{});
                 self.started = false;
                 return null;
             }
@@ -126,7 +126,7 @@ const Parser = struct {
             return self.msg[0..self.len];
         } else if (b != 0xa6) {
             if (self.len == self.msg.len) {
-                c.lprintf(log.Level.err, "ipmitool: response is too long");
+                log.print(log.Level.err, "ipmitool: response is too long", .{});
                 self.started = false;
                 return null;
             }
@@ -146,15 +146,15 @@ fn waitResponse(intf: *Intf, parser: *Parser, context: Context) serial.Error![]c
         if (n != 1) return error.Io;
         if (parser.feed(byte)) |packet| {
             if (packet.len < 8) {
-                c.lprintf(log.Level.err, "ipmitool: response is too short");
+                log.print(log.Level.err, "ipmitool: response is too short", .{});
                 continue;
             }
             if (serial.checksum(packet[0..3]) != 0) {
-                c.lprintf(log.Level.err, "ipmitool: bad checksum 1");
+                log.print(log.Level.err, "ipmitool: bad checksum 1", .{});
                 continue;
             }
             if (serial.checksum(packet[3..]) != 0) {
-                c.lprintf(log.Level.err, "ipmitool: bad checksum 2");
+                log.print(log.Level.err, "ipmitool: bad checksum 2", .{});
                 continue;
             }
             if (serial.match(.basic, packet, context)) |matched| return matched;
@@ -206,7 +206,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     var retry: c_int = 0;
     while (retry < intf.ssn_params.retry) : (retry += 1) {
         const built = serial.build(.basic, intf, req, &msg, system_interface) catch {
-            c.lprintf(log.Level.err, "ipmitool: Message data is too long");
+            log.print(log.Level.err, "ipmitool: Message data is too long", .{});
             return null;
         };
         serial.flush(intf.fd);

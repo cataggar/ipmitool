@@ -32,6 +32,7 @@ def verify(stdout, stderr):
     second = first + len(listing)
     assert lines[second : second + len(filtered)] == filtered, lines[second : second + len(filtered)]
     assert "selection-ok" in lines and "session-ok" in lines
+    assert "log(3): Unable to setup interface (null)" in lines
     assert "payload-ok" in lines
     if "lan" in names or "lanplus" in names:
         assert "socket-ok" in lines

@@ -1,0 +1,13 @@
+#!golden 1
+#!case global_open_missing_device
+#!section exit
+1
+#!section stdout
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Using ipmi device 249
+Could not open device at /dev/ipmi249 or /dev/ipmi/249 or /dev/ipmidev/249: No such file or directory
+#!section requests
+#!section files
