@@ -1203,6 +1203,13 @@ pub fn build(b: *std.Build) void {
     b.step("test-shell-unit", "Run shared shell and script word parser tests")
         .dependOn(&b.addRunArtifact(shell_unit).step);
 
+    const shell_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"frontend.shell_commands.test.shell stdout"},
+    });
+    b.step("test-shell-stdout-unit", "Compare shell stdout formats with libc and reject writer failures")
+        .dependOn(&b.addRunArtifact(shell_stdout_unit).step);
+
     const fwum_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/fwum_test.zig"),
         .target = target,
