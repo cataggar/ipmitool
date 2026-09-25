@@ -112,9 +112,9 @@ const ZigModule = struct {
     /// Zig implementation, for documentation and `zig build --help`.
     implementation: []const u8,
     /// C files the Zig implementation needs alongside it, relative to the
-    /// build root.  Only `lib/log.c` has one: Zig 0.16 cannot define a C
-    /// variadic function on aarch64, so `lprintf()`/`lperror()` keep a
-    /// `va_start` trampoline.  See doc/zig-migration/varargs-trampoline.md.
+    /// build root. `log` uses a variadic trampoline (see
+    /// doc/zig-migration/varargs-trampoline.md); the staged `fru` migration
+    /// keeps unported commands in a temporary legacy shim.
     c_shims: []const []const u8 = &.{},
 };
 
@@ -285,6 +285,12 @@ const zig_modules = [_]ZigModule{
         .name = "dcmi",
         .replaces = "lib/ipmi_dcmi.c",
         .implementation = "src/zig/cmd/dcmi.zig",
+    },
+    .{
+        .name = "fru",
+        .replaces = "lib/ipmi_fru.c",
+        .implementation = "src/zig/cmd/fru.zig",
+        .c_shims = &.{"src/zig/cmd/fru_legacy.c"},
     },
     .{
         .name = "intf",
@@ -783,6 +789,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .link_libc = true,
+            .sanitize_c = if (sanitize_c) .full else .off,
         });
         mod.addImport("ipmi_c", bridge_mod);
         mod.addImport("build_options", zig_options.createModule());
@@ -1604,6 +1611,7 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .target = options.target,
         .optimize = options.optimize,
         .link_libc = true,
+        .sanitize_c = if (options.sanitize_c) .full else .off,
     });
     exports_mod.addImport("ipmi_c", swapped_bridge_mod);
     exports_mod.addImport("build_options", zig_options.createModule());

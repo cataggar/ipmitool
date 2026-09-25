@@ -38,9 +38,9 @@ Supporting files at the root of `src/zig/`:
 | `root.zig`      | namespace of every header port; the root of `zig build test` |
 | `exports.zig`   | link-time root of `libipmitool_zig.a`; one guarded `@import` per port |
 
-`ipmi_c.h` and `abi_layout.h` are the only two C files the Zig tree owns. They
-are build-time scaffolding, never linked into the product, and they are deleted
-together with the last C translation unit.
+`ipmi_c.h` and `abi_layout.h` are build-time scaffolding, never linked into
+the product, and are deleted with the last C translation unit. The staged FRU
+port additionally has `cmd/fru_legacy.c`, a temporary linked shim; see below.
 
 ### SDR safety across the #53 port
 
@@ -222,6 +222,16 @@ Mechanics, all in `build.zig`:
    `libipmitool_zig.a` and linked after `libipmitool_core.a`.
 5. With no selection the Zig library is not built or linked at all, so the
    default build is bit-for-bit the pre-existing all-C build.
+
+**FRU is an incomplete migration.** Selecting `-Dzig-modules=fru` currently
+ports `fru read` (bounded inventory reads) and the `fru write` command's file
+handling. `write_fru_area()` and every remaining FRU verb still run C code.
+The original `lib/ipmi_fru.c` is unchanged: `cmd/fru_legacy.c` includes it
+with its main entry point renamed to `ipmi_fru_main_legacy`, so commands not
+yet ported retain their complete implementation rather than returning dummy
+success. The `fru` selection must not be counted as a completed command
+module until the shim and its bridge declarations are removed. `-Dsanitize-c`
+also applies to C shims linked into the Zig replacement archive.
 
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:

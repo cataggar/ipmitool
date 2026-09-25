@@ -265,6 +265,13 @@ struct ipmi_rs *ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf,
 						 uint8_t target, uint8_t lun,
 						 uint8_t channel);
 void printf_sdr_usage(void);
+/* The staged FRU port retains unported verbs in a C shim. Remove both
+ * declarations with that shim once the whole translation unit is in Zig. */
+int ipmi_fru_main_legacy(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_fru_zig_write(struct ipmi_intf *intf, uint16_t size,
+		      uint8_t access, uint8_t id, uint16_t length, uint8_t *data);
+void ipmi_fru_read_help(void);
+void ipmi_fru_write_help(void);
 
 /* Global symbols defined by lib/ipmi_picmg.c but absent from its header. */
 struct sAmcAddrMap {

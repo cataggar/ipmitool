@@ -118,6 +118,9 @@ comptime {
     if (selected("dcmi")) {
         @import("cmd/dcmi.zig").exportSymbols();
     }
+    if (selected("fru")) {
+        @import("cmd/fru.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }
