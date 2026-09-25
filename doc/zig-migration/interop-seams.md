@@ -361,6 +361,29 @@ C stdio path pending the signal-handler cutover.
 The shell echo/set stdout paths call its checked `trySyncC` variant and return
 `-1` with a log diagnostic on flush failure; CLI/helper keep `syncC`'s panic.
 
+LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
+At verbosity zero they produce no output; at one (or negative verbosity)
+they print only the supported/unsupported line, and above one they also print
+the ASF/RMCP versions, sequence and unsigned, network-order IANA enterprise
+number, retaining the C trailing blank line. Writes and final flushes fail
+explicitly; the `-1`/`0`/`1` ping status and the original C oracle are
+unchanged. `zig build test-lanplus-pong-stdout` checks exact bytes at
+verbosity 0/1/2, both version branches, sequence and enterprise boundaries,
+and first/second write failures. The shared value-table golden test checks
+ordering around libc-buffered stdout. The `lanplus/pong` transport fixtures
+compare original C LAN+ against selected Zig at verbosity 0/1/2, including
+earlier buffered C output before the pong details at verbosity 2. Only the
+dynamic CLI version, the 16-byte random-number diagnostic and the single
+trailing space on stderr's `>>    data    :` diagnostic lines are normalized
+there, not stdout or any other stderr lines.
+Without local OpenSSL headers, run the pong unit with
+`-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`
+(the unit runs independently of the transport). The transport comparison
+instead enables LAN+ with Zig crypto:
+`zig build test-transport -Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lanplus=true
+-Dzig-modules=lanplus,lanplus-crypt,lanplus-crypt-impl -- --filter lanplus/pong`.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or

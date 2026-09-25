@@ -1091,6 +1091,13 @@ pub fn build(b: *std.Build) void {
     b.step("test-stdout-unit", "Run Zig stdout formatting and write-failure tests")
         .dependOn(&b.addRunArtifact(stdout_unit).step);
 
+    const pong_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.lanplus.test.pong stdout"},
+    });
+    b.step("test-lanplus-pong-stdout", "Check RMCP pong stdout formatting and write failures")
+        .dependOn(&b.addRunArtifact(pong_stdout_unit).step);
+
     const helper_valstr_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"util.helper.test.valstr stdout"},
