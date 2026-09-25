@@ -232,7 +232,8 @@ fn scanMac(arg: [*:0]const u8, buf: [*]u8) bool {
             remaining -= 1;
         }
 
-        // With a width of two, "0x" consumes the field but has no hex digit.
+        // With a width of two, "0x" has no hex digit. glibc 2.39 accepts it
+        // as zero, unlike glibc 2.43 and musl; see interop-seams.md.
         if (remaining == 2 and arg[pos] == '0' and
             (arg[pos + 1] == 'x' or arg[pos + 1] == 'X')) return false;
 
@@ -1196,6 +1197,7 @@ test "libc scanf MAC field width and delimiter baseline" {
         .{ .input = "0:0:0:0:0:-f", .expected = null },
         .{ .input = "0x:0:0:0:0:0", .expected = null },
         .{ .input = "0Xf:0:0:0:0:0", .expected = null },
+        .{ .input = "00:00:00:00:00:0Xf", .expected = null },
         .{ .input = "0:+:0:0:0:0", .expected = null },
         .{ .input = "0:0:0:0:0", .expected = null },
         .{ .input = "00:00:00:00:00:0g", .expected = .{0} ** 6 },
@@ -1207,16 +1209,30 @@ test "libc scanf MAC field width and delimiter baseline" {
         .{ .input = "0;0:0:0:0:0", .expected = null },
     };
     for (cases) |case| {
-        try std.testing.expectEqual(case.expected, libcMac(case.input));
-        try expectMacMatchesLibc(case.input);
+        const actual = libcMac(case.input);
+        if (!std.meta.eql(case.expected, actual)) {
+            std.debug.print(
+                "MAC baseline input=\"{s}\" bytes={any} expected={any} libc={any}\n",
+                .{ std.mem.span(case.input), std.mem.span(case.input), case.expected, actual },
+            );
+        }
+        try std.testing.expectEqual(case.expected, actual);
+        try expectMacMatchesLibc(case.input, null);
     }
 }
 
-fn expectMacMatchesLibc(arg: [*:0]const u8) !void {
+fn expectMacMatchesLibc(arg: [*:0]const u8, field: ?usize) !void {
     const expected = libcMac(arg);
     const untouched = [_]u8{0xa5} ** 6;
     var actual = untouched;
     const success = scanMac(arg, &actual);
+    const parsed: ?[6]u8 = if (success) actual else null;
+    if (!std.meta.eql(expected, parsed) or (!success and !std.mem.eql(u8, &actual, &untouched))) {
+        std.debug.print(
+            "MAC differential zero-based field={any} input bytes={any} libc={any} zig={any} output={any}\n",
+            .{ field, std.mem.span(arg), expected, parsed, actual },
+        );
+    }
     if (expected) |octets| {
         try std.testing.expect(success);
         try std.testing.expectEqualSlices(u8, &octets, &actual);
@@ -1239,7 +1255,7 @@ test "MAC scanning agrees with libc for every two-byte field and trailing byte" 
             input[start] = @intCast(first);
             for (0..256) |second| {
                 input[start + 1] = @intCast(second);
-                try expectMacMatchesLibc(arg);
+                try expectMacMatchesLibc(arg, field);
             }
         }
         input[start] = '0';
@@ -1247,7 +1263,7 @@ test "MAC scanning agrees with libc for every two-byte field and trailing byte" 
     }
     for (0..256) |trailing| {
         input[17] = @intCast(trailing);
-        try expectMacMatchesLibc(arg);
+        try expectMacMatchesLibc(arg, null);
     }
 }
 
