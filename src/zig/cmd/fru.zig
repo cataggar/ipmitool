@@ -1,10 +1,9 @@
 //! Staged port of `lib/ipmi_fru.c`. Inventory reads, section-aware writes,
-//! print/list (including SDR discovery, area strings and multirecords) and
-//! internal-use commands are implemented here. The large PICMG extension
-//! decoder and other remaining commands still execute the original C code
-//! through `fru_legacy.c`, not placeholders:
-//! do not remove the shim until print, edit, get, upgEkey, internaluse and the
-//! remaining public FRU helper functions have all been ported.
+//! print/list (including SDR discovery, area strings and multirecords), get,
+//! upgEkey and internal-use commands are implemented here. The PICMG
+//! extension decoder, edit and public FRU helpers still use the original C
+//! code through `fru_legacy.c`, not placeholders. Keep the shim until all
+//! commands and exported helpers have been ported.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -943,8 +942,316 @@ fn transfer(intf: *Intf, id: u8, path: [*c]u8, allocator: Allocator, write: bool
     }
 }
 
+const MultirecordLocation = struct {
+    info: Info,
+    offset: usize,
+    size: usize,
+};
+
+fn multirecordLocation(intf: *Intf, id: u8) ?MultirecordLocation {
+    var data: [4]u8 = .{ id, 0, 0, 0 };
+    var req = std.mem.zeroes(Request);
+    req.msg.netfn_lun.netfn = ipmi.NetFn.storage;
+    req.msg.cmd = c.GET_FRU_INFO;
+    req.msg.data = &data;
+    req.msg.data_len = 1;
+    const info_rsp = sendrecv(intf, &req) orelse {
+        if (c.verbose > 1) _ = c.printf("no response\n");
+        return null;
+    };
+    if (info_rsp.ccode != 0) {
+        if (info_rsp.ccode == c.IPMI_CC_TIMEOUT)
+            _ = c.printf("  Timeout accessing FRU info. (Device not present?)\n")
+        else
+            _ = c.printf("   CCODE = 0x%02x\n", @as(c_uint, info_rsp.ccode));
+        return null;
+    }
+    if (info_rsp.data_len < 3) return null;
+    const info = Info{
+        .size = @as(u16, info_rsp.data[0]) | (@as(u16, info_rsp.data[1]) << 8),
+        .access = (info_rsp.data[2] & 1) != 0,
+    };
+    if (c.verbose > 1)
+        _ = c.printf("pFruInfo->size = %d bytes (accessed by %s)\n", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    if (info.size == 0) return null;
+
+    data = .{ id, 0, 0, 8 };
+    req.msg.cmd = c.GET_FRU_DATA;
+    req.msg.data_len = 4;
+    const rsp = sendrecv(intf, &req) orelse return null;
+    if (rsp.ccode != 0) {
+        if (rsp.ccode == c.IPMI_CC_TIMEOUT)
+            _ = c.printf("  Timeout while reading FRU data. (Device not present?)\n");
+        return null;
+    }
+    if (c.verbose > 1) c.printbuf(&rsp.data, rsp.data_len, "FRU DATA");
+    if (rsp.data_len < 9) return null;
+    const header = rsp.data[1..9];
+    if (header[0] != 1) {
+        _ = c.printf("  Unknown FRU header version %02x.\n", @as(c_uint, header[0]));
+        return null;
+    }
+    const offset: usize = @as(usize, header[5]) * 8;
+    return .{ .info = info, .offset = offset, .size = info.size };
+}
+
+fn adjustMultirecordSize(data: []const u8) ?usize {
+    var offset: usize = 0;
+    while (offset + 5 <= data.len) {
+        const header = data[offset..][0..5];
+        if (c.verbose != 0) _ = c.printf("Adding (");
+        var checksum: u8 = 0;
+        for (header) |byte| {
+            if (c.verbose != 0) _ = c.printf(" %02X", @as(c_uint, byte));
+            checksum +%= byte;
+        }
+        if (c.verbose != 0) _ = c.printf(")");
+        if (checksum != 0) {
+            c.lprintf(log.Level.err, "Bad checksum in Multi Records");
+            if (c.verbose != 0) _ = c.printf("--> FAIL");
+        } else if (c.verbose != 0) {
+            _ = c.printf("--> OK");
+        }
+        const length = @as(usize, header[2]) + 5;
+        if (length > data.len - offset) {
+            if (c.verbose != 0) _ = c.printf("\n");
+            c.lprintf(log.Level.err, "Bad checksum in Multi Records");
+            return null;
+        }
+        if (c.verbose > 1 and checksum == 0) {
+            for (data[offset + 5 ..][0..header[2]]) |byte| {
+                _ = c.printf(" %02X", @as(c_uint, byte));
+            }
+        }
+        if (c.verbose != 0) _ = c.printf("\n");
+        offset += length;
+        if (checksum != 0) {
+            c.lprintf(log.Level.debug, "Size of multirec: %lu\n", @as(c_ulong, @intCast(offset)));
+            return null;
+        }
+        if ((header[1] & 0x80) != 0) {
+            c.lprintf(log.Level.debug, "Size of multirec: %lu\n", @as(c_ulong, @intCast(offset)));
+            return offset;
+        }
+    }
+    c.lprintf(log.Level.err, "Bad checksum in Multi Records");
+    return null;
+}
+
+fn upgradeEkey(intf: *Intf, id: u8, filename: [*c]u8, allocator: Allocator) c_int {
+    const location = multirecordLocation(intf, id) orelse {
+        c.lprintf(log.Level.err, "Failed to get multirec location from FRU.");
+        return -1;
+    };
+    c.lprintf(log.Level.debug, "FRU Size        : %lu\n", @as(c_ulong, @intCast(location.size)));
+    c.lprintf(log.Level.debug, "Multi Rec offset: %lu\n", @as(c_ulong, @intCast(location.offset)));
+
+    const file = c.fopen(filename, "rb");
+    var file_length: usize = 0;
+    var header: [8]u8 = @splat(0);
+    var header_length: usize = 0;
+    if (file) |fp| {
+        defer _ = c.fclose(fp);
+        header_length = c.fread(&header, 1, header.len, fp);
+        if (c.fseek(fp, 0, c.SEEK_END) == 0) {
+            const length = c.ftell(fp);
+            if (length >= 0) file_length = @intCast(length);
+        }
+    }
+    c.lprintf(log.Level.debug, "File Size = %lu\n", @as(c_ulong, @intCast(file_length)));
+    c.lprintf(log.Level.debug, "Len = %u\n", @as(c_uint, @intCast(header_length)));
+    if (header_length != 8) {
+        _ = c.printf("Error with file %s in getting size\n", filename);
+    } else if (header[0] != 1) {
+        _ = c.printf("Unknown FRU header version %02x.\n", @as(c_uint, header[0]));
+    }
+    if (header_length != 8 or header[0] != 1 or file_length < @as(usize, header[5]) * 8) {
+        c.lprintf(log.Level.err, "Failed to get multirec size from file '%s'.", filename);
+        return -1;
+    }
+    const file_offset = @as(usize, header[5]) * 8;
+    const size = file_length - file_offset;
+    const data = allocator.alloc(u8, size) catch {
+        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        return -1;
+    };
+    defer allocator.free(data);
+
+    const source = c.fopen(filename, "rb") orelse {
+        c.lprintf(log.Level.err, "Error opening file '%s': %i -> %s.", filename, c.__errno_location().*, c.strerror(c.__errno_location().*));
+        c.lprintf(log.Level.err, "Failed to get multirec from file '%s'.", filename);
+        return -1;
+    };
+    defer _ = c.fclose(source);
+    if (c.fseek(source, @intCast(file_offset), c.SEEK_SET) != 0 or c.fread(data.ptr, size, 1, source) != 1) {
+        c.lprintf(log.Level.err, "Error in file '%s'.", filename);
+        c.lprintf(log.Level.err, "Failed to get multirec from file '%s'.", filename);
+        return -1;
+    }
+    const used = adjustMultirecordSize(data) orelse {
+        c.lprintf(log.Level.err, "Failed to adjust size from buffer.");
+        return -1;
+    };
+    var info = location.info;
+    if (writeArea(intf, id, &info, location.offset, data[0..used], allocator) catch false) {
+        c.lprintf(log.Level.err, "Failed to write FRU area.");
+        return -1;
+    }
+    c.lprintf(log.Level.info, "Done upgrading Ekey.");
+    return 0;
+}
+
+fn upgradeEkeyHelp() void {
+    c.lprintf(log.Level.notice, "fru upgEkey <fru id> <fru file>");
+    c.lprintf(log.Level.notice, "Note: FRU ID and file(incl. full path) must be specified.");
+    c.lprintf(log.Level.notice, "Example: ipmitool fru upgEkey 0 /root/fru.bin");
+}
+
+fn kontronGet(body: []const u8, argc: c_int, argv: [*c][*c]u8) void {
+    if (argc < 5 or argv[7] == null) {
+        _ = c.printf("usage: oem <iana> <recordid>\n");
+        _ = c.printf("usage: oem 15000 3\n");
+        return;
+    }
+    if (body.len < 6 or body[3] != 3) return;
+    _ = c.printf("Kontron OEM Information Record\n");
+    var instance: u8 = 0;
+    if (c.str2uchar(argv[7], &instance) != 0) {
+        c.lprintf(log.Level.err, "Instance argument '%s' is either invalid or out of range.", argv[7]);
+        return;
+    }
+    const version = body[4];
+    const count = body[5];
+    var pos: usize = 6;
+    for (0..count) |_| {
+        if (pos >= body.len) return;
+        const name_len: usize = body[pos] & 0x3f;
+        pos += 1;
+        if (name_len > body.len - pos) return;
+        _ = c.printf("  Name: %*.*s\n", @as(c_int, @intCast(name_len)), @as(c_int, @intCast(name_len)), @as([*c]const u8, @ptrCast(body[pos..].ptr)));
+        pos += name_len;
+        _ = c.printf("  Record Version: %d\n", @as(c_int, version));
+        const version_size: usize = if (version == 1) 10 else 8;
+        if (version != 0 and version != 1) {
+            _ = c.printf("  Unsupported version %d\n", @as(c_int, version));
+            continue;
+        }
+        const record_size: usize = version_size + 3 * 8 + 4;
+        if (record_size + 1 > body.len - pos) return;
+        const values = [_][*:0]const u8{ "Version", "Build Date", "Update Date", "Checksum" };
+        for (values, 0..) |label, index| {
+            const length: usize = if (index == 0) version_size else 8;
+            pos += 1;
+            _ = c.printf("  %s: %*.*s\n", label, @as(c_int, @intCast(length)), @as(c_int, @intCast(length)), @as([*c]const u8, @ptrCast(body[pos..].ptr)));
+            pos += length;
+        }
+        pos += 1;
+        _ = c.printf("\n");
+    }
+}
+
+fn getMultirecord(intf: *Intf, id: u8, argc: c_int, argv: [*c][*c]u8, allocator: Allocator) c_int {
+    const location = multirecordLocation(intf, id) orelse return 0xffff;
+    c.lprintf(log.Level.debug, "FRU Size        : %lu\n", @as(c_ulong, @intCast(location.size)));
+    c.lprintf(log.Level.debug, "Multi Rec offset: %lu\n", @as(c_ulong, @intCast(location.offset)));
+
+    // The C command separately queries the inventory size after locating
+    // the multirecord area. Preserve both requests for wire-level parity.
+    var info = getInfo(intf, id) orelse return -1;
+    c.lprintf(log.Level.debug, "fru.size = %d bytes (accessed by %s)", @as(c_int, info.size), if (info.access) @as([*:0]const u8, "words") else @as([*:0]const u8, "bytes"));
+    if (info.size == 0) {
+        c.lprintf(log.Level.err, " Invalid FRU size %d", @as(c_int, info.size));
+        return -1;
+    }
+    const data = allocator.alloc(u8, @as(usize, info.size) + 1) catch {
+        c.lprintf(log.Level.err, " Out of memory!");
+        return -1;
+    };
+    defer allocator.free(data);
+    @memset(data, 0);
+    var index = location.offset;
+    var last_off = index;
+    while (index + 5 <= info.size) {
+        if (last_off < index + 5 or last_off < index + data[index + 2]) {
+            if (last_off >= info.size) break;
+            const length = @min(@as(usize, info.size) - last_off, 260);
+            readArea(intf, id, &info, last_off, data[0..length]) catch break;
+            last_off += length;
+        }
+        const header = data[index..][0..5];
+        const body_len: usize = header[2];
+        if (index + 5 + body_len > data.len) break;
+        const body = data[index + 5 ..][0..body_len];
+        if (header[0] == c.FRU_RECORD_TYPE_OEM_EXTENSION and body.len >= 5) {
+            const iana = @as(u32, body[0]) | (@as(u32, body[1]) << 8) | (@as(u32, body[2]) << 16);
+            var supplied: u32 = 0;
+            if (argc >= 3 and equals(argv[2], "oem")) {
+                if (argc <= 3) {
+                    c.lprintf(log.Level.err, "oem iana <record> <format>");
+                    break;
+                }
+                if (c.str2uint(argv[3], &supplied) != 0) {
+                    c.lprintf(log.Level.err, "Given IANA '%s' is invalid.", argv[3]);
+                    break;
+                }
+                c.lprintf(log.Level.debug, "using iana: %d", @as(c_int, @bitCast(supplied)));
+            }
+            if (supplied == iana) {
+                c.lprintf(log.Level.debug, "Matching record found");
+                if (iana == c.IPMI_OEM_KONTRON) {
+                    kontronGet(body, argc, argv);
+                } else {
+                    _ = c.printf("  OEM IANA (%s) Record not supported in this mode\n", c.val2str(iana, c.ipmi_oem_info));
+                    break;
+                }
+            }
+        }
+        index += body_len + 5;
+        if ((header[1] & 0x80) != 0) break;
+    }
+    return 0;
+}
+
+fn getHelp() void {
+    c.lprintf(log.Level.notice, "fru get <fruid> oem iana <record> <format> <args> - limited OEM support");
+}
+
 fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     const in = intf orelse return -1;
+    if (argc >= 1 and equals(argv[0], "get")) {
+        if (argc > 1 and equals(argv[1], "help")) {
+            getHelp();
+            return 0;
+        }
+        if (argc < 2) {
+            c.lprintf(log.Level.err, "Not enough parameters given.");
+            getHelp();
+            return -1;
+        }
+        var id: u8 = 0;
+        if (c.is_fru_id(argv[1], &id) != 0) return -1;
+        if (c.verbose != 0) _ = c.printf("FRU ID           : %d\n", @as(c_int, id));
+        if (argc >= 3 and !equals(argv[2], "oem")) {
+            c.lprintf(log.Level.err, "Invalid command: %s", argv[2]);
+            getHelp();
+            return -1;
+        }
+        return getMultirecord(in, id, argc, argv, std.heap.page_allocator);
+    }
+    if (argc >= 1 and equals(argv[0], "upgEkey")) {
+        if (argc > 1 and equals(argv[1], "help")) {
+            upgradeEkeyHelp();
+            return 0;
+        }
+        if (argc < 3) {
+            c.lprintf(log.Level.err, "Not enough parameters given.");
+            upgradeEkeyHelp();
+            return -1;
+        }
+        var id: u8 = 0;
+        if (c.is_fru_id(argv[1], &id) != 0 or !validFilename(argv[2])) return -1;
+        return upgradeEkey(in, id, argv[2], std.heap.page_allocator);
+    }
     if (argc >= 3 and equals(argv[0], "internaluse") and
         (equals(argv[2], "info") or equals(argv[2], "print") or
             (argc >= 4 and (equals(argv[2], "read") or equals(argv[2], "write")))))

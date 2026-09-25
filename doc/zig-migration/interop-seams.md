@@ -226,10 +226,11 @@ Mechanics, all in `build.zig`:
 **FRU is an incomplete migration.** Selecting `-Dzig-modules=fru` currently
 ports `fru read` (bounded inventory reads), `fru write` (bounded writes with
 section-aware protection), `fru print/list` (including SDR discovery and
-multirecords), and `fru internaluse` (info/print/read/write). The PICMG
-extension decoder is still called through the shim; edit, get, upgEkey, and
-the external FRU helper ABIs remain in C. None of this constitutes a full
-translation-unit port yet.
+multirecords), `fru internaluse` (info/print/read/write), `fru get` (bounded
+Kontron OEM traversal), and `fru upgEkey` (bounded source validation and
+target write). The PICMG extension decoder is still called through the shim;
+edit and the external FRU helper ABIs remain in C. None of this constitutes
+a full translation-unit port yet.
 The original `lib/ipmi_fru.c` is unchanged: `cmd/fru_legacy.c` includes it
 with its main entry point renamed to `ipmi_fru_main_legacy`, so commands not
 yet ported retain their complete implementation rather than returning dummy
