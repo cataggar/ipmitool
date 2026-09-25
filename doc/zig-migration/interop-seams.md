@@ -230,6 +230,13 @@ zig build --help                 # lists the available module names
 translated C headers and libc still remain. The default C build continues to
 serve as the golden oracle until the Phase 7 cutover.
 
+On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
+and opened-file checks because the translated `struct stat` is opaque. This
+requires Linux 4.11 or newer; unsupported kernels or missing required file
+type, mode, link count, inode or owner metadata fail closed. Only `ENOENT`
+allows creation of a new file. glibc still uses `lstat`/`fstat`; no C shim was
+added for this path.
+
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator
