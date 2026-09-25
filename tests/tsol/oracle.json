@@ -1,0 +1,170 @@
+{
+  "altterm": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=020d00\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\r\n~. [terminated ipmitool]\r\n"
+  },
+  "bad_argument": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=-1\n",
+    "exit": 1,
+    "stderr": "Invalid tsol command: 'bad-option'\n\nUsage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]\n       recvip       Receiver IP Address             [default=local]\n       port=NUM     Receiver UDP Port               [default=6230]\n       ro|rw        Set Read-Only or Read-Write     [default=rw]\n       rows=NUM     Set terminal rows               [default=24]\n       cols=NUM     Set terminal columns            [default=80]\n       altterm      Alternate terminal setup        [default=off]\n",
+    "stdout": ""
+  },
+  "bad_host": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=1\n",
+    "exit": 1,
+    "stderr": "Address lookup for invalid.invalid failed\n",
+    "stdout": ""
+  },
+  "bad_ip": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=-1\n",
+    "exit": 1,
+    "stderr": "Invalid tsol command: '127.1.2'\n\nUsage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]\n       recvip       Receiver IP Address             [default=local]\n       port=NUM     Receiver UDP Port               [default=6230]\n       ro|rw        Set Read-Only or Read-Write     [default=rw]\n       rows=NUM     Set terminal rows               [default=24]\n       cols=NUM     Set terminal columns            [default=80]\n       altterm      Alternate terminal setup        [default=off]\n",
+    "stdout": ""
+  },
+  "bad_port": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=-1\n",
+    "exit": 1,
+    "stderr": "Invalid tsol command: 'port=invalid'\n\nUsage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]\n       recvip       Receiver IP Address             [default=local]\n       port=NUM     Receiver UDP Port               [default=6230]\n       ro|rw        Set Read-Only or Read-Write     [default=rw]\n       rows=NUM     Set terminal rows               [default=24]\n       cols=NUM     Set terminal columns            [default=80]\n       altterm      Alternate terminal setup        [default=off]\n",
+    "stdout": ""
+  },
+  "bind_fail": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=0\n",
+    "exit": 1,
+    "stderr": "Failed to bind socket.\n",
+    "stdout": ""
+  },
+  "escape_double": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=027e00\nnetfn=30 cmd=03 data=020d01\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "escape_help": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=020d00\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "       ~.  - terminate connection\n       ~^Z - suspend ipmitool\n       ~^X - suspend ipmitool, but don't restore tty on restart\n       ~?  - this message\n       ~~  - send the escape character by typing it twice\n       (Note that escapes are only recognized immediately after newline.)\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~? [ipmitool help]\n~. [terminated ipmitool]\n"
+  },
+  "escape_suspend": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nsuspend\nnetfn=30 cmd=03 data=020d00\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~^Z [suspend ipmitool]\n~. [terminated ipmitool]\n"
+  },
+  "help": {
+    "events": "final result=0 raw=0 size=24x80 reusable=-1\n",
+    "exit": 0,
+    "stderr": "Usage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]\n       recvip       Receiver IP Address             [default=local]\n       port=NUM     Receiver UDP Port               [default=6230]\n       ro|rw        Set Read-Only or Read-Write     [default=rw]\n       rows=NUM     Set terminal rows               [default=24]\n       cols=NUM     Set terminal columns            [default=80]\n       altterm      Alternate terminal setup        [default=off]\n",
+    "stdout": ""
+  },
+  "invalid_interface": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=-1\n",
+    "exit": 1,
+    "stderr": "Error: Tyan SOL is only available over lan interface\n",
+    "stdout": ""
+  },
+  "ip_octets_wrap": {
+    "events": "netfn=30 cmd=06 data=2c020101<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=020d00\nnetfn=30 cmd=02 data=2c020101<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 300.2.1.1:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "keepalive": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nkeepalive\nkeepalive\nnetfn=30 cmd=03 data=020d00\nkeepalive\nkeepalive\nkeepalive\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "keepalive_error": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nkeepalive\nkeepalive\nnetfn=30 cmd=03 data=020d00\nkeepalive\nkeepalive\nkeepalive\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "key_error_verbose": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=027800\nnetfn=30 cmd=03 data=03780d01\nnetfn=30 cmd=03 data=03780d02\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "Unable to send keystroke: mock completion code\nUnable to send keystroke: mock completion code\nUnable to send keystroke: mock completion code\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "key_timeout_quiet": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=027800\nnetfn=30 cmd=03 data=020d01\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "key_timeout_verbose": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=027800\nnetfn=30 cmd=03 data=03780d01\nnetfn=30 cmd=03 data=03780d02\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "Unable to send keystroke\nUnable to send keystroke\nUnable to send keystroke\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  },
+  "local_getsockname_fail": {
+    "events": "open no socket\nfinal result=-1 raw=0 size=24x80 reusable=1\n",
+    "exit": 1,
+    "stderr": "getsockname failed: Bad file descriptor\n",
+    "stdout": ""
+  },
+  "local_open_fail": {
+    "events": "open failed\nfinal result=-1 raw=0 size=24x80 reusable=1\n",
+    "exit": 1,
+    "stderr": "",
+    "stdout": ""
+  },
+  "poll_error": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nfinal result=0 raw=1 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n"
+  },
+  "session_default_ip": {
+    "events": "open local\nnetfn=30 cmd=06 data=7f000001<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=0f6364656566666768696a6b6c6d6e00\nnetfn=30 cmd=03 data=076f0d7e7e7a0a01\nnetfn=30 cmd=03 data=020d02\nnetfn=30 cmd=02 data=7f000001<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.0.0.1:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\nhello from UDP~. [terminated ipmitool]\n"
+  },
+  "session_ro": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting Read-only SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\nhello from UDP~. [terminated ipmitool]\n"
+  },
+  "session_rw": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=33x101\nnetfn=30 cmd=03 data=0f6364656566666768696a6b6c6d6e00\nnetfn=30 cmd=03 data=076f0d7e7e7a0a01\nnetfn=30 cmd=03 data=020d02\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=0 raw=0 size=24x80 reusable=0\n",
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\nhello from UDP~. [terminated ipmitool]\n"
+  },
+  "socket_fail": {
+    "events": "final result=-1 raw=0 size=24x80 reusable=-1\n",
+    "exit": 1,
+    "stderr": "Can't open port <PORT>\n",
+    "stdout": ""
+  },
+  "start_ccode": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nfinal result=-1 raw=1 size=24x80 reusable=1\n",
+    "exit": 1,
+    "stderr": "Unable to perform TSOL command: mock completion code\nError starting SOL\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n"
+  },
+  "start_resize_fail": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=33x101\nfinal result=-1 raw=1 size=33x101 reusable=1\n",
+    "exit": 1,
+    "stderr": "Unable to perform TSOL command: mock completion code\nError starting SOL\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n"
+  },
+  "start_timeout": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nfinal result=-1 raw=1 size=24x80 reusable=1\n",
+    "exit": 1,
+    "stderr": "Unable to perform TSOL command\nError starting SOL\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n"
+  },
+  "stop_ccode": {
+    "events": "netfn=30 cmd=06 data=7f010203<PORT>\nactive size=24x80\nnetfn=30 cmd=03 data=020d00\nnetfn=30 cmd=02 data=7f010203<PORT>\nfinal result=-1 raw=0 size=24x80 reusable=0\n",
+    "exit": 1,
+    "stderr": "Unable to perform TSOL command: mock completion code\n",
+    "stdout": "[Starting SOL with receiving address 127.1.2.3:<PORT>]\r\n[SOL Session operational.  Use ~? for help]\n~. [terminated ipmitool]\n"
+  }
+}

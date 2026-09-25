@@ -14,6 +14,9 @@ const std = @import("std");
 const selection = @import("build_options").zig_modules;
 
 comptime {
+    if (selected("tsol")) {
+        @import("cmd/tsol.zig").exportSymbols();
+    }
     if (selected("oem")) {
         _ = @import("cmd/oem.zig");
     }

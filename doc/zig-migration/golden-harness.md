@@ -20,6 +20,7 @@ log is what catches it.
 
 * [Quick start](#quick-start)
 * [How the dummy interface is driven](#how-the-dummy-interface-is-driven)
+* [TSOL over a PTY and UDP](#tsol-over-a-pty-and-udp)
 * [Layout](#layout)
 * [Adding a case](#adding-a-case)
 * [Writing a transcript](#writing-a-transcript)
@@ -74,6 +75,37 @@ The report is written to stdout when the run passes and to stderr when it
 fails. That is deliberate: `zig build` discards a `Step.Run`'s stdout but
 surfaces its stderr as the failure diagnostic, so a failing case prints its diff
 under `zig build test` rather than just an exit code.
+
+## TSOL over a PTY and UDP
+
+`tsol` requires the `lan` interface, a terminal and an incoming UDP socket;
+the dummy interface cannot run its interactive paths. `zig build test-tsol
+-Dzig-modules=tsol` builds both a C oracle from `lib/ipmi_tsol.c` and a Zig
+candidate, then runs `tests/tsol/run.py` against the committed
+`tests/tsol/oracle.json` traces. No network beyond loopback, BMC or privileged
+port is needed. This focused step also runs under `zig build test`. In an
+environment without readline development headers, add `-Dipmishell=false`.
+
+The fixture provides an emulated LAN send/receive callback, a pseudo-terminal
+and UDP input. It records request bytes, stdout/stderr, exit status, terminal
+size and raw-mode restoration, and whether the UDP port was released. Cases
+cover activation and deactivation, read-only/write data, the 14-byte
+keystroke limit and sequence, escape commands, malformed input, failed
+responses and binding, and keepalive/poll behavior. Only three intentional
+departures from the C baseline are allowed: on activation failure the Zig
+port restores the terminal (including a resized window); on poll failure it
+deactivates and restores the terminal; and on normal exit it closes the UDP
+socket. All other output and wire traffic must match the C oracle.
+
+To regenerate the oracle **from C**, review the resulting diff before
+committing:
+
+```sh
+zig cc -std=gnu11 -DHAVE_TERMIOS_H -Iinclude tests/tsol/fixture.c \
+  lib/ipmi_tsol.c -o tests/tsol/.oracle-c
+python3 tests/tsol/run.py --oracle tests/tsol/.oracle-c --record
+rm tests/tsol/.oracle-c
+```
 
 ## How the dummy interface is driven
 

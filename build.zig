@@ -120,6 +120,11 @@ const ZigModule = struct {
 
 const zig_modules = [_]ZigModule{
     .{
+        .name = "tsol",
+        .replaces = "lib/ipmi_tsol.c",
+        .implementation = "src/zig/cmd/tsol.zig",
+    },
+    .{
         .name = "oem",
         .replaces = "lib/ipmi_oem.c",
         .implementation = "src/zig/cmd/oem.zig",
@@ -1009,6 +1014,43 @@ pub fn build(b: *std.Build) void {
     }
 
     test_step.dependOn(golden_step);
+
+    // TSOL requires a LAN interface, a PTY and UDP datagrams. The dummy
+    // interface golden harness cannot exercise any of its interactive paths.
+    const tsol_step = b.step("test-tsol", "Compare C and Zig TSOL over a PTY and loopback UDP");
+    const tsol_oracle_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    tsol_oracle_mod.addIncludePath(b.path("include"));
+    tsol_oracle_mod.addCSourceFiles(.{
+        .root = b.path("."),
+        .files = &.{ "tests/tsol/fixture.c", "lib/ipmi_tsol.c" },
+        .flags = &.{"-DHAVE_TERMIOS_H"},
+    });
+    const tsol_oracle = b.addExecutable(.{ .name = "tsol-oracle", .root_module = tsol_oracle_mod });
+    const tsol_run = b.addSystemCommand(&.{ "python3", "tests/tsol/run.py", "--oracle" });
+    tsol_run.addArtifactArg(tsol_oracle);
+    if (replacedByZig("lib/ipmi_tsol.c", zig_selection)) {
+        const tsol_candidate_mod = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        tsol_candidate_mod.addIncludePath(b.path("include"));
+        tsol_candidate_mod.addCSourceFiles(.{
+            .root = b.path("tests/tsol"),
+            .files = &.{"fixture.c"},
+            .flags = &.{"-DHAVE_TERMIOS_H"},
+        });
+        tsol_candidate_mod.linkLibrary(zig_lib.?);
+        const tsol_candidate = b.addExecutable(.{ .name = "tsol-candidate", .root_module = tsol_candidate_mod });
+        tsol_run.addArg("--candidate");
+        tsol_run.addArtifactArg(tsol_candidate);
+    }
+    tsol_step.dependOn(&tsol_run.step);
+    test_step.dependOn(tsol_step);
 
     // -- `zig build test-transport` / `gen-transport-fixtures` ---------------
     //
