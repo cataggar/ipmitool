@@ -1,0 +1,16 @@
+respond lock
+  netfn 0x0c
+  cmd 0x01
+  match 01 00 01
+end
+respond value
+  netfn 0x0c
+  cmd 0x01
+  match 01 33
+end
+respond commit_denied
+  netfn 0x0c
+  cmd 0x01
+  match 01 00 02
+  ccode 0x81
+end

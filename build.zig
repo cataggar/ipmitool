@@ -125,6 +125,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/tsol.zig",
     },
     .{
+        .name = "lanp6",
+        .replaces = "lib/ipmi_lanp6.c",
+        .implementation = "src/zig/cmd/lanp6.zig",
+    },
+    .{
         .name = "oem",
         .replaces = "lib/ipmi_oem.c",
         .implementation = "src/zig/cmd/oem.zig",

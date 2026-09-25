@@ -1,0 +1,27 @@
+#!golden 1
+#!case lan6_set_static_rtr1
+#!section exit
+0
+#!section stdout
+#!section stderr
+Setting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 01
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 41 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 42 00 11 22 33 44 55
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 43 80
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 44 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 02
+< rule=set ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 00
+< rule=set ccode=0x00 len=0 data=
+bye

@@ -1,0 +1,6 @@
+# Successful completion with only the parameter revision, zero-fill all fields.
+respond short
+  netfn 0x0c
+  cmd 0x02
+  data 11
+end

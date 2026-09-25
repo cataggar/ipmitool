@@ -1,0 +1,37 @@
+#!golden 1
+#!case lan6_bad_block_overflow
+#!section exit
+1
+#!section stdout
+  print <channel> [<parameter> [<set_sel> [<block_sel>]]]
+
+   available parameters:
+    support\x20
+    enables\x20
+    traffic_class\x20
+    static_hops\x20
+    flow_label\x20
+    status\x20
+    static_addr <set_sel>\x20
+    static_duid_stg\x20
+    static_duid <set_sel> <block_sel>\x20
+    dynamic_addr <set_sel>\x20
+    dynamic_duid_stg\x20
+    dynamic_duid <set_sel> <block_sel>\x20
+    dhcp6_cfg_sup\x20
+    dhcp6_cfg <set_sel>\x20
+    rtr_cfg\x20
+    static_rtr <set_sel>\x20
+    num_dynamic_rtrs\x20
+    dynamic_rtr <set_sel>\x20
+    dynamic_hops\x20
+    ndslaac_cfg_sup\x20
+    ndslaac_cfg <set_sel>\x20
+#!section stderr
+invalid block selector
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

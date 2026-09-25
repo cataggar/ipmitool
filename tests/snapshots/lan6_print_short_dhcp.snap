@@ -1,0 +1,40 @@
+#!golden 1
+#!case lan6_print_short_dhcp
+#!section exit
+0
+#!section stdout
+IPv6 DHCPv6 Timing Configuration 0:
+    SOL_MAX_DELAY:   0
+    SOL_TIMEOUT:     0
+    SOL_MAX_RT:      0
+    REQ_TIMEOUT:     0
+    REQ_MAX_RT:      0
+    REQ_MAX_RC:      0
+    CNF_MAX_DELAY:   0
+    CNF_TIMEOUT:     0
+    CNF_MAX_RT:      0
+    CNF_MAX_RD:      0
+    REN_TIMEOUT:     0
+    REN_MAX_RT:      0
+    REB_TIMEOUT:     0
+    REB_MAX_RT:      0
+    INF_MAX_DELAY:   0
+    INF_TIMEOUT:     0
+    INF_MAX_RT:      0
+    REL_TIMEOUT:     0
+    REL_MAX_RC:      0
+    DEC_TIMEOUT:     0
+    DEC_MAX_RC:      0
+    HOP_COUNT_LIMIT: 0
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 00
+< rule=short ccode=0x00 len=1 data=11
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 01
+< rule=short ccode=0x00 len=1 data=11
+bye

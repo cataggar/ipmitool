@@ -1,0 +1,40 @@
+#!golden 1
+#!case lan6_print_dhcp_cfg
+#!section exit
+0
+#!section stdout
+IPv6 DHCPv6 Timing Configuration 0:
+    SOL_MAX_DELAY:   0
+    SOL_TIMEOUT:     1
+    SOL_MAX_RT:      2
+    REQ_TIMEOUT:     3
+    REQ_MAX_RT:      4
+    REQ_MAX_RC:      5
+    CNF_MAX_DELAY:   6
+    CNF_TIMEOUT:     7
+    CNF_MAX_RT:      8
+    CNF_MAX_RD:      9
+    REN_TIMEOUT:     10
+    REN_MAX_RT:      11
+    REB_TIMEOUT:     12
+    REB_MAX_RT:      13
+    INF_MAX_DELAY:   14
+    INF_TIMEOUT:     15
+    INF_MAX_RT:      16
+    REL_TIMEOUT:     17
+    REL_MAX_RC:      18
+    DEC_TIMEOUT:     19
+    DEC_MAX_RC:      20
+    HOP_COUNT_LIMIT: 21
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 00
+< rule=dhcp6_cfg_block0 ccode=0x00 len=19 data=11 00 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 01
+< rule=dhcp6_cfg_block1 ccode=0x00 len=19 data=11 00 01 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+bye

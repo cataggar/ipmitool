@@ -68,6 +68,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_isol.h>
 #include <ipmitool/ipmi_lanp.h>
+#include <ipmitool/ipmi_lanp6.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_picmg.h>
@@ -111,6 +112,22 @@
 #include "../plugins/lanplus/lanplus_dump.h"
 
 #include "abi_layout.h"
+
+/* Globals and entry points exported by lib/ipmi_lanp6.c (no public prototypes). */
+extern const struct ipmi_lanp generic_lanp6[];
+extern const struct valstr lanp_cc_vals[], ip6_enable_vals[],
+	ip6_addr_enable_vals[], ip6_addr_sources[], ip6_addr_statuses[],
+	ip6_duid_types[], ip6_cfg_sup_vals[], ip6_rtr_configs[],
+	ip6_command_vals[];
+extern const struct ipmi_lanp *lookup_lanp(int param);
+extern int ipmi_get_dynamic_oem_lanp(void *priv, const struct ipmi_lanp *param,
+	int oem_base, int set_selector, int block_selector, void *data, int quiet);
+extern int ipmi_get_lanp(void *priv, int param_selector, int set_selector,
+	int block_selector, void *data, int quiet);
+extern int ipmi_set_dynamic_oem_lanp(void *priv, const struct ipmi_lanp *param,
+	int base, const void *data);
+extern int ipmi_set_lanp(void *priv, int param_selector, const void *data);
+extern int ipmi_lan6_main(struct ipmi_intf *intf, int argc, char **argv);
 
 /*
  * Functions the C tree exports but no header declares.

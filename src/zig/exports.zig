@@ -106,6 +106,9 @@ comptime {
     if (selected("vita")) {
         @import("cmd/vita.zig").exportSymbols();
     }
+    if (selected("lanp6")) {
+        @import("cmd/lanp6.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

@@ -1,0 +1,208 @@
+# IPv6 LAN config reads: revision 0x11, followed by the parameter payload.
+default_ccode 0x80
+
+respond set
+  netfn 0x0c
+  cmd 0x01
+  ccode 0x00
+end
+
+respond support
+  netfn 0x0c
+  cmd 0x02
+  match 01 32
+  data 11 07
+end
+respond enables
+  netfn 0x0c
+  cmd 0x02
+  match 01 33
+  data 11 02
+end
+respond traffic_class
+  netfn 0x0c
+  cmd 0x02
+  match 01 34
+  data 11 ab
+end
+respond static_hops
+  netfn 0x0c
+  cmd 0x02
+  match 01 35
+  data 11 20
+end
+respond flow_label
+  netfn 0x0c
+  cmd 0x02
+  match 01 36
+  data 11 0a bc de
+end
+respond status
+  netfn 0x0c
+  cmd 0x02
+  match 01 37
+  data 11 02 01 03
+end
+respond static_addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 38 00
+  times 1
+  data 11 00 80 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01 40 00
+end
+respond static_duid_stg
+  netfn 0x0c
+  cmd 0x02
+  match 01 39
+  data 11 10
+end
+respond static_duid
+  netfn 0x0c
+  cmd 0x02
+  match 01 3a 00 00
+  times 1
+  data 11 00 00 10 00 03 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e
+end
+respond dynamic_addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 3b 00
+  times 1
+  data 11 00 02 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02 40 02
+end
+respond dynamic_duid_stg
+  netfn 0x0c
+  cmd 0x02
+  match 01 3c
+  data 11 10
+end
+respond dynamic_duid
+  netfn 0x0c
+  cmd 0x02
+  match 01 3d 00 00
+  times 1
+  data 11 00 00 10 00 01 00 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e
+end
+respond dhcp6_cfg_sup
+  netfn 0x0c
+  cmd 0x02
+  match 01 3e
+  data 11 02
+end
+respond dhcp6_cfg_block1
+  netfn 0x0c
+  cmd 0x02
+  match 01 3f 00 01
+  data 11 00 01 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+end
+respond dhcp6_cfg_block0
+  netfn 0x0c
+  cmd 0x02
+  match 01 3f 00 00
+  times 1
+  data 11 00 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+end
+respond router_cfg
+  netfn 0x0c
+  cmd 0x02
+  match 01 40
+  data 11 03
+end
+respond static_rtr1_addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 41
+  data 11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01
+end
+respond static_rtr1_mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 42
+  data 11 00 11 22 33 44 55
+end
+respond static_rtr1_pfx_len
+  netfn 0x0c
+  cmd 0x02
+  match 01 43
+  data 11 40
+end
+respond static_rtr1_pfx
+  netfn 0x0c
+  cmd 0x02
+  match 01 44
+  data 11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond static_rtr2_addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 45
+  data 11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02
+end
+respond static_rtr2_mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 46
+  data 11 aa bb cc dd ee ff
+end
+respond static_rtr2_pfx_len
+  netfn 0x0c
+  cmd 0x02
+  match 01 47
+  data 11 80
+end
+respond static_rtr2_pfx
+  netfn 0x0c
+  cmd 0x02
+  match 01 48
+  data 11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond num_dynamic_rtrs
+  netfn 0x0c
+  cmd 0x02
+  match 01 49
+  data 11 01
+end
+respond dynamic_rtr_addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 4a 00
+  times 1
+  data 11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 03
+end
+respond dynamic_rtr_mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 4b
+  data 11 00 01 02 03 04 05 06
+end
+respond dynamic_rtr_pfx_len
+  netfn 0x0c
+  cmd 0x02
+  match 01 4c
+  data 11 00 40
+end
+respond dynamic_rtr_pfx
+  netfn 0x0c
+  cmd 0x02
+  match 01 4d
+  data 11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond dynamic_hops
+  netfn 0x0c
+  cmd 0x02
+  match 01 4e
+  data 11 33
+end
+respond ndslaac_cfg_sup
+  netfn 0x0c
+  cmd 0x02
+  match 01 4f
+  data 11 01
+end
+respond ndslaac_cfg
+  netfn 0x0c
+  cmd 0x02
+  match 01 50 00
+  times 1
+  data 11 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+end

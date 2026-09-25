@@ -1,0 +1,29 @@
+#!golden 1
+#!case lan6_print_ndslaac_cfg
+#!section exit
+0
+#!section stdout
+IPv6 ND/SLAAC Timing Configuration 0:
+    MAX_RTR_SOLICITATION_DELAY: 1
+    RTR_SOLICITATION_INTERVAL:  2
+    MAX_RTR_SOLICITATIONS:      3
+    DupAddrDetectTransmits:     4
+    MAX_MULTICAST_SOLICIT:      5
+    MAX_UNICAST_SOLICIT:        6
+    MAX_ANYCAST_DELAY_TIME:     7
+    MAX_NEIGHBOR_ADVERTISEMENT: 8
+    REACHABLE_TIME:             9
+    RETRANS_TIMER:              10
+    DELAY_FIRST_PROBE_TIME:     11
+    MAX_RANDOM_FACTOR:          12
+    MIN_RANDOM_FACTOR:          13
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 50 00 00
+< rule=ndslaac_cfg ccode=0x00 len=18 data=11 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+bye

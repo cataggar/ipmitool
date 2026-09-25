@@ -179,6 +179,7 @@ zig build -Dzig-modules=oem      # lib/ipmi_oem.c replaced by src/zig/cmd/oem.zi
 zig build -Dzig-modules=vita     # lib/ipmi_vita.c replaced by src/zig/cmd/vita.zig
 zig build -Dzig-modules=oem,raw  # several at once
 zig build -Dzig-modules=lanp,channel,user  # LAN configuration and its helpers
+zig build -Dzig-modules=lanp6    # IPv6 LAN configuration (see lanp6.md)
 zig build --help                 # lists the available module names
 ```
 

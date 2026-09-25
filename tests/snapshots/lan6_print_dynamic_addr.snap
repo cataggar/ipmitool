@@ -1,0 +1,19 @@
+#!golden 1
+#!case lan6_print_dynamic_addr
+#!section exit
+0
+#!section stdout
+IPv6 Dynamic Address 0:
+    Source/Type:    DHCPv6
+    Address:        2001:db8::2/64
+    Status:         pending
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3b 00 00
+< rule=dynamic_addr ccode=0x00 len=21 data=11 00 02 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02 40 02
+bye

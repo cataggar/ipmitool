@@ -1,0 +1,18 @@
+#!golden 1
+#!case lan6_print_rtr_cfg
+#!section exit
+0
+#!section stdout
+IPv6 Router Address Configuration Control:
+    Enable static router address:  yes
+    Enable dynamic router address: yes
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 40 00 00
+< rule=router_cfg ccode=0x00 len=2 data=11 03
+bye

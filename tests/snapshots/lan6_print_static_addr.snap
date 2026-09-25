@@ -1,0 +1,19 @@
+#!golden 1
+#!case lan6_print_static_addr
+#!section exit
+0
+#!section stdout
+IPv6 Static Address 0:
+    Enabled:        yes
+    Address:        2001:db8::1/64
+    Status:         active
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 38 00 00
+< rule=static_addr ccode=0x00 len=21 data=11 00 80 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01 40 00
+bye

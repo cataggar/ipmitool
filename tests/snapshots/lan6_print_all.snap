@@ -1,0 +1,182 @@
+#!golden 1
+#!case lan6_print_all
+#!section exit
+0
+#!section stdout
+IPv6/IPv4 Support:
+    IPv6 only: yes
+    IPv4 and IPv6: yes
+    IPv6 Destination Addresses for LAN alerting: yes
+IPv6/IPv4 Addressing Enables: both
+IPv6 Header Traffic Class: 171
+IPv6 Header Static Hop Limit: 32
+IPv6 Header Flow Label: 703710
+IPv6 Status:
+    Static address max:  2
+    Dynamic address max: 1
+    DHCPv6 support:      yes
+    SLAAC support:       yes
+IPv6 Static Address 0:
+    Enabled:        yes
+    Address:        2001:db8::1/64
+    Status:         active
+IPv6 DHCPv6 Static DUID Storage Length: 16
+IPv6 DHCPv6 Static DUID 0:
+    Length:   16
+    Type:     DUID-LL
+    1000030102030405060708090a0b0c0d
+IPv6 Dynamic Address 0:
+    Source/Type:    DHCPv6
+    Address:        2001:db8::2/64
+    Status:         pending
+IPv6 DHCPv6 Dynamic DUID Storage Length: 16
+IPv6 DHCPv6 Dynamic DUID 0:
+    Length:   16
+    Type:     DUID-LLT
+    1000010002030405060708090a0b0c0d
+IPv6 DHCPv6 Timing Configuration Support: per interface
+IPv6 DHCPv6 Timing Configuration 0:
+    SOL_MAX_DELAY:   0
+    SOL_TIMEOUT:     1
+    SOL_MAX_RT:      2
+    REQ_TIMEOUT:     3
+    REQ_MAX_RT:      4
+    REQ_MAX_RC:      5
+    CNF_MAX_DELAY:   6
+    CNF_TIMEOUT:     7
+    CNF_MAX_RT:      8
+    CNF_MAX_RD:      9
+    REN_TIMEOUT:     10
+    REN_MAX_RT:      11
+    REB_TIMEOUT:     12
+    REB_MAX_RT:      13
+    INF_MAX_DELAY:   14
+    INF_TIMEOUT:     15
+    INF_MAX_RT:      16
+    REL_TIMEOUT:     17
+    REL_MAX_RC:      18
+    DEC_TIMEOUT:     19
+    DEC_MAX_RC:      20
+    HOP_COUNT_LIMIT: 21
+IPv6 Router Address Configuration Control:
+    Enable static router address:  yes
+    Enable dynamic router address: yes
+IPv6 Static Router 1:
+    Address: 2001:db8::1
+    MAC:     00:11:22:33:44:55
+    Prefix:  2001:db8::/64
+IPv6 Static Router 2:
+    Address: 2001:db8::2
+    MAC:     aa:bb:cc:dd:ee:ff
+    Prefix:  2001:db8::/128
+IPv6 Number of Dynamic Router Info Sets: 1
+IPv6 Dynamic Router 0:
+    Address: 2001:db8::3
+    MAC:     01:02:03:04:05:06
+    Prefix:  2001:db8::/64
+IPv6 Dynamic Router Received Hop Limit: 51
+IPv6 ND/SLAAC Timing Configuration Support: global
+IPv6 ND/SLAAC Timing Configuration 0:
+    MAX_RTR_SOLICITATION_DELAY: 1
+    RTR_SOLICITATION_INTERVAL:  2
+    MAX_RTR_SOLICITATIONS:      3
+    DupAddrDetectTransmits:     4
+    MAX_MULTICAST_SOLICIT:      5
+    MAX_UNICAST_SOLICIT:        6
+    MAX_ANYCAST_DELAY_TIME:     7
+    MAX_NEIGHBOR_ADVERTISEMENT: 8
+    REACHABLE_TIME:             9
+    RETRANS_TIMER:              10
+    DELAY_FIRST_PROBE_TIME:     11
+    MAX_RANDOM_FACTOR:          12
+    MIN_RANDOM_FACTOR:          13
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 32 00 00
+< rule=support ccode=0x00 len=2 data=11 07
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 33 00 00
+< rule=enables ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 34 00 00
+< rule=traffic_class ccode=0x00 len=2 data=11 ab
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 35 00 00
+< rule=static_hops ccode=0x00 len=2 data=11 20
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 36 00 00
+< rule=flow_label ccode=0x00 len=4 data=11 0a bc de
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 37 00 00
+< rule=status ccode=0x00 len=4 data=11 02 01 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 38 00 00
+< rule=static_addr ccode=0x00 len=21 data=11 00 80 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01 40 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 38 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 39 00 00
+< rule=static_duid_stg ccode=0x00 len=2 data=11 10
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3a 00 00
+< rule=static_duid ccode=0x00 len=20 data=11 00 00 10 00 03 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3a 00 01
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3a 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3b 00 00
+< rule=dynamic_addr ccode=0x00 len=21 data=11 00 02 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02 40 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3b 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3c 00 00
+< rule=dynamic_duid_stg ccode=0x00 len=2 data=11 10
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3d 00 00
+< rule=dynamic_duid ccode=0x00 len=20 data=11 00 00 10 00 01 00 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3d 00 01
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3d 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3e 00 00
+< rule=dhcp6_cfg_sup ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 00
+< rule=dhcp6_cfg_block0 ccode=0x00 len=19 data=11 00 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 00 01
+< rule=dhcp6_cfg_block1 ccode=0x00 len=19 data=11 00 01 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 3f 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 40 00 00
+< rule=router_cfg ccode=0x00 len=2 data=11 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 41 00 00
+< rule=static_rtr1_addr ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 42 00 00
+< rule=static_rtr1_mac ccode=0x00 len=7 data=11 00 11 22 33 44 55
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 43 00 00
+< rule=static_rtr1_pfx_len ccode=0x00 len=2 data=11 40
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 44 00 00
+< rule=static_rtr1_pfx ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 45 00 00
+< rule=static_rtr2_addr ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 46 00 00
+< rule=static_rtr2_mac ccode=0x00 len=7 data=11 aa bb cc dd ee ff
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 47 00 00
+< rule=static_rtr2_pfx_len ccode=0x00 len=2 data=11 80
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 48 00 00
+< rule=static_rtr2_pfx ccode=0x00 len=17 data=11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 49 00 00
+< rule=num_dynamic_rtrs ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4a 00 00
+< rule=dynamic_rtr_addr ccode=0x00 len=18 data=11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4b 00 00
+< rule=dynamic_rtr_mac ccode=0x00 len=8 data=11 00 01 02 03 04 05 06
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4c 00 00
+< rule=dynamic_rtr_pfx_len ccode=0x00 len=3 data=11 00 40
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4d 00 00
+< rule=dynamic_rtr_pfx ccode=0x00 len=18 data=11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4a 01 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4e 00 00
+< rule=dynamic_hops ccode=0x00 len=2 data=11 33
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4f 00 00
+< rule=ndslaac_cfg_sup ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 50 00 00
+< rule=ndslaac_cfg ccode=0x00 len=18 data=11 00 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 50 01 00
+< rule=default ccode=0x80 len=0 data=
+bye

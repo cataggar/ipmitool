@@ -1,0 +1,12 @@
+respond addr
+  netfn 0x0c
+  cmd 0x02
+  match 01 41
+  data 11 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 01
+end
+respond mac_denied
+  netfn 0x0c
+  cmd 0x02
+  match 01 42
+  ccode 0x82
+end

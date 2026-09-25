@@ -1,0 +1,25 @@
+#!golden 1
+#!case lan6_print_dynamic_rtr
+#!section exit
+0
+#!section stdout
+IPv6 Dynamic Router 0:
+    Address: 2001:db8::3
+    MAC:     01:02:03:04:05:06
+    Prefix:  2001:db8::/64
+#!section stderr
+Getting parameter(s)...
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4a 00 00
+< rule=dynamic_rtr_addr ccode=0x00 len=18 data=11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 03
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4b 00 00
+< rule=dynamic_rtr_mac ccode=0x00 len=8 data=11 00 01 02 03 04 05 06
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4c 00 00
+< rule=dynamic_rtr_pfx_len ccode=0x00 len=3 data=11 00 40
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 4d 00 00
+< rule=dynamic_rtr_pfx ccode=0x00 len=18 data=11 00 20 01 0d b8 00 00 00 00 00 00 00 00 00 00 00 00
+bye
