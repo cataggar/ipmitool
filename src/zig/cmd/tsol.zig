@@ -1,5 +1,8 @@
 //! Tyan SOL over the LAN interface: UDP receive, IPMI keystrokes and a raw
 //! terminal. Selected with `-Dzig-modules=tsol`.
+//! Diagnostics use typed `log.print()` / `log.perror()` in the selected logger
+//! archive with the C logger fallback; neither path changes the PTY/UDP
+//! keepalive trace or reads errno before the original failure checks.
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
@@ -27,7 +30,7 @@ fn command(intf: *Intf, recvip: [*:0]u8, port: c_int, cmd: u8) c_int {
     var ip3: c_uint = 0;
     var ip4: c_uint = 0;
     if (c.sscanf(recvip, "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4) != 4) {
-        c.lprintf(log.Level.err, "Invalid IP address: %s", recvip);
+        log.print(log.Level.err, "Invalid IP address: %s", .{recvip});
         return -1;
     }
     const port_bits: u32 = @bitCast(port);
@@ -41,11 +44,11 @@ fn command(intf: *Intf, recvip: [*:0]u8, port: c_int, cmd: u8) c_int {
     req.msg.data_len = data.len;
     req.msg.data = &data;
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Unable to perform TSOL command");
+        log.print(log.Level.err, "Unable to perform TSOL command", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Unable to perform TSOL command: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, "Unable to perform TSOL command: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
         return -1;
     }
     return 0;
@@ -65,11 +68,11 @@ fn sendKeystroke(intf: *Intf, buff: []const u8) c_int {
     const rsp = intf.sendrecv.?(intf, &req);
     if (c.verbose != 0) {
         const response = rsp orelse {
-            c.lprintf(log.Level.err, "Unable to send keystroke");
+            log.print(log.Level.err, "Unable to send keystroke", .{});
             return -1;
         };
         if (response.ccode != 0) {
-            c.lprintf(log.Level.err, "Unable to send keystroke: %s", c.val2str(response.ccode, c.completion_code_vals));
+            log.print(log.Level.err, "Unable to send keystroke: %s", .{c.val2str(response.ccode, c.completion_code_vals)});
             return -1;
         }
     }
@@ -86,20 +89,26 @@ fn keepalive(intf: *Intf) void {
 
 fn printEscapes(intf: *Intf) void {
     const esc: c_int = intf.ssn_params.sol_escape_char;
-    c.lprintf(log.Level.notice, "       %c.  - terminate connection\n" ++
-        "       %c^Z - suspend ipmitool\n" ++
-        "       %c^X - suspend ipmitool, but don't restore tty on restart\n" ++
-        "       %c?  - this message\n" ++
-        "       %c%c  - send the escape character by typing it twice\n" ++
-        "       (Note that escapes are only recognized immediately after newline.)", esc, esc, esc, esc, esc, esc);
+    log.print(
+        log.Level.notice,
+        "       %c.  - terminate connection\n" ++
+            "       %c^Z - suspend ipmitool\n" ++
+            "       %c^X - suspend ipmitool, but don't restore tty on restart\n" ++
+            "       %c?  - this message\n" ++
+            "       %c%c  - send the escape character by typing it twice\n" ++
+            "       (Note that escapes are only recognized immediately after newline.)",
+        .{
+            esc, esc, esc, esc, esc, esc,
+        },
+    );
 }
 
 fn leaveRawMode() void {
     if (!in_raw_mode) return;
     if (c.tcsetattr(0, c.TCSADRAIN, &saved_tio) == -1) {
-        c.lperror(log.Level.err, "tcsetattr(stdin)");
+        log.perror(log.Level.err, "tcsetattr(stdin)", .{});
     } else if (c.tcsetattr(1, c.TCSADRAIN, &saved_tio) == -1) {
-        c.lperror(log.Level.err, "tcsetattr(stdout)");
+        log.perror(log.Level.err, "tcsetattr(stdout)", .{});
     } else {
         in_raw_mode = false;
     }
@@ -107,7 +116,7 @@ fn leaveRawMode() void {
 
 fn enterRawMode() void {
     if (c.tcgetattr(1, &saved_tio) < 0) {
-        c.lperror(log.Level.err, "tcgetattr failed");
+        log.perror(log.Level.err, "tcgetattr failed", .{});
         return;
     }
     var tio = saved_tio;
@@ -125,9 +134,9 @@ fn enterRawMode() void {
     tio.c_cc[c.VMIN] = 1;
     tio.c_cc[c.VTIME] = 0;
     if (c.tcsetattr(0, c.TCSADRAIN, &tio) < 0) {
-        c.lperror(log.Level.err, "tcsetattr(stdin)");
+        log.perror(log.Level.err, "tcsetattr(stdin)", .{});
     } else if (c.tcsetattr(1, c.TCSADRAIN, &tio) < 0) {
-        c.lperror(log.Level.err, "tcsetattr(stdout)");
+        log.perror(log.Level.err, "tcsetattr(stdout)", .{});
     } else {
         in_raw_mode = true;
     }
@@ -192,7 +201,7 @@ fn terminalCleanup() void {
         _ = c.ioctl(1, c.TIOCSWINSZ, &saved_winsize);
     leaveRawMode();
     const err = c.__errno_location().*;
-    if (err != 0) c.lprintf(log.Level.err, "Exiting due to error %d -> %s", err, c.strerror(err));
+    if (err != 0) log.print(log.Level.err, "Exiting due to error %d -> %s", .{ err, c.strerror(err) });
 }
 
 fn setTerminalSize(rows: c_int, cols: c_int) void {
@@ -206,19 +215,19 @@ fn setTerminalSize(rows: c_int, cols: c_int) void {
 
 fn usage() void {
     var size: c.struct_winsize = undefined;
-    c.lprintf(log.Level.notice, "Usage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]");
-    c.lprintf(log.Level.notice, "       recvip       Receiver IP Address             [default=local]");
-    c.lprintf(log.Level.notice, "       port=NUM     Receiver UDP Port               [default=%d]", @as(c_int, port_default));
-    c.lprintf(log.Level.notice, "       ro|rw        Set Read-Only or Read-Write     [default=rw]");
+    log.print(log.Level.notice, "Usage: tsol [recvip] [port=NUM] [ro|rw] [rows=NUM] [cols=NUM] [altterm]", .{});
+    log.print(log.Level.notice, "       recvip       Receiver IP Address             [default=local]", .{});
+    log.print(log.Level.notice, "       port=NUM     Receiver UDP Port               [default=%d]", .{@as(c_int, port_default)});
+    log.print(log.Level.notice, "       ro|rw        Set Read-Only or Read-Write     [default=rw]", .{});
     _ = c.ioctl(1, c.TIOCGWINSZ, &size);
-    c.lprintf(log.Level.notice, "       rows=NUM     Set terminal rows               [default=%d]", @as(c_int, size.ws_row));
-    c.lprintf(log.Level.notice, "       cols=NUM     Set terminal columns            [default=%d]", @as(c_int, size.ws_col));
-    c.lprintf(log.Level.notice, "       altterm      Alternate terminal setup        [default=off]");
+    log.print(log.Level.notice, "       rows=NUM     Set terminal rows               [default=%d]", .{@as(c_int, size.ws_row)});
+    log.print(log.Level.notice, "       cols=NUM     Set terminal columns            [default=%d]", .{@as(c_int, size.ws_col)});
+    log.print(log.Level.notice, "       altterm      Alternate terminal setup        [default=off]", .{});
 }
 
 fn main(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     if (!std.mem.eql(u8, std.mem.sliceTo(&intf.name, 0), "lan")) {
-        c.lprintf(log.Level.err, "Error: Tyan SOL is only available over lan interface");
+        log.print(log.Level.err, "Error: Tyan SOL is only available over lan interface", .{});
         return -1;
     }
     var recvip: ?[*:0]u8 = null;
@@ -249,7 +258,7 @@ fn main(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
             usage();
             return 0;
         } else {
-            c.lprintf(log.Level.err, "Invalid tsol command: '%s'\n", arg);
+            log.print(log.Level.err, "Invalid tsol command: '%s'\n", .{arg});
             usage();
             return -1;
         }
@@ -264,11 +273,11 @@ fn main(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     if (c.inet_pton(c.AF_INET, hostname, &sa_in.sin_addr) <= 0) {
         const host = c.gethostbyname(hostname);
         if (host == null) {
-            c.lprintf(log.Level.err, "Address lookup for %s failed", hostname);
+            log.print(log.Level.err, "Address lookup for %s failed", .{hostname});
             return -1;
         }
         if (host.*.h_addrtype != c.AF_INET) {
-            c.lprintf(log.Level.err, "Address lookup for %s failed. Got %s, expected IPv4 address.", hostname, @as([*:0]const u8, if (host.*.h_addrtype == c.AF_INET6) "IPv6" else "Unknown"));
+            log.print(log.Level.err, "Address lookup for %s failed. Got %s, expected IPv4 address.", .{ hostname, @as([*:0]const u8, if (host.*.h_addrtype == c.AF_INET6) "IPv6" else "Unknown") });
             return -1;
         }
         sa_in.sin_family = @intCast(host.*.h_addrtype);
@@ -278,12 +287,12 @@ fn main(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
 
     const fd_socket = c.socket(c.PF_INET, c.SOCK_DGRAM, c.IPPROTO_UDP);
     if (fd_socket < 0) {
-        c.lprintf(log.Level.err, "Can't open port %d", port);
+        log.print(log.Level.err, "Can't open port %d", .{port});
         return -1;
     }
     defer _ = c.close(fd_socket);
     if (c.bind(fd_socket, @ptrCast(&sin), @sizeOf(c.struct_sockaddr_in)) == -1) {
-        c.lprintf(log.Level.err, "Failed to bind socket.");
+        log.print(log.Level.err, "Failed to bind socket.", .{});
         return -1;
     }
     if (recvip == null) {
@@ -291,12 +300,12 @@ fn main(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
         var myaddr: c.struct_sockaddr_in = undefined;
         var mylen: c.socklen_t = @sizeOf(c.struct_sockaddr_in);
         if (c.getsockname(intf.fd, @ptrCast(&myaddr), &mylen) < 0) {
-            c.lperror(log.Level.err, "getsockname failed");
+            log.perror(log.Level.err, "getsockname failed", .{});
             return -1;
         }
         const addr = c.inet_ntoa(myaddr.sin_addr);
         if (addr == null) {
-            c.lprintf(log.Level.err, "Unable to find local IP address");
+            log.print(log.Level.err, "Unable to find local IP address", .{});
             return -1;
         }
         recvip = @ptrCast(addr);
@@ -307,7 +316,7 @@ fn main(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     enterRawMode();
     const started = command(intf, receiver, port, cmd_start);
     if (started < 0) {
-        c.lprintf(log.Level.err, "Error starting SOL");
+        log.print(log.Level.err, "Error starting SOL", .{});
         terminalCleanup();
         return -1;
     }

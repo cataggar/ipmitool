@@ -2,6 +2,8 @@
 //! `zig build -Dzig-modules=sol` in place of lib/ipmi_sol.c.
 //! The request/response and payload types are shared ABI-checked Zig mirrors;
 //! libc handles formatting and terminal control to preserve CLI behaviour.
+//! Diagnostics use typed `log.print()` from the same selected archive as the
+//! logger state; without the Zig logger it retains the C `lprintf` fallback.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -72,11 +74,11 @@ fn payloadAccess(intf: *Intf, channel: u8, userid: u8, enable: c_int) callconv(.
     var req = reqWithData(ipmi.NetFn.app, 0x4c, &data);
     const rsp = sendrecv(intf, &req);
     if (rsp == null) {
-        c.lprintf(log.Level.err, "Error %sabling SOL payload for user %d on channel %d", choose(enable != 0, "en", "dis"), @as(c_int, userid), @as(c_int, channel));
+        log.print(log.Level.err, "Error %sabling SOL payload for user %d on channel %d", .{ choose(enable != 0, "en", "dis"), @as(c_int, userid), @as(c_int, channel) });
         return -1;
     }
     if (rsp.?.ccode != 0) {
-        c.lprintf(log.Level.err, "Error %sabling SOL payload for user %d on channel %d: %s", choose(enable != 0, "en", "dis"), @as(c_int, userid), @as(c_int, channel), cc(rsp.?.ccode));
+        log.print(log.Level.err, "Error %sabling SOL payload for user %d on channel %d: %s", .{ choose(enable != 0, "en", "dis"), @as(c_int, userid), @as(c_int, channel), cc(rsp.?.ccode) });
         return -1;
     }
     return 0;
@@ -86,18 +88,18 @@ fn payloadAccessStatus(intf: *Intf, channel: u8, userid: u8) callconv(.c) c_int 
     var data = [2]u8{ channel & 0x0f, userid & 0x3f };
     var req = reqWithData(ipmi.NetFn.app, 0x4d, &data);
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error. No valid response received.");
+        log.print(log.Level.err, "Error. No valid response received.", .{});
         return -1;
     };
     if (rsp.ccode == 0) {
         if (rsp.data_len != 4) {
-            c.lprintf(log.Level.err, "Error parsing SOL payload status for user %d on channel %d", @as(c_int, userid), @as(c_int, channel));
+            log.print(log.Level.err, "Error parsing SOL payload status for user %d on channel %d", .{ @as(c_int, userid), @as(c_int, channel) });
             return -1;
         }
         _ = c.printf("User %d on channel %d is %sabled\n", @as(c_int, userid), @as(c_int, channel), choose(rsp.data[0] & 2 != 0, "en", "dis"));
         return 0;
     }
-    c.lprintf(log.Level.err, "Error getting SOL payload status for user %d on channel %d: %s", @as(c_int, userid), @as(c_int, channel), cc(rsp.ccode));
+    log.print(log.Level.err, "Error getting SOL payload status for user %d on channel %d: %s", .{ @as(c_int, userid), @as(c_int, channel), cc(rsp.ccode) });
     return -1;
 }
 
@@ -107,14 +109,14 @@ fn getSolInfo(intf: *Intf, channel: u8, params: *Config) callconv(.c) c_int {
     for (0..9) |i| {
         data[1] = @intCast(i);
         const rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(log.Level.err, "Error: No response requesting SOL parameter '%s'", name(i));
+            log.print(log.Level.err, "Error: No response requesting SOL parameter '%s'", .{name(i)});
             return -1;
         };
         switch (rsp.ccode) {
             0 => {
                 const expected: c_int = if (i == 3 or i == 4 or i == 8) 3 else 2;
                 if (rsp.data_len != expected) {
-                    c.lprintf(log.Level.err, "Error: Unexpected data length (%d) received for SOL parameter '%s'", rsp.data_len, name(i));
+                    log.print(log.Level.err, "Error: Unexpected data length (%d) received for SOL parameter '%s'", .{ rsp.data_len, name(i) });
                     continue;
                 }
                 switch (i) {
@@ -142,19 +144,19 @@ fn getSolInfo(intf: *Intf, channel: u8, params: *Config) callconv(.c) c_int {
             },
             0x80 => {
                 if (i == 7) {
-                    c.lprintf(log.Level.err, "Info: SOL parameter '%s' not supported - defaulting to 0x%02x", name(i), @as(c_uint, channel));
+                    log.print(log.Level.err, "Info: SOL parameter '%s' not supported - defaulting to 0x%02x", .{ name(i), @as(c_uint, channel) });
                     params.payload_channel = channel;
                 } else if (i == 8) {
                     if (intf.session == null) {
-                        c.lprintf(log.Level.err, "Info: SOL parameter '%s' not supported - can't determine which payload port to use on NULL session", name(i));
+                        log.print(log.Level.err, "Info: SOL parameter '%s' not supported - can't determine which payload port to use on NULL session", .{name(i)});
                         return -1;
                     }
-                    c.lprintf(log.Level.err, "Info: SOL parameter '%s' not supported - defaulting to %d", name(i), intf.ssn_params.port);
+                    log.print(log.Level.err, "Info: SOL parameter '%s' not supported - defaulting to %d", .{ name(i), intf.ssn_params.port });
                     params.payload_port = @truncate(@as(c_uint, @bitCast(intf.ssn_params.port)));
-                } else c.lprintf(log.Level.err, "Info: SOL parameter '%s' not supported", name(i));
+                } else log.print(log.Level.err, "Info: SOL parameter '%s' not supported", .{name(i)});
             },
             else => {
-                c.lprintf(log.Level.err, "Error requesting SOL parameter '%s': %s", name(i), cc(rsp.ccode));
+                log.print(log.Level.err, "Error requesting SOL parameter '%s': %s", .{ name(i), cc(rsp.ccode) });
                 return -1;
             },
         }
@@ -191,8 +193,8 @@ fn printSolInfo(intf: *Intf, channel: u8) c_int {
 
 fn isValidU8(value: [*:0]const u8, param: [*:0]const u8, min: u8, max: u8, out: *u8) callconv(.c) c_int {
     if (c.str2uchar(value, out) != 0 or out.* < min or out.* > max) {
-        c.lprintf(log.Level.err, "Invalid value %s for parameter %s", value, param);
-        c.lprintf(log.Level.err, "Valid values are %d-%d", @as(c_int, min), @as(c_int, max));
+        log.print(log.Level.err, "Invalid value %s for parameter %s", .{ value, param });
+        log.print(log.Level.err, "Valid values are %d-%d", .{ @as(c_int, min), @as(c_int, max) });
         return -1;
     }
     return 0;
@@ -206,8 +208,8 @@ const Settings = struct {
 };
 
 fn failBoolean(value: [*:0]const u8, param: [*:0]const u8) c_int {
-    c.lprintf(log.Level.err, "Invalid value %s for parameter %s", value, param);
-    c.lprintf(log.Level.err, "Valid values are true and false");
+    log.print(log.Level.err, "Invalid value %s for parameter %s", .{ value, param });
+    log.print(log.Level.err, "Valid values are true and false", .{});
     return -1;
 }
 
@@ -215,16 +217,16 @@ fn setInProgress(intf: *Intf, channel: u8, code: u8) c_int {
     var data = [3]u8{ channel, 0, code };
     var req = reqWithData(ipmi.NetFn.transport, 0x21, &data);
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error setting SOL parameter 'set-in-progress'");
+        log.print(log.Level.err, "Error setting SOL parameter 'set-in-progress'", .{});
         return -1;
     };
     if (code == 2 or rsp.ccode == 0) return 0;
     switch (rsp.ccode) {
-        0x80 => c.lprintf(log.Level.err, "Error setting SOL parameter 'set-in-progress': Parameter not supported"),
-        0x81 => c.lprintf(log.Level.err, "Error setting SOL parameter 'set-in-progress': Attempt to set set-in-progress when not in set-complete state"),
-        0x82 => c.lprintf(log.Level.err, "Error setting SOL parameter 'set-in-progress': Attempt to write read-only parameter"),
-        0x83 => c.lprintf(log.Level.err, "Error setting SOL parameter 'set-in-progress': Attempt to read write-only parameter"),
-        else => c.lprintf(log.Level.err, "Error setting SOL parameter 'set-in-progress' to '%s': %s", choose(code == 0, "set-complete", "set-in-progress"), cc(rsp.ccode)),
+        0x80 => log.print(log.Level.err, "Error setting SOL parameter 'set-in-progress': Parameter not supported", .{}),
+        0x81 => log.print(log.Level.err, "Error setting SOL parameter 'set-in-progress': Attempt to set set-in-progress when not in set-complete state", .{}),
+        0x82 => log.print(log.Level.err, "Error setting SOL parameter 'set-in-progress': Attempt to write read-only parameter", .{}),
+        0x83 => log.print(log.Level.err, "Error setting SOL parameter 'set-in-progress': Attempt to read write-only parameter", .{}),
+        else => log.print(log.Level.err, "Error setting SOL parameter 'set-in-progress' to '%s': %s", .{ choose(code == 0, "set-complete", "set-in-progress"), cc(rsp.ccode) }),
     }
     return -1;
 }
@@ -234,8 +236,8 @@ fn setParam(intf: *Intf, channel: u8, param: [*:0]const u8, value: [*:0]const u8
     if (eql(param, "set-in-progress")) {
         s.guarded = false;
         s.data[0] = if (eql(value, "set-complete")) 0 else if (eql(value, "set-in-progress")) 1 else if (eql(value, "commit-write")) 2 else {
-            c.lprintf(log.Level.err, "Invalid value %s for parameter %s", value, param);
-            c.lprintf(log.Level.err, "Valid values are set-complete, set-in-progress and commit-write");
+            log.print(log.Level.err, "Invalid value %s for parameter %s", .{ value, param });
+            log.print(log.Level.err, "Valid values are set-complete, set-in-progress and commit-write", .{});
             return -1;
         };
     } else if (eql(param, "enabled")) {
@@ -250,14 +252,14 @@ fn setParam(intf: *Intf, channel: u8, param: [*:0]const u8, value: [*:0]const u8
             s.data[0] = if (eql(value, "true")) bit else if (eql(value, "false")) 0 else return failBoolean(value, param);
         } else {
             s.data[0] = if (eql(value, "user")) 2 else if (eql(value, "operator")) 3 else if (eql(value, "admin")) 4 else if (eql(value, "oem")) 5 else {
-                c.lprintf(log.Level.err, "Invalid value %s for parameter %s", value, param);
-                c.lprintf(log.Level.err, "Valid values are user, operator, admin, and oem");
+                log.print(log.Level.err, "Invalid value %s for parameter %s", .{ value, param });
+                log.print(log.Level.err, "Valid values are user, operator, admin, and oem", .{});
                 return -1;
             };
         }
         var old = std.mem.zeroes(Config);
         if (getSolInfo(intf, channel, &old) != 0) {
-            c.lprintf(log.Level.err, "Error fetching SOL parameters for %s update", param);
+            log.print(log.Level.err, "Error fetching SOL parameters for %s update", .{param});
             return -1;
         }
         if (!encryption and old.force_encryption != 0) s.data[0] |= 0x80;
@@ -275,7 +277,7 @@ fn setParam(intf: *Intf, channel: u8, param: [*:0]const u8, value: [*:0]const u8
         if (isValidU8(value, param, if (accum) 1 else 0, if (retry_count) 7 else 255, slot) != 0) return -1;
         var old = std.mem.zeroes(Config);
         if (getSolInfo(intf, channel, &old) != 0) {
-            c.lprintf(log.Level.err, "Error fetching SOL parameters for %s update", param);
+            log.print(log.Level.err, "Error fetching SOL parameters for %s update", .{param});
             return -1;
         }
         if (accum) s.data[1] = old.character_send_threshold else if (threshold)
@@ -287,41 +289,41 @@ fn setParam(intf: *Intf, channel: u8, param: [*:0]const u8, value: [*:0]const u8
     } else if (eql(param, "non-volatile-bit-rate") or eql(param, "volatile-bit-rate")) {
         s.selector = if (eql(param, "non-volatile-bit-rate")) 5 else 6;
         s.data[0] = if (eql(value, "serial")) 0 else if (eql(value, "9.6")) 6 else if (eql(value, "19.2")) 7 else if (eql(value, "38.4")) 8 else if (eql(value, "57.6")) 9 else if (eql(value, "115.2")) 10 else {
-            c.lprintf(log.Level.err, "Invalid value \"%s\" for parameter \"%s\"", value, param);
-            c.lprintf(log.Level.err, "Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2");
+            log.print(log.Level.err, "Invalid value \"%s\" for parameter \"%s\"", .{ value, param });
+            log.print(log.Level.err, "Valid values are serial, 9.6 19.2, 38.4, 57.6 and 115.2", .{});
             return -1;
         };
     } else {
-        c.lprintf(log.Level.err, "Error: invalid SOL parameter %s", param);
+        log.print(log.Level.err, "Error: invalid SOL parameter %s", .{param});
         return -1;
     }
 
     if (s.guarded and setInProgress(intf, channel, 1) != 0) {
-        c.lprintf(log.Level.err, "Error: set of parameter \"%s\" failed", param);
+        log.print(log.Level.err, "Error: set of parameter \"%s\" failed", .{param});
         return -1;
     }
     var data = [4]u8{ channel, s.selector, s.data[0], s.data[1] };
     var req = reqWithData(ipmi.NetFn.transport, 0x21, data[0..s.len]);
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error setting SOL parameter '%s'", param);
+        log.print(log.Level.err, "Error setting SOL parameter '%s'", .{param});
         return -1;
     };
     if (!(s.selector == 0 and s.data[0] == 2) and rsp.ccode != 0) {
         switch (rsp.ccode) {
-            0x80 => c.lprintf(log.Level.err, "Error setting SOL parameter '%s': Parameter not supported", param),
-            0x81 => c.lprintf(log.Level.err, "Error setting SOL parameter '%s': Attempt to set set-in-progress when not in set-complete state", param),
-            0x82 => c.lprintf(log.Level.err, "Error setting SOL parameter '%s': Attempt to write read-only parameter", param),
-            0x83 => c.lprintf(log.Level.err, "Error setting SOL parameter '%s': Attempt to read write-only parameter", param),
-            else => c.lprintf(log.Level.err, "Error setting SOL parameter '%s' to '%s': %s", param, value, cc(rsp.ccode)),
+            0x80 => log.print(log.Level.err, "Error setting SOL parameter '%s': Parameter not supported", .{param}),
+            0x81 => log.print(log.Level.err, "Error setting SOL parameter '%s': Attempt to set set-in-progress when not in set-complete state", .{param}),
+            0x82 => log.print(log.Level.err, "Error setting SOL parameter '%s': Attempt to write read-only parameter", .{param}),
+            0x83 => log.print(log.Level.err, "Error setting SOL parameter '%s': Attempt to read write-only parameter", .{param}),
+            else => log.print(log.Level.err, "Error setting SOL parameter '%s' to '%s': %s", .{ param, value, cc(rsp.ccode) }),
         }
         if (s.guarded and setInProgress(intf, channel, 0) != 0)
-            c.lprintf(log.Level.err, "Error could not set \"set-in-progress\" to \"set-complete\"");
+            log.print(log.Level.err, "Error could not set \"set-in-progress\" to \"set-complete\"", .{});
         return -1;
     }
     if (s.guarded) {
         _ = setInProgress(intf, channel, 2);
         if (setInProgress(intf, channel, 0) != 0) {
-            c.lprintf(log.Level.err, "Error could not set \"set-in-progress\" to \"set-complete\"");
+            log.print(log.Level.err, "Error could not set \"set-in-progress\" to \"set-complete\"", .{});
             return -1;
         }
     }
@@ -367,20 +369,20 @@ fn output(rsp_opt: ?*Response) callconv(.c) void {
 
 fn deactivate(intf: *Intf, instance: c_int) c_int {
     if (instance <= 0 or instance > 15) {
-        c.lprintf(log.Level.err, "Error: Instance must range from 1 to 15");
+        log.print(log.Level.err, "Error: Instance must range from 1 to 15", .{});
         return -1;
     }
     var data = [6]u8{ 1, @intCast(instance), 0, 0, 0, 0 };
     var req = reqWithData(ipmi.NetFn.app, 0x49, &data);
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error: No response de-activating SOL payload");
+        log.print(log.Level.err, "Error: No response de-activating SOL payload", .{});
         return -1;
     };
     switch (rsp.ccode) {
         0 => return 0,
-        0x80 => c.lprintf(log.Level.err, "Info: SOL payload already de-activated"),
-        0x81 => c.lprintf(log.Level.err, "Info: SOL payload type disabled"),
-        else => c.lprintf(log.Level.err, "Error de-activating SOL payload: %s", cc(rsp.ccode)),
+        0x80 => log.print(log.Level.err, "Info: SOL payload already de-activated", .{}),
+        0x81 => log.print(log.Level.err, "Info: SOL payload type disabled", .{}),
+        else => log.print(log.Level.err, "Error de-activating SOL payload: %s", .{cc(rsp.ccode)}),
     }
     return -1;
 }
@@ -496,7 +498,7 @@ fn processUserInput(intf: *Intf, input: []const u8) c_int {
             _ = c.usleep(5000);
         }
         if (rsp == null) {
-            c.lprintf(log.Level.err, "Error sending SOL data: FAIL");
+            log.print(log.Level.err, "Error sending SOL data: FAIL", .{});
             return -1;
         }
         if (result == 0 and rsp.?.session.authtype == c.IPMI_SESSION_AUTHTYPE_RMCP_PLUS and
@@ -534,11 +536,11 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
         ipmi.buf_size,
     );
     if (cap == 0) {
-        c.lprintf(log.Level.err, "Error: Invalid SOL inbound payload size");
+        log.print(log.Level.err, "Error: Invalid SOL inbound payload size", .{});
         return -1;
     }
     const buffer = std.heap.c_allocator.alloc(u8, cap) catch {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return -1;
     };
     defer std.heap.c_allocator.free(buffer);
@@ -586,18 +588,18 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
                 break;
             }
         } else {
-            c.lprintf(log.Level.err, "Error: Select returned with nothing to read");
+            log.print(log.Level.err, "Error: Select returned with nothing to read", .{});
             break;
         }
     }
     leaveRawMode();
     if (keepalive_failure != 0) {
-        c.lprintf(log.Level.err, "Error: No response to keepalive - Terminating session");
+        log.print(log.Level.err, "Error: No response to keepalive - Terminating session", .{});
         _ = deactivate(intf, instance);
         c.exit(1);
     }
     if (closed_by_bmc) {
-        c.lprintf(log.Level.err, "SOL session closed by BMC");
+        log.print(log.Level.err, "SOL session closed by BMC", .{});
         c.exit(1);
     }
     _ = deactivate(intf, instance);
@@ -606,15 +608,15 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
 
 fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int {
     if (!std.mem.eql(u8, std.mem.sliceTo(&intf.name, 0), "lanplus")) {
-        c.lprintf(log.Level.err, "Error: This command is only available over the lanplus interface");
+        log.print(log.Level.err, "Error: This command is only available over the lanplus interface", .{});
         return -1;
     }
     if (instance <= 0 or instance > 15) {
-        c.lprintf(log.Level.err, "Error: Instance must range from 1 to 15");
+        log.print(log.Level.err, "Error: Instance must range from 1 to 15", .{});
         return -1;
     }
     const ssn = intf.session orelse {
-        c.lprintf(log.Level.err, "Error: No SOL session available");
+        log.print(log.Level.err, "Error: No SOL session available", .{});
         return -1;
     };
     ssn.sol_data.sol_input_handler = output;
@@ -624,36 +626,36 @@ fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int
     }
     var req = reqWithData(ipmi.NetFn.app, 0x48, &data);
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Error: No response activating SOL payload");
+        log.print(log.Level.err, "Error: No response activating SOL payload", .{});
         return -1;
     };
     switch (rsp.ccode) {
         0 => if (rsp.data_len != 12) {
-            c.lprintf(log.Level.err, "Error: Unexpected data length (%d) received in payload activation response", rsp.data_len);
+            log.print(log.Level.err, "Error: Unexpected data length (%d) received in payload activation response", .{rsp.data_len});
             return -1;
         },
         0x80 => {
-            c.lprintf(log.Level.err, "Info: SOL payload already active on another session");
+            log.print(log.Level.err, "Info: SOL payload already active on another session", .{});
             return -1;
         },
         0x81 => {
-            c.lprintf(log.Level.err, "Info: SOL payload disabled");
+            log.print(log.Level.err, "Info: SOL payload disabled", .{});
             return -1;
         },
         0x82 => {
-            c.lprintf(log.Level.err, "Info: SOL payload activation limit reached");
+            log.print(log.Level.err, "Info: SOL payload activation limit reached", .{});
             return -1;
         },
         0x83 => {
-            c.lprintf(log.Level.err, "Info: cannot activate SOL payload with encryption");
+            log.print(log.Level.err, "Info: cannot activate SOL payload with encryption", .{});
             return -1;
         },
         0x84 => {
-            c.lprintf(log.Level.err, "Info: cannot activate SOL payload without encryption");
+            log.print(log.Level.err, "Info: cannot activate SOL payload without encryption", .{});
             return -1;
         },
         else => {
-            c.lprintf(log.Level.err, "Error activating SOL payload: %s", cc(rsp.ccode));
+            log.print(log.Level.err, "Error activating SOL payload: %s", .{cc(rsp.ccode)});
             return -1;
         },
     }
@@ -661,7 +663,7 @@ fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int
     ssn.sol_data.max_outbound_payload_size = std.mem.readInt(u16, rsp.data[6..8], .little);
     ssn.sol_data.port = std.mem.readInt(u16, rsp.data[8..10], .little);
     if (ssn.sol_data.max_inbound_payload_size <= 4 or ssn.sol_data.max_outbound_payload_size <= 4) {
-        c.lprintf(log.Level.err, "Error: Invalid SOL payload size");
+        log.print(log.Level.err, "Error: Invalid SOL payload size", .{});
         _ = deactivate(intf, instance);
         return -1;
     }
@@ -669,7 +671,7 @@ fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int
         if (@byteSwap(ssn.sol_data.port) == intf.ssn_params.port)
             ssn.sol_data.port = @byteSwap(ssn.sol_data.port)
         else {
-            c.lprintf(log.Level.err, "Error: BMC requests SOL session on different port");
+            log.print(log.Level.err, "Error: BMC requests SOL session on different port", .{});
             return -1;
         }
     }
@@ -681,40 +683,40 @@ fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int
     }
     if (sessionLoop(intf, instance) != 0) {
         _ = deactivate(intf, instance);
-        c.lprintf(log.Level.err, "Error in SOL session");
+        log.print(log.Level.err, "Error in SOL session", .{});
         return -1;
     }
     return 0;
 }
 
 fn usage() void {
-    c.lprintf(log.Level.notice, "SOL Commands: info [<channel number>]");
-    c.lprintf(log.Level.notice, "              set <parameter> <value> [channel]");
-    c.lprintf(log.Level.notice, "              payload <enable|disable|status> [channel] [userid]");
-    c.lprintf(log.Level.notice, "              activate [<usesolkeepalive|nokeepalive>] [instance=<number>]");
-    c.lprintf(log.Level.notice, "              deactivate [instance=<number>]");
-    c.lprintf(log.Level.notice, "              looptest [<loop times> [<loop interval(in ms)> [<instance>]]]");
+    log.print(log.Level.notice, "SOL Commands: info [<channel number>]", .{});
+    log.print(log.Level.notice, "              set <parameter> <value> [channel]", .{});
+    log.print(log.Level.notice, "              payload <enable|disable|status> [channel] [userid]", .{});
+    log.print(log.Level.notice, "              activate [<usesolkeepalive|nokeepalive>] [instance=<number>]", .{});
+    log.print(log.Level.notice, "              deactivate [instance=<number>]", .{});
+    log.print(log.Level.notice, "              looptest [<loop times> [<loop interval(in ms)> [<instance>]]]", .{});
 }
 
 fn setUsage() void {
-    c.lprintf(log.Level.notice, "\nSOL set parameters and values: \n");
-    c.lprintf(log.Level.notice, "  set-in-progress             set-complete | set-in-progress | commit-write");
-    c.lprintf(log.Level.notice, "  enabled                     true | false");
-    c.lprintf(log.Level.notice, "  force-encryption            true | false");
-    c.lprintf(log.Level.notice, "  force-authentication        true | false");
-    c.lprintf(log.Level.notice, "  privilege-level             user | operator | admin | oem");
-    c.lprintf(log.Level.notice, "  character-accumulate-level  <in 5 ms increments>");
-    c.lprintf(log.Level.notice, "  character-send-threshold    N");
-    c.lprintf(log.Level.notice, "  retry-count                 N");
-    c.lprintf(log.Level.notice, "  retry-interval              <in 10 ms increments>");
-    c.lprintf(log.Level.notice, "  non-volatile-bit-rate       serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2");
-    c.lprintf(log.Level.notice, "  volatile-bit-rate           serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2");
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "\nSOL set parameters and values: \n", .{});
+    log.print(log.Level.notice, "  set-in-progress             set-complete | set-in-progress | commit-write", .{});
+    log.print(log.Level.notice, "  enabled                     true | false", .{});
+    log.print(log.Level.notice, "  force-encryption            true | false", .{});
+    log.print(log.Level.notice, "  force-authentication        true | false", .{});
+    log.print(log.Level.notice, "  privilege-level             user | operator | admin | oem", .{});
+    log.print(log.Level.notice, "  character-accumulate-level  <in 5 ms increments>", .{});
+    log.print(log.Level.notice, "  character-send-threshold    N", .{});
+    log.print(log.Level.notice, "  retry-count                 N", .{});
+    log.print(log.Level.notice, "  retry-interval              <in 10 ms increments>", .{});
+    log.print(log.Level.notice, "  non-volatile-bit-rate       serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2", .{});
+    log.print(log.Level.notice, "  volatile-bit-rate           serial | 9.6 | 19.2 | 38.4 | 57.6 | 115.2", .{});
+    log.print(log.Level.notice, "", .{});
 }
 
 fn parseInstance(arg: [*:0]const u8, out: *u8) bool {
     if (c.str2uchar(arg + 9, out) == 0) return true;
-    c.lprintf(log.Level.err, "Given instance '%s' is invalid.", arg + 9);
+    log.print(log.Level.err, "Given instance '%s' is invalid.", .{arg + 9});
     usage();
     return false;
 }
@@ -790,20 +792,20 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         var instance: u8 = 1;
         if (argc >= 2) {
             if (c.str2int(argv[1], &count) != 0) {
-                c.lprintf(log.Level.err, "Given cnt '%s' is invalid.", argv[1]);
+                log.print(log.Level.err, "Given cnt '%s' is invalid.", .{argv[1]});
                 return -1;
             }
             if (count <= 0) count = 200;
         }
         if (argc >= 3) {
             if (c.str2int(argv[2], &interval) != 0) {
-                c.lprintf(log.Level.err, "Given interval '%s' is invalid.", argv[2]);
+                log.print(log.Level.err, "Given interval '%s' is invalid.", .{argv[2]});
                 return -1;
             }
             if (interval < 0) interval = 0;
         }
         if (argc == 4 and c.str2uchar(argv[3], &instance) != 0) {
-            c.lprintf(log.Level.err, "Given instance '%s' is invalid.", argv[3]);
+            log.print(log.Level.err, "Given instance '%s' is invalid.", .{argv[3]});
             usage();
             return -1;
         }

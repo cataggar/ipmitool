@@ -200,6 +200,13 @@ stdin), run `python3 tests/transport/sunoem_cli_pty.py C_BINARY ZIG_BINARY`.
 That comparison uses a real pseudo-terminal and a project-local dummy BMC
 socket, and checks the requests, stdout, stderr and exit code.
 
+`sunoem_getfile_bad_block_hex` records a C-oracle error from the second file
+block: `Expecting: 1000000 Received: 78563412`. Both hexadecimal values are
+nonzero and preserve the original `%x` formatting and C argument widths.
+Run `zig build test-golden -Dzig-modules=sunoem,log -- --filter sunoem_`
+to check Sun diagnostics against the selected Zig logger; select only `sunoem`
+to check the same module through the C logger fallback.
+
 ## How the dummy interface is driven
 
 `src/plugins/dummy/dummy.c` is the interface the harness uses, because it is the
@@ -523,6 +530,13 @@ IPMB address acquisition, boundary FRU/LED IDs, nested help and invalid
 arguments, successful LED/local/override/lamp-test decoding, completion-code
 rejections, wrong group identifiers, and short replies. Regenerate these
 snapshots from a C build **before** changing the Zig replacement.
+
+`picmg_log_port_set_cc` records the C oracle's verbose PICMG discovery and
+failed port-state set: `%#x` addresses, a completion-code `%s` description,
+debug `%d` arguments and `Picmg portstate set failed with CC code 0xa5`.
+The snapshot also pins request bytes and exit status. Run
+`zig build test-golden -Dzig-modules=picmg,log -- --filter picmg_` to check
+the selected Zig logger; select only `picmg` to check its C logger fallback.
 
 `-Dzig-modules=quantaoem` replaces the two Quanta SEL helpers, not a standalone
 CLI command. The `sl_quanta_list` and `slq_*` cases exercise them through

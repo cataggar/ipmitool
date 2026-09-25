@@ -1,0 +1,19 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+respond first_block
+  netfn 0x2e
+  cmd 0x44
+  match 0b 44 49 41 47 5f 50 41 53 53 45 44 00 00 00 00 00 00 00 00 00
+  times 1
+  data 00 00 00 00 00 00 00 01 00 41
+end
+respond wrong_second_block
+  netfn 0x2e
+  cmd 0x44
+  match 0b 44 49 41 47 5f 50 41 53 53 45 44 00 00 00 00 00 00 00 00 01
+  data 12 34 56 78 00 00 00 01 01 42
+end

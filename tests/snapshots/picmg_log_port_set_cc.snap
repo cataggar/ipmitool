@@ -1,0 +1,96 @@
+#!golden 1
+#!case picmg_log_port_set_cc
+#!section exit
+1
+#!section stdout
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Discovered PICMG Extension Version 2.3
+Acquire IPMB address
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Get Address Info failed: 0xc1 Invalid command
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+PICMG: portstate API
+PICMG: interface 1
+PICMG: channel 1
+PICMG: port 5
+PICMG: type 2
+PICMG: typeext 3
+PICMG: group 4
+PICMG: enable 1
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: 2c
+msg.cmd: e
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: a5
+data_len: 0
+msg.netfn: 2d
+msg.cmd: e
+msg.seq: 0
+msg.lun: 0
+<<<
+Picmg portstate set failed with CC code 0xa5
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x0e target_cmd=0x00 data=00 41 25 30 04 01
+< rule=rejected_port_set ccode=0xa5 len=0 data=
+bye
+#!section files

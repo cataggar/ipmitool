@@ -52,6 +52,12 @@ args: -I dummy isol set enabled TRUE
 transcript: isol_full.tr
 covers: isol
 
+[isol_percent_log_diagnostic]
+desc: C logger treats a user-supplied percent conversion as data in the invalid-value message
+args: -I dummy isol set enabled TRUE%08x
+transcript: isol_full.tr
+covers: isol
+
 [isol_set_bad_privilege]
 desc: invalid privilege prints alternatives
 args: -I dummy isol set privilege-level administrator

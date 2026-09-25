@@ -46,6 +46,11 @@ args: -I dummy picmg portstate set 1 1 5 2 3 4 1
 transcript: picmg_depth.tr
 covers: picmg
 
+[picmg_log_port_set_cc]
+args: -v -v -I dummy picmg portstate set 1 1 5 2 3 4 1
+transcript: picmg_log_port_set_cc.tr
+covers: picmg
+
 [picmg_port_getall]
 args: -I dummy picmg portstate getall
 transcript: picmg_depth.tr

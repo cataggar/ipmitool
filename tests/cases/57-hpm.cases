@@ -1,7 +1,15 @@
 # HPM.1 oracle additions. All actions use the dummy transport, never hardware.
+# Diagnostic cases pin debug/notice filtering, promoted numbers, padded
+# auxiliary bytes, and fixed runtime-selected format strings from the C oracle.
 [hpm_target_capabilities]
 desc: Decode target capabilities, timeouts and all component bits
 args: -I dummy hpm targetcap
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_capability_log_diagnostic]
+desc: C oracle logs debug entry, promoted numeric fields, and %c component flags
+args: -I dummy -vv hpm targetcap
 transcript: hpm_flow.tr
 covers: hpm
 
@@ -20,6 +28,12 @@ covers: hpm
 [hpm_component_version]
 desc: Decode component active firmware version
 args: -I dummy hpm compprop 0 1
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_rollback_version_log_diagnostic]
+desc: C oracle chooses a fixed version heading at runtime and formats zero-padded auxiliary bytes
+args: -I dummy -vv hpm compprop 0 3
 transcript: hpm_flow.tr
 covers: hpm
 
