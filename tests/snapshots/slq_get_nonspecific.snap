@@ -1,0 +1,38 @@
+#!golden 1
+#!case slq_get_nonspecific
+#!section exit
+0
+#!section stdout
+SEL Record ID          : 0a05
+ Record Type           : 02
+ Timestamp             : 06/14/26 23:50:37 UTC
+ Generator ID          : 0020
+ EvM Revision          : 04
+ Sensor Type           : Memory
+ Sensor Number         : 45
+ Event Type            : Generic Discrete
+ Event Direction       : Assertion Event
+ Event Data            : 001192
+ Description           : State Deasserted
+
+#!section stderr
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+Error obtaining SDR info: Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 00 00 ff
+< rule=get_sel_0005 ccode=0x00 len=18 data=ff ff 05 0a 02 4d 3e 2f 6a 20 00 04 0c 45 03 00 11 92
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 4c 1c 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 4c 1c 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye

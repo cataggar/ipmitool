@@ -212,6 +212,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/sdr.zig",
     },
     .{
+        .name = "quantaoem",
+        .replaces = "lib/ipmi_quantaoem.c",
+        .implementation = "src/zig/cmd/quantaoem.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
