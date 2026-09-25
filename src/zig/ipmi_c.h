@@ -422,7 +422,8 @@ void ipmi_catch_sigint(void);
  * from `src/plugins/ipmi_intf.c` verbatim, so the Zig table is assembled from
  * exactly the same set under exactly the same conditions.
  *
- * Each entry disappears when its plugin is ported to Zig.
+ * Each declaration resolves to the same vtable symbol whether its plugin is
+ * selected from C or from Zig.
  */
 #ifdef IPMI_INTF_OPEN
 extern struct ipmi_intf ipmi_open_intf;

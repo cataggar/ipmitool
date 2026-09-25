@@ -1102,6 +1102,66 @@ pub fn build(b: *std.Build) void {
     });
     b.step("test-serial-unit", "Run Zig serial framing and ABI unit tests")
         .dependOn(&b.addRunArtifact(serial_unit).step);
+
+    // Link the same fixture against the original registry and its Zig
+    // replacement. It supplies only vtable instances and compares listing,
+    // selection, session parameters, payload sizes and UDP routing.
+    const registry_unit_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/registry_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    registry_unit_mod.addImport("ipmi_c", bridge_mod);
+    const registry_unit = b.addRunArtifact(b.addTest(.{ .root_module = registry_unit_mod }));
+
+    const registry_c_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, registry_c_mod, config_h, default_intf);
+    registry_c_mod.addCSourceFiles(.{
+        .files = &.{ "tests/intf_registry_contract.c", "src/plugins/ipmi_intf.c" },
+        .flags = &base_cflags,
+    });
+    const registry_c = b.addExecutable(.{ .name = "intf-registry-c", .root_module = registry_c_mod });
+
+    const registry_options = b.addOptions();
+    registry_options.addOption([]const []const u8, "zig_modules", &.{"intf"});
+    const registry_lib_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/exports.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    registry_lib_mod.addImport("ipmi_c", bridge_mod);
+    registry_lib_mod.addImport("build_options", registry_options.createModule());
+    const registry_lib = b.addLibrary(.{
+        .name = "intf_registry_fixture",
+        .linkage = .static,
+        .root_module = registry_lib_mod,
+    });
+    const registry_zig_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, registry_zig_mod, config_h, default_intf);
+    registry_zig_mod.addCSourceFile(.{
+        .file = b.path("tests/intf_registry_contract.c"),
+        .flags = &base_cflags,
+    });
+    registry_zig_mod.linkLibrary(registry_lib);
+    const registry_zig = b.addExecutable(.{ .name = "intf-registry-zig", .root_module = registry_zig_mod });
+    const registry_run = b.addSystemCommand(&.{ "python3", "tests/intf_registry_contract.py" });
+    registry_run.addArtifactArg(registry_c);
+    registry_run.addArtifactArg(registry_zig);
+    const registry_step = b.step("test-intf-registry", "Compare C and Zig registry ABI and behavior");
+    registry_step.dependOn(&registry_run.step);
+    registry_step.dependOn(&registry_unit.step);
+    test_step.dependOn(registry_step);
+
     const lanp6_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"LAN6 "},

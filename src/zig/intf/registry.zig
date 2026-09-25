@@ -7,8 +7,9 @@
 //! This is the foundation the rest of Phase 4 (issue #10) sits on: every
 //! transport is reached only through `ipmi_intf_table`, which this file owns,
 //! and every `lan`/`lanplus` socket is opened by `ipmi_intf_socket_connect()`
-//! below.  The transports themselves are still C; the vtable they plug into is
-//! `intf.Intf`, whose layout is pinned against the C header in `intf.zig`.
+//! below.  Each transport remains independently selectable as C or Zig; both
+//! expose the same `intf.Intf` vtable, whose layout is pinned against the C
+//! header in `intf.zig`.
 //!
 //! # Conditional compilation
 //!

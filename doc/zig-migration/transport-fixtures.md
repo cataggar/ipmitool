@@ -413,6 +413,21 @@ original `inbound_seq = 0x00000101` it survived; against `0x51627384` it fails
 
 ### `src/plugins/ipmi_intf.c` → `src/zig/intf/registry.zig`
 
+`zig build test-intf-registry` compiles `tests/intf_registry_contract.c`
+against the original C registry and separately against the selectable Zig
+registry. It byte-compares the two complete traces, including table order,
+default marking, the supported-interface filter, setup success/failure,
+session and auth setters, bridging payload sizes, and a loopback UDP connect.
+It also runs the 15 isolated registry/ABI unit tests. The fake plugin
+instances are confined to this test; production builds still link the real
+C or Zig transport vtables. Run again with `-Ddefault-intf=dummy
+-Dintf-open=false` to check a default other than the first entry. On hosts
+without readline or OpenSSL headers, add `-Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lanplus=false`. With
+`-Dzig-modules=lanplus-crypt-impl -Dintf-usb=true -Ddefault-intf=usb
+-Dopenssl=false -Dipmishell=false -Dinternal-md5=true`, the contract covers
+all seven table entries without requiring OpenSSL development headers.
+
 Applied to the Zig port, built with `-Dzig-modules=intf`.  Baseline is
 `33 passed, 0 failed` on the transport suite and `922 passed, 0 failed` on the
 golden suite.  Every row leaves the golden suite at `922 passed, 0 failed` and
