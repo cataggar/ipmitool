@@ -180,13 +180,19 @@ pub fn printbuf(buf: [*]const u8, len: c_int, desc: ?[*:0]const u8) callconv(.c)
     if (len <= 0) return;
     if (c.verbose < 1) return;
 
-    _ = c.fprintf(c.stderr, "%s (%d bytes)\n", @as([*c]const u8, @ptrCast(desc)), len);
-    var i: c_int = 0;
-    while (i < len) : (i += 1) {
-        if (@rem(i, 16) == 0 and i != 0) _ = c.fprintf(c.stderr, "\n");
-        _ = c.fprintf(c.stderr, " %2.2x", @as(c_uint, buf[@intCast(i)]));
+    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
+    const name: ?[]const u8 = if (desc) |text| std.mem.span(text) else null;
+    writePrintbuf(&stderr.interface, buf[0..@intCast(len)], name) catch
+        std.debug.panic("printbuf: stderr write failed: {t}", .{stderr.err orelse error.WriteFailed});
+}
+
+fn writePrintbuf(writer: *std.Io.Writer, buf: []const u8, desc: ?[]const u8) std.Io.Writer.Error!void {
+    try writer.print("{s} ({d} bytes)\n", .{ desc orelse "(null)", buf.len });
+    for (buf, 0..) |byte, i| {
+        if (i != 0 and i % 16 == 0) try writer.writeByte('\n');
+        try writer.print(" {x:0>2}", .{byte});
     }
-    _ = c.fprintf(c.stderr, "\n");
+    try writer.writeByte('\n');
 }
 
 /// `array_byteswap()`: reverse a byte array in place.
@@ -1163,6 +1169,29 @@ pub fn exportSymbols() void {
 // and printf.  Functions that call `lprintf()` or read `verbose` also need the
 // golden CLI differential tests, which link the selected archive.
 // ---------------------------------------------------------------------------
+
+test "printbuf uses lowercase hex and wraps after sixteen bytes" {
+    var bytes: [18]u8 = undefined;
+    for (&bytes, 0..) |*byte, i| byte.* = @intCast(i);
+
+    var storage: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writePrintbuf(&writer, &bytes, "RAW RSP");
+    try std.testing.expectEqualStrings(
+        "RAW RSP (18 bytes)\n" ++
+            " 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n" ++
+            " 10 11\n",
+        writer.buffered(),
+    );
+
+    var null_storage: [32]u8 = undefined;
+    var null_writer = std.Io.Writer.fixed(&null_storage);
+    try writePrintbuf(&null_writer, &.{0xff}, null);
+    try std.testing.expectEqualStrings("(null) (1 bytes)\n ff\n", null_writer.buffered());
+
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writePrintbuf(&failing, &bytes, "RAW RSP"));
+}
 
 fn libcMac(arg: [*:0]const u8) ?[6]u8 {
     var values = [_]c_uint{0} ** 6;
