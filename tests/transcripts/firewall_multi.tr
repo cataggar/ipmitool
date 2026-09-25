@@ -1,0 +1,44 @@
+default_ccode 0xc1
+
+respond netfn_support
+  netfn 0x06
+  cmd 0x09
+  match 07
+  data 20 00 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00
+end
+respond support_low
+  netfn 0x06
+  cmd 0x0a
+  match 07 06 02
+  data ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+end
+respond support_high
+  netfn 0x06
+  cmd 0x0a
+  match 07 46 02
+  data fe ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+end
+respond config_low
+  netfn 0x06
+  cmd 0x0c
+  match 07 06 02
+  data 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond config_high
+  netfn 0x06
+  cmd 0x0c
+  match 07 46 02
+  data 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond enabled_low
+  netfn 0x06
+  cmd 0x61
+  match 07 06 02
+  data 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond enabled_high
+  netfn 0x06
+  cmd 0x61
+  match 07 46 02
+  data 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end

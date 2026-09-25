@@ -20,6 +20,7 @@
 //!     text:        <dest> <fixture.txt>, copies a text fixture into the work dir
 //!     registry:    default | none  (IANA PEN registry visible to the binary)
 //!     fixed_time:  epoch seconds returned by time() in the child process
+//!     snapshot:    full | sha256 (compact full-stream digest and edge samples)
 //!     timeout_ms:  per-case wall clock budget (default 10000)
 //!
 //! `{work}` anywhere in `args` expands to the case's work directory, which is
@@ -31,6 +32,7 @@ const Io = std.Io;
 const Case = @This();
 
 pub const Registry = enum { default, none };
+pub const SnapshotMode = enum { full, sha256 };
 
 name: []const u8,
 desc: []const u8 = "",
@@ -41,6 +43,7 @@ env: []const Env = &.{},
 blobs: []const Blob = &.{},
 registry: Registry = .default,
 fixed_time: ?i64 = null,
+snapshot_mode: SnapshotMode = .full,
 timeout_ms: u32 = 10_000,
 source: []const u8 = "",
 
@@ -192,6 +195,11 @@ fn parseInto(
                 try diag.print(gpa, "{s}:{d}: registry: must be 'default' or 'none'", .{ path, line_no });
                 return error.BadCaseFile;
             }
+        } else if (std.mem.eql(u8, key, "snapshot")) {
+            c.snapshot_mode = std.meta.stringToEnum(SnapshotMode, value) orelse {
+                try diag.print(gpa, "{s}:{d}: snapshot: must be 'full' or 'sha256'", .{ path, line_no });
+                return error.BadCaseFile;
+            };
         } else if (std.mem.eql(u8, key, "timeout_ms")) {
             c.timeout_ms = std.fmt.parseUnsigned(u32, value, 10) catch {
                 try diag.print(gpa, "{s}:{d}: timeout_ms: not a number", .{ path, line_no });

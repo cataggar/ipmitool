@@ -226,6 +226,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/picmg.zig",
     },
     .{
+        .name = "firewall",
+        .replaces = "lib/ipmi_firewall.c",
+        .implementation = "src/zig/cmd/firewall.zig",
+    },
+    .{
         .name = "sensor",
         .replaces = "lib/ipmi_sensor.c",
         .implementation = "src/zig/cmd/sensor.zig",

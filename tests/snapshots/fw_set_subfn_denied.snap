@@ -1,0 +1,35 @@
+#!golden 1
+#!case fw_set_subfn_denied
+#!section exit
+1
+#!section stdout
+#!section stderr
+Set Command Sub-function Enables (LUN=0, NetFn=4, command=5) command failed: Invalid command
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=0e
+< rule=netfn_support ccode=0x00 len=17 data=01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 04 00
+< rule=support_low ccode=0x00 len=16 data=de ff ff ff ff ff ff ff ff ff ff ff fe ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 44 00
+< rule=support_high ccode=0x00 len=16 data=f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 04 00
+< rule=config_low ccode=0x00 len=16 data=21 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 44 00
+< rule=config_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 04 00
+< rule=enabled_low ccode=0x00 len=16 data=20 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 44 00
+< rule=enabled_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0b target_cmd=0x00 data=0e 04 00 05
+< rule=short_subfn_support ccode=0x00 len=1 data=fa
+> netfn=0x06 lun=0x00 cmd=0x0d target_cmd=0x00 data=0e 04 00 05
+< rule=short_subfn_config ccode=0x00 len=1 data=05
+> netfn=0x06 lun=0x00 cmd=0x63 target_cmd=0x00 data=0e 04 00 05
+< rule=short_subfn_enabled ccode=0x00 len=1 data=01
+> netfn=0x06 lun=0x00 cmd=0x62 target_cmd=0x00 data=0e 04 00 05 05 00 00 00
+< rule=default ccode=0xc1 len=0 data=
+bye

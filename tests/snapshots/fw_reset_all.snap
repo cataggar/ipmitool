@@ -1,0 +1,44 @@
+#!golden 1
+#!case fw_reset_all
+#!section exit
+0
+#!section stdout
+bytes=1355864 sha256=1d2f801309e36bd4fb4ed959b55af316a3fb7f76bae592227368883d71f438c8
+first 2 lines:
+reset lun 0, netfn 0, command 0, subfn
+reset lun 0, netfn 0, command 1, subfn
+...
+last 2 lines:
+reset lun 3, netfn 31, command 255, subfn
+reset lun 3, netfn 31, command
+#!section stderr
+#!section requests
+bytes=3841039 sha256=cb0aac2d4c285d108130f5655047fb1f7369f3da19aea39b456f8cb45678415a
+first 20 lines:
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=0e
+< rule=netfn_support ccode=0x00 len=17 data=01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 04 00
+< rule=command_support_low ccode=0x00 len=16 data=de ff ff ff ff ff ff ff ff ff ff ff fe ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 44 00
+< rule=command_support_high ccode=0x00 len=16 data=f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 04 00
+< rule=command_config_low ccode=0x00 len=16 data=21 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 44 00
+< rule=command_config_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 04 00
+< rule=command_enabled_low ccode=0x00 len=16 data=20 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 44 00
+< rule=command_enabled_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x62 target_cmd=0x00 data=0e 00 00 00 00 00 00 00
+< rule=set_subfn ccode=0x00 len=0 data=
+...
+last 5 lines:
+> netfn=0x06 lun=0x00 cmd=0x60 target_cmd=0x00 data=0e 3e 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_command ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x60 target_cmd=0x00 data=0e 7e 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_command ccode=0x00 len=0 data=
+bye

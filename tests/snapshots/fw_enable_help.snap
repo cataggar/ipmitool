@@ -1,0 +1,18 @@
+#!golden 1
+#!case fw_enable_help
+#!section exit
+0
+#!section stdout
+enable [channel H] lun L netfn N
+\tenable all commands on this LUN/NetFn pair
+enable [channel H] lun L netfn N command C
+\tenable Command C and all its Sub-functions for this LUN/NetFn pair
+enable [channel H] lun L netfn N command C subfn S
+\tenable Sub-function S for Command C for this LUN/NetFn pair
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

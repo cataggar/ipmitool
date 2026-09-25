@@ -1,0 +1,30 @@
+#!golden 1
+#!case fw_info_multi_channel
+#!section exit
+0
+#!section stdout
+Commands on LUN 0x02, NetFn 0x06
+support:      00000000 00000000 00000000 00000000 01000000 00000000 00000000 00000000\x20
+configurable: 00000000 00000000 00000000 00000000 01000000 00000000 00000000 00000000\x20
+enabled:      00000000 00000000 00000000 00000000 01000000 00000000 00000000 00000000\x20
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=07
+< rule=netfn_support ccode=0x00 len=17 data=20 00 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=07 06 02
+< rule=support_low ccode=0x00 len=16 data=ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=07 46 02
+< rule=support_high ccode=0x00 len=16 data=fe ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=07 06 02
+< rule=config_low ccode=0x00 len=16 data=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=07 46 02
+< rule=config_high ccode=0x00 len=16 data=01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=07 06 02
+< rule=enabled_low ccode=0x00 len=16 data=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=07 46 02
+< rule=enabled_high ccode=0x00 len=16 data=01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+bye

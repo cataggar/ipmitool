@@ -1,0 +1,284 @@
+# Firewall uses a two-stage discovery bitmap and separate low/high command
+# masks.  The request log pins every selector as well as the output.
+
+[fw_info_command]
+desc: detailed command and 32 sub-function flags
+args: -I dummy firewall info lun 0 netfn 4 command 5
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_netfn]
+desc: both 128-command halves with asymmetric masks
+args: -I dummy firewall info channel 14 lun 0 netfn 4
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_discover]
+desc: discover supported LUN and netfn pairs
+args: -I dummy firewall info
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_lun]
+desc: constrain discovery to a LUN
+args: -I dummy firewall info lun 0
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_multi_channel]
+desc: a different channel exposes only LUN 2 and NetFn 6
+args: -I dummy firewall info channel 7 lun 2 netfn 6
+transcript: firewall_multi.tr
+covers: firewall
+
+[fw_info_multi_discover]
+desc: all-LUN discovery traverses the second supported LUN
+args: -I dummy firewall info channel 7
+transcript: firewall_multi.tr
+covers: firewall
+
+[fw_info_high_command]
+desc: high-half command support flags and subfunction fetches
+args: -I dummy firewall info lun 0 netfn 4 command 131
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_none]
+desc: platform supports firewall but has no supported LUNs
+args: -I dummy firewall info
+transcript: firewall_none.tr
+covers: firewall
+
+[fw_info_unsupported_lun]
+desc: unsupported LUN reports no commands
+args: -I dummy firewall info lun 1 netfn 4
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_unsupported_pair]
+desc: unsupported NetFn pair reports the pair
+args: -I dummy firewall info lun 0 netfn 6
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_unsupported_command]
+desc: a supported pair with an unavailable command
+args: -I dummy firewall info lun 0 netfn 4 command 6
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_odd_netfn]
+desc: odd NetFn shares its discovery bit with its preceding even NetFn
+args: -I dummy firewall info lun 0 netfn 5
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_no_firewall]
+desc: optional Get NetFn Support rejected by platform
+args: -I dummy firewall info lun 0 netfn 4
+transcript: default.tr
+covers: firewall
+
+[fw_info_denied]
+desc: discovery works but command support is denied
+args: -I dummy firewall info lun 0 netfn 4
+transcript: firewall_denied.tr
+covers: firewall
+
+[fw_info_short_netfn]
+desc: short NetFn bitmap from BMC
+args: -I dummy firewall info lun 0 netfn 4
+transcript: firewall_short.tr
+covers: firewall
+
+[fw_info_short_subfn]
+desc: short subfunction support and config replies
+args: -I dummy firewall info lun 0 netfn 4 command 5
+transcript: firewall_short_subfn.tr
+covers: firewall
+
+[fw_info_short_mask]
+desc: short command mask response retains the dummy buffer tail
+args: -I dummy firewall info lun 0 netfn 4
+transcript: firewall_short_mask.tr
+covers: firewall
+
+[fw_info_op1_denied]
+desc: high command mask denial still fetches other mask kinds
+args: -I dummy firewall info lun 0 netfn 4
+transcript: firewall_op1_denied.tr
+covers: firewall
+
+[fw_enable_pair]
+desc: enable all configurable commands without changing nonconfigurable bits
+args: -I dummy firewall enable lun 0 netfn 4
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_disable_pair]
+desc: disable commands but protect the command-set-enable byte
+args: -I dummy firewall disable lun 0 netfn 4
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_disable_pair_force]
+desc: force bypasses the self-lockout protection
+args: -I dummy firewall disable lun 0 netfn 4 force
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_enable_pair_force]
+desc: force changes byte 12 when enabling configurable command 0x60
+args: -I dummy firewall enable lun 0 netfn 4 force
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_enable_command]
+desc: enable command and all subfunctions, with both set operations
+args: -I dummy firewall enable lun 0 netfn 4 command 5
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_disable_command]
+desc: disable command and all subfunctions
+args: -I dummy firewall disable lun 0 netfn 4 command 5
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_enable_subfn]
+desc: enable a single configurable subfunction
+args: -I dummy firewall enable lun 0 netfn 4 command 5 subfn 2
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_disable_subfn]
+desc: disable a single nonconfigurable subfunction (preserves its old bit)
+args: -I dummy firewall disable lun 0 netfn 4 command 5 subfn 9
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_set_denied]
+desc: denied command-set operations still attempt both halves
+args: -I dummy firewall enable lun 0 netfn 4
+transcript: firewall_set_denied.tr
+covers: firewall
+
+[fw_set_op1_denied]
+desc: denied second command-set half preserves first write
+args: -I dummy firewall enable lun 0 netfn 4
+transcript: firewall_set_op1_denied.tr
+covers: firewall
+
+[fw_set_subfn_denied]
+desc: subfunction set denial returns failure after short discovery
+args: -I dummy firewall enable lun 0 netfn 4 command 5 subfn 2
+transcript: firewall_short_subfn.tr
+covers: firewall
+
+[fw_enable_help]
+desc: enable usage including the sub-function form
+args: -I dummy firewall enable help
+covers: firewall
+
+[fw_disable_help]
+desc: disable usage including the force warning
+args: -I dummy firewall disable help
+covers: firewall
+
+[fw_missing_operand]
+desc: bare enable prints usage
+args: -I dummy firewall enable
+covers: firewall
+
+[fw_reset_help]
+desc: reset usage
+args: -I dummy firewall reset help
+covers: firewall
+
+[fw_reset_missing]
+desc: reset requires at least one argument
+args: -I dummy firewall reset
+covers: firewall
+
+[fw_bad_channel]
+desc: reserved channel cannot be selected
+args: -I dummy firewall enable channel 12 lun 0 netfn 4
+covers: firewall
+
+[fw_bad_lun]
+desc: out-of-range LUN reports a validation error
+args: -I dummy firewall enable lun 4 netfn 4
+covers: firewall
+
+[fw_bad_netfn]
+desc: out-of-range NetFn reports a validation error
+args: -I dummy firewall info lun 0 netfn 64
+covers: firewall
+
+[fw_bad_command]
+desc: out-of-range command reports a validation error
+args: -I dummy firewall disable lun 0 netfn 4 command 256
+covers: firewall
+
+[fw_bad_subfn]
+desc: out-of-range subfunction reports a validation error
+args: -I dummy firewall enable lun 0 netfn 4 command 5 subfn 32
+covers: firewall
+
+[fw_bad_number]
+desc: invalid integer token is diagnosed
+args: -I dummy firewall enable lun foo netfn 4
+covers: firewall
+
+[fw_missing_lun]
+desc: setting NetFn requires LUN
+args: -I dummy firewall enable netfn 4
+covers: firewall
+
+[fw_missing_netfn]
+desc: setting command requires NetFn
+args: -I dummy firewall enable lun 0 command 5
+covers: firewall
+
+[fw_missing_command]
+desc: setting subfunction requires command
+args: -I dummy firewall enable lun 0 netfn 4 subfn 2
+covers: firewall
+
+# GNU getopt permutes options past the command unless '--' stops it.
+[fw_negative_command]
+desc: a negative command reaches the firewall parser and is treated as omitted
+args: -I dummy -- firewall info lun 0 netfn 4 command -2
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_enable_no_pair]
+desc: enable with no NetFn reads discovery but writes nothing
+args: -I dummy firewall enable lun 0
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_reset_bad_channel]
+desc: reset channel validation must precede discovery
+args: -I dummy firewall reset channel 13
+covers: firewall
+
+[fw_reset_all]
+desc: reset walks every LUN, NetFn pair, command and subfunction mask
+args: -I dummy firewall reset channel 14
+transcript: firewall_rich.tr
+snapshot: sha256
+timeout_ms: 120000
+covers: firewall
+
+[fw_disable_pair_verbose]
+desc: verbose output shows command masking and self-lockout protection
+args: -v -I dummy firewall disable lun 0 netfn 4
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_disable_force_verbose]
+desc: force bypasses the protected command byte in verbose output
+args: -v -I dummy firewall disable lun 0 netfn 4 force
+transcript: firewall_rich.tr
+covers: firewall

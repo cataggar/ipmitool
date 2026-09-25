@@ -1,0 +1,26 @@
+#!golden 1
+#!case fw_bad_netfn
+#!section exit
+0
+#!section stdout
+#!section stderr
+netfn is out of range (0-63)
+info [channel H]
+\tList all of the firewall information for all LUNs, NetFns
+\tand Commands, This is a long list and is not very human readable.
+info [channel H] lun L
+\tThis also prints a long list that is not very human readable.
+info [channel H] lun L netfn N
+\tThis prints out information for a single LUN/NetFn pair.
+\tThat is not really very usable, but at least it is short.
+info [channel H] lun L netfn N command C
+\tThis is the one you want -- it prints out detailed human
+\treadable information.  It shows the support, configurable, and
+\tenabled bits for the Command C on LUN/NetFn pair L,N and the
+\tsame information about each of its Sub-functions.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

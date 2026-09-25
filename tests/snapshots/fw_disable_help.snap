@@ -1,0 +1,21 @@
+#!golden 1
+#!case fw_disable_help
+#!section exit
+0
+#!section stdout
+disable [channel H] lun L netfn N [force]
+\tdisable all commands on this LUN/NetFn pair
+disable [channel H] lun L netfn N command C [force]
+\tdisable Command C and all its Sub-functions for this LUN/NetFn pair
+disable [channel H] lun L netfn N command C subfn S
+\tdisable Sub-function S for Command C for this LUN/NetFn pair
+* force will allow you to disable the "Command Set Enable" command
+\tthereby letting you shoot yourself in the foot
+\tthis is only recommended for advanced users
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

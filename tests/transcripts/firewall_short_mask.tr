@@ -1,0 +1,18 @@
+default_ccode 0xc1
+respond netfn_support
+  netfn 0x06
+  cmd 0x09
+  data 01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond short_support_low
+  netfn 0x06
+  cmd 0x0a
+  match 0e 04 00
+  data de
+end
+respond support_high
+  netfn 0x06
+  cmd 0x0a
+  match 0e 44 00
+  data f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+end

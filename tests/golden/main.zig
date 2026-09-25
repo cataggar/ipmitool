@@ -337,8 +337,13 @@ fn runCase(
         return .fail;
     }
 
+    const observed = if (c.snapshot_mode == .sha256)
+        try snapshot.summarize(gpa, run.snap())
+    else
+        run.snap();
+
     if (opts.update) {
-        const text = try snapshot.render(gpa, c.name, run.snap());
+        const text = try snapshot.render(gpa, c.name, observed);
         try Io.Dir.cwd().writeFile(io, .{ .sub_path = snapshot_path, .data = text });
         return .pass;
     }
@@ -361,7 +366,7 @@ fn runCase(
     var differs = false;
     for (snapshot.Section.all) |section| {
         const want = expected.get(section);
-        const got = run.snap().get(section);
+        const got = observed.get(section);
         if (std.mem.eql(u8, want, got)) continue;
         differs = true;
         try diff.write(gpa, &body, @tagName(section), want, got);

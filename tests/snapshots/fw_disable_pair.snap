@@ -1,0 +1,30 @@
+#!golden 1
+#!case fw_disable_pair
+#!section exit
+0
+#!section stdout
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=0e
+< rule=netfn_support ccode=0x00 len=17 data=01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 04 00
+< rule=command_support_low ccode=0x00 len=16 data=de ff ff ff ff ff ff ff ff ff ff ff fe ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 44 00
+< rule=command_support_high ccode=0x00 len=16 data=f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 04 00
+< rule=command_config_low ccode=0x00 len=16 data=21 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 44 00
+< rule=command_config_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 04 00
+< rule=command_enabled_low ccode=0x00 len=16 data=20 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 44 00
+< rule=command_enabled_high ccode=0x00 len=16 data=08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x60 target_cmd=0x00 data=0e 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_command ccode=0x00 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x60 target_cmd=0x00 data=0e 44 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_command ccode=0x00 len=0 data=
+bye

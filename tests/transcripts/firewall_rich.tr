@@ -1,0 +1,73 @@
+# One supported pair (LUN 0, NetFn 4). Command 0, 5, 0x60 and 0x83
+# have different availability/configuration/enable bits.
+default_ccode 0xc1
+
+respond netfn_support
+  netfn 0x06
+  cmd 0x09
+  data 01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond command_support_low
+  netfn 0x06
+  cmd 0x0a
+  match 0e 04 00
+  data de ff ff ff ff ff ff ff ff ff ff ff fe ff ff ff
+end
+respond command_support_high
+  netfn 0x06
+  cmd 0x0a
+  match 0e 44 00
+  data f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+end
+
+respond command_config_low
+  netfn 0x06
+  cmd 0x0c
+  match 0e 04 00
+  data 21 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+end
+respond command_config_high
+  netfn 0x06
+  cmd 0x0c
+  match 0e 44 00
+  data 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond command_enabled_low
+  netfn 0x06
+  cmd 0x61
+  match 0e 04 00
+  data 20 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+end
+respond command_enabled_high
+  netfn 0x06
+  cmd 0x61
+  match 0e 44 00
+  data 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+
+respond subfn_support
+  netfn 0x06
+  cmd 0x0b
+  data fa fd ff ff
+end
+respond subfn_config
+  netfn 0x06
+  cmd 0x0d
+  data 05 02 00 00
+end
+respond subfn_enabled
+  netfn 0x06
+  cmd 0x63
+  data 01 02 00 00
+end
+
+respond set_command
+  netfn 0x06
+  cmd 0x60
+end
+respond set_subfn
+  netfn 0x06
+  cmd 0x62
+end
