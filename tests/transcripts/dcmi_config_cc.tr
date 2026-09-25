@@ -1,0 +1,6 @@
+respond config_failure
+  netfn 0x2c
+  cmd 0x12
+  ccode 0x80
+  data dc
+end

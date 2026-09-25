@@ -1,0 +1,5 @@
+respond nm_error
+  netfn 0x2e
+  cmd 0xca
+  ccode 0x80
+end

@@ -1,0 +1,22 @@
+#!golden 1
+#!case nm_capability_default
+#!section exit
+0
+#!section stdout
+    power policies:\t\t4
+    max_power\t\t    500 Watts
+    min_power\t\t    100 Watts
+    min_corr\t\t     10 secs
+    max_corr\t\t     20 secs
+    min_stats\t\t      2 secs
+    max_stats\t\t     10 secs
+    domain scope:\tplatform
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0xc9 target_cmd=0x00 data=57 01 00 00 10
+< rule=caps ccode=0x00 len=21 data=57 01 00 04 f4 01 64 00 10 27 00 00 20 4e 00 00 02 00 0a 00 00
+bye

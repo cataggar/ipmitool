@@ -63,6 +63,11 @@ args: -I dummy dcmi sensors
 transcript: dcmi.tr
 covers: dcmi
 
+[dcmi_sensors_one]
+args: -I dummy dcmi sensors
+transcript: dcmi_sensor_one.tr
+covers: dcmi
+
 [dcmi_get_temps]
 args: -I dummy dcmi get_temp_reading
 transcript: dcmi.tr
@@ -120,6 +125,11 @@ covers: dcmi
 [dcmi_set_config]
 args: -I dummy dcmi set_conf_param retry 300
 transcript: dcmi.tr
+covers: dcmi
+
+[dcmi_set_config_error]
+args: -I dummy dcmi set_conf_param retry 300
+transcript: dcmi_config_cc.tr
 covers: dcmi
 
 [dcmi_activate_dhcp]

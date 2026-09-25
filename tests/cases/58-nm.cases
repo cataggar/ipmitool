@@ -1,0 +1,118 @@
+[nm_discover_valid]
+args: -I dummy nm discover
+transcript: nm.tr
+covers: nm
+
+[nm_capability_default]
+args: -I dummy nm capability
+transcript: nm.tr
+covers: nm
+
+[nm_capability_trigger]
+args: -I dummy nm capability inlet
+transcript: nm.tr
+covers: nm
+
+[nm_capability_csv]
+args: -c -I dummy nm capability
+transcript: nm.tr
+covers: nm
+
+[nm_control_enable]
+args: -I dummy nm control enable per_policy 3
+transcript: nm.tr
+covers: nm
+
+[nm_policy_get]
+args: -I dummy nm policy get policy_id 3
+transcript: nm.tr
+covers: nm
+
+[nm_policy_csv]
+args: -c -I dummy nm policy get policy_id 3
+transcript: nm.tr
+covers: nm
+
+[nm_policy_add]
+args: -I dummy nm policy add policy_id 3 power 200 correction soft stats 5 enable
+transcript: nm.tr
+covers: nm
+
+[nm_policy_remove]
+args: -I dummy nm policy remove policy_id 3
+transcript: nm.tr
+covers: nm
+
+[nm_policy_limiting]
+args: -I dummy nm policy limiting
+transcript: nm.tr
+covers: nm
+
+[nm_statistics_power]
+args: -I dummy nm statistics power
+transcript: nm.tr
+covers: nm
+
+[nm_statistics_policy]
+args: -I dummy nm statistics policy_power policy_id 3
+transcript: nm.tr
+covers: nm
+
+[nm_statistics_csv]
+args: -c -I dummy nm statistics power
+transcript: nm.tr
+covers: nm
+
+[nm_power_range]
+args: -I dummy nm power min 50 max 500
+transcript: nm.tr
+covers: nm
+
+[nm_suspend_get]
+args: -I dummy nm suspend get policy_id 3
+transcript: nm.tr
+covers: nm
+
+[nm_suspend_set]
+args: -I dummy nm suspend set policy_id 3 1 10 127
+transcript: nm.tr
+covers: nm
+
+[nm_reset_global]
+args: -I dummy nm reset global
+transcript: nm.tr
+covers: nm
+
+[nm_alert_get]
+args: -I dummy nm alert get
+transcript: nm.tr
+covers: nm
+
+[nm_alert_csv]
+args: -c -I dummy nm alert get
+transcript: nm.tr
+covers: nm
+
+[nm_alert_set]
+args: -I dummy nm alert set chan 1 dest 2 string 3
+transcript: nm.tr
+covers: nm
+
+[nm_threshold_get]
+args: -I dummy nm threshold get policy_id 3
+transcript: nm.tr
+covers: nm
+
+[nm_threshold_set]
+args: -I dummy nm threshold set policy_id 3 100 200 300
+transcript: nm.tr
+covers: nm
+
+[nm_discover_ccode]
+args: -I dummy nm discover
+transcript: nm_cc.tr
+covers: nm
+
+[nm_power_overflow]
+args: -I dummy nm power min 50 max 65536
+covers: nm

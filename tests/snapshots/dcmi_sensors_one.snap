@@ -1,0 +1,31 @@
+#!golden 1
+#!case dcmi_sensors_one
+#!section exit
+0
+#!section stdout
+
+Inlet: 1 temperature sensor found:
+Record ID 0x1234:\x20
+CPU: 0 temperature sensor found:
+
+Baseboard: 0 temperature sensor found:
+
+#!section stderr
+Get Device ID command failed: 0xc1 Invalid command
+Unable to open SDR for reading
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 40 00 00
+< rule=inlet_records ccode=0x00 len=5 data=dc 01 01 34 12
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 40 00 00
+< rule=inlet_records ccode=0x00 len=5 data=dc 01 01 34 12
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 41 00 00
+< rule=other_sensors ccode=0x00 len=3 data=dc 00 00
+> netfn=0x2c lun=0x00 cmd=0x07 target_cmd=0x00 data=dc 01 42 00 00
+< rule=other_sensors ccode=0x00 len=3 data=dc 00 00
+bye

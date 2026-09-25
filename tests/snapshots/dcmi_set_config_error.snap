@@ -1,0 +1,18 @@
+#!golden 1
+#!case dcmi_set_config_error
+#!section exit
+0
+#!section stdout
+
+#!section stderr
+
+    DCMI request failed because: Parameter not supported (80)
+Error Set DCMI Configuration Parameters!
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x12 target_cmd=0x00 data=dc 05 00 2c 01
+< rule=config_failure ccode=0x80 len=1 data=dc
+bye
