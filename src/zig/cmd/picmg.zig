@@ -69,7 +69,7 @@ fn fru(argv: Args, index: usize, dest: *u8) bool {
 
 fn parseByte(argv: Args, index: usize, dest: *u8, comptime label: [*:0]const u8, limit: u8) bool {
     if (c.str2uchar(ptrArg(argv, index), dest) == 0 and dest.* <= limit) return true;
-    c.lprintf(log.Level.err, "Given %s '%s' is invalid.", label, ptrArg(argv, index));
+    log.print(log.Level.err, "Given %s '%s' is invalid.", .{ label, ptrArg(argv, index) });
     return false;
 }
 
@@ -81,11 +81,11 @@ fn byteValidator(
     return struct {
         fn check(input: ?[*:0]const u8, dest: ?*u8) callconv(.c) c_int {
             if (input == null or dest == null) {
-                c.lprintf(log.Level.err, symbol ++ "(): invalid argument(s).");
+                log.print(log.Level.err, symbol ++ "(): invalid argument(s).", .{});
                 return -1;
             }
             if (c.str2uchar(input, dest) == 0 and dest.?.* <= limit) return 0;
-            c.lprintf(log.Level.err, "Given %s '%s' is invalid.", label, input);
+            log.print(log.Level.err, "Given %s '%s' is invalid.", .{ label, input });
             return -1;
         }
     };
@@ -106,24 +106,24 @@ const led_function = byteValidator("is_led_function", "LED Function", 255).check
 
 fn ledColor(input: ?[*:0]const u8, dest: ?*u8) callconv(.c) c_int {
     if (input == null or dest == null) {
-        c.lprintf(log.Level.err, "is_led_color(): invalid argument(s).");
+        log.print(log.Level.err, "is_led_color(): invalid argument(s).", .{});
         return -1;
     }
     if (c.str2uchar(input, dest) != 0) {
-        c.lprintf(log.Level.err, "Given LED Color '%s' is invalid.", input);
+        log.print(log.Level.err, "Given LED Color '%s' is invalid.", .{input});
     } else if ((dest.?.* >= 1 and dest.?.* <= 6) or (dest.?.* >= 14 and dest.?.* <= 15)) {
         return 0;
     } else {
-        c.lprintf(log.Level.err, "Given LED Color '%s' is out of range.", input);
+        log.print(log.Level.err, "Given LED Color '%s' is out of range.", .{input});
     }
-    c.lprintf(log.Level.err, "LED Color must be from ranges: <1..6>, <0xE..0xF>");
+    log.print(log.Level.err, "LED Color must be from ranges: <1..6>, <0xE..0xF>", .{});
     return -1;
 }
 
 fn ledFunction(input: ?[*:0]const u8, dest: ?*u8) callconv(.c) c_int {
     if (led_function(input, dest) != 0) return -1;
     if (dest.?.* != 0xfd and dest.?.* != 0xfe) return 0;
-    c.lprintf(log.Level.err, "Given LED Function '%s' is invalid.", input);
+    log.print(log.Level.err, "Given LED Function '%s' is invalid.", .{input});
     return -1;
 }
 
@@ -131,11 +131,11 @@ fn intValidator(comptime name: []const u8, comptime label: []const u8) type {
     return struct {
         fn check(input: ?[*:0]const u8, dest: ?*i32) callconv(.c) c_int {
             if (input == null or dest == null) {
-                c.lprintf(log.Level.err, name ++ "(): invalid argument(s).");
+                log.print(log.Level.err, name ++ "(): invalid argument(s).", .{});
                 return -1;
             }
             if (c.str2int(input, dest) == 0 and dest.?.* >= 0) return 0;
-            c.lprintf(log.Level.err, "Given " ++ label ++ " '%s' is invalid.", input);
+            log.print(log.Level.err, "Given " ++ label ++ " '%s' is invalid.", .{input});
             return -1;
         }
     };
@@ -147,21 +147,21 @@ const amc_port = intValidator("is_amc_port", "PICMG Port").check;
 
 fn clkFreq(input: ?[*:0]const u8, dest: ?*u32) callconv(.c) c_int {
     if (input == null or dest == null) {
-        c.lprintf(log.Level.err, "is_clk_freq(): invalid argument(s).");
+        log.print(log.Level.err, "is_clk_freq(): invalid argument(s).", .{});
         return -1;
     }
     if (c.str2uint(input, dest) == 0) return 0;
-    c.lprintf(log.Level.err, "Given Clock Frequency '%s' is invalid.", input);
+    log.print(log.Level.err, "Given Clock Frequency '%s' is invalid.", .{input});
     return -1;
 }
 
 fn clkResid(input: ?[*:0]const u8, dest: ?*i8) callconv(.c) c_int {
     if (input == null or dest == null) {
-        c.lprintf(log.Level.err, "is_clk_resid(): invalid argument(s).");
+        log.print(log.Level.err, "is_clk_resid(): invalid argument(s).", .{});
         return -1;
     }
     if (c.str2char(input, dest) == 0 and dest.?.* >= 0) return 0;
-    c.lprintf(log.Level.err, "Given Resource ID '%s' is invalid.", input);
+    log.print(log.Level.err, "Given Resource ID '%s' is invalid.", .{input});
     return -1;
 }
 
@@ -176,15 +176,15 @@ fn send(intf: *Intf, cmd: u8, data: []u8) ?*Response {
 
 fn response(intf: *Intf, cmd: u8, data: []u8, comptime name: [*:0]const u8, min_len: usize) ?*Response {
     const rsp = send(intf, cmd, data) orelse {
-        c.lprintf(log.Level.err, "No valid response received.");
+        log.print(log.Level.err, "No valid response received.", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "%s failed with CC code 0x%02x", name, @as(c_uint, rsp.ccode));
+        log.print(log.Level.err, "%s failed with CC code 0x%02x", .{ name, @as(c_uint, rsp.ccode) });
         return null;
     }
     if (rsp.data_len < min_len) {
-        c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+        log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
         return null;
     }
     return rsp;
@@ -193,11 +193,11 @@ fn response(intf: *Intf, cmd: u8, data: []u8, comptime name: [*:0]const u8, min_
 fn properties(intf: *Intf, show: c_int) callconv(.c) c_int {
     var data = [_]u8{0};
     const rsp = send(intf, c.PICMG_GET_PICMG_PROPERTIES_CMD, &data) orelse {
-        c.lprintf(log.Level.err, "Error getting address information.");
+        log.print(log.Level.err, "Error getting address information.", .{});
         return -1;
     };
     if (rsp.ccode != 0 or rsp.data_len < 4) {
-        c.lprintf(log.Level.err, "Error getting address information.");
+        log.print(log.Level.err, "Error getting address information.", .{});
         return -1;
     }
     if (show != 0) {
@@ -215,21 +215,23 @@ fn properties(intf: *Intf, show: c_int) callconv(.c) c_int {
 
 fn discover(intf: *Intf) callconv(.c) u8 {
     var data = [_]u8{0};
-    c.lprintf(log.Level.debug, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x", @as(c_uint, intf.my_addr), @as(c_uint, intf.transit_addr), @as(c_uint, intf.target_addr));
+    log.print(log.Level.debug, "Running Get PICMG Properties my_addr %#x, transit %#x, target %#x", .{
+        @as(c_uint, intf.my_addr), @as(c_uint, intf.transit_addr), @as(c_uint, intf.target_addr),
+    });
     const rsp = send(intf, c.PICMG_GET_PICMG_PROPERTIES_CMD, &data) orelse {
-        c.lprintf(log.Level.debug, "No response from Get PICMG Properties");
+        log.print(log.Level.debug, "No response from Get PICMG Properties", .{});
         return 0;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.debug, "Error response %#x from Get PICMG Properties", @as(c_uint, rsp.ccode));
+        log.print(log.Level.debug, "Error response %#x from Get PICMG Properties", .{@as(c_uint, rsp.ccode)});
     } else if (rsp.data_len < 4) {
-        c.lprintf(log.Level.info, "Invalid Get PICMG Properties response length %d", rsp.data_len);
+        log.print(log.Level.info, "Invalid Get PICMG Properties response length %d", .{@as(c_int, rsp.data_len)});
     } else if (rsp.data[0] != 0) {
-        c.lprintf(log.Level.info, "Invalid Get PICMG Properties group extension %#x", @as(c_uint, rsp.data[0]));
+        log.print(log.Level.info, "Invalid Get PICMG Properties group extension %#x", .{@as(c_uint, rsp.data[0])});
     } else if (rsp.data[1] & 0xf != 2 and rsp.data[1] & 0xf != 4 and rsp.data[1] & 0xf != 5) {
-        c.lprintf(log.Level.info, "Unknown PICMG Extension Version %d.%d", @as(c_int, rsp.data[1] & 0xf), @as(c_int, rsp.data[1] >> 4));
+        log.print(log.Level.info, "Unknown PICMG Extension Version %d.%d", .{ @as(c_int, rsp.data[1] & 0xf), @as(c_int, rsp.data[1] >> 4) });
     } else {
-        c.lprintf(log.Level.debug, "Discovered PICMG Extension Version %d.%d", @as(c_int, rsp.data[1] & 0xf), @as(c_int, rsp.data[1] >> 4));
+        log.print(log.Level.debug, "Discovered PICMG Extension Version %d.%d", .{ @as(c_int, rsp.data[1] & 0xf), @as(c_int, rsp.data[1] >> 4) });
         return 1;
     }
     return 0;
@@ -241,9 +243,9 @@ fn ipmbAddress(intf: *Intf) callconv(.c) u8 {
     const rsp = send(intf, c.PICMG_GET_ADDRESS_INFO_CMD, &data);
     if (rsp) |answer| {
         if (answer.ccode == 0 and answer.data_len >= 3) return answer.data[2];
-        c.lprintf(log.Level.debug, "Get Address Info failed: %#x %s", @as(c_uint, answer.ccode), c.val2str(answer.ccode, c.completion_code_vals));
+        log.print(log.Level.debug, "Get Address Info failed: %#x %s", .{ @as(c_uint, answer.ccode), c.val2str(answer.ccode, c.completion_code_vals) });
     } else {
-        c.lprintf(log.Level.debug, "Get Address Info failed: No Response");
+        log.print(log.Level.debug, "Get Address Info failed: No Response", .{});
     }
     return 0;
 }
@@ -252,15 +254,15 @@ fn getAddr(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
     var data = [_]u8{ 0, 0 };
     if (argc > 0 and !fru(argv, 0, &data[1])) return -1;
     const rsp = send(intf, c.PICMG_GET_ADDRESS_INFO_CMD, &data) orelse {
-        c.lprintf(log.Level.err, "Error. No valid response received.");
+        log.print(log.Level.err, "Error. No valid response received.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error getting address information CC: 0x%02x", @as(c_uint, rsp.ccode));
+        log.print(log.Level.err, "Error getting address information CC: 0x%02x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     if (rsp.data_len < 7) {
-        c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+        log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
         return -1;
     }
     _ = c.printf("Hardware Address : 0x%02x\n", @as(c_uint, rsp.data[1]));
@@ -296,14 +298,14 @@ fn activation(intf: *Intf, argv: Args, state: u8) callconv(.c) c_int {
     var data = [_]u8{ 0, 0, state };
     if (!fru(argv, 0, &data[1])) return -1;
     const rsp = send(intf, c.PICMG_FRU_ACTIVATION_CMD, &data) orelse {
-        c.lprintf(log.Level.err, "Error activation/deactivation of FRU.");
+        log.print(log.Level.err, "Error activation/deactivation of FRU.", .{});
         return -1;
     };
     if (rsp.ccode != 0 or rsp.data_len < 1) {
-        c.lprintf(log.Level.err, "Error activation/deactivation of FRU.");
+        log.print(log.Level.err, "Error activation/deactivation of FRU.", .{});
         return -1;
     }
-    if (rsp.data[0] != 0) c.lprintf(log.Level.err, "Error activation/deactivation of FRU.");
+    if (rsp.data[0] != 0) log.print(log.Level.err, "Error activation/deactivation of FRU.", .{});
     return 0;
 }
 
@@ -328,15 +330,15 @@ fn policySet(intf: *Intf, argv: Args) callconv(.c) c_int {
 fn portGet(intf: *Intf, interface: i32, channel: u8, mode: c_int) callconv(.c) c_int {
     var data = [_]u8{ 0, (@as(u8, @truncate(@as(u32, @bitCast(interface)))) & 3) << 6 | (channel & 0x3f) };
     const rsp = send(intf, c.PICMG_GET_PORT_STATE_CMD, &data) orelse {
-        c.lprintf(log.Level.err, "No valid response received.");
+        log.print(log.Level.err, "No valid response received.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        if (mode == query) c.lprintf(log.Level.err, "FRU portstate get failed with CC code 0x%02x", @as(c_uint, rsp.ccode));
+        if (mode == query) log.print(log.Level.err, "FRU portstate get failed with CC code 0x%02x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     if (rsp.data_len < 6) {
-        c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+        log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
         return 0;
     }
     for (0..4) |index| {
@@ -406,15 +408,15 @@ const amc_extensions = [8][16][*:0]const u8{
 fn amcPortGet(intf: *Intf, device: i32, channel: u8, mode: c_int) callconv(.c) c_int {
     var data = [_]u8{ 0, channel, @truncate(@as(u32, @bitCast(device))) };
     const rsp = send(intf, c.PICMG_AMC_GET_PORT_STATE_CMD, data[0..if (device == -1 or card_type != atca) 2 else 3]) orelse {
-        c.lprintf(log.Level.err, "No valid response received.");
+        log.print(log.Level.err, "No valid response received.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        if (mode == query) c.lprintf(log.Level.err, "Amc portstate get failed with CC code 0x%02x", @as(c_uint, rsp.ccode));
+        if (mode == query) log.print(log.Level.err, "Amc portstate get failed with CC code 0x%02x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     if (rsp.data_len < 5) {
-        c.lprintf(log.Level.notice, "ipmi_picmg_amc_portstate_getUnexpected answer, can't print result");
+        log.print(log.Level.notice, "ipmi_picmg_amc_portstate_getUnexpected answer, can't print result", .{});
         return 0;
     }
     for (0..4) |index| {
@@ -500,7 +502,7 @@ fn ledGet(intf: *Intf, argv: Args) callconv(.c) c_int {
     if (rsp.data_len < 5 or (rsp.data[1] & 2 != 0 and rsp.data_len < 8) or
         (rsp.data[1] & 4 != 0 and rsp.data_len < 9))
     {
-        c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+        log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
         return -1;
     }
     _ = c.printf("[LOCAL CONTROL");
@@ -529,15 +531,15 @@ fn ledSet(intf: *Intf, argv: Args) callconv(.c) c_int {
     if (!fru(argv, 0, &data[1]) or led_id(arg(argv, 1), &data[2]) != 0 or
         ledFunction(arg(argv, 2), &data[3]) != 0 or ledColor(arg(argv, 4), &data[5]) != 0) return -1;
     if (arg(argv, 3) == null) {
-        c.lprintf(log.Level.err, "LED Duration: invalid argument(s).");
+        log.print(log.Level.err, "LED Duration: invalid argument(s).", .{});
         return -1;
     }
     if (c.str2uchar(ptrArg(argv, 3), &data[4]) != 0 or (data[3] == 0xfb and data[4] > 127)) {
-        c.lprintf(log.Level.err, "Given LED Duration '%s' is invalid", ptrArg(argv, 3));
+        log.print(log.Level.err, "Given LED Duration '%s' is invalid", .{ptrArg(argv, 3)});
         return -1;
     }
     if (data[4] != 0 and (data[3] == 0 or data[3] > 0xfb)) {
-        c.lprintf(log.Level.warn, "Setting LED Duration '%s' to '0'", ptrArg(argv, 3));
+        log.print(log.Level.warn, "Setting LED Duration '%s' to '0'", .{ptrArg(argv, 3)});
         data[4] = 0;
     }
     _ = response(intf, c.PICMG_SET_FRU_LED_STATE_CMD, &data, "LED set state", 0) orelse return -1;
@@ -548,7 +550,7 @@ fn powerGet(intf: *Intf, argv: Args) callconv(.c) c_int {
     var data = [_]u8{ 0, 0, 0 };
     if (!fru(argv, 0, &data[1])) return -1;
     if (c.str2uchar(ptrArg(argv, 1), &data[2]) != 0 or data[2] > 3) {
-        c.lprintf(log.Level.err, "Given Power Type '%s' is invalid", ptrArg(argv, 1));
+        log.print(log.Level.err, "Given Power Type '%s' is invalid", .{ptrArg(argv, 1)});
         return -1;
     }
     const rsp = response(intf, c.PICMG_GET_POWER_LEVEL_CMD, &data, "Power level get", 4) orelse return -1;
@@ -565,11 +567,11 @@ fn powerSet(intf: *Intf, argv: Args) callconv(.c) c_int {
     var data = [_]u8{ 0, 0, 0, 0 };
     if (!fru(argv, 0, &data[1])) return -1;
     if (c.str2uchar(ptrArg(argv, 1), &data[2]) != 0 or (data[2] > 0x14 and data[2] != 0xff)) {
-        c.lprintf(log.Level.err, "Given PICMG Power Level '%s' is invalid.", ptrArg(argv, 1));
+        log.print(log.Level.err, "Given PICMG Power Level '%s' is invalid.", .{ptrArg(argv, 1)});
         return -1;
     }
     if (c.str2uchar(ptrArg(argv, 2), &data[3]) != 0 or data[3] > 1) {
-        c.lprintf(log.Level.err, "Given PICMG Present-to-desired '%s' is invalid.", ptrArg(argv, 2));
+        log.print(log.Level.err, "Given PICMG Present-to-desired '%s' is invalid.", .{ptrArg(argv, 2)});
         return -1;
     }
     _ = response(intf, c.PICMG_SET_POWER_LEVEL_CMD, &data, "Power level set", 0) orelse return -1;
@@ -590,7 +592,7 @@ fn busres(intf: *Intf, mode: c_int) callconv(.c) c_int {
             return -1;
         }
         if (rsp.data_len < 2) {
-            c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+            log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
             return -1;
         }
         _ = c.printf("Resource 0x%02x '%-26s' : 0x%02x [%s] \n", @as(c_uint, @intCast(index)), c.val2str(@intCast(index), c.picmg_busres_id_vals), @as(c_uint, rsp.data[1]), c.oemval2str(0, rsp.data[1], c.picmg_busres_board_status_vals));
@@ -611,18 +613,18 @@ fn fruControl(intf: *Intf, argv: Args) callconv(.c) c_int {
 fn clkGet(intf: *Intf, id: u8, res: i8, mode: c_int) callconv(.c) c_int {
     var data = [_]u8{ 0, id, @bitCast(res) };
     const rsp = send(intf, c.PICMG_AMC_GET_CLK_STATE_CMD, data[0..if (res == -1 or card_type != atca) 2 else 3]) orelse {
-        c.lprintf(log.Level.err, "No valid response received.");
+        log.print(log.Level.err, "No valid response received.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
         if (mode == query) {
-            c.lprintf(log.Level.err, "Clk get failed with CC code 0x%02x", @as(c_uint, rsp.ccode));
+            log.print(log.Level.err, "Clk get failed with CC code 0x%02x", .{@as(c_uint, rsp.ccode)});
             return -1;
         }
         return 0;
     }
     if (rsp.data_len < 2) {
-        c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+        log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
         return -1;
     }
     const state = rsp.data[1];
@@ -643,7 +645,7 @@ fn clkGet(intf: *Intf, id: u8, res: i8, mode: c_int) callconv(.c) c_int {
     _ = c.printf(" - PLL ctrl:  0x%x\n", @as(c_uint, state & 3));
     if (on) {
         if (rsp.data_len < 9) {
-            c.lprintf(log.Level.err, "Unexpected answer, can't print result.");
+            log.print(log.Level.err, "Unexpected answer, can't print result.", .{});
             return -1;
         }
         const frequency: c_ulong = @as(c_ulong, rsp.data[5]) | @as(c_ulong, rsp.data[6]) << 8 |
@@ -669,7 +671,7 @@ fn clkSet(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
     var len: usize = 10;
     if (card_type == atca) {
         if (argc <= 7) {
-            c.lprintf(log.Level.err, "Missing resource id for atca board.");
+            log.print(log.Level.err, "Missing resource id for atca board.", .{});
             return -1;
         }
         var resource: i8 = 0;
@@ -711,7 +713,7 @@ fn help() callconv(.c) void {
         " clk set              - set clk state",
         " busres summary       - display brief bused resource status info",
     };
-    for (lines) |line| c.lprintf(log.Level.notice, "%s", line);
+    for (lines) |line| log.print(log.Level.notice, "%s", .{line});
 }
 
 fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
@@ -726,70 +728,70 @@ fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
         if (argc > 1 and eq(argv, 1, "summary")) {
             _ = busres(intf, 0);
         } else if (argc <= 1) {
-            c.lprintf(log.Level.notice, "usage: busres summary");
+            log.print(log.Level.notice, "usage: busres summary", .{});
         }
         return rc;
     }
     if (eq(argv, 0, "frucontrol")) {
         if (argc > 2) return fruControl(intf, argv + 1);
-        c.lprintf(log.Level.notice, "usage: frucontrol <FRU-ID> <OPTION>");
-        c.lprintf(log.Level.notice, "   OPTION:");
-        c.lprintf(log.Level.notice, "      0      - Cold Reset");
-        c.lprintf(log.Level.notice, "      1      - Warm Reset");
-        c.lprintf(log.Level.notice, "      2      - Graceful Reboot");
-        c.lprintf(log.Level.notice, "      3      - Issue Diagnostic Interrupt");
-        c.lprintf(log.Level.notice, "      4      - Quiesce [AMC only]");
-        c.lprintf(log.Level.notice, "      5-255  - Reserved");
+        log.print(log.Level.notice, "usage: frucontrol <FRU-ID> <OPTION>", .{});
+        log.print(log.Level.notice, "   OPTION:", .{});
+        log.print(log.Level.notice, "      0      - Cold Reset", .{});
+        log.print(log.Level.notice, "      1      - Warm Reset", .{});
+        log.print(log.Level.notice, "      2      - Graceful Reboot", .{});
+        log.print(log.Level.notice, "      3      - Issue Diagnostic Interrupt", .{});
+        log.print(log.Level.notice, "      4      - Quiesce [AMC only]", .{});
+        log.print(log.Level.notice, "      5-255  - Reserved", .{});
         return -1;
     }
     if (eq(argv, 0, "activate") or eq(argv, 0, "deactivate")) {
         if (argc > 1) return activation(intf, argv + 1, @intFromBool(eq(argv, 0, "activate")));
-        c.lprintf(log.Level.err, if (eq(argv, 0, "activate")) "Specify the FRU to activate." else "Specify the FRU to deactivate.");
+        log.print(log.Level.err, if (eq(argv, 0, "activate")) "Specify the FRU to activate." else "Specify the FRU to deactivate.", .{});
         return -1;
     }
     if (eq(argv, 0, "policy")) {
         if (argc <= 1) {
-            c.lprintf(log.Level.err, "Wrong parameters.");
+            log.print(log.Level.err, "Wrong parameters.", .{});
             return -1;
         }
         if (eq(argv, 1, "get")) {
             if (argc > 2) return policyGet(intf, argv + 2);
-            c.lprintf(log.Level.notice, "usage: get <fruid>");
+            log.print(log.Level.notice, "usage: get <fruid>", .{});
         } else if (eq(argv, 1, "set")) {
             if (argc > 4) return policySet(intf, argv + 2);
-            c.lprintf(log.Level.notice, "usage: set <fruid> <lockmask> <lock>");
-            c.lprintf(log.Level.notice, "    lockmask:  [1] affect the deactivation locked bit");
-            c.lprintf(log.Level.notice, "               [0] affect the activation locked bit");
-            c.lprintf(log.Level.notice, "    lock:      [1] set/clear deactivation locked");
-            c.lprintf(log.Level.notice, "               [0] set/clear locked");
+            log.print(log.Level.notice, "usage: set <fruid> <lockmask> <lock>", .{});
+            log.print(log.Level.notice, "    lockmask:  [1] affect the deactivation locked bit", .{});
+            log.print(log.Level.notice, "               [0] affect the activation locked bit", .{});
+            log.print(log.Level.notice, "    lock:      [1] set/clear deactivation locked", .{});
+            log.print(log.Level.notice, "               [0] set/clear locked", .{});
         } else {
-            c.lprintf(log.Level.err, "Specify FRU.");
+            log.print(log.Level.err, "Specify FRU.", .{});
             return -1;
         }
         return rc;
     }
     if (eq(argv, 0, "portstate")) {
-        c.lprintf(log.Level.debug, "PICMG: portstate API");
+        log.print(log.Level.debug, "PICMG: portstate API", .{});
         if (argc <= 1) {
-            c.lprintf(log.Level.notice, "<set>|<getall>|<getgranted>|<getdenied>");
+            log.print(log.Level.notice, "<set>|<getall>|<getgranted>|<getdenied>", .{});
             return -1;
         }
         // In C the three "getall" spellings are nested inside the exact
         // "get" branch and thus do not send a request.
         if (eq(argv, 1, "get")) {
-            c.lprintf(log.Level.debug, "PICMG: get");
+            log.print(log.Level.debug, "PICMG: get", .{});
             if (argc > 3) {
                 var interface: i32 = 0;
                 var channel_id: u8 = 0;
                 if (amc_intf(arg(argv, 2), &interface) != 0 or chan(arg(argv, 3), &channel_id) != 0) return -1;
-                c.lprintf(log.Level.debug, "PICMG: requesting interface %d", interface);
-                c.lprintf(log.Level.debug, "PICMG: requesting channel %d", @as(c_int, channel_id));
+                log.print(log.Level.debug, "PICMG: requesting interface %d", .{@as(c_int, interface)});
+                log.print(log.Level.debug, "PICMG: requesting channel %d", .{@as(c_int, channel_id)});
                 return portGet(intf, interface, channel_id, query);
             }
-            c.lprintf(log.Level.notice, "<intf> <chn>|getall|getgranted|getdenied");
+            log.print(log.Level.notice, "<intf> <chn>|getall|getgranted|getdenied", .{});
         } else if (eq(argv, 1, "set")) {
             if (argc != 9) {
-                c.lprintf(log.Level.notice, "<intf> <chn> <port> <type> <ext> <group> <1|0>");
+                log.print(log.Level.notice, "<intf> <chn> <port> <type> <ext> <group> <1|0>", .{});
                 return -1;
             }
             var interface: i32 = 0;
@@ -803,38 +805,38 @@ fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
                 amc_port(arg(argv, 4), &port) != 0 or link_type(arg(argv, 5), &typ) != 0 or
                 link_ext(arg(argv, 6), &ext) != 0 or link_group(arg(argv, 7), &group) != 0 or
                 enable(arg(argv, 8), &state) != 0) return -1;
-            c.lprintf(log.Level.debug, "PICMG: interface %d", interface);
-            c.lprintf(log.Level.debug, "PICMG: channel %d", @as(c_int, channel_id));
-            c.lprintf(log.Level.debug, "PICMG: port %d", port);
-            c.lprintf(log.Level.debug, "PICMG: type %d", @as(c_int, typ));
-            c.lprintf(log.Level.debug, "PICMG: typeext %d", @as(c_int, ext));
-            c.lprintf(log.Level.debug, "PICMG: group %d", @as(c_int, group));
-            c.lprintf(log.Level.debug, "PICMG: enable %d", @as(c_int, state));
+            log.print(log.Level.debug, "PICMG: interface %d", .{@as(c_int, interface)});
+            log.print(log.Level.debug, "PICMG: channel %d", .{@as(c_int, channel_id)});
+            log.print(log.Level.debug, "PICMG: port %d", .{@as(c_int, port)});
+            log.print(log.Level.debug, "PICMG: type %d", .{@as(c_int, typ)});
+            log.print(log.Level.debug, "PICMG: typeext %d", .{@as(c_int, ext)});
+            log.print(log.Level.debug, "PICMG: group %d", .{@as(c_int, group)});
+            log.print(log.Level.debug, "PICMG: enable %d", .{@as(c_int, state)});
             return portSet(intf, interface, channel_id, port, typ, ext, group, state);
         }
         return rc;
     }
     if (eq(argv, 0, "amcportstate")) {
-        c.lprintf(log.Level.debug, "PICMG: amcportstate API");
+        log.print(log.Level.debug, "PICMG: amcportstate API", .{});
         if (argc <= 1) {
-            c.lprintf(log.Level.notice, "<set>|<get>|<getall>|<getgranted>|<getdenied>");
+            log.print(log.Level.notice, "<set>|<get>|<getall>|<getgranted>|<getdenied>", .{});
             return -1;
         }
         if (eq(argv, 1, "get")) {
-            c.lprintf(log.Level.debug, "PICMG: get");
+            log.print(log.Level.debug, "PICMG: get", .{});
             if (argc > 2) {
                 var channel_id: u8 = 0;
                 if (chan(arg(argv, 2), &channel_id) != 0) return -1;
                 var device: i32 = -1;
                 if (argc > 3 and amc_dev(arg(argv, 3), &device) != 0) return -1;
-                c.lprintf(log.Level.debug, "PICMG: requesting device %d", device);
-                c.lprintf(log.Level.debug, "PICMG: requesting channel %d", @as(c_int, channel_id));
+                log.print(log.Level.debug, "PICMG: requesting device %d", .{@as(c_int, device)});
+                log.print(log.Level.debug, "PICMG: requesting channel %d", .{@as(c_int, channel_id)});
                 return amcPortGet(intf, device, channel_id, query);
             }
-            c.lprintf(log.Level.notice, "<chn> <device>|getall|getgranted|getdenied");
+            log.print(log.Level.notice, "<chn> <device>|getall|getgranted|getdenied", .{});
         } else if (eq(argv, 1, "set")) {
             if (argc <= 7) {
-                c.lprintf(log.Level.notice, "<chn> <portflags> <type> <ext> <group> <1|0> [<device>]");
+                log.print(log.Level.notice, "<chn> <portflags> <type> <ext> <group> <1|0> [<device>]", .{});
                 return -1;
             }
             var channel_id: u8 = 0;
@@ -848,13 +850,13 @@ fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
                 link_type(arg(argv, 4), &typ) != 0 or link_ext(arg(argv, 5), &ext) != 0 or
                 link_group(arg(argv, 6), &group) != 0 or enable(arg(argv, 7), &state) != 0) return -1;
             if (argc > 8 and amc_dev(arg(argv, 8), &device) != 0) return -1;
-            c.lprintf(log.Level.debug, "PICMG: channel %d", @as(c_int, channel_id));
-            c.lprintf(log.Level.debug, "PICMG: portflags %d", port);
-            c.lprintf(log.Level.debug, "PICMG: type %d", @as(c_int, typ));
-            c.lprintf(log.Level.debug, "PICMG: typeext %d", @as(c_int, ext));
-            c.lprintf(log.Level.debug, "PICMG: group %d", @as(c_int, group));
-            c.lprintf(log.Level.debug, "PICMG: enable %d", @as(c_int, state));
-            c.lprintf(log.Level.debug, "PICMG: device %d", device);
+            log.print(log.Level.debug, "PICMG: channel %d", .{@as(c_int, channel_id)});
+            log.print(log.Level.debug, "PICMG: portflags %d", .{@as(c_int, port)});
+            log.print(log.Level.debug, "PICMG: type %d", .{@as(c_int, typ)});
+            log.print(log.Level.debug, "PICMG: typeext %d", .{@as(c_int, ext)});
+            log.print(log.Level.debug, "PICMG: group %d", .{@as(c_int, group)});
+            log.print(log.Level.debug, "PICMG: enable %d", .{@as(c_int, state)});
+            log.print(log.Level.debug, "PICMG: device %d", .{@as(c_int, device)});
             return amcPortSet(intf, channel_id, port, typ, ext, group, state, device);
         }
         return rc;
@@ -863,13 +865,13 @@ fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
         if (argc <= 1) return rc;
         if (eq(argv, 1, "prop")) {
             if (argc > 2) return ledProp(intf, argv + 2);
-            c.lprintf(log.Level.notice, "led prop <FRU-ID>");
+            log.print(log.Level.notice, "led prop <FRU-ID>", .{});
         } else if (eq(argv, 1, "cap")) {
             if (argc > 3) return ledCap(intf, argv + 2);
-            c.lprintf(log.Level.notice, "led cap <FRU-ID> <LED-ID>");
+            log.print(log.Level.notice, "led cap <FRU-ID> <LED-ID>", .{});
         } else if (eq(argv, 1, "get")) {
             if (argc > 3) return ledGet(intf, argv + 2);
-            c.lprintf(log.Level.notice, "led get <FRU-ID> <LED-ID>");
+            log.print(log.Level.notice, "led get <FRU-ID> <LED-ID>", .{});
         } else if (eq(argv, 1, "set")) {
             if (argc > 6) return ledSet(intf, argv + 2);
             for ([_][*:0]const u8{
@@ -898,46 +900,46 @@ fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
                 "               7:   reserved",
                 "               0xE: do not change",
                 "               0xF: use default color",
-            }) |line| c.lprintf(log.Level.notice, "%s", line);
+            }) |line| log.print(log.Level.notice, "%s", .{line});
         } else {
-            c.lprintf(log.Level.notice, "prop | cap | get | set");
+            log.print(log.Level.notice, "prop | cap | get | set", .{});
         }
         return rc;
     }
     if (eq(argv, 0, "power")) {
         if (argc <= 1) {
-            c.lprintf(log.Level.notice, "<set>|<get>");
+            log.print(log.Level.notice, "<set>|<get>", .{});
             return -1;
         }
         if (eq(argv, 1, "get")) {
             if (argc > 3) return powerGet(intf, argv + 2);
-            c.lprintf(log.Level.notice, "power get <FRU-ID> <type>");
-            c.lprintf(log.Level.notice, "   <type>   0 : steady state power draw levels");
-            c.lprintf(log.Level.notice, "            1 : desired steady state draw levels");
-            c.lprintf(log.Level.notice, "            2 : early power draw levels");
-            c.lprintf(log.Level.notice, "            3 : desired early levels");
+            log.print(log.Level.notice, "power get <FRU-ID> <type>", .{});
+            log.print(log.Level.notice, "   <type>   0 : steady state power draw levels", .{});
+            log.print(log.Level.notice, "            1 : desired steady state draw levels", .{});
+            log.print(log.Level.notice, "            2 : early power draw levels", .{});
+            log.print(log.Level.notice, "            3 : desired early levels", .{});
         } else if (eq(argv, 1, "set")) {
             if (argc > 4) return powerSet(intf, argv + 2);
-            c.lprintf(log.Level.notice, "power set <FRU-ID> <level> <present-desired>");
-            c.lprintf(log.Level.notice, "   <level>  0 :        Power Off");
-            c.lprintf(log.Level.notice, "            0x1-0x14 : Power level");
-            c.lprintf(log.Level.notice, "            0xFF :     do not change");
-            c.lprintf(log.Level.notice, "\n   <present-desired> 0: do not change present levels");
-            c.lprintf(log.Level.notice, "                     1: copy desired to present level");
+            log.print(log.Level.notice, "power set <FRU-ID> <level> <present-desired>", .{});
+            log.print(log.Level.notice, "   <level>  0 :        Power Off", .{});
+            log.print(log.Level.notice, "            0x1-0x14 : Power level", .{});
+            log.print(log.Level.notice, "            0xFF :     do not change", .{});
+            log.print(log.Level.notice, "\n   <present-desired> 0: do not change present levels", .{});
+            log.print(log.Level.notice, "                     1: copy desired to present level", .{});
         } else {
-            c.lprintf(log.Level.notice, "<set>|<get>");
+            log.print(log.Level.notice, "<set>|<get>", .{});
         }
         return -1;
     }
     if (eq(argv, 0, "clk")) {
         if (argc <= 1) {
-            c.lprintf(log.Level.notice, "<set>|<get>|<getall>|<getgranted>|<getdenied>");
+            log.print(log.Level.notice, "<set>|<get>|<getall>|<getgranted>|<getdenied>", .{});
             return -1;
         }
         if (eq(argv, 1, "get")) {
             if (argc <= 2) {
-                c.lprintf(log.Level.notice, "clk get");
-                c.lprintf(log.Level.notice, "<CLK-ID> [<DEV-ID>] |getall|getgranted|getdenied");
+                log.print(log.Level.notice, "clk get", .{});
+                log.print(log.Level.notice, "<CLK-ID> [<DEV-ID>] |getall|getgranted|getdenied", .{});
                 return -1;
             }
             var id: u8 = 0;
@@ -948,10 +950,10 @@ fn main(intf: *Intf, argc: c_int, argv: Args) callconv(.c) c_int {
         }
         if (eq(argv, 1, "set")) {
             if (argc > 7) return clkSet(intf, argc - 1, argv + 2);
-            c.lprintf(log.Level.notice, "clk set <CLK-ID> <index> <setting> <family> <acc-lvl> <freq> [<DEV-ID>]");
+            log.print(log.Level.notice, "clk set <CLK-ID> <index> <setting> <family> <acc-lvl> <freq> [<DEV-ID>]", .{});
             return -1;
         }
-        c.lprintf(log.Level.notice, "<set>|<get>|<getall>|<getgranted>|<getdenied>");
+        log.print(log.Level.notice, "<set>|<get>|<getall>|<getgranted>|<getdenied>", .{});
         return -1;
     }
     if (!show) {

@@ -531,6 +531,13 @@ arguments, successful LED/local/override/lamp-test decoding, completion-code
 rejections, wrong group identifiers, and short replies. Regenerate these
 snapshots from a C build **before** changing the Zig replacement.
 
+`picmg_log_port_set_cc` records the C oracle's verbose PICMG discovery and
+failed port-state set: `%#x` addresses, a completion-code `%s` description,
+debug `%d` arguments and `Picmg portstate set failed with CC code 0xa5`.
+The snapshot also pins request bytes and exit status. Run
+`zig build test-golden -Dzig-modules=picmg,log -- --filter picmg_` to check
+the selected Zig logger; select only `picmg` to check its C logger fallback.
+
 `-Dzig-modules=quantaoem` replaces the two Quanta SEL helpers, not a standalone
 CLI command. The `sl_quanta_list` and `slq_*` cases exercise them through
 `sel list`, `sel elist`, and `sel get`: Purley CPU/channel/DIMM decoding
