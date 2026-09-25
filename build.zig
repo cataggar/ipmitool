@@ -112,9 +112,9 @@ const ZigModule = struct {
     /// Zig implementation, for documentation and `zig build --help`.
     implementation: []const u8,
     /// C files the Zig implementation needs alongside it, relative to the
-    /// build root. `log` uses a variadic trampoline (see
-    /// doc/zig-migration/varargs-trampoline.md); the staged `fru` migration
-    /// keeps unported commands in a temporary legacy shim.
+    /// build root.  Only `lib/log.c` has one: Zig 0.16 cannot define a C
+    /// variadic function on aarch64, so `lprintf()`/`lperror()` keep a
+    /// `va_start` trampoline.  See doc/zig-migration/varargs-trampoline.md.
     c_shims: []const []const u8 = &.{},
 };
 
