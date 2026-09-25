@@ -11,11 +11,11 @@
 //! prints alongside it: those are toolchain dependent and gcc and clang
 //! disagree on both.  See `doc/zig-migration/crypto.md`.
 
-const c = @import("ipmi_c");
+const options = @import("build_options");
 
 /// Whether the C was configured with SHA-256 support, which changes the text
 /// of the RAKP algorithm assertion because the third disjunct is `#ifdef`ed.
-pub const have_sha256 = @hasDecl(c, "HAVE_CRYPTO_SHA256");
+pub const have_sha256 = options.have_crypto_sha256;
 
 /// `lanplus_rakp2_hmac_matches`, `lanplus_rakp4_hmac_matches`,
 /// `lanplus_generate_sik` and `lanplus_generate_rakp3_authcode` all make this

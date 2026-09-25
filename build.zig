@@ -1187,6 +1187,20 @@ pub fn build(b: *std.Build) void {
     }
     test_step.dependOn(strings_tables_step);
 
+    const assert_text_step = b.step("test-assert-text-data", "Test C-free assertion text with and without SHA256");
+    inline for (.{ false, true }) |sha256| {
+        const feature_options = b.addOptions();
+        feature_options.addOption(bool, "have_crypto_sha256", sha256);
+        const text_mod = b.createModule(.{
+            .root_source_file = b.path("src/zig/crypto/assert_text_data_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        text_mod.addImport("build_options", feature_options.createModule());
+        assert_text_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = text_mod })).step);
+    }
+    test_step.dependOn(assert_text_step);
+
     const fd_set_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{ "fd_set matches libc macros", "intf.open.test." },
