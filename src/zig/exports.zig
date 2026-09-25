@@ -106,6 +106,9 @@ comptime {
     if (selected("kontronoem")) {
         @import("cmd/kontronoem.zig").exportSymbols();
     }
+    if (selected("sol")) {
+        @import("cmd/sol.zig").exportSymbols();
+    }
     if (selected("isol")) {
         @import("cmd/isol.zig").exportSymbols();
     }

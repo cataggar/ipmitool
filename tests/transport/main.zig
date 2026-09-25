@@ -296,6 +296,13 @@ fn runCase(
     const port_text = try std.fmt.allocPrint(gpa, "{d}", .{port});
 
     var argv: std.ArrayList([]const u8) = .empty;
+    if (c.pty_input) |input| {
+        try argv.appendSlice(gpa, &.{
+            "/usr/bin/python3",
+            try realPath(gpa, io, "tests/transport/sol_pty.py"),
+            input,
+        });
+    }
     try argv.append(gpa, bin_link);
     for (c.args) |a| {
         try argv.append(gpa, if (std.mem.eql(u8, a, "${port}")) port_text else a);
@@ -319,6 +326,7 @@ fn runCase(
         sensor.record = record;
     }
     var bmc: Bmc = .init(gpa, &transcript, personality);
+    bmc.listen_port = port;
 
     var env: std.process.Environ.Map = .init(gpa);
     try env.put("PATH", "/usr/bin:/bin");

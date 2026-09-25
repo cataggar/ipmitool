@@ -27,15 +27,14 @@
 #include <paths.h>
 #include <poll.h>
 #include <signal.h>
-#include <poll.h>
 #include <termios.h>
+#include <time.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/un.h>
-#include <sys/select.h>
-#include <termios.h>
 #include <unistd.h>
 
 /*
@@ -79,6 +78,7 @@
 #include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_sel.h>
+#include <ipmitool/ipmi_sol.h>
 #include <ipmitool/ipmi_sel_supermicro.h>
 #include <ipmitool/ipmi_sensor.h>
 #include <ipmitool/ipmi_sdr.h>
@@ -221,6 +221,14 @@ const char *ipmi_get_oem_sensor_type(struct ipmi_intf *intf, uint8_t code);
 struct ipmi_sel_oem_msg_rec;
 extern struct ipmi_sel_oem_msg_rec *sel_oem_msg;
 char *strptime(const char *s, const char *format, struct tm *tm);
+
+int ipmi_sol_payload_access(struct ipmi_intf *intf, uint8_t channel,
+                            uint8_t userid, int enable);
+int ipmi_sol_payload_access_status(struct ipmi_intf *intf, uint8_t channel,
+                                   uint8_t userid);
+void enter_raw_mode(void);
+void leave_raw_mode(void);
+extern const struct valstr sol_parameter_vals[];
 
 int ipmi_sdr_add_record(struct ipmi_intf *intf, struct sdr_record_list *sdrr);
 int ipmi_parse_range_list(const char *rangeList, unsigned char *pHexList);

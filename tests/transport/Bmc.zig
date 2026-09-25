@@ -69,6 +69,7 @@ const MAX_CIPHER_SUITE_RECORD_OFFSET = 0x40;
 const MAX_CIPHER_SUITE_DATA_LEN = 0x10;
 
 const payload_type_ipmi = 0x00;
+const payload_type_sol = 0x01;
 const payload_type_open_request = 0x10;
 const payload_type_open_response = 0x11;
 const payload_type_rakp_1 = 0x12;
@@ -233,6 +234,12 @@ pub const Personality = struct {
     /// decoding the nested Send Message envelopes.  Call counts also guard
     /// against silently skipping a request when fixtures are regenerated.
     sensor: ?Sensor = null,
+
+    /// Answer SOL Activate/Deactivate Payload using the port on which this
+    /// model is listening.  This exercises the real RMCP+ command exchange.
+    sol_enabled: bool = false,
+    sol_no_ack: bool = false,
+    sol_reply_data: []const u8 = &.{},
 };
 
 pub const Deaf = struct { netfn: u8, cmd: u8 };
@@ -294,6 +301,7 @@ const V2 = struct {
 gpa: std.mem.Allocator,
 t: *Transcript,
 p: Personality,
+listen_port: u16 = 0,
 frame: u32 = 0,
 received: u32 = 0,
 /// Number of protocol violations the BMC detected.  Reported separately from
@@ -311,6 +319,7 @@ sensor_thresholds: u32 = 0,
 sensor_sets: u32 = 0,
 /// Whether `Personality.dup_once` has already fired.
 dup_fired: bool = false,
+sol_reply_sent: bool = false,
 hex_scratch: [2]u8 = undefined,
 
 const Bmc = @This();
@@ -718,6 +727,20 @@ fn dispatch(b: *Bmc, m: Message, buf: []u8) !Response {
     }
 
     switch (m.cmd) {
+        0x48 => {
+            if (!b.p.sol_enabled) return .{ .ccode = 0xc1 };
+            if (m.data.len != 6 or m.data[0] != 1 or m.data[1] == 0 or m.data[1] > 15)
+                return .{ .ccode = 0xc7 };
+            @memset(buf[0..12], 0);
+            std.mem.writeInt(u16, buf[4..6], 64, .little);
+            std.mem.writeInt(u16, buf[6..8], 64, .little);
+            std.mem.writeInt(u16, buf[8..10], b.listen_port, .little);
+            return .{ .data = buf[0..12] };
+        },
+        0x49 => {
+            if (!b.p.sol_enabled) return .{ .ccode = 0xc1 };
+            return .{};
+        },
         // Get Device ID.
         0x01 => {
             const devid = [_]u8{
@@ -1066,6 +1089,7 @@ fn handleV2(b: *Bmc, req: []const u8, reply: *std.ArrayList(u8), drop: bool) !vo
         payload_type_rakp_1 => try b.rakp2(plain, reply),
         payload_type_rakp_3 => try b.rakp4(plain, reply),
         payload_type_ipmi => try b.v2IpmiResponse(plain, reply),
+        payload_type_sol => try b.v2SolResponse(plain, reply),
         else => {
             try b.fail("unsupported payload type 0x{x:0>2}", .{ptype});
             return;
@@ -1076,11 +1100,32 @@ fn handleV2(b: *Bmc, req: []const u8, reply: *std.ArrayList(u8), drop: bool) !vo
 fn payloadName(ptype: u8) []const u8 {
     return switch (ptype) {
         payload_type_ipmi => "ipmi.v2 rq",
+        payload_type_sol => "ipmi.v2 sol",
         payload_type_open_request => "ipmi.v2 open-session-rq",
         payload_type_rakp_1 => "ipmi.v2 rakp1",
         payload_type_rakp_3 => "ipmi.v2 rakp3",
         else => "ipmi.v2 ?",
     };
+}
+
+fn v2SolResponse(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) !void {
+    if (!b.p.sol_enabled or payload.len < 4) return b.fail("unexpected SOL payload", .{});
+    try b.t.hexField("  sol", payload, &.{});
+    if (b.p.sol_no_ack) {
+        try b.t.print("  (dropped: no SOL ack)\n", .{});
+        return;
+    }
+    if (payload[0] == 0 and payload.len == 4) return;
+    const count: u8 = @intCast(@min(payload.len - 4, 255));
+    var response: std.ArrayList(u8) = .empty;
+    defer response.deinit(b.gpa);
+    const with_data = !b.sol_reply_sent and payload.len > 4 and b.p.sol_reply_data.len != 0;
+    try response.appendSlice(b.gpa, &.{ if (with_data) 1 else 0, payload[0] & 0x0f, count, 0 });
+    if (with_data) {
+        try response.appendSlice(b.gpa, b.p.sol_reply_data);
+        b.sol_reply_sent = true;
+    }
+    try b.sendV2(reply, payload_type_sol, response.items, "ipmi.v2 sol ack");
 }
 
 fn openSessionResponse(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) !void {
@@ -1258,7 +1303,15 @@ fn v2IpmiResponse(b: *Bmc, payload: []const u8, reply: *std.ArrayList(u8)) !void
     try body.appendSlice(g, r.data);
     try body.append(g, csum(body.items[3..]));
 
-    try b.sendV2(reply, payload_type_ipmi, body.items, "ipmi.v2 rs");
+    if (m.netfn == netfn_app and m.cmd == 0x48 and r.ccode == 0 and b.p.sol_enabled) {
+        const port_bytes = [_]Transcript.Span{
+            .{ .start = off_payload + 7 + 8, .len = 2 },
+            .{ .start = off_payload + body.items.len - 1, .len = 1 },
+        };
+        try b.sendV2Masked(reply, payload_type_ipmi, body.items, "ipmi.v2 rs", &port_bytes);
+    } else {
+        try b.sendV2(reply, payload_type_ipmi, body.items, "ipmi.v2 rs");
+    }
 }
 
 fn sendV2(b: *Bmc, reply: *std.ArrayList(u8), ptype: u8, payload: []const u8, name: []const u8) !void {
@@ -1268,9 +1321,8 @@ fn sendV2(b: *Bmc, reply: *std.ArrayList(u8), ptype: u8, payload: []const u8, na
 /// Frame `payload` as an RMCP+ packet, encrypting and authenticating it when the
 /// session says so, and record it.
 ///
-/// `extra_spans` are offsets *within the plaintext frame* that the caller knows
-/// vary; when the payload ends up encrypted they are irrelevant because the
-/// whole confidentiality field is masked anyway.
+/// `extra_spans` are offsets in the unencrypted frame, also translated to
+/// offsets in the logged plaintext when the frame is encrypted.
 fn sendV2Masked(
     b: *Bmc,
     reply: *std.ArrayList(u8),
@@ -1355,7 +1407,14 @@ fn sendV2Masked(
     b.frame += 1;
     std.mem.sort(Transcript.Span, spans.items, {}, Transcript.Span.lessThan);
     try b.t.frame(b.frame, .out, reply.items, spans.items, name);
-    if (encrypt) try b.t.hexField("  pln", payload, &.{});
+    if (encrypt) {
+        var plain_spans: std.ArrayList(Transcript.Span) = .empty;
+        defer plain_spans.deinit(g);
+        for (extra_spans) |s| {
+            try plain_spans.append(g, .{ .start = s.start - off_payload, .len = s.len });
+        }
+        try b.t.hexField("  pln", payload, plain_spans.items);
+    }
 }
 
 test "sensor route checks all four decoded bridge fields" {

@@ -1,0 +1,5 @@
+default_ccode 0xc1
+respond deactivate
+  netfn 0x06
+  cmd 0x49
+end

@@ -1,0 +1,39 @@
+#!golden 1
+#!case sol_info_unsupported
+#!section exit
+1
+#!section stdout
+#!section stderr
+Info: SOL parameter 'Set In Progress (0)' not supported
+Info: SOL parameter 'Enable (1)' not supported
+Info: SOL parameter 'Authentication (2)' not supported
+Info: SOL parameter 'Character Interval (3)' not supported
+Info: SOL parameter 'Retry (4)' not supported
+Info: SOL parameter 'Nonvolatile Bitrate (5)' not supported
+Info: SOL parameter 'Volatile Bitrate (6)' not supported
+Info: SOL parameter 'Payload Channel (7)' not supported - defaulting to 0x0e
+Info: SOL parameter 'Payload Port (8)' not supported - can't determine which payload port to use on NULL session
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 00 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 01 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 02 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 03 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 04 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 05 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 06 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 07 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 08 00 00
+< rule=all_sol_parameters ccode=0x80 len=0 data=
+bye

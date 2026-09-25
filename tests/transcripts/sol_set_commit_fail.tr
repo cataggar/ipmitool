@@ -1,0 +1,11 @@
+default_ccode 0xc1
+respond commit_not_implemented
+  netfn 0x0c
+  cmd 0x21
+  match 0e 00 02
+  ccode 0x80
+end
+respond set
+  netfn 0x0c
+  cmd 0x21
+end

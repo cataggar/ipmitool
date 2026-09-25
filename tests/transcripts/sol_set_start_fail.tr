@@ -1,0 +1,7 @@
+default_ccode 0xc1
+respond start_is_busy
+  netfn 0x0c
+  cmd 0x21
+  match 0e 00 01
+  ccode 0x81
+end

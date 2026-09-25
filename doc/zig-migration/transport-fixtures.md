@@ -54,6 +54,7 @@ Every source of nondeterminism is fixed or masked:
 | source | treatment |
 | --- | --- |
 | the client's ephemeral UDP port | the port is substituted out of the transcript |
+| the model's ephemeral SOL UDP port | the port bytes and IPMI checksum in Activate Payload responses are masked; the client must still accept the response and use the bound port |
 | the 4 random bytes in Activate Session | masked, along with the `csum2` and MD5 authcode derived from them |
 | the client's 16-byte `Rm` in RAKP 1 | masked |
 | SIK-derived integrity codes | masked (but *verified*, see below) |
@@ -63,13 +64,12 @@ Every source of nondeterminism is fixed or masked:
 | the scratch directory path | substituted out of stderr |
 | the IANA enterprise-number registry | `tests/fixtures/iana/enterprise-numbers` is copied into a per-case `$HOME` so `mc info` output does not depend on the machine |
 
-### Request-dependent responders, on purpose
+### Request-dependent responders for FRU, sensors and SOL
 
-The model BMC usually answers from a fixed table (`Personality.extra`).  The
-request-dependent responders are `Personality.fru`, which serves a byte image
-through `Get FRU Inventory Area Info` and `Read FRU Data`, and
-`Personality.sensor`, which serves the golden `full_bridged.hex` SDR and
-validates sensor routing.
+The model BMC usually answers from a fixed table (`Personality.extra`).
+`Personality.fru` serves a byte image through `Get FRU Inventory Area Info`
+and `Read FRU Data`; `Personality.sensor` serves the golden
+`full_bridged.hex` SDR and validates sensor routing.
 
 The FRU responder exists because `read_fru_area()` sizes every
 `Read FRU Data` request as `ipmi_intf_get_max_response_data_size(intf) - 2`
@@ -90,6 +90,15 @@ owner `2c`, LUN 1 and channel 5 produce `target_addr=2c`,
 `target_channel=45` on the wire.  Controls check BMC-local channel-zero
 requests (no Send Message), an already-targeted owner/channel (no additional
 retarget), and a matching owner on the wrong channel (retarget *must* occur).
+
+`Personality.sol_enabled` answers Activate Payload with the model's bound
+UDP port and negotiated payload sizes. It handles Deactivate Payload and SOL
+data/ACK packets. `sol_no_ack` drives the send timeout and retry path;
+`sol_reply_data` sends BMC bytes (including NUL) to verify the client stream.
+The `lanplus/sol-pty-*` cases launch ipmitool with stdin attached to a real
+pseudo-terminal via `sol_pty.py`, then feed serial bytes and escape sequences
+after activation. The C fixtures pin the RMCP+ wire, terminal output, retry
+count and cleanup.
 
 ### One code path for record and check
 
