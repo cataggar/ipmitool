@@ -47,6 +47,8 @@ zig build test-golden -- --filter fru_
 zig build test-golden -- --update
 zig build test-cli                    # diff the C and Zig frontends directly
 zig build test-cli-cutover -Dzig-modules=ipmishell  # compare shared CLI via the Zig shell
+zig build test-shell-log -Dipmishell=true -Dzig-modules=ipmishell  # compare C/Zig logger via the Zig shell
+zig build test-log-frontends          # compare the shared logging ABI from a separate frontend root
 
 # Standalone, without the build system, against the baseline oracle
 # (see baseline-oracle.md).
@@ -130,6 +132,15 @@ while comparing dispatch, help, `set`, and `exec` byte-for-byte. Selecting
 `ipmishell` avoids a readline dependency; use
 `-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false` on hosts without
 OpenSSL development headers.
+
+`zig build test-shell-log -Dipmishell=true -Dzig-modules=ipmishell` builds
+two binaries with the same Zig shell and C CLI/command backends. Only the
+logger changes: `lib/log.c` versus the selected Zig logger's stateful archive.
+The full differential suite compares output, exits and dummy requests, and
+two shell PTY runs check editing/history under each logger plus byte-identical
+shell dispatch, help, `set` and `exec`. Its `test-log-frontends` dependency
+checks level filtering, errno, truncation and daemon syslog through the
+nonvariadic frontend ABI. The local flags above also work here.
 
 The binary under test is picked in this order: `--binary`, `$IPMITOOL_BINARY`,
 `$IPMITOOL_ORACLE`, `tests/oracle/ipmitool`.

@@ -5,6 +5,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
+const frontend_log = @import("logging.zig");
 
 const allocator = std.heap.c_allocator;
 pub const max_args = 64;
@@ -296,7 +297,7 @@ fn dispatch(intf: *Intf, text: []const u8, comments: bool) c_int {
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
     const args = parse(arena_state.allocator(), text, comments) catch |err| {
-        c.lprintf(log.Level.err, "Invalid command line: %s", @errorName(err).ptr);
+        frontend_log.print(log.Level.err, "Invalid command line: %s", .{@errorName(err).ptr});
         return -1;
     };
     if (args.items.len == 0) return 0;
@@ -320,7 +321,7 @@ fn shellMain(intf: *Intf, _: c_int, _: [*c][*c]u8) callconv(.c) c_int {
                 _ = c.raise(sig);
                 return -1;
             }
-            c.lprintf(log.Level.err, "shell: %s", @errorName(err).ptr);
+            frontend_log.print(log.Level.err, "shell: %s", .{@errorName(err).ptr});
             return -1;
         } orelse return rc;
         defer allocator.free(line);

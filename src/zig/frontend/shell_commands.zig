@@ -4,6 +4,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
+const frontend_log = @import("logging.zig");
 const shell = @import("ipmishell.zig");
 
 const allocator = std.heap.c_allocator;
@@ -19,19 +20,19 @@ fn echoMain(_: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
 }
 
 fn setUsage() void {
-    c.lprintf(log.Level.notice, "Usage: set <option> <value>\n");
-    c.lprintf(log.Level.notice, "Options are:");
-    c.lprintf(log.Level.notice, "    hostname <host>        Session hostname");
-    c.lprintf(log.Level.notice, "    username <user>        Session username");
-    c.lprintf(log.Level.notice, "    password <pass>        Session password");
-    c.lprintf(log.Level.notice, "    privlvl <level>        Session privilege level force");
-    c.lprintf(log.Level.notice, "    authtype <type>        Authentication type force");
-    c.lprintf(log.Level.notice, "    localaddr <addr>       Local IPMB address");
-    c.lprintf(log.Level.notice, "    targetaddr <addr>      Remote target IPMB address");
-    c.lprintf(log.Level.notice, "    port <port>            Remote RMCP port");
-    c.lprintf(log.Level.notice, "    csv [level]            enable output in comma separated format");
-    c.lprintf(log.Level.notice, "    verbose [level]        Verbose level");
-    c.lprintf(log.Level.notice, "");
+    frontend_log.print(log.Level.notice, "Usage: set <option> <value>\n", .{});
+    frontend_log.print(log.Level.notice, "Options are:", .{});
+    frontend_log.print(log.Level.notice, "    hostname <host>        Session hostname", .{});
+    frontend_log.print(log.Level.notice, "    username <user>        Session username", .{});
+    frontend_log.print(log.Level.notice, "    password <pass>        Session password", .{});
+    frontend_log.print(log.Level.notice, "    privlvl <level>        Session privilege level force", .{});
+    frontend_log.print(log.Level.notice, "    authtype <type>        Authentication type force", .{});
+    frontend_log.print(log.Level.notice, "    localaddr <addr>       Local IPMB address", .{});
+    frontend_log.print(log.Level.notice, "    targetaddr <addr>      Remote target IPMB address", .{});
+    frontend_log.print(log.Level.notice, "    port <port>            Remote RMCP port", .{});
+    frontend_log.print(log.Level.notice, "    csv [level]            enable output in comma separated format", .{});
+    frontend_log.print(log.Level.notice, "    verbose [level]        Verbose level", .{});
+    frontend_log.print(log.Level.notice, "", .{});
 }
 
 fn setMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
@@ -44,7 +45,7 @@ fn setMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         const value = if (eq(name, "verbose")) &c.verbose else &c.csv_output;
         if (argc > 1) {
             if (c.str2int(argv[1], value) != 0) {
-                c.lprintf(log.Level.err, "Given %s '%s' argument is invalid.", argv[0], argv[1]);
+                frontend_log.print(log.Level.err, "Given %s '%s' argument is invalid.", .{ argv[0], argv[1] });
                 return -1;
             }
         } else if (eq(name, "verbose")) {
@@ -60,21 +61,21 @@ fn setMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (eq(name, "host") or eq(name, "hostname")) {
         c.ipmi_intf_session_set_hostname(@ptrCast(intf), value);
         if (intf.session == null) {
-            c.lprintf(log.Level.err, "Failed to set session hostname.");
+            frontend_log.print(log.Level.err, "Failed to set session hostname.", .{});
             return -1;
         }
         _ = c.printf("Set session hostname to %s\n", intf.ssn_params.hostname);
     } else if (eq(name, "user") or eq(name, "username")) {
         c.ipmi_intf_session_set_username(@ptrCast(intf), value);
         if (intf.session == null) {
-            c.lprintf(log.Level.err, "Failed to set session username.");
+            frontend_log.print(log.Level.err, "Failed to set session username.", .{});
             return -1;
         }
         _ = c.printf("Set session username to %s\n", &intf.ssn_params.username);
     } else if (eq(name, "pass") or eq(name, "password")) {
         c.ipmi_intf_session_set_password(@ptrCast(intf), value);
         if (intf.session == null) {
-            c.lprintf(log.Level.err, "Failed to set session password.");
+            frontend_log.print(log.Level.err, "Failed to set session password.", .{});
             return -1;
         }
         _ = c.printf("Set session password\n");
@@ -82,14 +83,14 @@ fn setMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         const table = if (eq(name, "authtype")) c.ipmi_authtype_session_vals else c.ipmi_privlvl_vals;
         const parsed = c.str2val(value, table);
         if (parsed == 0xff) {
-            c.lprintf(log.Level.err, if (eq(name, "authtype")) "Invalid authtype: %s" else "Invalid privilege level: %s", value);
+            frontend_log.print(log.Level.err, if (eq(name, "authtype")) "Invalid authtype: %s" else "Invalid privilege level: %s", .{value});
             return -1;
         }
         if (eq(name, "authtype")) {
             c.ipmi_intf_session_set_authtype(@ptrCast(intf), @intCast(parsed));
         } else c.ipmi_intf_session_set_privlvl(@ptrCast(intf), @intCast(parsed));
         if (intf.session == null) {
-            c.lprintf(log.Level.err, if (eq(name, "authtype")) "Failed to set session authtype." else "Failed to set session privilege level.");
+            frontend_log.print(log.Level.err, if (eq(name, "authtype")) "Failed to set session authtype." else "Failed to set session privilege level.", .{});
             return -1;
         }
         if (eq(name, "authtype")) {
@@ -98,19 +99,19 @@ fn setMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     } else if (eq(name, "port")) {
         var port: c_int = 0;
         if (c.str2int(value, &port) != 0 or port > 65535) {
-            c.lprintf(log.Level.err, "Given port '%s' is invalid.", value);
+            frontend_log.print(log.Level.err, "Given port '%s' is invalid.", .{value});
             return -1;
         }
         c.ipmi_intf_session_set_port(@ptrCast(intf), port);
         if (intf.session == null) {
-            c.lprintf(log.Level.err, "Failed to set session port.");
+            frontend_log.print(log.Level.err, "Failed to set session port.", .{});
             return -1;
         }
         _ = c.printf("Set session port to %d\n", intf.ssn_params.port);
     } else if (eq(name, "localaddr") or eq(name, "targetaddr")) {
         var addr: u8 = 0;
         if (c.str2uchar(value, &addr) != 0) {
-            c.lprintf(log.Level.err, "Given %s '%s' is invalid.", argv[0], value);
+            frontend_log.print(log.Level.err, "Given %s '%s' is invalid.", .{ argv[0], value });
             return -1;
         }
         if (eq(name, "localaddr")) {
@@ -129,7 +130,7 @@ fn setMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
 
 fn execMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (argc < 1) {
-        c.lprintf(log.Level.err, "Usage: exec <filename>");
+        frontend_log.print(log.Level.err, "Usage: exec <filename>", .{});
         return -1;
     }
     const fp = c.ipmi_open_file(argv[0], 0) orelse return -1;
@@ -145,7 +146,7 @@ fn execMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
                     ch = c.fgetc(fp);
                     if (ch == c.EOF or ch == '\n') break;
                 }
-                c.lprintf(log.Level.err, "exec: command line exceeds 2047 bytes");
+                frontend_log.print(log.Level.err, "exec: command line exceeds 2047 bytes", .{});
                 rc = -1;
                 continue;
             }
@@ -153,7 +154,7 @@ fn execMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         var arena_state = std.heap.ArenaAllocator.init(allocator);
         defer arena_state.deinit();
         const parsed = shell.parse(arena_state.allocator(), buf[0..len], true) catch |err| {
-            c.lprintf(log.Level.err, "Invalid command line: %s", @errorName(err).ptr);
+            frontend_log.print(log.Level.err, "Invalid command line: %s", .{@errorName(err).ptr});
             rc = -1;
             continue;
         };
@@ -164,7 +165,7 @@ fn execMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         if (result != 0) rc = result;
     }
     if (c.ferror(fp) != 0) {
-        c.lprintf(log.Level.err, "exec: unable to read file");
+        frontend_log.print(log.Level.err, "exec: unable to read file", .{});
         return -1;
     }
     return rc;
