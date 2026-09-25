@@ -70,9 +70,11 @@ the **same Zig logger state** as the exported C ABI. This avoids the C
 `lprintf`/`lperror` trampoline for those callers; it is **not** pure Zig or
 libc-free logging. When `log` is not selected, they call the C logger instead,
 avoiding separate verbosity, daemon and lifecycle state. The dummy transport
-now uses this path. `zig build test-log` compares its exact stderr against the
-C oracle, including C ABI calls, severity filtering, truncation, errno
-suffixes, syslog routing and reinitialization.
+and the selected utility/crypto callers in `helper.zig`,
+`strings_registry.zig`, `lanplus_crypt.zig` and `lanplus_crypt_impl.zig` now use
+this path. `zig build test-log` compares its exact stderr against the C oracle,
+including C ABI calls, severity filtering, helper and registry printf formats,
+truncation, errno suffixes, syslog routing and reinitialization.
 
 Native callers must be in the selected `exports.zig` module graph so they share
 `logpriv` with the ABI exports. Importing `util/log.zig` into a separate frontend
@@ -82,11 +84,10 @@ until their logging state is explicitly shared. `zig build test-log-compile
 trying to run them.
 
 `log_varargs.c` remains a production dependency whenever `log` is selected:
-the 56 other Zig files identified before the shell split still call the
-C-variadic ABI, and merged #98 added `src/zig/frontend/shell_commands.zig`
-as a 57th direct caller. It can be removed only after all those calls have
-migrated to the typed path and no C caller remains; an all-selected build
-today is **not** shim-free.
+53 other Zig files still call the C-variadic ABI, including
+`src/zig/frontend/shell_commands.zig` (added by #98). It can be removed only
+after all those calls have migrated to the typed path and no C caller remains;
+an all-selected build today is **not** shim-free.
 
 `interop-seams.md` says the Zig tree contains "exactly two C files"
 (`ipmi_c.h`, `abi_layout.h`).  There is now a third, and there will be one more

@@ -1133,6 +1133,9 @@ pub fn build(b: *std.Build) void {
         log_run.expectStdErrEqual(
             "lazy 3\n" ++
                 "7: 0x002a left      +3 %\n" ++
+                "  Allocating     42 entries\n" ++
+                "  [    42]       -3 | Acme\n" ++
+                "  42\t0x2a\tAcme\n" ++
                 "ABI 11\n" ++
                 "errno native: No such file or directory\n" ++
                 "ABI errno 5: Permission denied\n" ++
