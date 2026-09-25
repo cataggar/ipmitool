@@ -22,6 +22,10 @@ const helper = @import("helper.zig");
 /// The generated tables, one `pub const` per C array, in the C order.
 pub const tables = @import("strings_tables.zig");
 
+comptime {
+    _ = @import("strings_tables_validation.zig");
+}
+
 const ValStr = helper.ValStr;
 const OemValStr = helper.OemValStr;
 

@@ -843,6 +843,7 @@ pub fn build(b: *std.Build) void {
 
     const zig_options = b.addOptions();
     zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, zig_selection));
+    zig_options.addOption(bool, "have_crypto_sha256", openssl);
 
     const zig_lib: ?*std.Build.Step.Compile = if (anySelected(zig_selection)) blk: {
         const mod = b.createModule(.{
@@ -904,6 +905,7 @@ pub fn build(b: *std.Build) void {
         .flags = flags,
         .core = core,
         .bridge_mod = bridge_mod,
+        .have_crypto_sha256 = openssl,
         .zig_lib = zig_lib,
         .zig_selection = zig_selection,
         .system_libs = libs,
@@ -919,6 +921,7 @@ pub fn build(b: *std.Build) void {
         .flags = flags,
         .core = core,
         .bridge_mod = bridge_mod,
+        .have_crypto_sha256 = openssl,
         .zig_lib = zig_lib,
         .zig_selection = zig_selection,
         .system_libs = libs,
@@ -1037,7 +1040,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     evd_test_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, evd_test_mod, bridge_mod, target, optimize, zig_selection);
+    addEvdImports(b, evd_test_mod, bridge_mod, target, optimize, zig_selection, openssl);
     evd_test_mod.linkLibrary(core);
     if (zig_lib) |lib| evd_test_mod.linkLibrary(lib);
     for (libs) |lib| evd_test_mod.linkSystemLibrary(lib, .{});
@@ -1072,6 +1075,7 @@ pub fn build(b: *std.Build) void {
     // This standalone unit root has no selected archive to own logger state.
     const abi_options = b.addOptions();
     abi_options.addOption([]const []const u8, "zig_modules", &.{});
+    abi_options.addOption(bool, "have_crypto_sha256", openssl);
     abi_mod.addImport("build_options", abi_options.createModule());
     abi_mod.addCSourceFile(.{ .file = b.path("tests/fd_set_oracle.c"), .flags = &.{"-std=c11"} });
     addCryptoVectors(b, abi_mod);
@@ -1079,6 +1083,29 @@ pub fn build(b: *std.Build) void {
     const unit_tests = b.addRunArtifact(abi_tests);
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
+
+    const strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.strings.test."},
+    });
+    b.step("test-strings-unit", "Run lookup table unit and C header assertions")
+        .dependOn(&b.addRunArtifact(strings_unit).step);
+    b.step("test-strings-compile", "Cross-compile lookup table C header assertions")
+        .dependOn(&strings_unit.step);
+
+    const strings_tables_step = b.step("test-strings-tables", "Test pure-Zig tables with and without SHA256");
+    inline for (.{ false, true }) |sha256| {
+        const feature_options = b.addOptions();
+        feature_options.addOption(bool, "have_crypto_sha256", sha256);
+        const table_mod = b.createModule(.{
+            .root_source_file = b.path("src/zig/util/strings_tables_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        table_mod.addImport("build_options", feature_options.createModule());
+        strings_tables_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = table_mod })).step);
+    }
+    test_step.dependOn(strings_tables_step);
 
     const fd_set_unit = b.addTest(.{
         .root_module = abi_mod,
@@ -1146,6 +1173,7 @@ pub fn build(b: *std.Build) void {
     inline for (.{ false, true }) |zig_log| {
         const log_options = b.addOptions();
         log_options.addOption([]const []const u8, "zig_modules", if (zig_log) &.{"log"} else &.{});
+        log_options.addOption(bool, "have_crypto_sha256", openssl);
         const log_options_mod = log_options.createModule();
         const log_mod = b.createModule(.{
             .root_source_file = b.path("tests/logging.zig"),
@@ -1260,6 +1288,7 @@ pub fn build(b: *std.Build) void {
             .flags = flags,
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
             .system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &evd_only),
         };
         const daemon_c = addSelectedTool(b, daemon_options, &evd_only, "ipmievd-log-c");
@@ -1326,6 +1355,7 @@ pub fn build(b: *std.Build) void {
 
     const registry_options = b.addOptions();
     registry_options.addOption([]const []const u8, "zig_modules", &.{"intf"});
+    registry_options.addOption(bool, "have_crypto_sha256", openssl);
     const registry_lib_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/exports.zig"),
         .target = target,
@@ -1405,6 +1435,7 @@ pub fn build(b: *std.Build) void {
     const user_only = parseZigModules(b, "user");
     const user_options = b.addOptions();
     user_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, user_only));
+    user_options.addOption(bool, "have_crypto_sha256", openssl);
     const zig_user_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/exports.zig"),
         .target = target,
@@ -1473,6 +1504,7 @@ pub fn build(b: *std.Build) void {
         "zig_modules",
         &.{ "cfgp", "session", "hpm2" },
     );
+    support_zig_options.addOption(bool, "have_crypto_sha256", openssl);
     const support_lib_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/exports.zig"),
         .target = target,
@@ -1508,7 +1540,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     c_strings_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize, null);
+    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize, null, openssl);
     configure(b, c_strings_mod, config_h, default_intf);
     c_strings_mod.addCSourceFile(.{
         .file = b.path("src/plugins/lanplus/lanplus_strings.c"),
@@ -1518,6 +1550,7 @@ pub fn build(b: *std.Build) void {
 
     const zig_strings_options = b.addOptions();
     zig_strings_options.addOption([]const []const u8, "zig_modules", &.{"lanplus-strings"});
+    zig_strings_options.addOption(bool, "have_crypto_sha256", openssl);
     const zig_strings_exports = b.createModule(.{
         .root_source_file = b.path("src/zig/exports.zig"),
         .target = target,
@@ -1538,7 +1571,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     zig_strings_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize, null);
+    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize, null, openssl);
     zig_strings_mod.linkLibrary(zig_strings_lib);
     lanplus_strings_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = zig_strings_mod })).step);
     test_step.dependOn(lanplus_strings_step);
@@ -1696,6 +1729,7 @@ pub fn build(b: *std.Build) void {
             .flags = flags,
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
             .system_libs = swapped_libs,
         });
         golden_step.dependOn(&addGolden(b, golden_exe, swapped, null, true, true).step);
@@ -1733,6 +1767,7 @@ pub fn build(b: *std.Build) void {
         };
         const tsol_options = b.addOptions();
         tsol_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, &tsol_only));
+        tsol_options.addOption(bool, "have_crypto_sha256", openssl);
         const tsol_exports = b.createModule(.{
             .root_source_file = b.path(zig_root ++ "/exports.zig"),
             .target = target,
@@ -1785,6 +1820,7 @@ pub fn build(b: *std.Build) void {
             .flags = flags,
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
             .system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &no_zig),
         };
         const oracle = addSelectedTool(b, cli_options, &no_zig, "ipmitool-cli-c");
@@ -1835,6 +1871,7 @@ pub fn build(b: *std.Build) void {
             .flags = flags,
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
             .system_libs = withLibcrypto(b, swapped_base_libs, openssl, internal_md5, &shell_only),
         };
         const oracle = addSelectedTool(b, cutover_options, &shell_only, "ipmitool-cli-cutover-c");
@@ -1929,6 +1966,7 @@ pub fn build(b: *std.Build) void {
                 .flags = flags,
                 .plugins_enabled = &enabled,
                 .bridge_mod = bridge_mod,
+                .have_crypto_sha256 = openssl,
                 .system_libs = swapped_libs,
             });
             transport_step.dependOn(&addTransport(b, transport_exe, swapped, false).step);
@@ -1960,6 +1998,7 @@ pub fn build(b: *std.Build) void {
             .flags = flags,
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
             .system_libs = undefined,
         };
         const oracle = if (!zig_selection[moduleIndex("serial-basic")] and
@@ -2169,6 +2208,7 @@ const SwappedOptions = struct {
     flags: []const []const u8,
     plugins_enabled: []const bool,
     bridge_mod: *std.Build.Module,
+    have_crypto_sha256: bool,
     system_libs: []const []const u8,
 };
 
@@ -2228,6 +2268,7 @@ fn addSelectedTool(
         } else options.bridge_mod;
         const zig_options = b.addOptions();
         zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
+        zig_options.addOption(bool, "have_crypto_sha256", options.have_crypto_sha256);
         const exports_mod = b.createModule(.{
             .root_source_file = b.path(zig_root ++ "/exports.zig"),
             .target = options.target,
@@ -2263,6 +2304,7 @@ fn addSelectedTool(
         .flags = options.flags,
         .core = core,
         .bridge_mod = options.bridge_mod,
+        .have_crypto_sha256 = options.have_crypto_sha256,
         .zig_lib = zig_lib,
         .zig_selection = selection,
         .system_libs = options.system_libs,
@@ -2290,6 +2332,7 @@ fn addSerialVariant(b: *std.Build, options: SwappedOptions, selection: []const b
     const zig_lib: ?*std.Build.Step.Compile = if (anySelected(selection)) blk: {
         const zig_options = b.addOptions();
         zig_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
+        zig_options.addOption(bool, "have_crypto_sha256", options.have_crypto_sha256);
         const mod = b.createModule(.{
             .root_source_file = b.path(zig_root ++ "/exports.zig"),
             .target = options.target,
@@ -2312,6 +2355,7 @@ fn addSerialVariant(b: *std.Build, options: SwappedOptions, selection: []const b
         .flags = options.flags,
         .core = core,
         .bridge_mod = options.bridge_mod,
+        .have_crypto_sha256 = options.have_crypto_sha256,
         .zig_lib = zig_lib,
         .zig_selection = selection,
         .system_libs = options.system_libs,
@@ -2573,6 +2617,7 @@ const ToolOptions = struct {
     flags: []const []const u8,
     core: *std.Build.Step.Compile,
     bridge_mod: *std.Build.Module,
+    have_crypto_sha256: bool,
     zig_lib: ?*std.Build.Step.Compile,
     zig_selection: []const bool,
     system_libs: []const []const u8,
@@ -2585,13 +2630,13 @@ fn addEvdImports(
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     selection: ?[]const bool,
+    have_crypto_sha256: bool,
 ) void {
-    const options_mod = if (selection) |selected| blk: {
-        const options = b.addOptions();
-        options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selected));
-        break :blk options.createModule();
-    } else null;
-    if (options_mod) |selected| mod.addImport("build_options", selected);
+    const options = b.addOptions();
+    options.addOption([]const []const u8, "zig_modules", if (selection) |selected| selectedZigModules(b, selected) else &.{});
+    options.addOption(bool, "have_crypto_sha256", have_crypto_sha256);
+    const options_mod = options.createModule();
+    mod.addImport("build_options", options_mod);
     const headers = b.createModule(.{
         .root_source_file = b.path("src/zig/root.zig"),
         .target = target,
@@ -2599,7 +2644,7 @@ fn addEvdImports(
         .link_libc = true,
     });
     headers.addImport("ipmi_c", bridge_mod);
-    if (options_mod) |selected| headers.addImport("build_options", selected);
+    headers.addImport("build_options", options_mod);
     mod.addImport("ipmi_zig", headers);
 }
 
@@ -2618,7 +2663,7 @@ fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
     configure(b, mod, options.config_h, options.default_intf);
     if (zig_evd) {
         mod.addImport("ipmi_c", options.bridge_mod);
-        addEvdImports(b, mod, options.bridge_mod, options.target, options.optimize, options.zig_selection);
+        addEvdImports(b, mod, options.bridge_mod, options.target, options.optimize, options.zig_selection, options.have_crypto_sha256);
     }
     if (zig_cli) mod.addImport("ipmi_c", options.bridge_mod);
     addSources(b, mod, options.sources, options.flags, options.zig_selection);
