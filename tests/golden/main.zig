@@ -306,10 +306,12 @@ fn runCase(
     report: *std.ArrayList(u8),
 ) !Outcome {
     const snapshot_path = try std.fmt.allocPrint(gpa, "{s}/snapshots/{s}.snap", .{ opts.tests_dir, c.name });
+    const root_abs = try realPath(gpa, io, work_root);
+    const directory_name = try scratchName(gpa, root_abs, c.name, opts.candidate != null);
 
     if (opts.candidate) |candidate| {
-        const work_a = try std.fs.path.join(gpa, &.{ work_root, c.name, "a" });
-        const work_b = try std.fs.path.join(gpa, &.{ work_root, c.name, "b" });
+        const work_a = try std.fs.path.join(gpa, &.{ work_root, directory_name, "a" });
+        const work_b = try std.fs.path.join(gpa, &.{ work_root, directory_name, "b" });
         const a = try executeCase(gpa, io, ctx, opts, work_a, c, opts.binary);
         const b = try executeCase(gpa, io, ctx, opts, work_b, c, candidate);
         var differs = false;
@@ -327,7 +329,7 @@ fn runCase(
         return .fail;
     }
 
-    const work = try std.fs.path.join(gpa, &.{ work_root, c.name });
+    const work = try std.fs.path.join(gpa, &.{ work_root, directory_name });
     const run = try executeCase(gpa, io, ctx, opts, work, c, opts.binary);
 
     if (run.server_error) |err| {
@@ -370,6 +372,24 @@ fn runCase(
     try report.print(gpa, "  args: {s}\n", .{try joinArgs(gpa, c.args)});
     try report.appendSlice(gpa, body.items);
     return .fail;
+}
+
+fn scratchName(gpa: std.mem.Allocator, root_abs: []const u8, name: []const u8, candidate: bool) ![]const u8 {
+    const socket_suffix: usize = if (candidate) "/a/s".len else "/s".len;
+    if (root_abs.len + 1 + name.len + socket_suffix <= Io.net.UnixAddress.max_len) return name;
+    return std.fmt.allocPrint(gpa, "{x:0>16}", .{std.hash.Wyhash.hash(0, name)});
+}
+
+test "long golden case names use unique socket-safe directories" {
+    const root = [_]u8{'x'} ** 80;
+    const a = try scratchName(std.testing.allocator, &root, "lanp_set_arp_interval_too_large", false);
+    defer std.testing.allocator.free(a);
+    const b = try scratchName(std.testing.allocator, &root, "lanp_set_arp_interval_too_short", true);
+    defer std.testing.allocator.free(b);
+    try std.testing.expect(!std.mem.eql(u8, a, b));
+    try std.testing.expect(root.len + 1 + a.len + "/s".len <= Io.net.UnixAddress.max_len);
+    try std.testing.expect(root.len + 1 + b.len + "/a/s".len <= Io.net.UnixAddress.max_len);
+    try std.testing.expectEqualStrings("short", try scratchName(std.testing.allocator, "/work", "short", false));
 }
 
 fn executeCase(

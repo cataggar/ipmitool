@@ -1012,6 +1012,7 @@ pub fn build(b: *std.Build) void {
         });
         usb_test_step.dependOn(&b.addRunArtifact(usb_unit_tests).step);
     }
+
     // Compile the same C ABI contract against the original objects and the
     // three Zig replacements. The harness supplies a scripted sendrecv,
     // logging and parameter callbacks; neither binary needs a real BMC.
