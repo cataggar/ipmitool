@@ -1,0 +1,99 @@
+#!golden 1
+#!case hpm_capability_log_diagnostic
+#!section exit
+0
+#!section stdout
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid Get PICMG Properties response length 2
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+ipmi_hpmfwupg_main()
+
+PICMG HPM.1 Upgrade Agent 1.0.9:\x20
+
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 2e
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 8
+msg.netfn: 2d
+msg.cmd: 2e
+msg.seq: 0
+msg.lun: 0
+<<<
+TARGET UPGRADE CAPABILITIES
+-------------------------------
+HPM.1 version............0   \x20
+Component 0 presence....[y]  \x20
+Component 1 presence....[n]  \x20
+Component 2 presence....[n]  \x20
+Component 3 presence....[n]  \x20
+Component 4 presence....[n]  \x20
+Component 5 presence....[n]  \x20
+Component 6 presence....[n]  \x20
+Component 7 presence....[n]  \x20
+Upgrade undesirable.....[n]  \x20
+Aut rollback override...[n]  \x20
+IPMC degraded...........[n]  \x20
+Deferred activation.....[y]  \x20
+Service affected........[n]  \x20
+Manual rollback.........[y]  \x20
+Automatic rollback......[y]  \x20
+Self test...............[y]  \x20
+Upgrade timeout.........[25 sec]\x20
+Self test timeout.......[25 sec]\x20
+Rollback timeout........[25 sec]\x20
+Inaccessibility timeout.[25 sec]\x20
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_discover ccode=0x00 len=2 data=00 23
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=hpm_target_capabilities ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+bye
+#!section files

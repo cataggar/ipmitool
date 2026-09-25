@@ -2,6 +2,10 @@
 //! The dummy-interface goldens cover the wire protocol without contacting
 //! hardware. Image and response parsing uses checked slices; no packet or
 //! image length from the BMC/file is ever trusted as a pointer offset.
+//! Diagnostics use typed `log.print()` from the same selected archive as the
+//! Zig logger state; without it, `log.print()` calls the original C `lprintf`.
+//! Both paths keep libc printf formatting and the original argument widths.
+//! The two runtime-chosen headings select only fixed, conversion-free strings.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -145,26 +149,26 @@ fn sendCmd(intf: *Intf, req: Request, ctx: ?*const Upgrade) ?*Response {
         var copy = req;
         var rsp = intf.sendrecv.?(intf, &copy);
         if (rsp == null and isLan(intf)) {
-            c.lprintf(log.Level.debug, "HPM: no response available");
-            c.lprintf(log.Level.debug, "HPM: the command may be rejected for security reasons");
+            log.print(log.Level.debug, "HPM: no response available", .{});
+            log.print(log.Level.debug, "HPM: the command may be rejected for security reasons", .{});
             if (req.msg.cmd == 0x32 and lan_size_errors < 6 and !valid_upload_size) {
-                c.lprintf(log.Level.debug, "HPM: upload firmware block API called");
-                c.lprintf(log.Level.debug, "HPM: returning length error to force resize");
+                log.print(log.Level.debug, "HPM: upload firmware block API called", .{});
+                log.print(log.Level.debug, "HPM: returning length error to force resize", .{});
                 fake_rsp.ccode = 0xc7;
                 fake_rsp.data_len = 0;
                 rsp = &fake_rsp;
                 lan_size_errors += 1;
             } else if (req.msg.cmd == 0x35 or req.msg.cmd == 0x38) {
-                c.lprintf(log.Level.debug, "HPM: activate/rollback firmware API called");
-                c.lprintf(log.Level.debug, "HPM: returning in progress to handle IOL session lost");
+                log.print(log.Level.debug, "HPM: activate/rollback firmware API called", .{});
+                log.print(log.Level.debug, "HPM: returning in progress to handle IOL session lost", .{});
                 fake_rsp.ccode = 0x80;
                 fake_rsp.data_len = 0;
                 rsp = &fake_rsp;
             } else if ((req.msg.cmd == 0x37 or req.msg.cmd == 0x34 or req.msg.cmd == 0x36) and
                 (intf.target_addr == 0 or intf.target_addr == intf.my_addr))
             {
-                c.lprintf(log.Level.debug, "HPM: upg/rollback status firmware API called");
-                c.lprintf(log.Level.debug, "HPM: try to re-open IOL session");
+                log.print(log.Level.debug, "HPM: upg/rollback status firmware API called", .{});
+                log.print(log.Level.debug, "HPM: try to re-open IOL session", .{});
                 intf.abort = 1;
                 if (intf.close) |close| close(intf);
                 while (inaccess_elapsed < inaccess_timeout) {
@@ -197,7 +201,7 @@ fn sendCmd(intf: *Intf, req: Request, ctx: ?*const Upgrade) ?*Response {
         }
         if (code == 0) error_count = 0;
         if (req.msg.cmd == 0x32 and !valid_upload_size) {
-            c.lprintf(log.Level.info, "Buffer length is now considered valid");
+            log.print(log.Level.info, "Buffer length is now considered valid", .{});
             valid_upload_size = true;
         }
         return rsp;
@@ -209,7 +213,7 @@ fn send(intf: *Intf, cmd: u8, bytes: []const u8, ctx: ?*const Upgrade) ?*Respons
     var small: [256]u8 = undefined;
     const owned = if (bytes.len > small.len)
         std.heap.c_allocator.alloc(u8, bytes.len) catch {
-            c.lprintf(err, "ipmitool: malloc failure");
+            log.print(err, "ipmitool: malloc failure", .{});
             return null;
         }
     else
@@ -234,17 +238,17 @@ fn getDevice(intf: *Intf) ?Device {
     req.msg.netfn_lun = .{ .netfn = 0x06, .lun = 0 };
     req.msg.cmd = 1;
     const rsp = sendCmd(intf, req, null) orelse {
-        c.lprintf(err, "Error getting device ID.");
+        log.print(err, "Error getting device ID.", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(err, "Error getting device ID.");
-        c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+        log.print(err, "Error getting device ID.", .{});
+        log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
         return null;
     }
     const data = responseData(rsp) orelse return null;
     if (data.len < 11) {
-        c.lprintf(err, "Error getting device ID.");
+        log.print(err, "Error getting device ID.", .{});
         return null;
     }
     return .{
@@ -259,16 +263,16 @@ fn getDevice(intf: *Intf) ?Device {
 
 fn getCapabilities(intf: *Intf) ?Capabilities {
     const rsp = send(intf, 0x2e, &.{0}, null) orelse {
-        c.lprintf(err, "Error getting target upgrade capabilities.");
+        log.print(err, "Error getting target upgrade capabilities.", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(err, "Error getting target upgrade capabilities, ccode: 0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+        log.print(err, "Error getting target upgrade capabilities, ccode: 0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
         return null;
     }
     const data = responseData(rsp) orelse return null;
     if (data.len < 8) {
-        c.lprintf(err, "Error getting target upgrade capabilities.");
+        log.print(err, "Error getting target upgrade capabilities.", .{});
         return null;
     }
     const caps: Capabilities = .{
@@ -281,36 +285,36 @@ fn getCapabilities(intf: *Intf) ?Capabilities {
         .components = data[7],
     };
     if (c.verbose != 0) {
-        c.lprintf(notice, "TARGET UPGRADE CAPABILITIES");
-        c.lprintf(notice, "-------------------------------");
-        c.lprintf(notice, "HPM.1 version............%d    ", @as(c_int, caps.version));
+        log.print(notice, "TARGET UPGRADE CAPABILITIES", .{});
+        log.print(notice, "-------------------------------", .{});
+        log.print(notice, "HPM.1 version............%d    ", .{@as(c_int, caps.version)});
         inline for (0..8) |i| {
-            c.lprintf(notice, "Component %d presence....[%c]   ", @as(c_int, i), @as(c_int, yn(caps.contains(i))));
+            log.print(notice, "Component %d presence....[%c]   ", .{ @as(c_int, i), @as(c_int, yn(caps.contains(i))) });
         }
-        c.lprintf(notice, "Upgrade undesirable.....[%c]   ", @as(c_int, yn(bit(caps.flags, 7))));
-        c.lprintf(notice, "Aut rollback override...[%c]   ", @as(c_int, yn(bit(caps.flags, 6))));
-        c.lprintf(notice, "IPMC degraded...........[%c]   ", @as(c_int, yn(bit(caps.flags, 5))));
-        c.lprintf(notice, "Deferred activation.....[%c]   ", @as(c_int, yn(bit(caps.flags, 4))));
-        c.lprintf(notice, "Service affected........[%c]   ", @as(c_int, yn(bit(caps.flags, 3))));
-        c.lprintf(notice, "Manual rollback.........[%c]   ", @as(c_int, yn(bit(caps.flags, 2))));
-        c.lprintf(notice, "Automatic rollback......[%c]   ", @as(c_int, yn(bit(caps.flags, 1))));
-        c.lprintf(notice, "Self test...............[%c]   ", @as(c_int, yn(bit(caps.flags, 0))));
-        c.lprintf(notice, "Upgrade timeout.........[%d sec] ", @as(c_int, caps.upgrade_timeout) * 5);
-        c.lprintf(notice, "Self test timeout.......[%d sec] ", @as(c_int, caps.selftest_timeout) * 5);
-        c.lprintf(notice, "Rollback timeout........[%d sec] ", @as(c_int, caps.rollback_timeout) * 5);
-        c.lprintf(notice, "Inaccessibility timeout.[%d sec] \n", @as(c_int, caps.inaccess_timeout) * 5);
+        log.print(notice, "Upgrade undesirable.....[%c]   ", .{@as(c_int, yn(bit(caps.flags, 7)))});
+        log.print(notice, "Aut rollback override...[%c]   ", .{@as(c_int, yn(bit(caps.flags, 6)))});
+        log.print(notice, "IPMC degraded...........[%c]   ", .{@as(c_int, yn(bit(caps.flags, 5)))});
+        log.print(notice, "Deferred activation.....[%c]   ", .{@as(c_int, yn(bit(caps.flags, 4)))});
+        log.print(notice, "Service affected........[%c]   ", .{@as(c_int, yn(bit(caps.flags, 3)))});
+        log.print(notice, "Manual rollback.........[%c]   ", .{@as(c_int, yn(bit(caps.flags, 2)))});
+        log.print(notice, "Automatic rollback......[%c]   ", .{@as(c_int, yn(bit(caps.flags, 1)))});
+        log.print(notice, "Self test...............[%c]   ", .{@as(c_int, yn(bit(caps.flags, 0)))});
+        log.print(notice, "Upgrade timeout.........[%d sec] ", .{@as(c_int, caps.upgrade_timeout) * 5});
+        log.print(notice, "Self test timeout.......[%d sec] ", .{@as(c_int, caps.selftest_timeout) * 5});
+        log.print(notice, "Rollback timeout........[%d sec] ", .{@as(c_int, caps.rollback_timeout) * 5});
+        log.print(notice, "Inaccessibility timeout.[%d sec] \n", .{@as(c_int, caps.inaccess_timeout) * 5});
     }
     return caps;
 }
 
 fn getProperty(intf: *Intf, id: u8, selector: u8) ?Property {
     const rsp = send(intf, 0x2f, &.{ 0, id, selector }, null) orelse {
-        c.lprintf(notice, "Error getting component properties\n");
+        log.print(notice, "Error getting component properties\n", .{});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(notice, "Error getting component properties");
-        c.lprintf(notice, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+        log.print(notice, "Error getting component properties", .{});
+        log.print(notice, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
         return null;
     }
     const need: usize = switch (selector) {
@@ -319,13 +323,13 @@ fn getProperty(intf: *Intf, id: u8, selector: u8) ?Property {
         2 => 13,
         192 => 5,
         else => {
-            c.lprintf(notice, "Unsupported component selector");
+            log.print(notice, "Unsupported component selector", .{});
             return null;
         },
     };
     const data = responseData(rsp) orelse return null;
     if (data.len < need) {
-        c.lprintf(notice, "Error getting component properties\n");
+        log.print(notice, "Error getting component properties\n", .{});
         return null;
     }
     var p: Property = .{ .len = @intCast(need) };
@@ -338,32 +342,32 @@ fn printProperty(p: Property, selector: u8) void {
     const d = p.data;
     switch (selector) {
         0 => {
-            c.lprintf(notice, "GENERAL PROPERTIES");
-            c.lprintf(notice, "-------------------------------");
-            c.lprintf(notice, "Payload cold reset req....[%c]   ", @as(c_int, yn(bit(d[1], 5))));
-            c.lprintf(notice, "Def. activation supported.[%c]   ", @as(c_int, yn(bit(d[1], 4))));
-            c.lprintf(notice, "Comparison supported......[%c]   ", @as(c_int, yn(bit(d[1], 3))));
-            c.lprintf(notice, "Preparation supported.....[%c]   ", @as(c_int, yn(bit(d[1], 2))));
-            c.lprintf(notice, "Rollback supported........[%c]   \n", @as(c_int, yn((d[1] & 3) != 0)));
+            log.print(notice, "GENERAL PROPERTIES", .{});
+            log.print(notice, "-------------------------------", .{});
+            log.print(notice, "Payload cold reset req....[%c]   ", .{@as(c_int, yn(bit(d[1], 5)))});
+            log.print(notice, "Def. activation supported.[%c]   ", .{@as(c_int, yn(bit(d[1], 4)))});
+            log.print(notice, "Comparison supported......[%c]   ", .{@as(c_int, yn(bit(d[1], 3)))});
+            log.print(notice, "Preparation supported.....[%c]   ", .{@as(c_int, yn(bit(d[1], 2)))});
+            log.print(notice, "Rollback supported........[%c]   \n", .{@as(c_int, yn((d[1] & 3) != 0))});
         },
         2 => {
             var text: [13]u8 = .{0} ** 13;
             @memcpy(text[0..12], d[1..13]);
-            c.lprintf(notice, "Description string: %s\n", &text);
+            log.print(notice, "Description string: %s\n", .{&text});
         },
         1, 3, 4 => {
-            c.lprintf(notice, switch (selector) {
+            log.print(notice, switch (selector) {
                 1 => "Current Version: ",
                 3 => "Rollback FW Version: ",
                 else => "Deferred FW Version: ",
-            });
-            c.lprintf(notice, " Major: %d", @as(c_int, d[1]));
-            c.lprintf(notice, " Minor: %x", @as(c_uint, d[2]));
-            c.lprintf(notice, " Aux  : %03d %03d %03d %03d\n", @as(c_int, d[3]), @as(c_int, d[4]), @as(c_int, d[5]), @as(c_int, d[6]));
+            }, .{});
+            log.print(notice, " Major: %d", .{@as(c_int, d[1])});
+            log.print(notice, " Minor: %x", .{@as(c_uint, d[2])});
+            log.print(notice, " Aux  : %03d %03d %03d %03d\n", .{ @as(c_int, d[3]), @as(c_int, d[4]), @as(c_int, d[5]), @as(c_int, d[6]) });
         },
         192 => {
-            c.lprintf(notice, "OEM Properties: ");
-            for (d[1..5]) |b| c.lprintf(notice, " 0x%x ", @as(c_uint, b));
+            log.print(notice, "OEM Properties: ", .{});
+            for (d[1..5]) |b| log.print(notice, " 0x%x ", .{@as(c_uint, b)});
         },
         else => {},
     }
@@ -371,28 +375,28 @@ fn printProperty(p: Property, selector: u8) void {
 
 fn getStatus(intf: *Intf, ctx: ?*const Upgrade, silent: bool) ?u8 {
     const rsp = send(intf, 0x34, &.{0}, ctx) orelse {
-        c.lprintf(notice, "Error getting upgrade status. Failed to get response.");
+        log.print(notice, "Error getting upgrade status. Failed to get response.", .{});
         return null;
     };
     if (rsp.ccode == 0) {
         const d = responseData(rsp) orelse return null;
         if (d.len < 3) {
-            c.lprintf(notice, "Error getting upgrade status");
+            log.print(notice, "Error getting upgrade status", .{});
             return null;
         }
         if (!silent) {
-            c.lprintf(notice, "Upgrade status:");
-            c.lprintf(notice, " Command in progress:          %x", @as(c_uint, d[1]));
-            c.lprintf(notice, " Last command completion code: %x", @as(c_uint, d[2]));
+            log.print(notice, "Upgrade status:", .{});
+            log.print(notice, " Command in progress:          %x", .{@as(c_uint, d[1])});
+            log.print(notice, " Last command completion code: %x", .{@as(c_uint, d[2])});
         }
         return d[2];
     }
     if (retryable(rsp.ccode)) {
-        if (!silent) c.lprintf(log.Level.debug, "HPM: Retryable error detected");
+        if (!silent) log.print(log.Level.debug, "HPM: Retryable error detected", .{});
         return 0x80;
     }
-    c.lprintf(notice, "Error getting upgrade status");
-    c.lprintf(notice, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+    log.print(notice, "Error getting upgrade status", .{});
+    log.print(notice, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
     return null;
 }
 
@@ -417,43 +421,43 @@ fn waitLong(intf: *Intf, ctx: ?*const Upgrade) bool {
 
 fn action(intf: *Intf, mask: u8, kind: u8, ctx: *const Upgrade) bool {
     const rsp = send(intf, 0x31, &.{ 0, mask, kind }, ctx) orelse {
-        c.lprintf(err, "Error initiating upgrade action.");
+        log.print(err, "Error initiating upgrade action.", .{});
         return false;
     };
     if (rsp.ccode == 0x80) return waitLong(intf, ctx);
     if (rsp.ccode == 0) return true;
-    c.lprintf(notice, "Error initiating upgrade action");
-    c.lprintf(notice, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+    log.print(notice, "Error initiating upgrade action", .{});
+    log.print(notice, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
     return false;
 }
 
 fn abortUpgrade(intf: *Intf) bool {
     const rsp = send(intf, 0x30, &.{0}, null) orelse {
-        c.lprintf(err, "Error - aborting upgrade.");
+        log.print(err, "Error - aborting upgrade.", .{});
         return false;
     };
     if (rsp.ccode == 0) return true;
-    c.lprintf(err, "Error aborting upgrade");
-    c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+    log.print(err, "Error aborting upgrade", .{});
+    log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
     return false;
 }
 
 fn activate(intf: *Intf, override: bool, ctx: ?*const Upgrade) bool {
     const data: []const u8 = if (override) &.{ 0, 1 } else &.{0};
     const rsp = send(intf, 0x35, data, ctx) orelse {
-        c.lprintf(err, "Error activating firmware.");
+        log.print(err, "Error activating firmware.", .{});
         return false;
     };
     if (rsp.ccode == 0x80) {
         _ = c.printf("Waiting firmware activation...");
         _ = c.fflush(c.stdout);
         const ok = waitLong(intf, ctx);
-        c.lprintf(notice, if (ok) "OK" else "Failed");
+        log.print(notice, if (ok) "OK" else "Failed", .{});
         return ok;
     }
     if (rsp.ccode == 0) return true;
-    c.lprintf(err, "Error activating firmware");
-    c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+    log.print(err, "Error activating firmware", .{});
+    log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
     return false;
 }
 
@@ -463,25 +467,25 @@ fn querySelftest(intf: *Intf, ctx: ?*const Upgrade) ?[2]u8 {
     while (true) {
         _ = c.usleep(100_000);
         const rsp = send(intf, 0x36, &.{0}, ctx) orelse {
-            c.lprintf(notice, "Error getting upgrade status\n");
+            log.print(notice, "Error getting upgrade status\n", .{});
             return null;
         };
         if (retryable(rsp.ccode) and c.time(null) - started < limit) continue;
         if (rsp.ccode == 0x80 and c.time(null) - started < limit) continue;
         if (rsp.ccode != 0) {
-            c.lprintf(notice, "Error getting self test results");
-            c.lprintf(notice, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+            log.print(notice, "Error getting self test results", .{});
+            log.print(notice, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
             return null;
         }
         const d = responseData(rsp) orelse return null;
         if (d.len < 3) {
-            c.lprintf(notice, "Error getting self test results");
+            log.print(notice, "Error getting self test results", .{});
             return null;
         }
         if (c.verbose != 0) {
-            c.lprintf(notice, "Self test results:");
-            c.lprintf(notice, "Result1 = %x", @as(c_uint, d[1]));
-            c.lprintf(notice, "Result2 = %x", @as(c_uint, d[2]));
+            log.print(notice, "Self test results:", .{});
+            log.print(notice, "Result1 = %x", .{@as(c_uint, d[1])});
+            log.print(notice, "Result2 = %x", .{@as(c_uint, d[2])});
         }
         return .{ d[1], d[2] };
     }
@@ -493,7 +497,7 @@ fn rollbackStatus(intf: *Intf, ctx: ?*const Upgrade) bool {
     while (true) {
         _ = c.usleep(100_000);
         const rsp = send(intf, 0x37, &.{0}, ctx) orelse {
-            c.lprintf(err, "Error getting upgrade status.");
+            log.print(err, "Error getting upgrade status.", .{});
             return false;
         };
         const code: u8 = if (retryable(rsp.ccode)) 0x80 else rsp.ccode;
@@ -501,21 +505,21 @@ fn rollbackStatus(intf: *Intf, ctx: ?*const Upgrade) bool {
         if (code == 0) {
             const d = responseData(rsp) orelse return false;
             if (d.len < 2) {
-                c.lprintf(err, "Error getting rollback status");
+                log.print(err, "Error getting rollback status", .{});
                 return false;
             }
             if (d[1] != 0) {
-                c.lprintf(notice, "Rollback occurred on component mask: 0x%02x", @as(c_uint, d[1]));
+                log.print(notice, "Rollback occurred on component mask: 0x%02x", .{@as(c_uint, d[1])});
             } else {
-                c.lprintf(notice, "No Firmware rollback occurred");
+                log.print(notice, "No Firmware rollback occurred", .{});
             }
             return true;
         }
         if (code == 0x81) {
-            c.lprintf(err, "Rollback failed on component mask: 0x%02x", @as(c_uint, 0));
+            log.print(err, "Rollback failed on component mask: 0x%02x", .{@as(c_uint, 0)});
         } else {
-            c.lprintf(err, "Error getting rollback status");
-            c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, code), ccText(code));
+            log.print(err, "Error getting rollback status", .{});
+            log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, code), ccText(code) });
         }
         return false;
     }
@@ -529,7 +533,7 @@ fn manualRollback(intf: *Intf) bool {
     if (caps == null) return false;
     const ctx: Upgrade = .{ .image = &.{}, .header = .{}, .target = caps.? };
     const rsp = send(intf, 0x38, &.{0}, &ctx) orelse {
-        c.lprintf(err, "Error sending manual rollback.");
+        log.print(err, "Error sending manual rollback.", .{});
         return false;
     };
     if (rsp.ccode == 0 or rsp.ccode == 0x80) {
@@ -537,8 +541,8 @@ fn manualRollback(intf: *Intf) bool {
         _ = c.fflush(c.stdout);
         return rollbackStatus(intf, &ctx);
     }
-    c.lprintf(err, "Error sending manual rollback");
-    c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+    log.print(err, "Error sending manual rollback", .{});
+    log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
     return false;
 }
 
@@ -571,7 +575,7 @@ const Records = struct {
     fn next(self: *Records) error{Invalid}!?Record {
         if (self.pos == self.end) return null;
         if (self.end - self.pos < 3) {
-            c.lprintf(notice, "    Invalid Action record.");
+            log.print(notice, "    Invalid Action record.", .{});
             return error.Invalid;
         }
         const action_header = self.image[self.pos..][0..3];
@@ -583,24 +587,24 @@ const Records = struct {
         {
             // HPM.1 permits both 3-byte and 34-byte upload-record checksums.
         } else if (!first_ok) {
-            c.lprintf(notice, "    Invalid Action record.");
+            log.print(notice, "    Invalid Action record.", .{});
             return error.Invalid;
         }
         self.pos += 3;
         if (kind == 0 or kind == 1) return .{ .kind = kind, .components = mask };
         if (kind != 2) {
-            c.lprintf(notice, "    Invalid Action type. Cannot continue");
+            log.print(notice, "    Invalid Action type. Cannot continue", .{});
             return error.Invalid;
         }
         if (mask == 0 or self.end - self.pos < 31) {
-            c.lprintf(notice, "    Invalid Action record.");
+            log.print(notice, "    Invalid Action record.", .{});
             return error.Invalid;
         }
         const details = self.image[self.pos..][0..31];
         const size: usize = le32(details[27..31]);
         self.pos += 31;
         if (size > self.end - self.pos) {
-            c.lprintf(notice, "    Invalid firmware image length.");
+            log.print(notice, "    Invalid firmware image length.", .{});
             return error.Invalid;
         }
         const payload = self.image[self.pos..][0..size];
@@ -624,31 +628,31 @@ fn checksum(bytes: []const u8) u8 {
 
 fn validateImage(image: []const u8) ?Header {
     if (image.len < 16) {
-        c.lprintf(notice, "\n    Invalid MD5 signature");
+        log.print(notice, "\n    Invalid MD5 signature", .{});
         return null;
     }
     const body = image[0 .. image.len - 16];
     var md5: [16]u8 = undefined;
     std.crypto.hash.Md5.hash(body, &md5, .{});
     if (!std.mem.eql(u8, &md5, image[image.len - 16 ..])) {
-        c.lprintf(notice, "\n    Invalid MD5 signature");
+        log.print(notice, "\n    Invalid MD5 signature", .{});
         return null;
     }
     if (body.len < 35) {
-        c.lprintf(notice, "\n    Invalid header checksum");
+        log.print(notice, "\n    Invalid header checksum", .{});
         return null;
     }
     if (!std.mem.eql(u8, body[0..8], "PICMGFWU")) {
-        c.lprintf(notice, "\n    Invalid image signature");
+        log.print(notice, "\n    Invalid image signature", .{});
         return null;
     }
     if (body[8] != 0) {
-        c.lprintf(notice, "\n    Unrecognized image version");
+        log.print(notice, "\n    Unrecognized image version", .{});
         return null;
     }
     const oem_len: usize = le16(body[32..34]);
     if (oem_len > body.len - 35 or checksum(body[0 .. 35 + oem_len]) != 0) {
-        c.lprintf(notice, "\n    Invalid header checksum");
+        log.print(notice, "\n    Invalid header checksum", .{});
         return null;
     }
     return .{
@@ -666,25 +670,25 @@ fn validateImage(image: []const u8) ?Header {
 
 fn readImage(filename: [*:0]u8) ?[]u8 {
     const file = c.fopen(filename, "rb") orelse {
-        c.lprintf(err, "Cannot open image file '%s'", filename);
+        log.print(err, "Cannot open image file '%s'", .{filename});
         return null;
     };
     defer _ = c.fclose(file);
     if (c.fseek(file, 0, c.SEEK_END) != 0) {
-        c.lprintf(err, "Failed to seek in the image file '%s'", filename);
+        log.print(err, "Failed to seek in the image file '%s'", .{filename});
         return null;
     }
     const end = c.ftell(file);
     if (end < 0 or end > std.math.maxInt(u32)) {
-        c.lprintf(err, "Failed to seek in the image file '%s'", filename);
+        log.print(err, "Failed to seek in the image file '%s'", .{filename});
         return null;
     }
     const buffer = std.heap.c_allocator.alloc(u8, @intCast(end)) catch {
-        c.lprintf(err, "ipmitool: malloc failure");
+        log.print(err, "ipmitool: malloc failure", .{});
         return null;
     };
     if (c.fseek(file, 0, c.SEEK_SET) != 0 or c.fread(buffer.ptr, 1, buffer.len, file) != buffer.len) {
-        c.lprintf(err, "Failed to read file %s size %d", filename, @as(c_int, @truncate(end)));
+        log.print(err, "Failed to read file %s size %d", .{ filename, @as(c_int, @truncate(end)) });
         std.heap.c_allocator.free(buffer);
         return null;
     }
@@ -760,20 +764,20 @@ fn displayUpgrade(skip: bool, sent: usize, size: usize, elapsed: i64) void {
 
 fn targetCheck(intf: *Intf, option: c_int) bool {
     const dev = getDevice(intf) orelse {
-        c.lprintf(notice, "Verify whether the Target board is present \n");
+        log.print(notice, "Verify whether the Target board is present \n", .{});
         return false;
     };
     const caps = getCapabilities(intf) orelse {
-        c.lprintf(notice, "Board might not be supporting the HPM.1 Standards\n");
+        log.print(notice, "Board might not be supporting the HPM.1 Standards\n", .{});
         return false;
     };
     if (option & view_mode != 0) {
-        c.lprintf(notice, "-------Target Information-------");
-        c.lprintf(notice, "Device Id          : 0x%x", @as(c_uint, dev.id));
-        c.lprintf(notice, "Device Revision    : 0x%x", @as(c_uint, dev.revision));
-        c.lprintf(notice, "Product Id         : 0x%04x", @as(c_uint, le16(&dev.product)));
+        log.print(notice, "-------Target Information-------", .{});
+        log.print(notice, "Device Id          : 0x%x", .{@as(c_uint, dev.id)});
+        log.print(notice, "Device Revision    : 0x%x", .{@as(c_uint, dev.revision)});
+        log.print(notice, "Product Id         : 0x%04x", .{@as(c_uint, le16(&dev.product))});
         const man = le16(dev.manufacturer[0..2]);
-        c.lprintf(notice, "Manufacturer Id    : 0x%04x (%s)\n\n", @as(c_uint, man), c.val2str(man, c.ipmi_oem_info));
+        log.print(notice, "Manufacturer Id    : 0x%04x (%s)\n\n", .{ @as(c_uint, man), c.val2str(man, c.ipmi_oem_info) });
         displayVersionHeader(target_ver | rollback_ver);
     }
     for (0..8) |id| {
@@ -781,20 +785,20 @@ fn targetCheck(intf: *Intf, option: c_int) bool {
         const v = &gVersionInfo[id];
         v.* = std.mem.zeroes(Version);
         const general = getProperty(intf, @intCast(id), 0) orelse {
-            c.lprintf(notice, "Get CompGenProp Failed for component Id %d\n", @as(c_int, @intCast(id)));
+            log.print(notice, "Get CompGenProp Failed for component Id %d\n", .{@as(c_int, @intCast(id))});
             return false;
         };
         v.rollbackSupported = general.flags() & 3;
         v.coldResetRequired = @intFromBool(bit(general.flags(), 5));
         v.deferredActivationSupported = @intFromBool(bit(general.flags(), 4));
         const desc = getProperty(intf, @intCast(id), 2) orelse {
-            c.lprintf(notice, "Get CompDescString Failed for component Id %d\n", @as(c_int, @intCast(id)));
+            log.print(notice, "Get CompDescString Failed for component Id %d\n", .{@as(c_int, @intCast(id))});
             return false;
         };
         @memcpy(v.descString[0..12], desc.data[1..13]);
         v.descString[12] = 0;
         const current = getProperty(intf, @intCast(id), 1) orelse {
-            c.lprintf(notice, "Get CompCurrentVersion Failed for component Id %d\n", @as(c_int, @intCast(id)));
+            log.print(notice, "Get CompCurrentVersion Failed for component Id %d\n", .{@as(c_int, @intCast(id))});
             return false;
         };
         v.componentId = @intCast(id);
@@ -808,7 +812,7 @@ fn targetCheck(intf: *Intf, option: c_int) bool {
                 v.rollbackMinor = rolled.data[2];
                 @memcpy(&v.rollbackAux, rolled.data[3..7]);
             } else {
-                c.lprintf(notice, "Get CompRollbackVersion Failed for component Id %d\n", @as(c_int, @intCast(id)));
+                log.print(notice, "Get CompRollbackVersion Failed for component Id %d\n", .{@as(c_int, @intCast(id))});
             }
             mode |= rollback_ver;
         } else {
@@ -822,7 +826,7 @@ fn targetCheck(intf: *Intf, option: c_int) bool {
                 v.deferredMinor = deferred.data[2];
                 @memcpy(&v.deferredAux, deferred.data[3..7]);
             } else {
-                c.lprintf(notice, "Get CompRollbackVersion Failed for component Id %d\n", @as(c_int, @intCast(id)));
+                log.print(notice, "Get CompRollbackVersion Failed for component Id %d\n", .{@as(c_int, @intCast(id))});
             }
         } else {
             v.deferredMajor = 0xff;
@@ -837,7 +841,7 @@ fn targetCheck(intf: *Intf, option: c_int) bool {
     if (option & view_mode != 0) {
         displayLine('-', 74);
         _ = c.fflush(c.stdout);
-        c.lprintf(notice, "(*) Component requires Payload Cold Reset");
+        log.print(notice, "(*) Component requires Payload Cold Reset", .{});
         _ = c.printf("\n\n");
     }
     return true;
@@ -859,11 +863,11 @@ fn preparation(intf: *Intf, ctx: *Upgrade, option: c_int) bool {
         std.mem.eql(u8, &header.manufacturer, &dev.manufacturer);
     if (!ids_match) {
         if (header.device != dev.id) {
-            c.lprintf(notice, "\n    Invalid device ID %x", @as(c_uint, dev.id));
+            log.print(notice, "\n    Invalid device ID %x", .{@as(c_uint, dev.id)});
         } else if (!std.mem.eql(u8, &header.product, &dev.product)) {
-            c.lprintf(notice, "\n    Invalid image file for product %u", @as(c_uint, le16(&dev.product)));
+            log.print(notice, "\n    Invalid image file for product %u", .{@as(c_uint, le16(&dev.product))});
         } else {
-            c.lprintf(notice, "\n    Invalid image file for manufacturer %u", @as(c_uint, le16(dev.manufacturer[0..2])));
+            log.print(notice, "\n    Invalid image file for manufacturer %u", .{@as(c_uint, le16(dev.manufacturer[0..2]))});
         }
         if (option & (force_mode | view_mode) == 0) {
             _ = c.printf("\n\n Use \"force\" option for copying all the components\n");
@@ -876,21 +880,21 @@ fn preparation(intf: *Intf, ctx: *Upgrade, option: c_int) bool {
     if (header.comp_revision[0] > dev.fw1 or
         (header.comp_revision[0] == dev.fw1 and header.comp_revision[1] > dev.fw2))
     {
-        c.lprintf(notice, "\n    Version: Major: %d", @as(c_int, header.comp_revision[0]));
-        c.lprintf(notice, "             Minor: %x", @as(c_uint, header.comp_revision[1]));
-        c.lprintf(notice, "    Not compatible with ");
-        c.lprintf(notice, "    Version: Major: %d", @as(c_int, dev.fw1));
-        c.lprintf(notice, "             Minor: %x", @as(c_uint, dev.fw2));
+        log.print(notice, "\n    Version: Major: %d", .{@as(c_int, header.comp_revision[0])});
+        log.print(notice, "             Minor: %x", .{@as(c_uint, header.comp_revision[1])});
+        log.print(notice, "    Not compatible with ", .{});
+        log.print(notice, "    Version: Major: %d", .{@as(c_int, dev.fw1)});
+        log.print(notice, "             Minor: %x", .{@as(c_uint, dev.fw2)});
         if (option & (force_mode | view_mode) == 0 or !ask("\n Continue IGNORING Earliest compatibility (Y/N): ")) return false;
     }
     ctx.target = getCapabilities(intf) orelse return false;
     if (option & view_mode == 0) {
         if (header.components & ctx.target.components != header.components) {
-            c.lprintf(notice, "\n    Some components present in the image file are not supported by the IPMC");
+            log.print(notice, "\n    Some components present in the image file are not supported by the IPMC", .{});
             return false;
         }
         if (bit(ctx.target.flags, 7)) {
-            c.lprintf(notice, "\n    Upgrade undesirable at this moment");
+            log.print(notice, "\n    Upgrade undesirable at this moment", .{});
             return false;
         }
         if (option & compare_mode == 0 and (bit(ctx.target.flags, 3) or bit(header.flags, 4)) and
@@ -927,18 +931,18 @@ fn precheck(ctx: *Upgrade, selected: c_int, option: c_int) bool {
     while (true) {
         const record = (it.next() catch return false) orelse break;
         if (record.components != 0 and ctx.target.components == 0) {
-            c.lprintf(notice, "    Invalid action record. One or more affected components is not supported");
+            log.print(notice, "    Invalid action record. One or more affected components is not supported", .{});
             return false;
         }
         if (record.kind == 0 or record.kind == 1) {
             for (0..8) |id| {
                 if (!bit(record.components, @intCast(id))) continue;
                 if (record.kind == 0 and ctx.properties[id] & 3 == 0) {
-                    c.lprintf(notice, "    Component ID %d does not support backup", @as(c_int, @intCast(id)));
+                    log.print(notice, "    Component ID %d does not support backup", .{@as(c_int, @intCast(id))});
                     return false;
                 }
                 if (record.kind == 1 and !bit(ctx.properties[id], 2)) {
-                    c.lprintf(notice, "    Component ID %d does not support preparation", @as(c_int, @intCast(id)));
+                    log.print(notice, "    Component ID %d does not support preparation", .{@as(c_int, @intCast(id))});
                     return false;
                 }
             }
@@ -951,7 +955,7 @@ fn precheck(ctx: *Upgrade, selected: c_int, option: c_int) bool {
         var use = selected == 0 or (selected & record.components) != 0;
         if (use and option & (force_mode | compare_mode) == 0) use = upgradable(v);
         if (c.verbose != 0) {
-            c.lprintf(notice, "%s component %d", if (use) @as([*:0]const u8, "Updating") else "Skipping", @as(c_int, record.component));
+            log.print(notice, "%s component %d", .{ if (use) @as([*:0]const u8, "Updating") else "Skipping", @as(c_int, record.component) });
         }
         if (use) ctx.mask |= @as(u8, 1) << @intCast(record.component);
         if (option & view_mode != 0) {
@@ -963,8 +967,8 @@ fn precheck(ctx: *Upgrade, selected: c_int, option: c_int) bool {
     if (option & view_mode != 0) {
         displayLine('-', 74);
         _ = c.fflush(c.stdout);
-        c.lprintf(notice, "(*) Component requires Payload Cold Reset");
-        c.lprintf(notice, "(^) Indicates component would be upgraded");
+        log.print(notice, "(*) Component requires Payload Cold Reset", .{});
+        log.print(notice, "(^) Indicates component would be upgraded", .{});
     }
     return true;
 }
@@ -978,7 +982,7 @@ const BlockResult = union(enum) {
 
 fn uploadBlock(intf: *Intf, data: []const u8, ctx: *const Upgrade) BlockResult {
     const rsp = send(intf, 0x32, data, ctx) orelse {
-        c.lprintf(notice, "Error uploading firmware block.");
+        log.print(notice, "Error uploading firmware block.", .{});
         return .failed;
     };
     var offset: usize = 0;
@@ -991,7 +995,7 @@ fn uploadBlock(intf: *Intf, data: []const u8, ctx: *const Upgrade) BlockResult {
                 offset = le32(d[1..5]);
                 length = le32(d[5..9]);
             } else {
-                c.lprintf(notice, "Error wrong rsp->datalen %d for Upload Firmware block command\n", @as(c_int, @intCast(d.len)));
+                log.print(notice, "Error wrong rsp->datalen %d for Upload Firmware block command\n", .{@as(c_int, @intCast(d.len))});
                 code = 0x82;
             }
         }
@@ -1002,12 +1006,12 @@ fn uploadBlock(intf: *Intf, data: []const u8, ctx: *const Upgrade) BlockResult {
     }
     if (code == 0) return .{ .ok = .{ .offset = offset, .length = length } };
     if (retryable(code)) {
-        c.lprintf(log.Level.debug, "HPM: [PATCH]Retryable error detected");
+        log.print(log.Level.debug, "HPM: [PATCH]Retryable error detected", .{});
         return .retry;
     }
     if (code == 0xc7 or code == 0xc8) return .resize;
-    c.lprintf(err, "Error uploading firmware block");
-    c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, code), ccText(code));
+    log.print(err, "Error uploading firmware block", .{});
+    log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, code), ccText(code) });
     return .failed;
 }
 
@@ -1015,7 +1019,7 @@ fn finishUpload(intf: *Intf, component: u8, sent: usize, ctx: *const Upgrade, op
     var req: [6]u8 = .{ 0, component, 0, 0, 0, 0 };
     put32(req[2..6], @intCast(sent));
     const rsp = send(intf, 0x33, &req, ctx) orelse {
-        c.lprintf(err, "Error fininshing firmware upload.");
+        log.print(err, "Error fininshing firmware upload.", .{});
         return false;
     };
     if (rsp.ccode == 0x80) return waitLong(intf, ctx);
@@ -1028,8 +1032,8 @@ fn finishUpload(intf: *Intf, component: u8, sent: usize, ctx: *const Upgrade, op
         return true;
     }
     if (rsp.ccode == 0) return true;
-    c.lprintf(err, "Error finishing firmware upload");
-    c.lprintf(err, "compcode=0x%x: %s", @as(c_uint, rsp.ccode), ccText(rsp.ccode));
+    log.print(err, "Error finishing firmware upload", .{});
+    log.print(err, "compcode=0x%x: %s", .{ @as(c_uint, rsp.ccode), ccText(rsp.ccode) });
     return false;
 }
 
@@ -1053,15 +1057,15 @@ fn uploadFirmware(intf: *Intf, ctx: *Upgrade, record: Record, option: c_int, col
         }
         return true;
     }
-    if (c.verbose != 0) c.lprintf(notice, "Do not skip %d", @as(c_int, id));
+    if (c.verbose != 0) log.print(notice, "Do not skip %d", .{@as(c_int, id)});
     displayUpgrade(false, 0, 1, 0);
     const max_request: usize = c.ipmi_intf_get_max_request_data_size(@ptrCast(intf));
     if (max_request <= 2) {
-        c.lprintf(err, "Maximum request size is too small to send a upload request.");
+        log.print(err, "Maximum request size is too small to send a upload request.", .{});
         return false;
     }
     const request = std.heap.c_allocator.alloc(u8, max_request) catch {
-        c.lprintf(err, "ipmitool: malloc failure");
+        log.print(err, "ipmitool: malloc failure", .{});
         return false;
     };
     defer std.heap.c_allocator.free(request);
@@ -1088,8 +1092,8 @@ fn uploadFirmware(intf: *Intf, ctx: *Upgrade, record: Record, option: c_int, col
         switch (outcome) {
             .resize => {
                 if (size_known or chunk_size == 0) {
-                    c.lprintf(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", @as(c_int, 1));
-                    c.lprintf(notice, "\n TotalSent:0x%x ", @as(c_uint, @intCast(total_sent)));
+                    log.print(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", .{@as(c_int, 1)});
+                    log.print(notice, "\n TotalSent:0x%x ", .{@as(c_uint, @intCast(total_sent))});
                     return false;
                 }
                 if (isLan(intf) and chunk_size > 8) {
@@ -1097,26 +1101,26 @@ fn uploadFirmware(intf: *Intf, ctx: *Upgrade, record: Record, option: c_int, col
                 } else {
                     chunk_size -= 1;
                 }
-                c.lprintf(log.Level.info, "Trying reduced buffer length: %d", @as(c_int, @intCast(chunk_size)));
+                log.print(log.Level.info, "Trying reduced buffer length: %d", .{@as(c_int, @intCast(chunk_size))});
                 if (chunk_size == 0) return false;
             },
             .retry => {},
             .failed => {
                 _ = c.fflush(c.stdout);
-                c.lprintf(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", @as(c_int, -1));
-                c.lprintf(notice, "\n TotalSent:0x%x ", @as(c_uint, @intCast(total_sent)));
+                log.print(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", .{@as(c_int, -1)});
+                log.print(notice, "\n TotalSent:0x%x ", .{@as(c_uint, @intCast(total_sent))});
                 return false;
             },
             .ok => |next| {
                 size_known = true;
                 if (next.offset > record.payload.len or next.length > record.payload.len - next.offset) {
-                    c.lprintf(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", @as(c_int, 0));
-                    c.lprintf(notice, "\n TotalSent:0x%x Img offset:0x%x  Blk length:0x%x  Fwlen:0x%x\n", @as(c_uint, @intCast(total_sent)), @as(c_uint, @intCast(next.offset)), @as(c_uint, @intCast(next.length)), @as(c_uint, @intCast(record.payload.len)));
+                    log.print(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", .{@as(c_int, 0)});
+                    log.print(notice, "\n TotalSent:0x%x Img offset:0x%x  Blk length:0x%x  Fwlen:0x%x\n", .{ @as(c_uint, @intCast(total_sent)), @as(c_uint, @intCast(next.offset)), @as(c_uint, @intCast(next.length)), @as(c_uint, @intCast(record.payload.len)) });
                     return false;
                 }
                 total_sent += count;
                 if (total_sent > transfer_limit) {
-                    c.lprintf(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", @as(c_int, -1));
+                    log.print(notice, "\n Error in Upload FIRMWARE command [rc=%d]\n", .{@as(c_int, -1)});
                     return false;
                 }
                 if (next.offset != 0) {
@@ -1170,7 +1174,7 @@ fn upgradeStage(intf: *Intf, ctx: *Upgrade, option: c_int) bool {
     }
     displayLine('-', 79);
     _ = c.fflush(c.stdout);
-    c.lprintf(notice, "(*) Component requires Payload Cold Reset");
+    log.print(notice, "(*) Component requires Payload Cold Reset", .{});
     return ok;
 }
 
@@ -1181,18 +1185,18 @@ fn activationStage(intf: *Intf, ctx: *Upgrade) bool {
     if (ok and (bit(ctx.target.flags, 0) or bit(ctx.header.flags, 7))) {
         if (querySelftest(intf, ctx)) |result| {
             if (result[0] != 0x55) {
-                c.lprintf(notice, "    Self test failed:");
-                c.lprintf(notice, "    Result1 = %x", @as(c_uint, result[0]));
-                c.lprintf(notice, "    Result2 = %x", @as(c_uint, result[1]));
+                log.print(notice, "    Self test failed:", .{});
+                log.print(notice, "    Result1 = %x", .{@as(c_uint, result[0])});
+                log.print(notice, "    Result2 = %x", .{@as(c_uint, result[1])});
                 ok = false;
             }
         } else {
-            c.lprintf(notice, "    Self test failed.");
+            log.print(notice, "    Self test failed.", .{});
             ok = false;
         }
     }
     if (!ok and bit(ctx.target.flags, 1) and ctx.properties[ctx.component] & 3 != 0) {
-        c.lprintf(notice, "    Getting rollback status...");
+        log.print(notice, "    Getting rollback status...", .{});
         _ = c.fflush(c.stdout);
         ok = rollbackStatus(intf, ctx);
     }
@@ -1202,11 +1206,11 @@ fn activationStage(intf: *Intf, ctx: *Upgrade) bool {
 fn upgrade(intf: *Intf, filename: [*:0]u8, activate_after: bool, selected: c_int, option: c_int) c_int {
     const image = readImage(filename) orelse {
         if (option & view_mode != 0) {
-            c.lprintf(notice, " ");
+            log.print(notice, " ", .{});
         } else if (option & compare_mode != 0) {
-            c.lprintf(notice, "Firmware comparison procedure failed\n");
+            log.print(notice, "Firmware comparison procedure failed\n", .{});
         } else {
-            c.lprintf(notice, "Firmware upgrade procedure failed\n");
+            log.print(notice, "Firmware upgrade procedure failed\n", .{});
         }
         return -1;
     };
@@ -1214,10 +1218,10 @@ fn upgrade(intf: *Intf, filename: [*:0]u8, activate_after: bool, selected: c_int
     _ = c.printf("Validating firmware image integrity...");
     _ = c.fflush(c.stdout);
     const header = validateImage(image) orelse {
-        if (option & view_mode != 0) c.lprintf(notice, " ") else if (option & compare_mode != 0)
-            c.lprintf(notice, "Firmware comparison procedure failed\n")
+        if (option & view_mode != 0) log.print(notice, " ", .{}) else if (option & compare_mode != 0)
+            log.print(notice, "Firmware comparison procedure failed\n", .{})
         else
-            c.lprintf(notice, "Firmware upgrade procedure failed\n");
+            log.print(notice, "Firmware upgrade procedure failed\n", .{});
         return -1;
     };
     var ctx: Upgrade = .{ .image = image, .header = header };
@@ -1230,11 +1234,11 @@ fn upgrade(intf: *Intf, filename: [*:0]u8, activate_after: bool, selected: c_int
         _ = c.printf("OK\n");
         _ = c.fflush(c.stdout);
         if (option & view_mode != 0) {
-            c.lprintf(notice, "\nComparing Target & Image File version");
+            log.print(notice, "\nComparing Target & Image File version", .{});
         } else if (option & compare_mode != 0) {
-            c.lprintf(notice, "\nPerforming upload for compare stage:");
+            log.print(notice, "\nPerforming upload for compare stage:", .{});
         } else {
-            c.lprintf(notice, "\nPerforming upgrade stage:");
+            log.print(notice, "\nPerforming upgrade stage:", .{});
         }
         ok = precheck(&ctx, selected, option);
         if (ok and option & view_mode == 0) {
@@ -1244,26 +1248,26 @@ fn upgrade(intf: *Intf, filename: [*:0]u8, activate_after: bool, selected: c_int
     }
     if (ok and activate_after) {
         if (ctx.mask != 0) {
-            c.lprintf(notice, "Performing activation stage: ");
+            log.print(notice, "Performing activation stage: ", .{});
             ok = activationStage(intf, &ctx);
         } else {
-            c.lprintf(notice, "No components updated. Skipping activation stage.\n");
+            log.print(notice, "No components updated. Skipping activation stage.\n", .{});
         }
     }
     if (ok) {
         if (option & view_mode != 0) {
-            c.lprintf(notice, " ");
+            log.print(notice, " ", .{});
         } else if (option & compare_mode != 0) {
-            c.lprintf(notice, "\nFirmware comparison procedure complete\n");
+            log.print(notice, "\nFirmware comparison procedure complete\n", .{});
         } else {
-            c.lprintf(notice, "\nFirmware upgrade procedure successful\n");
+            log.print(notice, "\nFirmware upgrade procedure successful\n", .{});
         }
     } else if (option & view_mode != 0) {
-        c.lprintf(notice, " ");
+        log.print(notice, " ", .{});
     } else if (option & compare_mode != 0) {
-        c.lprintf(notice, "Firmware comparison procedure failed\n");
+        log.print(notice, "Firmware comparison procedure failed\n", .{});
     } else {
-        c.lprintf(notice, "Firmware upgrade procedure failed\n");
+        log.print(notice, "Firmware upgrade procedure failed\n", .{});
     }
     return if (ok) 0 else -1;
 }
@@ -1319,7 +1323,7 @@ fn printUsage() void {
         "",
         "selftestresult          - Query the self test results.\n",
     };
-    for (lines) |line| c.lprintf(notice, "%s", line);
+    for (lines) |line| log.print(notice, "%s", .{line});
 }
 
 fn argument(argv: [*c][*c]u8, index: usize) ?[*:0]u8 {
@@ -1334,18 +1338,18 @@ fn equal(arg: ?[*:0]u8, text: []const u8) bool {
 
 fn parseComponent(arg: ?[*:0]u8, into: *c_int) bool {
     if (arg == null or c.str2int(arg, into) != 0 or into.* < 0 or into.* > 8) {
-        c.lprintf(err, "Given Component ID '%s' is invalid.", arg orelse @as([*:0]const u8, "(null)"));
-        c.lprintf(err, "Valid Component ID is: <0..7>");
+        log.print(err, "Given Component ID '%s' is invalid.", .{arg orelse @as([*:0]const u8, "(null)")});
+        log.print(err, "Valid Component ID is: <0..7>", .{});
         return false;
     }
     return true;
 }
 
 fn run(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
-    c.lprintf(log.Level.debug, "ipmi_hpmfwupg_main()");
-    c.lprintf(notice, "\nPICMG HPM.1 Upgrade Agent %d.%d.%d: \n", @as(c_int, 1), @as(c_int, 0), @as(c_int, 9));
+    log.print(log.Level.debug, "ipmi_hpmfwupg_main()", .{});
+    log.print(notice, "\nPICMG HPM.1 Upgrade Agent %d.%d.%d: \n", .{ @as(c_int, 1), @as(c_int, 0), @as(c_int, 9) });
     if (argc < 1 or argv == null) {
-        c.lprintf(err, "Not enough parameters given.");
+        log.print(err, "Not enough parameters given.", .{});
         printUsage();
         return -1;
     }
@@ -1372,18 +1376,18 @@ fn run(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             if (equal(arg, "debug")) option |= debug_mode;
             if (equal(arg, "component")) {
                 if (i + 1 >= @as(usize, @intCast(argc))) {
-                    c.lprintf(notice, "No component Id provided\n");
+                    log.print(notice, "No component Id provided\n", .{});
                     return -1;
                 }
                 var id: c_int = 0;
                 if (!parseComponent(argument(argv, i + 1), &id)) return -1;
-                if (c.verbose != 0) c.lprintf(notice, "Component Id %d provided", id);
+                if (c.verbose != 0) log.print(notice, "Component Id %d provided", .{id});
                 selected |= @as(c_int, 1) << @intCast(id);
             }
         }
         if (!targetCheck(intf, 0)) return -1;
         if (argc < 2) {
-            c.lprintf(err, "No image file provided.");
+            log.print(err, "No image file provided.", .{});
             return -1;
         }
         return upgrade(intf, argument(argv, 1) orelse return -1, activate_after, selected, option);
@@ -1399,13 +1403,13 @@ fn run(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         var id: u8 = 0;
         var selector: u8 = 0;
         if (c.str2uchar(argument(argv, 1), &id) != 0 or id > 7) {
-            c.lprintf(err, "Given Component ID '%s' is invalid.", argument(argv, 1));
-            c.lprintf(err, "Valid Component ID is: <0..7>");
+            log.print(err, "Given Component ID '%s' is invalid.", .{argument(argv, 1)});
+            log.print(err, "Valid Component ID is: <0..7>", .{});
             return -1;
         }
         if (c.str2uchar(argument(argv, 2), &selector) != 0 or selector > 4) {
-            c.lprintf(err, "Given Properties selector '%s' is invalid.", argument(argv, 2));
-            c.lprintf(err, "Valid Properties selector is: <0..4>");
+            log.print(err, "Given Properties selector '%s' is invalid.", .{argument(argv, 2)});
+            log.print(err, "Valid Properties selector is: <0..4>", .{});
             return -1;
         }
         c.verbose += 1;
@@ -1431,7 +1435,7 @@ fn run(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         c.verbose += 1;
         return if (querySelftest(intf, null) != null) 0 else -1;
     }
-    c.lprintf(err, "Invalid HPM command: %s", cmd);
+    log.print(err, "Invalid HPM command: %s", .{cmd});
     printUsage();
     return -1;
 }
