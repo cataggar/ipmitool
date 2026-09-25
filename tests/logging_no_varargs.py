@@ -10,16 +10,16 @@ def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit("usage: logging_no_varargs.py ZIG_ARCHIVE CORE_ARCHIVE")
 
-    for archive in sys.argv[1:]:
+    expected_roots = (
+        {"exports.o", "libipmitool_zig_zcu.o"},
+        {"empty-core.o", "libipmitool_core_zcu.o"},
+    )
+    for archive, expected in zip(sys.argv[1:], expected_roots):
         members = subprocess.run(
             ["ar", "t", archive], check=True, capture_output=True, text=True
         ).stdout.splitlines()
-        non_zig = [
-            member for member in members
-            if not pathlib.Path(member).name.endswith("_zcu.o")
-        ]
-        if not members or non_zig:
-            raise SystemExit(f"{archive}: expected only Zig objects, found {non_zig or 'none'}")
+        if len(members) != 1 or pathlib.Path(members[0]).name not in expected:
+            raise SystemExit(f"{archive}: expected one Zig root object, found {members}")
 
     symbols = subprocess.run(
         ["nm", "-g", "--defined-only", sys.argv[1]],
