@@ -111,6 +111,48 @@ args: -I dummy session info active
 transcript: bmc.tr
 covers: session
 
+[session_info_all]
+desc: Get Session Info for all four slots
+args: -I dummy session info all
+transcript: bmc.tr
+covers: session
+
+[session_info_id]
+desc: Get Session Info by four-byte little-endian session ID
+args: -I dummy session info id 0x12345678
+transcript: bmc.tr
+covers: session
+
+[session_info_handle]
+desc: Get Session Info by one-byte session handle
+args: -I dummy session info handle 0x1234
+transcript: bmc.tr
+covers: session
+
+[session_info_lan]
+desc: Decode full LAN session data including console address and port
+args: -I dummy session info active
+transcript: session_info_lan.tr
+covers: session
+
+[session_info_lan_csv]
+desc: Decode full LAN session data in CSV mode
+args: -c -I dummy session info active
+transcript: session_info_lan.tr
+covers: session
+
+[session_info_short]
+desc: A two-byte session response follows the original C zero-fill behavior
+args: -I dummy session info active
+transcript: session_info_short.tr
+covers: session
+
+[session_info_failed]
+desc: Reject Get Session Info completion code errors
+args: -I dummy session info active
+transcript: session_info_failed.tr
+covers: session
+
 [sel_time_get]
 desc: Get SEL Time
 args: -I dummy sel time get

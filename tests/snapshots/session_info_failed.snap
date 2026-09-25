@@ -1,0 +1,16 @@
+#!golden 1
+#!case session_info_failed
+#!section exit
+1
+#!section stdout
+#!section stderr
+Get Session Info command failed: Invalid command
+It is likely that the channel in use does not support sessions
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x3d target_cmd=0x00 data=00
+< rule=session_info_failed ccode=0xc1 len=0 data=
+bye

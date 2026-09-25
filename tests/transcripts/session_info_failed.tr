@@ -1,0 +1,7 @@
+default_ccode 0xc1
+
+respond session_info_failed
+  netfn 0x06
+  cmd 0x3d
+  ccode 0xc1
+end
