@@ -11,7 +11,8 @@
 # that the plausible alternatives *disagree*: the block count of a system info
 # read, the exact request payload of `watchdog set' and `setenables', the
 # expiration-flag bit numbering and the `data_len == sizeof(*devid)' test all
-# have a case that changes if the constant changes.
+# have a case that changes if the constant changes. The long diagnostic
+# snapshots the C oracle's signed `%ld` at error level and multiline usage.
 
 # ---------------------------------------------------------------------------
 # ipmi_mc_main() dispatch
@@ -572,6 +573,12 @@ covers: mc
 [mc_watchdog_set_verbose]
 desc: -v prints the assembled payload and every decoded field
 args: -I dummy -v mc watchdog set use=oem action=cycle int=nmi timeout=99 pretimeout=7 clear=sms nolog dontstop
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_long_diagnostic]
+desc: out-of-range timeout logs a long integer and the multi-line watchdog usage
+args: -I dummy -v mc watchdog set timeout=6554
 transcript: mc.tr
 covers: mc
 

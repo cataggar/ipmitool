@@ -11,11 +11,12 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **Formatting stays in libc.**  `printf`, `sprintf` and `lprintf` are
-//!   called through the `ipmi_c` bridge rather than reimplemented, because
-//!   `%0.1f`, `%02Xh`, `%-40s` and the exact rendering of `%08x` on a value
-//!   that C truncated to `int` are all observable.  So do `strcmp`, `strlen`,
-//!   `strncpy` and `strtol`: the module hands them the same valid inputs as C.
+//! * **Formatting stays in libc.** `printf` and `sprintf` still use `ipmi_c`;
+//!   diagnostics use `log.print()` from the same selected archive as the
+//!   logger exports (falling back to C `lprintf` when `log` is not selected).
+//!   libc still renders `%0.1f`, `%02Xh`, `%-40s` and `%08x` with the same
+//!   original C argument widths. `strcmp`, `strlen`, `strncpy` and `strtol` also
+//!   receive the same valid inputs as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -155,10 +156,10 @@ fn mcReset(intf: *Intf, cmd: c_int) c_int {
     if (cmd == BMC_COLD_RESET and rsp == null) {
         // Expected. See 20.2 Cold Reset Command, p.243, IPMIv2.0 rev1.0.
     } else if (rsp == null) {
-        c.lprintf(log.Level.err, "MC reset command failed.");
+        log.print(log.Level.err, "MC reset command failed.", .{});
         return -1;
     } else if (rsp.?.ccode != 0) {
-        c.lprintf(log.Level.err, "MC reset command failed: %s", ccString(rsp.?.ccode));
+        log.print(log.Level.err, "MC reset command failed: %s", .{ccString(rsp.?.ccode)});
         return -1;
     }
 
@@ -195,55 +196,55 @@ const mc_enables_bf_table = [_]BitfieldData{
 
 /// `printf_mc_reset_usage()`.
 fn printfMcResetUsage() void {
-    c.lprintf(log.Level.notice, "usage: mc reset <warm|cold>");
+    log.print(log.Level.notice, "usage: mc reset <warm|cold>", .{});
 }
 
 /// `printf_mc_usage()`.
 fn printfMcUsage() void {
-    c.lprintf(log.Level.notice, "MC Commands:");
-    c.lprintf(log.Level.notice, "  reset <warm|cold>");
-    c.lprintf(log.Level.notice, "  guid [auto|smbios|ipmi|rfc4122|dump]");
-    c.lprintf(log.Level.notice, "  info");
-    c.lprintf(log.Level.notice, "  watchdog <get|reset|off>");
-    c.lprintf(log.Level.notice, "  selftest");
-    c.lprintf(log.Level.notice, "  getenables");
-    c.lprintf(log.Level.notice, "  setenables <option=on|off> ...");
+    log.print(log.Level.notice, "MC Commands:", .{});
+    log.print(log.Level.notice, "  reset <warm|cold>", .{});
+    log.print(log.Level.notice, "  guid [auto|smbios|ipmi|rfc4122|dump]", .{});
+    log.print(log.Level.notice, "  info", .{});
+    log.print(log.Level.notice, "  watchdog <get|reset|off>", .{});
+    log.print(log.Level.notice, "  selftest", .{});
+    log.print(log.Level.notice, "  getenables", .{});
+    log.print(log.Level.notice, "  setenables <option=on|off> ...", .{});
     for (mc_enables_bf_table) |bf| {
         if (bf.name == null) break;
-        c.lprintf(log.Level.notice, "    %-20s  %s", bf.name, bf.desc);
+        log.print(log.Level.notice, "    %-20s  %s", .{ bf.name, bf.desc });
     }
     printfSysinfoUsage(0);
 }
 
 /// `printf_sysinfo_usage()`.
 fn printfSysinfoUsage(full_help: c_int) void {
-    if (full_help != 0) c.lprintf(log.Level.notice, "usage:");
+    if (full_help != 0) log.print(log.Level.notice, "usage:", .{});
 
-    c.lprintf(log.Level.notice, "  getsysinfo <argument>");
-
-    if (full_help != 0) {
-        c.lprintf(log.Level.notice, "    Retrieves system info from BMC for given argument");
-    }
-
-    c.lprintf(log.Level.notice, "  setsysinfo <argument> <string>");
+    log.print(log.Level.notice, "  getsysinfo <argument>", .{});
 
     if (full_help != 0) {
-        c.lprintf(log.Level.notice, "    Stores system info string for given argument to BMC");
-        c.lprintf(log.Level.notice, "");
-        c.lprintf(log.Level.notice, "  Valid arguments are:");
+        log.print(log.Level.notice, "    Retrieves system info from BMC for given argument", .{});
     }
-    c.lprintf(log.Level.notice, "    system_fw_version   System firmware (e.g. BIOS) version");
-    c.lprintf(log.Level.notice, "    primary_os_name     Primary operating system name");
-    c.lprintf(log.Level.notice, "    os_name             Operating system name");
-    c.lprintf(log.Level.notice, "    system_name         System Name of server(vendor dependent)");
-    c.lprintf(log.Level.notice, "    delloem_os_version  Running version of operating system");
-    c.lprintf(log.Level.notice, "    delloem_url         URL of BMC webserver");
-    c.lprintf(log.Level.notice, "");
+
+    log.print(log.Level.notice, "  setsysinfo <argument> <string>", .{});
+
+    if (full_help != 0) {
+        log.print(log.Level.notice, "    Stores system info string for given argument to BMC", .{});
+        log.print(log.Level.notice, "", .{});
+        log.print(log.Level.notice, "  Valid arguments are:", .{});
+    }
+    log.print(log.Level.notice, "    system_fw_version   System firmware (e.g. BIOS) version", .{});
+    log.print(log.Level.notice, "    primary_os_name     Primary operating system name", .{});
+    log.print(log.Level.notice, "    os_name             Operating system name", .{});
+    log.print(log.Level.notice, "    system_name         System Name of server(vendor dependent)", .{});
+    log.print(log.Level.notice, "    delloem_os_version  Running version of operating system", .{});
+    log.print(log.Level.notice, "    delloem_url         URL of BMC webserver", .{});
+    log.print(log.Level.notice, "", .{});
 }
 
 /// `print_watchdog_usage()`.
 fn printWatchdogUsage() void {
-    c.lprintf(log.Level.notice,
+    const usage =
         \\usage: watchdog <command>:
         \\
         \\   set <option[=value]> [<option[=value]> ...]
@@ -269,7 +270,8 @@ fn printWatchdogUsage() void {
         \\
         \\   off
         \\     Shut off a running Watchdog timer
-    );
+    ;
+    log.print(log.Level.notice, usage, .{});
 }
 
 /// `ipmi_mc_get_enables()`.
@@ -279,11 +281,11 @@ fn mcGetEnables(intf: *Intf) c_int {
     req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Global Enables command failed");
+        log.print(log.Level.err, "Get Global Enables command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Global Enables command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Global Enables command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -314,11 +316,11 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Global Enables command failed");
+        log.print(log.Level.err, "Get Global Enables command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Global Enables command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Global Enables command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -340,7 +342,7 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
                 arg + index + 1
             else blk: {
                 if (i + 1 >= argc) {
-                    c.lprintf(log.Level.err, "Missing on/off value for %s", arg);
+                    log.print(log.Level.err, "Missing on/off value for %s", .{arg});
                     return -1;
                 }
                 i += 1;
@@ -353,13 +355,13 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
                 _ = c.printf("Enabling %s\n", bf.desc);
                 en |= @as(u8, @truncate(bf.mask));
             } else {
-                c.lprintf(log.Level.err, "Unrecognized on/off value for %s: %s", name, value);
+                log.print(log.Level.err, "Unrecognized on/off value for %s: %s", .{ name, value });
                 return -1;
             }
             break;
         }
         if (!found) {
-            c.lprintf(log.Level.err, "Unrecognized option: %s", arg);
+            log.print(log.Level.err, "Unrecognized option: %s", .{arg});
             return -1;
         }
     }
@@ -375,11 +377,11 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     req.msg.data_len = 1;
 
     const rsp2 = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Set Global Enables command failed");
+        log.print(log.Level.err, "Set Global Enables command failed", .{});
         return -1;
     };
     if (rsp2.ccode != 0) {
-        c.lprintf(log.Level.err, "Set Global Enables command failed: %s", ccString(rsp2.ccode));
+        log.print(log.Level.err, "Set Global Enables command failed: %s", .{ccString(rsp2.ccode)});
         return -1;
     }
 
@@ -413,11 +415,11 @@ fn mcGetDeviceid(intf: *Intf) c_int {
     req.msg.data_len = 0;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Device ID command failed");
+        log.print(log.Level.err, "Get Device ID command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Device ID command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Device ID command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -749,12 +751,12 @@ fn mcGetSelftest(intf: *Intf) c_int {
     req.msg.data_len = 0;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "No response from devices\n");
+        log.print(log.Level.err, "No response from devices\n", .{});
         return -1;
     };
 
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Bad response: (%s)", ccString(rsp.ccode));
+        log.print(log.Level.err, "Bad response: (%s)", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -874,12 +876,12 @@ fn mcGetWatchdog(intf: *Intf) c_int {
     req.msg.data_len = 0;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Watchdog Timer command failed");
+        log.print(log.Level.err, "Get Watchdog Timer command failed", .{});
         return -1;
     };
 
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get Watchdog Timer command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get Watchdog Timer command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -966,7 +968,7 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
         if (std.mem.indexOfScalar(u8, "tpiuac", arg[0]) != null and
             (vstr == null or vstr[0] == 0))
         {
-            c.lprintf(log.Level.err, "Missing value for watchdog option '%s'", arg);
+            log.print(log.Level.err, "Missing value for watchdog option '%s'", .{arg});
             return err;
         }
 
@@ -976,16 +978,18 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
                 var end: [*c]u8 = null;
                 val = c.strtol(vstr, &end, 10);
                 if (end == vstr or end[0] != 0) {
-                    c.lprintf(log.Level.err, "Invalid watchdog value '%s'", vstr);
+                    log.print(log.Level.err, "Invalid watchdog value '%s'", .{vstr});
                     return err;
                 }
                 if (arg[0] == 'p') {
                     if (val < 1 or val > MAX_PRETIMEOUT) {
-                        c.lprintf(
+                        log.print(
                             log.Level.err,
                             "Pretimeout value %ld is out of range (1-%d)\n",
-                            val,
-                            MAX_PRETIMEOUT,
+                            .{
+                                val,
+                                MAX_PRETIMEOUT,
+                            },
                         );
                         return err;
                     }
@@ -993,11 +997,13 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
                     continue;
                 }
                 if (val < 1 or val > MAX_TIMEOUT) {
-                    c.lprintf(
+                    log.print(
                         log.Level.err,
                         "Timeout value %ld is out of range (1-%d)\n",
-                        val,
-                        MAX_TIMEOUT,
+                        .{
+                            val,
+                            MAX_TIMEOUT,
+                        },
                     );
                     return err;
                 }
@@ -1006,7 +1012,7 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
             'i' => { // int
                 val = findSetWdtString(&wdt_int_table, vstr);
                 if (val < 0) {
-                    c.lprintf(log.Level.err, "Interrupt type '%s' is not valid\n", vstr);
+                    log.print(log.Level.err, "Interrupt type '%s' is not valid\n", .{vstr});
                     return err;
                 }
                 conf.intr = @truncate(@as(c_ulong, @bitCast(val)));
@@ -1014,7 +1020,7 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
             'u' => { // use
                 val = findSetWdtString(&wdt_use_table, vstr);
                 if (val < 0) {
-                    c.lprintf(log.Level.err, "Use '%s' is not valid\n", vstr);
+                    log.print(log.Level.err, "Use '%s' is not valid\n", .{vstr});
                     return err;
                 }
                 conf.use = @truncate(@as(c_ulong, @bitCast(val)));
@@ -1022,7 +1028,7 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
             'a' => { // action
                 val = findSetWdtString(&wdt_action_table, vstr);
                 if (val < 0) {
-                    c.lprintf(log.Level.err, "Use '%s' is not valid\n", vstr);
+                    log.print(log.Level.err, "Use '%s' is not valid\n", .{vstr});
                     return err;
                 }
                 conf.action = @truncate(@as(c_ulong, @bitCast(val)));
@@ -1030,27 +1036,27 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
             'c' => { // clear
                 val = findSetWdtString(&wdt_use_table, vstr);
                 if (val < 0) {
-                    c.lprintf(log.Level.err, "Use '%s' is not valid\n", vstr);
+                    log.print(log.Level.err, "Use '%s' is not valid\n", .{vstr});
                     return err;
                 }
                 conf.clear |= @truncate(@as(c_uint, 1) << @intCast(@as(c_ulong, @bitCast(val)) & 31));
             },
             'n' => { // nolog
                 if (vstr != null) {
-                    c.lprintf(log.Level.err, "Invalid option '%s'", arg);
+                    log.print(log.Level.err, "Invalid option '%s'", .{arg});
                     return err;
                 }
                 conf.nolog = true;
             },
             'd' => { // dontstop
                 if (vstr != null) {
-                    c.lprintf(log.Level.err, "Invalid option '%s'", arg);
+                    log.print(log.Level.err, "Invalid option '%s'", .{arg});
                     return err;
                 }
                 conf.dontstop = true;
             },
             else => {
-                c.lprintf(log.Level.err, "Invalid option '%s'", arg);
+                log.print(log.Level.err, "Invalid option '%s'", .{arg});
                 return err;
             },
         }
@@ -1090,38 +1096,42 @@ fn mcSetWatchdog(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     req.msg.data_len = 6;
     req.msg.data = &msg_data;
 
-    c.lprintf(
+    log.print(
         log.Level.info,
         "Sending Set Watchdog command [%02X %02X %02X %02X %02X %02X]:",
-        @as(c_uint, msg_data[0]),
-        @as(c_uint, msg_data[1]),
-        @as(c_uint, msg_data[2]),
-        @as(c_uint, msg_data[3]),
-        @as(c_uint, msg_data[4]),
-        @as(c_uint, msg_data[5]),
+        .{
+            @as(c_uint, msg_data[0]),
+            @as(c_uint, msg_data[1]),
+            @as(c_uint, msg_data[2]),
+            @as(c_uint, msg_data[3]),
+            @as(c_uint, msg_data[4]),
+            @as(c_uint, msg_data[5]),
+        },
     );
-    c.lprintf(log.Level.info, "  - nolog      = %d", @as(c_int, @intFromBool(conf.nolog)));
-    c.lprintf(log.Level.info, "  - dontstop   = %d", @as(c_int, @intFromBool(conf.dontstop)));
-    c.lprintf(log.Level.info, "  - use        = 0x%02hhX", @as(c_uint, conf.use));
-    c.lprintf(log.Level.info, "  - intr       = 0x%02hhX", @as(c_uint, conf.intr));
-    c.lprintf(log.Level.info, "  - action     = 0x%02hhX", @as(c_uint, conf.action));
-    c.lprintf(log.Level.info, "  - pretimeout = %hhu", @as(c_uint, conf.pretimeout));
-    c.lprintf(log.Level.info, "  - clear      = 0x%02hhX", @as(c_uint, conf.clear));
-    c.lprintf(log.Level.info, "  - timeout    = %hu", @as(c_uint, conf.timeout));
+    log.print(log.Level.info, "  - nolog      = %d", .{@as(c_int, @intFromBool(conf.nolog))});
+    log.print(log.Level.info, "  - dontstop   = %d", .{@as(c_int, @intFromBool(conf.dontstop))});
+    log.print(log.Level.info, "  - use        = 0x%02hhX", .{@as(c_uint, conf.use)});
+    log.print(log.Level.info, "  - intr       = 0x%02hhX", .{@as(c_uint, conf.intr)});
+    log.print(log.Level.info, "  - action     = 0x%02hhX", .{@as(c_uint, conf.action)});
+    log.print(log.Level.info, "  - pretimeout = %hhu", .{@as(c_uint, conf.pretimeout)});
+    log.print(log.Level.info, "  - clear      = 0x%02hhX", .{@as(c_uint, conf.clear)});
+    log.print(log.Level.info, "  - timeout    = %hu", .{@as(c_uint, conf.timeout)});
 
     if (sendrecv(intf, &req)) |rsp| {
         rc = rsp.ccode;
         if (rc != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Set Watchdog Timer command failed: %s",
-                ccString(rsp.ccode),
+                .{
+                    ccString(rsp.ccode),
+                },
             );
         } else {
-            c.lprintf(log.Level.notice, "Watchdog Timer was successfully configured");
+            log.print(log.Level.notice, "Watchdog Timer was successfully configured", .{});
         }
     } else {
-        c.lprintf(log.Level.err, "Set Watchdog Timer command failed");
+        log.print(log.Level.err, "Set Watchdog Timer command failed", .{});
     }
 
     return rc;
@@ -1147,12 +1157,12 @@ fn mcShutoffWatchdog(intf: *Intf) c_int {
     msg_data[5] = 0x0b; // countdown msb - 5 mins
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Watchdog Timer Shutoff command failed!");
+        log.print(log.Level.err, "Watchdog Timer Shutoff command failed!", .{});
         return -1;
     };
 
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Watchdog Timer Shutoff command failed! %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Watchdog Timer Shutoff command failed! %s", .{ccString(rsp.ccode)});
         return -1;
     }
 
@@ -1168,18 +1178,20 @@ fn mcRstWatchdog(intf: *Intf) c_int {
     req.msg.data_len = 0;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Reset Watchdog Timer command failed!");
+        log.print(log.Level.err, "Reset Watchdog Timer command failed!", .{});
         return -1;
     };
 
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Reset Watchdog Timer command failed: %s",
-            if (rsp.ccode == IPM_WATCHDOG_RESET_ERROR)
-                @as([*c]const u8, "Attempt to reset uninitialized watchdog")
-            else
-                ccString(rsp.ccode),
+            .{
+                if (rsp.ccode == IPM_WATCHDOG_RESET_ERROR)
+                    @as([*c]const u8, "Attempt to reset uninitialized watchdog")
+                else
+                    ccString(rsp.ccode),
+            },
         );
         return -1;
     }
@@ -1305,7 +1317,7 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
         printfSysinfoUsage(1);
         return 0;
     } else if (argc < 2 or (is_set == 1 and argc < 3)) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         printfSysinfoUsage(1);
         return -1;
     }
@@ -1313,7 +1325,7 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
     // Get Parameters
     const param = sysinfoParam(argv[1], &maxset);
     if (param < 0) {
-        c.lprintf(log.Level.err, "Invalid mc/bmc %s command: %s", argv[0], argv[1]);
+        log.print(log.Level.err, "Invalid mc/bmc %s command: %s", .{ argv[0], argv[1] });
         printfSysinfoUsage(1);
         return -1;
     }
@@ -1385,14 +1397,21 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
         _ = c.printf("%s\n", &infostr);
     }
     if (rc < 0) {
-        c.lprintf(log.Level.err, "%s %s set %d command failed", argv[0], argv[1], set);
+        log.print(log.Level.err, "%s %s set %d command failed", .{ argv[0], argv[1], set });
     } else if (rc == 0x80) {
-        c.lprintf(log.Level.err, "%s %s parameter not supported", argv[0], argv[1]);
+        log.print(log.Level.err, "%s %s parameter not supported", .{ argv[0], argv[1] });
     } else if (rc > 0) {
-        c.lprintf(log.Level.err, "%s command failed: %s", argv[0], c.val2str(
-            @bitCast(rc),
-            c.completion_code_vals,
-        ));
+        log.print(
+            log.Level.err,
+            "%s command failed: %s",
+            .{
+                argv[0],
+                c.val2str(
+                    @bitCast(rc),
+                    c.completion_code_vals,
+                ),
+            },
+        );
     }
     return rc;
 }
@@ -1407,7 +1426,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
     var rc: c_int = 0;
 
     if (argc < 1) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         printfMcUsage();
         rc = -1;
     } else if (c.strcmp(argv[0], "help") == 0) {
@@ -1415,7 +1434,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
         rc = 0;
     } else if (c.strcmp(argv[0], "reset") == 0) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             printfMcResetUsage();
             rc = -1;
         } else if (c.strcmp(argv[1], "help") == 0) {
@@ -1426,7 +1445,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
         } else if (c.strcmp(argv[1], "warm") == 0) {
             rc = mcReset(intf, BMC_WARM_RESET);
         } else {
-            c.lprintf(log.Level.err, "Invalid mc/bmc %s command: %s", argv[0], argv[1]);
+            log.print(log.Level.err, "Invalid mc/bmc %s command: %s", .{ argv[0], argv[1] });
             printfMcResetUsage();
             rc = -1;
         }
@@ -1458,7 +1477,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
         rc = mcGetSelftest(intf);
     } else if (c.strcmp(argv[0], "watchdog") == 0) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             printWatchdogUsage();
             rc = -1;
         } else if (c.strcmp(argv[1], "help") == 0) {
@@ -1466,7 +1485,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
             rc = 0;
         } else if (c.strcmp(argv[1], "set") == 0) {
             if (argc < 3) { // Requires options
-                c.lprintf(log.Level.err, "Not enough parameters given.");
+                log.print(log.Level.err, "Not enough parameters given.", .{});
                 printWatchdogUsage();
                 rc = -1;
             } else if (argc == 3 and c.strcmp(argv[2], "help") == 0) {
@@ -1482,7 +1501,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
         } else if (c.strcmp(argv[1], "reset") == 0) {
             rc = mcRstWatchdog(intf);
         } else {
-            c.lprintf(log.Level.err, "Invalid mc/bmc %s command: %s", argv[0], argv[1]);
+            log.print(log.Level.err, "Invalid mc/bmc %s command: %s", .{ argv[0], argv[1] });
             printWatchdogUsage();
             rc = -1;
         }
@@ -1491,7 +1510,7 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
     } else if (c.strcmp(argv[0], "setsysinfo") == 0) {
         rc = sysinfoMain(intf, argc, argv, 1);
     } else {
-        c.lprintf(log.Level.err, "Invalid mc/bmc command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid mc/bmc command: %s", .{argv[0]});
         printfMcUsage();
         rc = -1;
     }
