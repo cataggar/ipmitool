@@ -65,6 +65,27 @@ Supporting files at the root of `src/zig/`:
 `ipmi_c.h` and `abi_layout.h` are build-time scaffolding, never linked into
 the product, and are deleted with the last C translation unit.
 
+The generated `util/strings_tables.zig` is data-only: it imports the pure-Zig
+`util/table_types.zig` layouts and `build_options.have_crypto_sha256`, not
+`ipmi_c` (including transitively). `build.zig` sets that option from the same
+`-Dopenssl` switch that defines `HAVE_CRYPTO_SHA256` in `config.h`, even with
+LAN+ disabled. `util/strings.zig` imports the separate generated
+`util/strings_tables_validation.zig` in both the selected archive and the ABI
+unit-test graph; this seam still checks every copied C constant, exported
+table element layout and the SHA256 feature against the translated C header.
+The table file retains the same C exports and entry order. The unchanged C
+implementation remains the golden oracle.
+
+To regenerate both files after changing the C tables or headers, translate
+`src/zig/ipmi_c.h` with the same configuration as `build.zig`, then run
+`zig run tools/gen_strings.zig -- lib/ipmi_strings.c ipmi_c.zig
+src/zig/util/strings_tables.zig`. Repeat with `--check` before the C source
+to verify both generated files without writing them. `zig build
+test-strings-tables` compiles the data without a C bridge in both SHA256
+configurations; `zig build test-strings-unit` runs its C-backed ABI and
+lookup checks. `zig build test-strings-compile -Dtarget=x86_64-linux-musl`
+cross-compiles those C header checks without running a foreign test binary.
+
 ### SDR safety across the #53 port
 
 The #53 Zig SDR port originally preceded the issue #42 checks in

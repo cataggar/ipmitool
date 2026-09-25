@@ -45,19 +45,8 @@ pub const uid_max: u8 = c.IPMI_UID_MAX;
 /// `BUF2STR_MAXIMUM_OUTPUT_SIZE`.
 pub const buf2str_max_output_size = 3 * 1024 + 1;
 
-/// `struct valstr`: one value/name pair, terminated by a `.str == null` entry.
-pub const ValStr = extern struct {
-    val: u32,
-    str: ?[*:0]const u8,
-};
-
-/// `struct oemvalstr`: as `ValStr`, but keyed by IANA number as well.  The
-/// terminator has `oem == 0xffffff`.
-pub const OemValStr = extern struct {
-    oem: u32,
-    val: u16,
-    str: ?[*:0]const u8,
-};
+pub const ValStr = @import("table_types.zig").ValStr;
+pub const OemValStr = @import("table_types.zig").OemValStr;
 
 comptime {
     abi.assertLayout(ValStr, c.struct_valstr);

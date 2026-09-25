@@ -11,165 +11,164 @@
 
 const std = @import("std");
 
-const c = @import("ipmi_c");
-const helper = @import("helper.zig");
+const types = @import("table_types.zig");
 
-const ValStr = helper.ValStr;
-const OemValStr = helper.OemValStr;
+const ValStr = types.ValStr;
+const OemValStr = types.OemValStr;
 
-/// `HAVE_CRYPTO_SHA256` in `config.h`: libcrypto's SHA256 support decides
-/// whether the RAKP and integrity tables carry their SHA256 entries.
-const have_crypto_sha256 = @hasDecl(c, "HAVE_CRYPTO_SHA256");
+/// Mirrors `HAVE_CRYPTO_SHA256` in `config.h`: the build's OpenSSL switch
+/// decides whether the RAKP and integrity tables carry SHA256 entries.
+pub const have_crypto_sha256 = @import("build_options").have_crypto_sha256;
 
 // -- values the tables are written in terms of -------------------------------
 //
 // Copied from the C headers by the generator and re-checked against the
-// `ipmi_c` bridge in the `comptime` block at the bottom of the file.
+// `ipmi_c` bridge in `strings_tables_validation.zig`.
 
 /// `IPMI_1_5_AUTH_TYPE_BIT_MD2`.
-const ipmi_1_5_auth_type_bit_md2 = 0x02;
+pub const ipmi_1_5_auth_type_bit_md2 = 0x02;
 /// `IPMI_1_5_AUTH_TYPE_BIT_MD5`.
-const ipmi_1_5_auth_type_bit_md5 = 0x04;
+pub const ipmi_1_5_auth_type_bit_md5 = 0x04;
 /// `IPMI_1_5_AUTH_TYPE_BIT_NONE`.
-const ipmi_1_5_auth_type_bit_none = 0x01;
+pub const ipmi_1_5_auth_type_bit_none = 0x01;
 /// `IPMI_1_5_AUTH_TYPE_BIT_OEM`.
-const ipmi_1_5_auth_type_bit_oem = 0x20;
+pub const ipmi_1_5_auth_type_bit_oem = 0x20;
 /// `IPMI_1_5_AUTH_TYPE_BIT_PASSWORD`.
-const ipmi_1_5_auth_type_bit_password = 0x10;
+pub const ipmi_1_5_auth_type_bit_password = 0x10;
 /// `IPMI_AUTH_RAKP_HMAC_MD5`.
-const ipmi_auth_rakp_hmac_md5 = 0x02;
+pub const ipmi_auth_rakp_hmac_md5 = 0x02;
 /// `IPMI_AUTH_RAKP_HMAC_SHA1`.
-const ipmi_auth_rakp_hmac_sha1 = 0x01;
+pub const ipmi_auth_rakp_hmac_sha1 = 0x01;
 /// `IPMI_AUTH_RAKP_HMAC_SHA256`.
-const ipmi_auth_rakp_hmac_sha256 = 0x03;
+pub const ipmi_auth_rakp_hmac_sha256 = 0x03;
 /// `IPMI_AUTH_RAKP_NONE`.
-const ipmi_auth_rakp_none = 0x00;
+pub const ipmi_auth_rakp_none = 0x00;
 /// `IPMI_CHANNEL_MEDIUM_ICMB_09`.
-const ipmi_channel_medium_icmb_09 = 0x3;
+pub const ipmi_channel_medium_icmb_09 = 0x3;
 /// `IPMI_CHANNEL_MEDIUM_ICMB_1`.
-const ipmi_channel_medium_icmb_1 = 0x2;
+pub const ipmi_channel_medium_icmb_1 = 0x2;
 /// `IPMI_CHANNEL_MEDIUM_IPMB_I2C`.
-const ipmi_channel_medium_ipmb_i2c = 0x1;
+pub const ipmi_channel_medium_ipmb_i2c = 0x1;
 /// `IPMI_CHANNEL_MEDIUM_LAN`.
-const ipmi_channel_medium_lan = 0x4;
+pub const ipmi_channel_medium_lan = 0x4;
 /// `IPMI_CHANNEL_MEDIUM_LAN_OTHER`.
-const ipmi_channel_medium_lan_other = 0x6;
+pub const ipmi_channel_medium_lan_other = 0x6;
 /// `IPMI_CHANNEL_MEDIUM_RESERVED`.
-const ipmi_channel_medium_reserved = 0x0;
+pub const ipmi_channel_medium_reserved = 0x0;
 /// `IPMI_CHANNEL_MEDIUM_SERIAL`.
-const ipmi_channel_medium_serial = 0x5;
+pub const ipmi_channel_medium_serial = 0x5;
 /// `IPMI_CHANNEL_MEDIUM_SMBUS_1`.
-const ipmi_channel_medium_smbus_1 = 0x8;
+pub const ipmi_channel_medium_smbus_1 = 0x8;
 /// `IPMI_CHANNEL_MEDIUM_SMBUS_2`.
-const ipmi_channel_medium_smbus_2 = 0x9;
+pub const ipmi_channel_medium_smbus_2 = 0x9;
 /// `IPMI_CHANNEL_MEDIUM_SMBUS_PCI`.
-const ipmi_channel_medium_smbus_pci = 0x7;
+pub const ipmi_channel_medium_smbus_pci = 0x7;
 /// `IPMI_CHANNEL_MEDIUM_SYSTEM`.
-const ipmi_channel_medium_system = 0xc;
+pub const ipmi_channel_medium_system = 0xc;
 /// `IPMI_CHANNEL_MEDIUM_USB_1`.
-const ipmi_channel_medium_usb_1 = 0xa;
+pub const ipmi_channel_medium_usb_1 = 0xa;
 /// `IPMI_CHANNEL_MEDIUM_USB_2`.
-const ipmi_channel_medium_usb_2 = 0xb;
+pub const ipmi_channel_medium_usb_2 = 0xb;
 /// `IPMI_CHASSIS_CTL_ACPI_SOFT`.
-const ipmi_chassis_ctl_acpi_soft = 0x5;
+pub const ipmi_chassis_ctl_acpi_soft = 0x5;
 /// `IPMI_CHASSIS_CTL_HARD_RESET`.
-const ipmi_chassis_ctl_hard_reset = 0x3;
+pub const ipmi_chassis_ctl_hard_reset = 0x3;
 /// `IPMI_CHASSIS_CTL_POWER_CYCLE`.
-const ipmi_chassis_ctl_power_cycle = 0x2;
+pub const ipmi_chassis_ctl_power_cycle = 0x2;
 /// `IPMI_CHASSIS_CTL_POWER_DOWN`.
-const ipmi_chassis_ctl_power_down = 0x0;
+pub const ipmi_chassis_ctl_power_down = 0x0;
 /// `IPMI_CHASSIS_CTL_POWER_UP`.
-const ipmi_chassis_ctl_power_up = 0x1;
+pub const ipmi_chassis_ctl_power_up = 0x1;
 /// `IPMI_CHASSIS_CTL_PULSE_DIAG`.
-const ipmi_chassis_ctl_pulse_diag = 0x4;
+pub const ipmi_chassis_ctl_pulse_diag = 0x4;
 /// `IPMI_CRYPT_AES_CBC_128`.
-const ipmi_crypt_aes_cbc_128 = 0x01;
+pub const ipmi_crypt_aes_cbc_128 = 0x01;
 /// `IPMI_CRYPT_NONE`.
-const ipmi_crypt_none = 0x00;
+pub const ipmi_crypt_none = 0x00;
 /// `IPMI_CRYPT_XRC4_128`.
-const ipmi_crypt_xrc4_128 = 0x02;
+pub const ipmi_crypt_xrc4_128 = 0x02;
 /// `IPMI_CRYPT_XRC4_40`.
-const ipmi_crypt_xrc4_40 = 0x03;
+pub const ipmi_crypt_xrc4_40 = 0x03;
 /// `IPMI_INTEGRITY_HMAC_MD5_128`.
-const ipmi_integrity_hmac_md5_128 = 0x02;
+pub const ipmi_integrity_hmac_md5_128 = 0x02;
 /// `IPMI_INTEGRITY_HMAC_SHA1_96`.
-const ipmi_integrity_hmac_sha1_96 = 0x01;
+pub const ipmi_integrity_hmac_sha1_96 = 0x01;
 /// `IPMI_INTEGRITY_HMAC_SHA256_128`.
-const ipmi_integrity_hmac_sha256_128 = 0x04;
+pub const ipmi_integrity_hmac_sha256_128 = 0x04;
 /// `IPMI_INTEGRITY_MD5_128`.
-const ipmi_integrity_md5_128 = 0x03;
+pub const ipmi_integrity_md5_128 = 0x03;
 /// `IPMI_INTEGRITY_NONE`.
-const ipmi_integrity_none = 0x00;
+pub const ipmi_integrity_none = 0x00;
 /// `IPMI_NETFN_APP`.
-const ipmi_netfn_app = 0x6;
+pub const ipmi_netfn_app = 0x6;
 /// `IPMI_NETFN_BRIDGE`.
-const ipmi_netfn_bridge = 0x2;
+pub const ipmi_netfn_bridge = 0x2;
 /// `IPMI_NETFN_CHASSIS`.
-const ipmi_netfn_chassis = 0x0;
+pub const ipmi_netfn_chassis = 0x0;
 /// `IPMI_NETFN_FIRMWARE`.
-const ipmi_netfn_firmware = 0x8;
+pub const ipmi_netfn_firmware = 0x8;
 /// `IPMI_NETFN_SE`.
-const ipmi_netfn_se = 0x4;
+pub const ipmi_netfn_se = 0x4;
 /// `IPMI_NETFN_STORAGE`.
-const ipmi_netfn_storage = 0xa;
+pub const ipmi_netfn_storage = 0xa;
 /// `IPMI_NETFN_TRANSPORT`.
-const ipmi_netfn_transport = 0xc;
+pub const ipmi_netfn_transport = 0xc;
 /// `IPMI_OEM_ADLINK_24339`.
-const ipmi_oem_adlink_24339 = 24339;
+pub const ipmi_oem_adlink_24339 = 24339;
 /// `IPMI_OEM_ADVANTECH`.
-const ipmi_oem_advantech = 10297;
+pub const ipmi_oem_advantech = 10297;
 /// `IPMI_OEM_BROADCOM`.
-const ipmi_oem_broadcom = 4413;
+pub const ipmi_oem_broadcom = 4413;
 /// `IPMI_OEM_DEBUG`.
-const ipmi_oem_debug = 16777214;
+pub const ipmi_oem_debug = 16777214;
 /// `IPMI_OEM_ERICSSON`.
-const ipmi_oem_ericsson = 193;
+pub const ipmi_oem_ericsson = 193;
 /// `IPMI_OEM_INTEL`.
-const ipmi_oem_intel = 343;
+pub const ipmi_oem_intel = 343;
 /// `IPMI_OEM_KONTRON`.
-const ipmi_oem_kontron = 15000;
+pub const ipmi_oem_kontron = 15000;
 /// `IPMI_OEM_PICMG`.
-const ipmi_oem_picmg = 12634;
+pub const ipmi_oem_picmg = 12634;
 /// `IPMI_OEM_RESERVED`.
-const ipmi_oem_reserved = 1048575;
+pub const ipmi_oem_reserved = 1048575;
 /// `IPMI_OEM_SUPERMICRO`.
-const ipmi_oem_supermicro = 10876;
+pub const ipmi_oem_supermicro = 10876;
 /// `IPMI_OEM_UNKNOWN`.
-const ipmi_oem_unknown = 0;
+pub const ipmi_oem_unknown = 0;
 /// `IPMI_OEM_VITA`.
-const ipmi_oem_vita = 33196;
+pub const ipmi_oem_vita = 33196;
 /// `IPMI_OEM_YADRO`.
-const ipmi_oem_yadro = 49769;
+pub const ipmi_oem_yadro = 49769;
 /// `IPMI_SESSION_AUTHTYPE_MD2`.
-const ipmi_session_authtype_md2 = 0x1;
+pub const ipmi_session_authtype_md2 = 0x1;
 /// `IPMI_SESSION_AUTHTYPE_MD5`.
-const ipmi_session_authtype_md5 = 0x2;
+pub const ipmi_session_authtype_md5 = 0x2;
 /// `IPMI_SESSION_AUTHTYPE_NONE`.
-const ipmi_session_authtype_none = 0x0;
+pub const ipmi_session_authtype_none = 0x0;
 /// `IPMI_SESSION_AUTHTYPE_OEM`.
-const ipmi_session_authtype_oem = 0x5;
+pub const ipmi_session_authtype_oem = 0x5;
 /// `IPMI_SESSION_AUTHTYPE_PASSWORD`.
-const ipmi_session_authtype_password = 0x4;
+pub const ipmi_session_authtype_password = 0x4;
 /// `IPMI_SESSION_AUTHTYPE_RMCP_PLUS`.
-const ipmi_session_authtype_rmcp_plus = 0x6;
+pub const ipmi_session_authtype_rmcp_plus = 0x6;
 /// `IPMI_SESSION_PRIV_ADMIN`.
-const ipmi_session_priv_admin = 0x4;
+pub const ipmi_session_priv_admin = 0x4;
 /// `IPMI_SESSION_PRIV_CALLBACK`.
-const ipmi_session_priv_callback = 0x1;
+pub const ipmi_session_priv_callback = 0x1;
 /// `IPMI_SESSION_PRIV_NOACCESS`.
-const ipmi_session_priv_noaccess = 0xF;
+pub const ipmi_session_priv_noaccess = 0xF;
 /// `IPMI_SESSION_PRIV_OEM`.
-const ipmi_session_priv_oem = 0x5;
+pub const ipmi_session_priv_oem = 0x5;
 /// `IPMI_SESSION_PRIV_OPERATOR`.
-const ipmi_session_priv_operator = 0x3;
+pub const ipmi_session_priv_operator = 0x3;
 /// `IPMI_SESSION_PRIV_USER`.
-const ipmi_session_priv_user = 0x2;
+pub const ipmi_session_priv_user = 0x2;
 /// `IPMI_SET_IN_PROGRESS_COMMIT_WRITE`.
-const ipmi_set_in_progress_commit_write = 0x02;
+pub const ipmi_set_in_progress_commit_write = 0x02;
 /// `IPMI_SET_IN_PROGRESS_IN_PROGRESS`.
-const ipmi_set_in_progress_in_progress = 0x01;
+pub const ipmi_set_in_progress_in_progress = 0x01;
 /// `IPMI_SET_IN_PROGRESS_SET_COMPLETE`.
-const ipmi_set_in_progress_set_complete = 0x00;
+pub const ipmi_set_in_progress_set_complete = 0x00;
 
 /// These are put at the head so they are found first because they
 /// may overlap with IANA specified numbers found in the registry.
@@ -1616,129 +1615,7 @@ pub const picmg_busres_shmc_status_vals = [_]OemValStr{
     .{ .oem = 0xffffff, .val = 0x00, .str = null },
 };
 
-/// Fails the build when `<ipmitool/ipmi_strings.h>` declares an exported table
-/// with a different element type than the one this module defines it with.
-/// This is the data-symbol counterpart of `abi.assertCallSignature`.
-fn assertTableType(comptime Elem: type, comptime CTable: type) void {
-    const info = @typeInfo(CTable);
-    if (info != .pointer) @compileError("expected a C array-to-pointer decay");
-    const CElem = info.pointer.child;
-    if (@sizeOf(Elem) != @sizeOf(CElem) or @alignOf(Elem) != @alignOf(CElem)) {
-        @compileError("element layout differs from " ++ @typeName(CElem));
-    }
-}
-
-/// Fails the build when a value copied out of a C header no longer matches it.
-fn assertConst(comptime mine: comptime_int, comptime theirs: anytype) void {
-    if (mine != theirs) @compileError("constant drifted from the C header");
-}
-
 comptime {
-    assertTableType(OemValStr, @TypeOf(c.ipmi_oem_product_info));
-    assertTableType(?[*:0]const u8, @TypeOf(c.ipmi_generic_sensor_type_vals));
-    assertTableType(OemValStr, @TypeOf(c.ipmi_oem_sensor_type_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_netfn_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_bit_rate_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_channel_activity_type_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_privlvl_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_set_in_progress_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_authtype_session_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_authtype_vals));
-    assertTableType(ValStr, @TypeOf(c.entity_id_vals));
-    assertTableType(ValStr, @TypeOf(c.entity_device_type_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_channel_protocol_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_channel_medium_vals));
-    assertTableType(ValStr, @TypeOf(c.completion_code_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_chassis_power_control_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_chassis_restart_cause_vals));
-    assertTableType(ValStr, @TypeOf(c.ipmi_auth_algorithms));
-    assertTableType(ValStr, @TypeOf(c.ipmi_integrity_algorithms));
-    assertTableType(ValStr, @TypeOf(c.ipmi_encryption_algorithms));
-    assertTableType(ValStr, @TypeOf(c.ipmi_user_enable_status_vals));
-    assertTableType(ValStr, @TypeOf(c.picmg_frucontrol_vals));
-    assertTableType(ValStr, @TypeOf(c.picmg_clk_family_vals));
-    assertTableType(OemValStr, @TypeOf(c.picmg_clk_accuracy_vals));
-    assertTableType(OemValStr, @TypeOf(c.picmg_clk_resource_vals));
-    assertTableType(OemValStr, @TypeOf(c.picmg_clk_id_vals));
-    assertTableType(ValStr, @TypeOf(c.picmg_busres_id_vals));
-    assertTableType(ValStr, @TypeOf(c.picmg_busres_board_cmd_vals));
-    assertTableType(ValStr, @TypeOf(c.picmg_busres_shmc_cmd_vals));
-    assertTableType(OemValStr, @TypeOf(c.picmg_busres_board_status_vals));
-    assertTableType(OemValStr, @TypeOf(c.picmg_busres_shmc_status_vals));
-
-    assertConst(ipmi_1_5_auth_type_bit_md2, c.IPMI_1_5_AUTH_TYPE_BIT_MD2);
-    assertConst(ipmi_1_5_auth_type_bit_md5, c.IPMI_1_5_AUTH_TYPE_BIT_MD5);
-    assertConst(ipmi_1_5_auth_type_bit_none, c.IPMI_1_5_AUTH_TYPE_BIT_NONE);
-    assertConst(ipmi_1_5_auth_type_bit_oem, c.IPMI_1_5_AUTH_TYPE_BIT_OEM);
-    assertConst(ipmi_1_5_auth_type_bit_password, c.IPMI_1_5_AUTH_TYPE_BIT_PASSWORD);
-    assertConst(ipmi_auth_rakp_hmac_md5, c.IPMI_AUTH_RAKP_HMAC_MD5);
-    assertConst(ipmi_auth_rakp_hmac_sha1, c.IPMI_AUTH_RAKP_HMAC_SHA1);
-    assertConst(ipmi_auth_rakp_hmac_sha256, c.IPMI_AUTH_RAKP_HMAC_SHA256);
-    assertConst(ipmi_auth_rakp_none, c.IPMI_AUTH_RAKP_NONE);
-    assertConst(ipmi_channel_medium_icmb_09, c.IPMI_CHANNEL_MEDIUM_ICMB_09);
-    assertConst(ipmi_channel_medium_icmb_1, c.IPMI_CHANNEL_MEDIUM_ICMB_1);
-    assertConst(ipmi_channel_medium_ipmb_i2c, c.IPMI_CHANNEL_MEDIUM_IPMB_I2C);
-    assertConst(ipmi_channel_medium_lan, c.IPMI_CHANNEL_MEDIUM_LAN);
-    assertConst(ipmi_channel_medium_lan_other, c.IPMI_CHANNEL_MEDIUM_LAN_OTHER);
-    assertConst(ipmi_channel_medium_reserved, c.IPMI_CHANNEL_MEDIUM_RESERVED);
-    assertConst(ipmi_channel_medium_serial, c.IPMI_CHANNEL_MEDIUM_SERIAL);
-    assertConst(ipmi_channel_medium_smbus_1, c.IPMI_CHANNEL_MEDIUM_SMBUS_1);
-    assertConst(ipmi_channel_medium_smbus_2, c.IPMI_CHANNEL_MEDIUM_SMBUS_2);
-    assertConst(ipmi_channel_medium_smbus_pci, c.IPMI_CHANNEL_MEDIUM_SMBUS_PCI);
-    assertConst(ipmi_channel_medium_system, c.IPMI_CHANNEL_MEDIUM_SYSTEM);
-    assertConst(ipmi_channel_medium_usb_1, c.IPMI_CHANNEL_MEDIUM_USB_1);
-    assertConst(ipmi_channel_medium_usb_2, c.IPMI_CHANNEL_MEDIUM_USB_2);
-    assertConst(ipmi_chassis_ctl_acpi_soft, c.IPMI_CHASSIS_CTL_ACPI_SOFT);
-    assertConst(ipmi_chassis_ctl_hard_reset, c.IPMI_CHASSIS_CTL_HARD_RESET);
-    assertConst(ipmi_chassis_ctl_power_cycle, c.IPMI_CHASSIS_CTL_POWER_CYCLE);
-    assertConst(ipmi_chassis_ctl_power_down, c.IPMI_CHASSIS_CTL_POWER_DOWN);
-    assertConst(ipmi_chassis_ctl_power_up, c.IPMI_CHASSIS_CTL_POWER_UP);
-    assertConst(ipmi_chassis_ctl_pulse_diag, c.IPMI_CHASSIS_CTL_PULSE_DIAG);
-    assertConst(ipmi_crypt_aes_cbc_128, c.IPMI_CRYPT_AES_CBC_128);
-    assertConst(ipmi_crypt_none, c.IPMI_CRYPT_NONE);
-    assertConst(ipmi_crypt_xrc4_128, c.IPMI_CRYPT_XRC4_128);
-    assertConst(ipmi_crypt_xrc4_40, c.IPMI_CRYPT_XRC4_40);
-    assertConst(ipmi_integrity_hmac_md5_128, c.IPMI_INTEGRITY_HMAC_MD5_128);
-    assertConst(ipmi_integrity_hmac_sha1_96, c.IPMI_INTEGRITY_HMAC_SHA1_96);
-    assertConst(ipmi_integrity_hmac_sha256_128, c.IPMI_INTEGRITY_HMAC_SHA256_128);
-    assertConst(ipmi_integrity_md5_128, c.IPMI_INTEGRITY_MD5_128);
-    assertConst(ipmi_integrity_none, c.IPMI_INTEGRITY_NONE);
-    assertConst(ipmi_netfn_app, c.IPMI_NETFN_APP);
-    assertConst(ipmi_netfn_bridge, c.IPMI_NETFN_BRIDGE);
-    assertConst(ipmi_netfn_chassis, c.IPMI_NETFN_CHASSIS);
-    assertConst(ipmi_netfn_firmware, c.IPMI_NETFN_FIRMWARE);
-    assertConst(ipmi_netfn_se, c.IPMI_NETFN_SE);
-    assertConst(ipmi_netfn_storage, c.IPMI_NETFN_STORAGE);
-    assertConst(ipmi_netfn_transport, c.IPMI_NETFN_TRANSPORT);
-    assertConst(ipmi_oem_adlink_24339, c.IPMI_OEM_ADLINK_24339);
-    assertConst(ipmi_oem_advantech, c.IPMI_OEM_ADVANTECH);
-    assertConst(ipmi_oem_broadcom, c.IPMI_OEM_BROADCOM);
-    assertConst(ipmi_oem_debug, c.IPMI_OEM_DEBUG);
-    assertConst(ipmi_oem_ericsson, c.IPMI_OEM_ERICSSON);
-    assertConst(ipmi_oem_intel, c.IPMI_OEM_INTEL);
-    assertConst(ipmi_oem_kontron, c.IPMI_OEM_KONTRON);
-    assertConst(ipmi_oem_picmg, c.IPMI_OEM_PICMG);
-    assertConst(ipmi_oem_reserved, c.IPMI_OEM_RESERVED);
-    assertConst(ipmi_oem_supermicro, c.IPMI_OEM_SUPERMICRO);
-    assertConst(ipmi_oem_unknown, c.IPMI_OEM_UNKNOWN);
-    assertConst(ipmi_oem_vita, c.IPMI_OEM_VITA);
-    assertConst(ipmi_oem_yadro, c.IPMI_OEM_YADRO);
-    assertConst(ipmi_session_authtype_md2, c.IPMI_SESSION_AUTHTYPE_MD2);
-    assertConst(ipmi_session_authtype_md5, c.IPMI_SESSION_AUTHTYPE_MD5);
-    assertConst(ipmi_session_authtype_none, c.IPMI_SESSION_AUTHTYPE_NONE);
-    assertConst(ipmi_session_authtype_oem, c.IPMI_SESSION_AUTHTYPE_OEM);
-    assertConst(ipmi_session_authtype_password, c.IPMI_SESSION_AUTHTYPE_PASSWORD);
-    assertConst(ipmi_session_authtype_rmcp_plus, c.IPMI_SESSION_AUTHTYPE_RMCP_PLUS);
-    assertConst(ipmi_session_priv_admin, c.IPMI_SESSION_PRIV_ADMIN);
-    assertConst(ipmi_session_priv_callback, c.IPMI_SESSION_PRIV_CALLBACK);
-    assertConst(ipmi_session_priv_noaccess, c.IPMI_SESSION_PRIV_NOACCESS);
-    assertConst(ipmi_session_priv_oem, c.IPMI_SESSION_PRIV_OEM);
-    assertConst(ipmi_session_priv_operator, c.IPMI_SESSION_PRIV_OPERATOR);
-    assertConst(ipmi_session_priv_user, c.IPMI_SESSION_PRIV_USER);
-    assertConst(ipmi_set_in_progress_commit_write, c.IPMI_SET_IN_PROGRESS_COMMIT_WRITE);
-    assertConst(ipmi_set_in_progress_in_progress, c.IPMI_SET_IN_PROGRESS_IN_PROGRESS);
-    assertConst(ipmi_set_in_progress_set_complete, c.IPMI_SET_IN_PROGRESS_SET_COMPLETE);
-
     @export(&ipmi_oem_product_info, .{ .name = "ipmi_oem_product_info", .linkage = .strong });
     @export(&ipmi_generic_sensor_type_vals, .{ .name = "ipmi_generic_sensor_type_vals", .linkage = .strong });
     @export(&ipmi_oem_sensor_type_vals, .{ .name = "ipmi_oem_sensor_type_vals", .linkage = .strong });
