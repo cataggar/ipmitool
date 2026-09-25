@@ -1,0 +1,19 @@
+default_ccode 0xc1
+
+respond device
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 98 3a 00 8a 13 09 00 00 00
+end
+
+respond info
+  netfn 0x08
+  cmd 0x00
+  data 06 20 00 07 42 01
+end
+
+respond start
+  netfn 0x08
+  cmd 0x0a
+  ccode 0xc1
+end

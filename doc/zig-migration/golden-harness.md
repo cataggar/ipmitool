@@ -61,6 +61,45 @@ IPMITOOL_ORACLE=/path/to/oracle/ipmitool ./tests/run.sh
 ./tests/run.sh --coverage
 ```
 
+### FWUM firmware transfer fixtures
+
+`tests/cases/49-fwum.cases` pins the C oracle's FWUM info/status/rollback/
+tracelog and download/upgrade transfers (including exact 24-bit fields, page
+boundaries, address/sequence modes, length shrink, busy finish, and failures).
+The generated firmware image lives in `tests/fixtures/fwum/valid.hex`; run
+`python3 tests/fixtures/fwum/generate.py` to reproduce it.
+
+The original `MAX_BUFFER_SIZE` macro is unparenthesized: its read loop computes
+`(fileSize / 1024) * 16`, not `fileSize / 16384`. Consequently, a valid
+sub-16-KiB image never reaches the BMC. The golden transfer image is exactly
+16 KiB to reach the rest of the implementation. C also does **not** verify an
+image magic, advertised size, or embedded checksum; the three negative
+fixtures show that they still transfer, while board/IANA mismatches do not.
+These are C-oracle compatibility findings, not endorsements of the format.
+
+The bounded safety cases under `tests/fwum/` deliberately cannot run against
+the C oracle: short BMC responses read past meaningful data, files over 512 KiB
+overwrite C's global buffer, and a BMC that never finishes can loop forever.
+The Zig port also stops if the FWUM capability query fails before an upload;
+C ignores that failure and continues with stale/uninitialized transfer state.
+Without the optional readline and OpenSSL development packages, build the
+FWUM port with the bundled MD5 implementation and lanplus disabled, then run:
+
+```sh
+zig build -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
+  -Dintf-lanplus=false -Dzig-modules=fwum
+tests/run.sh --binary zig-out/bin/ipmitool --filter fwum_ --allow-uncovered
+tests/run.sh --tests-dir tests/fwum --repo . \
+  --binary zig-out/bin/ipmitool --allow-uncovered
+zig build test-fwum-unit -Dipmishell=false -Dopenssl=false \
+  -Dinternal-md5=true -Dintf-lanplus=false -Dzig-modules=fwum
+```
+
+The focused unit tests use a null-reply interface to verify that both local
+and LAN save retries, and finish retries, terminate without sending forever.
+Lanplus can instead remain enabled without OpenSSL when
+`-Dzig-modules=fwum,lanplus-crypt-impl -Dintf-lanplus=true` is selected.
+
 `tests/run.sh` is a thin POSIX shell wrapper around
 `zig run tests/golden/main.zig`. The harness needs nothing from `build.zig`, so
 it also works against an autotools build, against an archived oracle, and on a

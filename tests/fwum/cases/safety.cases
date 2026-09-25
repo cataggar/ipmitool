@@ -1,0 +1,61 @@
+# Separate from C-oracle fixtures: these exercise formerly undefined C
+# reads/writes or unbounded retry loops and intentionally differ from C.
+
+[fwum_zig_oversize]
+registry: none
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin oversize.hex
+covers: fwum
+
+[fwum_zig_short_device]
+registry: none
+args: -I dummy fwum info
+transcript: short_device.tr
+covers: fwum
+
+[fwum_zig_short_info]
+registry: none
+args: -I dummy fwum info
+transcript: short_info.tr
+covers: fwum
+
+[fwum_zig_short_bank]
+registry: none
+args: -I dummy fwum status
+transcript: short_bank.tr
+covers: fwum
+
+[fwum_zig_short_trace]
+registry: none
+args: -I dummy fwum tracelog
+transcript: short_trace.tr
+covers: fwum
+
+[fwum_zig_invalid_trace]
+registry: none
+args: -I dummy fwum tracelog
+transcript: invalid_trace.tr
+covers: fwum
+
+[fwum_zig_short_start]
+registry: none
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin ../../fixtures/fwum/valid.hex
+transcript: short_start.tr
+timeout_ms: 20000
+covers: fwum
+
+[fwum_zig_info_failure_cleanup]
+registry: none
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin ../../fixtures/fwum/valid.hex
+transcript: info_failure.tr
+covers: fwum
+
+[fwum_zig_finish_busy]
+registry: none
+args: -I dummy fwum download {work}/image.bin
+blob: image.bin ../../fixtures/fwum/valid.hex
+transcript: finish_busy.tr
+timeout_ms: 20000
+covers: fwum

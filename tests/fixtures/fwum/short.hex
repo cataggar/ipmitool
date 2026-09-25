@@ -1,0 +1,2 @@
+# One byte short of the FWUM metadata's minimum 0x5a0 + 20.
+@pad 1459 00

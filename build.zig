@@ -246,6 +246,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/sensor.zig",
     },
     .{
+        .name = "fwum",
+        .replaces = "lib/ipmi_fwum.c",
+        .implementation = "src/zig/cmd/fwum.zig",
+    },
+    .{
         .name = "sel",
         .replaces = "lib/ipmi_sel.c",
         .implementation = "src/zig/cmd/sel.zig",
@@ -985,6 +990,22 @@ pub fn build(b: *std.Build) void {
     const unit_tests = b.addRunArtifact(abi_tests);
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
+
+    const fwum_test_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/fwum_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    fwum_test_mod.addImport("ipmi_c", bridge_mod);
+    fwum_test_mod.addIncludePath(b.path("include"));
+    fwum_test_mod.addCSourceFile(.{ .file = b.path("lib/log.c"), .flags = &.{} });
+    const fwum_tests = b.addTest(.{ .root_module = fwum_test_mod });
+    const fwum_test_run = b.addRunArtifact(fwum_tests);
+    unit_step.dependOn(&fwum_test_run.step);
+    b.step("test-fwum-unit", "Run bounded FWUM retries and firmware metadata tests")
+        .dependOn(&fwum_test_run.step);
+
     test_step.dependOn(unit_step);
     const serial_unit = b.addTest(.{
         .root_module = abi_mod,

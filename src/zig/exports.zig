@@ -91,6 +91,9 @@ comptime {
     if (selected("sensor")) {
         @import("cmd/sensor.zig").exportSymbols();
     }
+    if (selected("fwum")) {
+        @import("cmd/fwum.zig").exportSymbols();
+    }
     if (selected("sel")) {
         @import("cmd/sel.zig").exportSymbols();
     }

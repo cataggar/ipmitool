@@ -66,6 +66,7 @@
 #include <ipmitool/ipmi_cfgp.h>
 #include <ipmitool/ipmi_session.h>
 #include <ipmitool/ipmi_fru.h>
+#include <ipmitool/ipmi_fwum.h>
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_isol.h>

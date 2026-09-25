@@ -1,0 +1,23 @@
+#!golden 1
+#!case fwum_zig_short_bank
+#!section exit
+1
+#!section stdout
+FWUM extension Version 1.3
+
+Bank State 0               : Last Known Good
+
+#!section stderr
+IANA PEN registry open failed: No such file or directory
+Failed to load entries from IANA PEN Registry
+Short FWUM Get Status response.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x00 target_cmd=0x00 data=
+< rule=info ccode=0x00 len=7 data=06 20 01 07 42 01 55
+> netfn=0x08 lun=0x00 cmd=0x07 target_cmd=0x00 data=00
+< rule=bank ccode=0x00 len=1 data=03
+bye

@@ -1,0 +1,1318 @@
+#!golden 1
+#!case fwum_download_old
+#!section exit
+0
+#!section stdout
+FWUM extension Version 1.3
+Firmware File Name         : <WORK>/image.bin
+Reading Firmware from File :                                              0 %\x0dReading Firmware from File :                                              1 %\x0dReading Firmware from File :                                              2 %\x0dReading Firmware from File : #                                            3 %\x0dReading Firmware from File : #                                            4 %\x0dReading Firmware from File : ##                                           5 %\x0dReading Firmware from File : ##                                           6 %\x0dReading Firmware from File : ##                                           7 %\x0dReading Firmware from File : ###                                          8 %\x0dReading Firmware from File : ###                                          9 %\x0dReading Firmware from File : ####                                        10 %\x0dReading Firmware from File : ####                                        11 %\x0dReading Firmware from File : #####                                       12 %\x0dReading Firmware from File : #####                                       13 %\x0dReading Firmware from File : #####                                       14 %\x0dReading Firmware from File : ######                                      15 %\x0dReading Firmware from File : ######                                      16 %\x0dReading Firmware from File : #######                                     17 %\x0dReading Firmware from File : #######                                     18 %\x0dReading Firmware from File : ########                                    19 %\x0dReading Firmware from File : ########                                    20 %\x0dReading Firmware from File : ########                                    21 %\x0dReading Firmware from File : #########                                   22 %\x0dReading Firmware from File : #########                                   23 %\x0dReading Firmware from File : ##########                                  24 %\x0dReading Firmware from File : ##########                                  25 %\x0dReading Firmware from File : ##########                                  26 %\x0dReading Firmware from File : ###########                                 27 %\x0dReading Firmware from File : ###########                                 28 %\x0dReading Firmware from File : ############                                29 %\x0dReading Firmware from File : ############                                30 %\x0dReading Firmware from File : #############                               31 %\x0dReading Firmware from File : #############                               32 %\x0dReading Firmware from File : #############                               33 %\x0dReading Firmware from File : ##############                              34 %\x0dReading Firmware from File : ##############                              35 %\x0dReading Firmware from File : ###############                             36 %\x0dReading Firmware from File : ###############                             37 %\x0dReading Firmware from File : ################                            38 %\x0dReading Firmware from File : ################                            39 %\x0dReading Firmware from File : ################                            40 %\x0dReading Firmware from File : #################                           41 %\x0dReading Firmware from File : #################                           42 %\x0dReading Firmware from File : ##################                          43 %\x0dReading Firmware from File : ##################                          44 %\x0dReading Firmware from File : ###################                         45 %\x0dReading Firmware from File : ###################                         46 %\x0dReading Firmware from File : ###################                         47 %\x0dReading Firmware from File : ####################                        48 %\x0dReading Firmware from File : ####################                        49 %\x0dReading Firmware from File : #####################                       50 %\x0dReading Firmware from File : #####################                       51 %\x0dReading Firmware from File : #####################                       52 %\x0dReading Firmware from File : ######################                      53 %\x0dReading Firmware from File : ######################                      54 %\x0dReading Firmware from File : #######################                     55 %\x0dReading Firmware from File : #######################                     56 %\x0dReading Firmware from File : #######################                     57 %\x0dReading Firmware from File : ########################                    58 %\x0dReading Firmware from File : ########################                    59 %\x0dReading Firmware from File : #########################                   60 %\x0dReading Firmware from File : #########################                   61 %\x0dReading Firmware from File : ##########################                  62 %\x0dReading Firmware from File : ##########################                  63 %\x0dReading Firmware from File : ##########################                  64 %\x0dReading Firmware from File : ###########################                 65 %\x0dReading Firmware from File : ###########################                 66 %\x0dReading Firmware from File : ############################                67 %\x0dReading Firmware from File : ############################                68 %\x0dReading Firmware from File : #############################               69 %\x0dReading Firmware from File : #############################               70 %\x0dReading Firmware from File : #############################               71 %\x0dReading Firmware from File : ##############################              72 %\x0dReading Firmware from File : ##############################              73 %\x0dReading Firmware from File : ###############################             74 %\x0dReading Firmware from File : ###############################             75 %\x0dReading Firmware from File : ###############################             76 %\x0dReading Firmware from File : ################################            77 %\x0dReading Firmware from File : ################################            78 %\x0dReading Firmware from File : #################################           79 %\x0dReading Firmware from File : #################################           80 %\x0dReading Firmware from File : ##################################          81 %\x0dReading Firmware from File : ##################################          82 %\x0dReading Firmware from File : ##################################          83 %\x0dReading Firmware from File : ###################################         84 %\x0dReading Firmware from File : ###################################         85 %\x0dReading Firmware from File : ####################################        86 %\x0dReading Firmware from File : ####################################        87 %\x0dReading Firmware from File : #####################################       88 %\x0dReading Firmware from File : #####################################       89 %\x0dReading Firmware from File : #####################################       90 %\x0dReading Firmware from File : ######################################      91 %\x0dReading Firmware from File : ######################################      92 %\x0dReading Firmware from File : #######################################     93 %\x0dReading Firmware from File : #######################################     94 %\x0dReading Firmware from File : ########################################    95 %\x0dReading Firmware from File : ########################################    96 %\x0dReading Firmware from File : ########################################    97 %\x0dReading Firmware from File : #########################################   98 %\x0dReading Firmware from File : #########################################   99 %\x0dReading Firmware from File : ########################################## 100 %\x0d
+Target Board Id            : 5002
+Target IANA number         : 15000
+File Size                  : 16384 bytes
+Firmware Version           : 7.42 SDR 9
+Bank holding new firmware  : 0
+Writing Firmware in Flash : ##                                           6 %\x0dWriting Firmware in Flash : #####                                       12 %\x0dWriting Firmware in Flash : #######                                     18 %\x0dWriting Firmware in Flash : ##########                                  25 %\x0dWriting Firmware in Flash : #############                               31 %\x0dWriting Firmware in Flash : ###############                             37 %\x0dWriting Firmware in Flash : ##################                          43 %\x0dWriting Firmware in Flash : #####################                       50 %\x0dWriting Firmware in Flash : #######################                     56 %\x0dWriting Firmware in Flash : ##########################                  62 %\x0dWriting Firmware in Flash : ############################                68 %\x0dWriting Firmware in Flash : ###############################             75 %\x0dWriting Firmware in Flash : ##################################          81 %\x0dWriting Firmware in Flash : ####################################        87 %\x0dWriting Firmware in Flash : #######################################     93 %\x0dWriting Firmware in Flash : ########################################## 100 %\x0d
+
+Bank State 0               : Wait for validation
+Firmware Length            : 16384 bytes
+Firmware Revision          : 7.42 SDR 9
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 98 3a 00 8a 13 09 00 00 00
+> netfn=0x08 lun=0x00 cmd=0x00 target_cmd=0x00 data=
+< rule=info ccode=0x00 len=6 data=05 20 00 07 42 01
+> netfn=0x08 lun=0x00 cmd=0x0a target_cmd=0x00 data=00 40 00 db 24
+< rule=start ccode=0x00 len=1 data=00
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 00 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 00 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 00 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 00 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 00 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 00 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 00 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 00 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 00 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 00 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 01 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 01 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 01 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 01 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 01 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 01 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 01 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 01 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 01 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 01 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 02 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 02 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 02 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 02 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 02 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 02 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 02 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 02 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 02 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 02 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 03 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 03 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 03 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 03 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 03 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 03 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 03 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 03 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 03 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 03 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 04 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 04 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 04 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 04 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 04 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 04 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 04 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 04 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 04 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 04 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 05 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 05 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 05 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 05 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 05 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 05 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 05 00 1a 99 be e3 08 00 00 40 00 25 81 13 8a 20 01 02 07 42 09 98 3a 00 a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 05 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 05 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 05 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 06 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 06 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 06 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 06 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 06 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 06 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 06 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 06 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 06 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 06 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 07 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 07 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 07 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 07 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 07 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 07 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 07 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 07 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 07 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 07 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 08 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 08 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 08 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 08 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 08 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 08 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 08 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 08 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 08 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 08 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 09 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 09 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 09 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 09 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 09 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 09 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 09 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 09 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 09 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 09 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 0a 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 0a 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 0a 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 0a 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 0a 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 0a 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 0a 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 0a 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 0a 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 0a 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 0b 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 0b 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 0b 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 0b 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 0b 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 0b 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 0b 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 0b 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 0b 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 0b 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 0c 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 0c 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 0c 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 0c 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 0c 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 0c 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 0c 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 0c 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 0c 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 0c 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 0d 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 0d 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 0d 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 0d 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 0d 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 0d 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 0d 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 0d 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 0d 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 0d 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 0e 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 0e 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 0e 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 0e 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 0e 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 0e 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 0e 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 0e 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 0e 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 0e 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 0f 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 0f 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 0f 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 0f 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 0f 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 0f 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 0f 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 0f 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 0f 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 0f 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 10 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 10 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 10 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 10 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 10 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 10 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 10 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 10 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 10 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 10 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 11 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 11 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 11 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 11 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 11 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 11 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 11 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 11 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 11 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 11 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 12 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 12 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 12 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 12 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 12 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 12 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 12 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 12 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 12 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 12 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 13 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 13 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 13 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 13 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 13 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 13 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 13 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 13 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 13 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 13 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 14 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 14 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 14 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 14 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 14 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 14 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 14 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 14 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 14 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 14 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 15 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 15 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 15 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 15 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 15 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 15 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 15 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 15 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 15 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 15 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 16 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 16 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 16 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 16 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 16 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 16 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 16 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 16 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 16 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 16 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 17 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 17 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 17 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 17 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 17 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 17 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 17 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 17 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 17 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 17 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 18 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 18 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 18 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 18 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 18 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 18 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 18 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 18 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 18 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 18 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 19 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 19 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 19 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 19 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 19 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 19 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 19 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 19 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 19 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 19 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 1a 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 1a 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 1a 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 1a 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 1a 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 1a 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 1a 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 1a 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 1a 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 1a 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 1b 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 1b 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 1b 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 1b 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 1b 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 1b 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 1b 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 1b 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 1b 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 1b 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 1c 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 1c 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 1c 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 1c 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 1c 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 1c 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 1c 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 1c 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 1c 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 1c 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 1d 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 1d 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 1d 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 1d 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 1d 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 1d 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 1d 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 1d 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 1d 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 1d 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 1e 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 1e 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 1e 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 1e 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 1e 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 1e 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 1e 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 1e 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 1e 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 1e 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 1f 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 1f 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 1f 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 1f 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 1f 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 1f 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 1f 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 1f 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 1f 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 1f 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 20 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 20 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 20 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 20 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 20 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 20 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 20 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 20 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 20 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 20 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 21 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 21 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 21 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 21 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 21 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 21 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 21 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 21 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 21 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 21 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 22 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 22 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 22 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 22 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 22 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 22 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 22 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 22 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 22 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 22 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 23 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 23 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 23 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 23 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 23 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 23 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 23 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 23 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 23 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 23 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 24 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 24 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 24 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 24 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 24 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 24 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 24 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 24 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 24 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 24 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 25 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 25 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 25 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 25 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 25 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 25 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 25 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 25 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 25 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 25 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 26 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 26 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 26 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 26 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 26 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 26 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 26 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 26 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 26 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 26 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 27 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 27 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 27 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 27 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 27 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 27 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 27 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 27 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 27 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 27 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 28 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 28 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 28 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 28 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 28 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 28 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 28 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 28 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 28 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 28 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 29 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 29 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 29 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 29 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 29 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 29 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 29 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 29 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 29 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 29 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 2a 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 2a 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 2a 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 2a 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 2a 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 2a 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 2a 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 2a 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 2a 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 2a 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 2b 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 2b 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 2b 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 2b 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 2b 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 2b 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 2b 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 2b 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 2b 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 2b 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 2c 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 2c 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 2c 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 2c 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 2c 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 2c 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 2c 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 2c 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 2c 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 2c 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 2d 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 2d 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 2d 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 2d 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 2d 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 2d 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 2d 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 2d 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 2d 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 2d 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 2e 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 2e 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 2e 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 2e 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 2e 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 2e 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 2e 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 2e 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 2e 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 2e 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 2f 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 2f 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 2f 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 2f 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 2f 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 2f 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 2f 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 2f 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 2f 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 2f 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 30 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 30 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 30 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 30 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 30 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 30 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 30 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 30 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 30 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 30 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 31 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 31 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 31 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 31 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 31 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 31 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 31 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 31 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 31 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 31 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 32 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 32 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 32 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 32 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 32 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 32 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 32 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 32 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 32 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 32 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 33 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 33 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 33 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 33 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 33 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 33 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 33 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 33 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 33 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 33 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 34 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 34 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 34 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 34 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 34 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 34 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 34 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 34 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 34 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 34 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 35 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 35 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 35 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 35 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 35 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 35 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 35 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 35 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 35 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 35 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 36 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 36 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 36 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 36 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 36 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 36 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 36 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 36 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 36 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 36 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 37 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 37 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 37 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 37 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 37 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 37 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 37 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 37 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 37 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 37 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 38 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 38 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 38 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 38 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 38 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 38 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 38 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 38 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 38 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 38 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 39 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 39 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 39 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 39 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 39 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 39 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 39 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 39 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 39 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 39 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 3a 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 3a 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 3a 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 3a 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 3a 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 3a 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 3a 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 3a 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 3a 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 3a 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 3b 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 3b 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 3b 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 3b 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 3b 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 3b 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 3b 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 3b 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 3b 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 3b 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 3c 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 3c 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 3c 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 3c 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 3c 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 3c 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 3c 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 3c 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 3c 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 3c 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 3d 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 3d 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 3d 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 3d 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 3d 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 3d 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 3d 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 3d 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 3d 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 3d 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 3e 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 3e 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 3e 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 3e 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 3e 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 3e 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 3e 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 3e 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 3e 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 3e 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=00 3f 00 1a 0d 32 57 7c a1 c6 eb 10 35 5a 7f a4 c9 ee 13 38 5d 82 a7 cc f1 16 3b 60 85 aa
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=1a 3f 00 1a cf f4 19 3e 63 88 ad d2 f7 1c 41 66 8b b0 d5 fa 1f 44 69 8e b3 d8 fd 22 47 6c
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=34 3f 00 1a 91 b6 db 00 25 4a 6f 94 b9 de 03 28 4d 72 97 bc e1 06 2b 50 75 9a bf e4 09 2e
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=4e 3f 00 1a 53 78 9d c2 e7 0c 31 56 7b a0 c5 ea 0f 34 59 7e a3 c8 ed 12 37 5c 81 a6 cb f0
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=68 3f 00 1a 15 3a 5f 84 a9 ce f3 18 3d 62 87 ac d1 f6 1b 40 65 8a af d4 f9 1e 43 68 8d b2
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=82 3f 00 1a d7 fc 21 46 6b 90 b5 da ff 24 49 6e 93 b8 dd 02 27 4c 71 96 bb e0 05 2a 4f 74
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=9c 3f 00 1a 99 be e3 08 2d 52 77 9c c1 e6 0b 30 55 7a 9f c4 e9 0e 33 58 7d a2 c7 ec 11 36
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=b6 3f 00 1a 5b 80 a5 ca ef 14 39 5e 83 a8 cd f2 17 3c 61 86 ab d0 f5 1a 3f 64 89 ae d3 f8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=d0 3f 00 1a 1d 42 67 8c b1 d6 fb 20 45 6a 8f b4 d9 fe 23 48 6d 92 b7 dc 01 26 4b 70 95 ba
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0b target_cmd=0x00 data=ea 3f 00 16 df 04 29 4e 73 98 bd e2 07 2c 51 76 9b c0 e5 0a 2f 54 79 9e c3 e8
+< rule=save ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x0c target_cmd=0x00 data=07 42 09 00
+< rule=finish ccode=0x00 len=0 data=
+> netfn=0x08 lun=0x00 cmd=0x00 target_cmd=0x00 data=
+< rule=info ccode=0x00 len=6 data=05 20 00 07 42 01
+> netfn=0x08 lun=0x00 cmd=0x07 target_cmd=0x00 data=00
+< rule=bank0 ccode=0x00 len=7 data=02 00 40 00 07 42 09
+bye
