@@ -65,8 +65,6 @@ Setting sensor "Clx05" Lower Non-Recoverable threshold to 29.000
 < rule=get_sdr_bcfd ccode=0x00 len=25 data=1f de 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a fd bc 33 02
 < rule=get_sdr_bcfd ccode=0x00 len=4 data=1f de 30 35
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=f6
-< rule=reading_f6 ccode=0x00 len=4 data=30 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=f6
 < rule=thresh_f6 ccode=0x00 len=7 data=05 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=f6 04 00 00 1d 00 00 00

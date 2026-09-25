@@ -35,6 +35,7 @@
  */
 
 #include <string.h>
+#include <stddef.h>
 
 #include <math.h>
 #include <stdio.h>
@@ -997,6 +998,12 @@ ipmi_sdr_get_header(struct ipmi_intf *intf, struct ipmi_sdr_iterator *itr)
 
 	if (!rsp)
 		return NULL;
+
+	if (rsp->data_len < 2 + 5) {
+		lprintf(LOG_ERR, "Short Get SDR header response for record 0x%04x",
+			itr->next);
+		return NULL;
+	}
 
 	lprintf(LOG_DEBUG, "SDR record ID   : 0x%04x", itr->next);
 
@@ -3091,6 +3098,50 @@ ipmi_sdr_start(struct ipmi_intf *intf, int use_builtin)
 	return itr;
 }
 
+/* Check the fixed fields and the declared name against the body length.
+ * Named SDRs can omit the unused tail of their 16-byte id_string array.
+ */
+static int
+ipmi_sdr_record_length_valid(uint8_t type, size_t len, const uint8_t *data)
+{
+	size_t code_offset, name_offset, name_capacity;
+
+#define SDR_NAMED_RECORD(record_type) do { \
+	code_offset = offsetof(struct record_type, id_code); \
+	name_offset = offsetof(struct record_type, id_string); \
+	name_capacity = sizeof(((struct record_type *)0)->id_string); \
+} while (0)
+	switch (type) {
+	case SDR_RECORD_TYPE_FULL_SENSOR:
+		SDR_NAMED_RECORD(sdr_record_full_sensor);
+		break;
+	case SDR_RECORD_TYPE_COMPACT_SENSOR:
+		SDR_NAMED_RECORD(sdr_record_compact_sensor);
+		break;
+	case SDR_RECORD_TYPE_EVENTONLY_SENSOR:
+		SDR_NAMED_RECORD(sdr_record_eventonly_sensor);
+		break;
+	case SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR:
+		SDR_NAMED_RECORD(sdr_record_generic_locator);
+		break;
+	case SDR_RECORD_TYPE_FRU_DEVICE_LOCATOR:
+		SDR_NAMED_RECORD(sdr_record_fru_locator);
+		break;
+	case SDR_RECORD_TYPE_MC_DEVICE_LOCATOR:
+		SDR_NAMED_RECORD(sdr_record_mc_locator);
+		break;
+	case SDR_RECORD_TYPE_ENTITY_ASSOC:
+		return len >= sizeof(struct sdr_record_entity_assoc);
+	default:
+		return 1;
+	}
+#undef SDR_NAMED_RECORD
+
+	return len >= name_offset &&
+		(data[code_offset] & 0x1f) <= name_capacity &&
+		(data[code_offset] & 0x1f) <= len - name_offset;
+}
+
 /* ipmi_sdr_get_record  -  return RAW SDR record
  *
  * @intf:	ipmi interface
@@ -3190,7 +3241,11 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 		}
 
 		/* special completion codes handled above */
-		if (rsp->ccode || rsp->data_len == 0) {
+		if (rsp->ccode || rsp->data_len < 2 + sdr_rq.length) {
+			if (!rsp->ccode)
+				lprintf(LOG_ERR,
+					"Short Get SDR response for record 0x%04x",
+					header->id);
 			free(data);
 			data = NULL;
 			return NULL;
@@ -3198,6 +3253,13 @@ ipmi_sdr_get_record(struct ipmi_intf * intf, struct sdr_get_rs * header,
 
 		memcpy(data + i, rsp->data + 2, sdr_rq.length);
 		i += sdr_rq.length;
+	}
+
+	if (!ipmi_sdr_record_length_valid(header->type, len, data)) {
+		lprintf(LOG_ERR, "Invalid SDR record length or name for record 0x%04x",
+			header->id);
+		free(data);
+		return NULL;
 	}
 
 	return data;
@@ -4152,6 +4214,16 @@ ipmi_sdr_list_cache_fromfile(const char *ifile)
 				rec = NULL;
 			}
 			break;
+		}
+
+		if (!ipmi_sdr_record_length_valid(header.type, header.length, rec)) {
+			lprintf(LOG_ERR,
+				"Invalid SDR record length or name for record 0x%04x",
+				header.id);
+			ret = -1;
+			free(sdrr);
+			free(rec);
+			continue;
 		}
 
 		switch (header.type) {

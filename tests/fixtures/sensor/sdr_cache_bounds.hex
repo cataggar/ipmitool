@@ -1,0 +1,4 @@
+# Local SDR cache contains two malformed entries and one valid short-name SDR.
+@sensor/full_short_fixed.hex
+@sensor/full_name_too_long.hex
+@sensor/full_valid_short_name.hex

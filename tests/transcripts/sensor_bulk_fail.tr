@@ -1,0 +1,62 @@
+# First and middle bulk sets fail; third succeeds. All three must be sent,
+# and the overall exit status must retain the first error.
+default_ccode 0xc1
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_units_na.hex
+end
+respond get_sdr_9abc
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a bc 9a
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_units_na.hex
+end
+respond first_upper_fail
+  netfn 0x04
+  cmd 0x26
+  match 33 08
+  ccode 0xd5
+end
+respond middle_upper_fail
+  netfn 0x04
+  cmd 0x26
+  match 33 10
+  ccode 0xd5
+end
+respond first_lower_fail
+  netfn 0x04
+  cmd 0x26
+  match 33 04
+  ccode 0xd5
+end
+respond middle_lower_fail
+  netfn 0x04
+  cmd 0x26
+  match 33 02
+  ccode 0xd5
+end
+respond final_set_succeeds
+  netfn 0x04
+  cmd 0x26
+end

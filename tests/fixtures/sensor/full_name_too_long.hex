@@ -1,0 +1,6 @@
+# 17 name bytes cannot fit the record's 16-byte id_string field.
+@mark rec
+@sensor/full_analog.hex
+@poke rec 0 0x03
+@poke rec 1 0x10
+@poke rec 47 0xd1

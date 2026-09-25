@@ -41,8 +41,6 @@ Setting sensor "MaskC" Lower Non-Recoverable threshold to 25.000
 < rule=get_sdr_f58d ccode=0x00 len=25 data=1a 6e 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 03 0c 00 00 00 c5 4d 61 73
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 8d f5 33 02
 < rule=get_sdr_f58d ccode=0x00 len=4 data=1a 6e 6b 43
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=cc
-< rule=reading_cc ccode=0x00 len=4 data=47 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=cc
 < rule=thresh_cc ccode=0x00 len=7 data=0b 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=cc 04 00 00 19 00 00 00

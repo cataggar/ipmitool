@@ -121,8 +121,6 @@ Setting sensor "Clg01" Lower Non-Critical threshold to 5.000
 < rule=get_sdr_cbed ccode=0x00 len=25 data=ff ff 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 67
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a ed cb 33 02
 < rule=get_sdr_cbed ccode=0x00 len=4 data=ff ff 30 31
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=3d
-< rule=reading_3d ccode=0x00 len=4 data=45 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=3d
 < rule=thresh_3d ccode=0x00 len=7 data=01 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=3d 01 05 00 00 00 00 00

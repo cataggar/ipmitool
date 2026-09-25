@@ -25,8 +25,6 @@ Setting sensor "Clx30" Upper Non-Recoverable threshold to 105.000
 < rule=get_sdr_12a3 ccode=0x00 len=25 data=b5 34 00 00 07 32 5a 14 ff 00 64 5a 50 0a 14 1e 09 0e 00 00 00 c5 43 6c 78
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a a3 12 33 02
 < rule=get_sdr_12a3 ccode=0x00 len=4 data=b5 34 33 30
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=a1
-< rule=reading_a1 ccode=0x00 len=4 data=21 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=a1
 < rule=thresh_a1 ccode=0x00 len=7 data=30 1e 14 0a 50 5a 64
 > netfn=0x04 lun=0x00 cmd=0x26 target_cmd=0x00 data=a1 20 00 00 00 00 00 69

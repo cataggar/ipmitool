@@ -1,0 +1,22 @@
+# Get SDR success with only four of its five header bytes (plus next ID).
+default_ccode 0xc1
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+respond get_sdr_header_short
+  netfn 0x0a
+  cmd 0x23
+  data ff ff 34 12 51 01
+end

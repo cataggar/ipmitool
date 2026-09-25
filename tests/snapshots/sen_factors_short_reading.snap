@@ -1,0 +1,31 @@
+#!golden 1
+#!case sen_factors_short_reading
+#!section exit
+0
+#!section stdout
+#!section stderr
+Short reading factors response for sensor NonLin (#44)
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=a5 5a
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=ff ff f0 de 51 01 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a f0 de 05 17
+< rule=get_sdr_def0 ccode=0x00 len=25 data=ff ff 20 3e 44 07 05 7f 68 02 01 ff 3f ff 3f 3f 3f 00 04 00 70 11 12 13 14
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a f0 de 1c 17
+< rule=get_sdr_def0 ccode=0x00 len=25 data=ff ff 15 16 07 28 50 0a ff 00 8f 7e 6d 1c 2b 3a 04 06 00 00 00 c6 4e 6f 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a f0 de 33 03
+< rule=get_sdr_def0 ccode=0x00 len=5 data=ff ff 4c 69 6e
+> netfn=0x04 lun=0x02 cmd=0x2d target_cmd=0x00 data=44
+< rule=reading_44 ccode=0x00 len=4 data=30 c0 c0 00
+> netfn=0x04 lun=0x02 cmd=0x23 target_cmd=0x00 data=44 30
+< rule=sensor_factors_short ccode=0x00 len=6 data=55 04 3d 07 3a 1b
+bye

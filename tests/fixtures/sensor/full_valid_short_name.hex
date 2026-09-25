@@ -1,0 +1,5 @@
+# Five bytes are a complete valid name; the other 11 array bytes are optional.
+@mark rec
+@sensor/full_analog.hex
+@poke rec 0 0x04
+@poke rec 1 0x10

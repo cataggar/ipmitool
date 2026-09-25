@@ -1,21 +1,16 @@
-# Malformed / adversarial SDR repository.
+# Malformed / adversarial SDR repository. Truncated replies are now rejected.
 #
 #   0x4365 "Long"  a Full Sensor Record whose declared length (40h) exceeds the
 #                  47 body bytes the BMC actually has. lib/ipmi_sdr.c asks for
-#                  64 bytes, the BMC returns 47, and the memcpy in
-#                  ipmi_sdr_get_record() copies 64 anyway. The declared length
-#                  is visible in the recorded Get SDR request bytes.
+#                  64 bytes and rejects the short response without copying
+#                  stale bytes into the record.
 #   0x8c9b         a record with reserved record type 0Ch, which `sensor list'
 #                  must read, free and silently skip.
 #   0x1234 "TempA" a healthy record placed last, so the walk is proven to
 #                  continue past both oddities.
 #
-# Get Sensor Thresholds answers with only three bytes. lib/ipmi_sensor.c reads
-# rsp->data[1..6] unconditionally, so the upper three thresholds are printed
-# from bytes the response never carried. The dummy plugin keeps its
-# `struct ipmi_rs' in a function-local static that it never clears, so those
-# bytes are the tail of the *previous* response and the result is completely
-# deterministic -- which is exactly what makes this over-read snapshotable.
+# Get Sensor Thresholds answers with only three bytes. No threshold values
+# from this response may be printed or used to validate a single set.
 
 default_ccode 0xc1
 

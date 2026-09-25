@@ -34,6 +34,20 @@ Supporting files at the root of `src/zig/`:
 are build-time scaffolding, never linked into the product, and they are deleted
 together with the last C translation unit.
 
+### SDR safety and the #53 rebase
+
+Issue #42 validates Get SDR header/body reply lengths and the fixed fields and
+declared name length of each recognized SDR before `lib/ipmi_sdr.c` returns it
+or loads it from a cache file.
+
+PR #53 replaces that translation unit with `src/zig/cmd/sdr.zig`: when rebasing
+or merging #53, port those checks to Zig's SDR header/record retrieval and
+cache loading before selecting `-Dzig-modules=sdr`. Keep short but complete
+names (including 16-byte names without an in-record NUL), reject partial
+successful replies rather than copying stale bytes, and rerun the `sen_`
+golden cases with both `sensor` and `sdr` selected. The C checks alone cannot
+protect the swapped SDR build.
+
 ## Naming conventions
 
 Same as the sibling project `azure-sdk-for-zig`:

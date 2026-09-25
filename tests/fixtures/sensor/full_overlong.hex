@@ -1,12 +1,8 @@
 # A Full Sensor Record whose *declared* length (40h = 64) is larger than the
 # number of body bytes the BMC actually has (2Fh = 47).
 #
-# lib/ipmi_sdr.c:ipmi_sdr_get_record() asks for `header->length' bytes, and
-# then memcpy()s exactly that many out of the response regardless of how many
-# bytes the response actually carried, so the tail of the record is filled from
-# whatever the transport buffer held before. This case exists to pin that
-# behaviour: the declared length appears verbatim in the Get SDR request bytes,
-# which the golden snapshot records.
+# lib/ipmi_sdr.c:ipmi_sdr_get_record() asks for `header->length' bytes and
+# rejects this short reply; it must not return a record with stale tail bytes.
 
 65 43        # [1:2]  Record ID = 0x4365
 51           # [3]    SDR version 1.5

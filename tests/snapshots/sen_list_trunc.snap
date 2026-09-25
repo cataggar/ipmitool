@@ -3,9 +3,9 @@
 #!section exit
 0
 #!section stdout
-Long             | 96.000     | degrees C  | ok    | 0.000     | 20.000    | 30.000    | 14.000    | 80.000    | 160.000  \x20
-TempA            | 96.000     | degrees C  | ok    | 0.000     | 20.000    | 30.000    | 14.000    | 80.000    | 160.000  \x20
+TempA            | 96.000     | degrees C  | ok    | na        | na        | na        | na        | na        | na       \x20
 #!section stderr
+Short Get SDR response for record 0x4365
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
 < rule=default ccode=0xc1 len=0 data=
@@ -25,10 +25,6 @@ TempA            | 96.000     | degrees C  | ok    | 0.000     | 20.000    | 30.
 < rule=get_sdr_4365 ccode=0x00 len=25 data=9b 8c 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 04 06 00 00 00 c4 4c 6f 6e
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 65 43 33 12
 < rule=get_sdr_4365 ccode=0x00 len=3 data=9b 8c 67
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=88
-< rule=reading_88 ccode=0x00 len=4 data=30 c0 c0 00
-> netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=88
-< rule=thresh_short ccode=0x00 len=3 data=3f 0f 0a
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 9b 8c 00 05
 < rule=get_sdr_8c9b ccode=0x00 len=7 data=34 12 9b 8c 51 0c 08
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 9b 8c 05 08

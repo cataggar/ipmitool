@@ -1,0 +1,54 @@
+# Six-byte successful factors response (seven are required).
+default_ccode 0xc1
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_nonlinear.hex
+end
+respond get_sdr_def0
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a f0 de
+  data ff ff
+  partial 4 1 5
+  blob @sensor/full_nonlinear.hex
+end
+respond reading_44
+  netfn 0x04
+  cmd 0x2d
+  match 44
+  data 30 c0 c0 00
+end
+respond sensor_factors_short
+  netfn 0x04
+  cmd 0x23
+  data 55 04 3d 07 3a 1b
+end
+respond thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 3a 2b 1c 6d 7e 8f
+end
+respond event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

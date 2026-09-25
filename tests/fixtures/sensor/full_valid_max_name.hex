@@ -1,0 +1,8 @@
+# A 16-byte ID is valid even without a NUL inside the declared body.
+@mark rec
+@sensor/full_analog.hex
+@pad 11 0x41
+@poke rec 0 0x05
+@poke rec 1 0x10
+@poke rec 4 0x3b
+@poke rec 47 0xd0

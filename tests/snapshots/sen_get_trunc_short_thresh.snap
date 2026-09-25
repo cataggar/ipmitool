@@ -9,18 +9,12 @@ Sensor ID              : TempA (0x11)
  Sensor Type (Threshold)  : Temperature
  Sensor Reading        : 96 (+/- 3) degrees C
  Status                : ok
- Lower Non-Recoverable : 0.000
- Lower Critical        : 20.000
- Lower Non-Critical    : 30.000
- Upper Non-Critical    : 14.000
- Upper Critical        : 80.000
- Upper Non-Recoverable : 160.000
- Positive Hysteresis   : 8.000
- Negative Hysteresis   : 12.000
+ Sensor Threshold Settings not available
  Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
  Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
 
 #!section stderr
+Short Get SDR response for record 0x4365
 >>> IPMI req
 msg.data_len: 1
 msg.netfn: 4

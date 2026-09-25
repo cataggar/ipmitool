@@ -25,8 +25,6 @@ Invalid Threshold data values. Cannot Set Threshold Data.
 < rule=get_sdr_b47e ccode=0x00 len=25 data=ff ff 00 00 07 32 5a 14 ff 00 63 7c a5 27 1b 0d 05 08 00 00 00 c6 44 69 73
 > netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=a5 5a 7e b4 33 03
 < rule=get_sdr_b47e ccode=0x00 len=5 data=ff ff 6f 72 64
-> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=99
-< rule=reading_99 ccode=0x00 len=4 data=39 c0 c0 00
 > netfn=0x04 lun=0x00 cmd=0x27 target_cmd=0x00 data=99
 < rule=thresh_99 ccode=0x00 len=7 data=3f 0d 1b 27 a5 7c 63
 bye
