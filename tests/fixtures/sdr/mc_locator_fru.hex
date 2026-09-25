@@ -1,0 +1,7 @@
+# Management Controller locator for a satellite at IPMB address 0x32.
+09 00 51 12 1b
+32 00 00 08
+00 00 00
+0b 01 00 c9
+4d 43 20 53 6c 6f 74 33 32
+@pad 7 0x00

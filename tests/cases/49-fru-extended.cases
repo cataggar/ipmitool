@@ -109,6 +109,12 @@ args: -I dummy fru print
 transcript: fru_sdr_without_builtin.tr
 covers: fru sdr
 
+[fru_print_mc_locator]
+desc: SDR management controller locator redirects FRU reads to satellite IPMB address
+args: -I dummy fru print
+transcript: fru_sdr_mc_locator.tr
+covers: fru sdr
+
 [fru_write_protected]
 desc: a write-protected chassis area is skipped while subsequent areas are written
 args: -I dummy fru write 0 {work}/inventory.bin
@@ -139,4 +145,41 @@ covers: fru
 desc: area length read advertises two bytes but contains only one
 args: -I dummy fru print 0
 transcript: fru_short_board.tr
+covers: fru
+
+[fru_print_powersupply]
+desc: power-supply multirecord decodes 12-bit capacity, voltage ranges, flags and fan
+args: -I dummy -v fru print 0
+transcript: fru_powersupply.tr
+covers: fru
+
+[fru_print_short_multi]
+desc: a multirecord DC output body advertises more bytes than it returns
+args: -I dummy -v fru print 0
+transcript: fru_short_multi.tr
+covers: fru
+
+[fru_internaluse_info]
+desc: internal-use area length is the gap before the next advertised section
+args: -I dummy fru internaluse 0 info
+transcript: fru_internaluse.tr
+covers: fru
+
+[fru_internaluse_print]
+desc: dump untyped internal-use area in groups of sixteen
+args: -I dummy fru internaluse 0 print
+transcript: fru_internaluse.tr
+covers: fru
+
+[fru_internaluse_read]
+desc: save internal-use area without reading the rest of the FRU
+args: -I dummy fru internaluse 0 read {work}/internal.bin
+transcript: fru_internaluse.tr
+covers: fru
+
+[fru_internaluse_write]
+desc: write exact-size internal-use area without touching adjacent sections
+args: -I dummy fru internaluse 0 write {work}/internal.bin
+transcript: fru_internaluse.tr
+blob: internal.bin fru/internal_area.hex
 covers: fru

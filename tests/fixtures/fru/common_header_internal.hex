@@ -1,0 +1,4 @@
+# Add an eight-byte internal-use area before all ordinary FRU areas.
+@mark header
+01 01 02 05 0d 15 00
+@checksum header

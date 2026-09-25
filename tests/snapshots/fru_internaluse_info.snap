@@ -1,0 +1,17 @@
+#!golden 1
+#!case fru_internaluse_info
+#!section exit
+0
+#!section stdout
+Internal Use Area Size  : 8
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x10 target_cmd=0x00 data=00
+< rule=get_fru_area_info ccode=0x00 len=3 data=00 01 00
+> netfn=0x0a lun=0x00 cmd=0x11 target_cmd=0x00 data=00 00 00 08
+< rule=read_fru_data ccode=0x00 len=9 data=08 01 01 02 05 0d 15 00 d5
+bye

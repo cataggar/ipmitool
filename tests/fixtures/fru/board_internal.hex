@@ -1,0 +1,7 @@
+@fru/common_header_internal.hex
+@fru/internal_area.hex
+@fru/chassis_area.hex
+@fru/board_area.hex
+@fru/product_area.hex
+@fru/multirecord_area.hex
+@pad 54 0x00

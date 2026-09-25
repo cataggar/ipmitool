@@ -1,0 +1,23 @@
+# All power-supply multirecord numeric and flag fields nontrivial.
+@mark header
+00 82
+@mark length
+00
+@mark recordsum
+00
+@mark headersum
+00
+@mark body
+f4 01    # 500 W capacity
+bc 02    # 700 peak VA
+05 0a    # inrush current and interval
+28 23 98 3a  # input range 1: 90..150 V
+50 46 c0 5d  # input range 2: 180..240 V
+32 3c 0a 1f  # frequency 50..60 Hz, dropout 10 ms, all flags set
+68 31        # 360 W peak, 3s hold-up
+02           # 12 V and 5 V combined
+2c 01        # combined capacity 300 W
+12           # fan lower threshold 18 RPS
+@fill_size length body
+@fill_checksum recordsum body
+@fill_checksum headersum header
