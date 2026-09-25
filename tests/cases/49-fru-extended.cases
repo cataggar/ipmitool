@@ -251,3 +251,9 @@ desc: parse a full Kontron OEM v0 record's name, version, dates and checksum
 args: -I dummy fru get 0 oem 15000 3 0 TEST 0
 transcript: fru_kontron_get_fields.tr
 covers: fru
+
+[fru_edit_kontron_fields]
+desc: legacy OEM edit clears its FRU size and rejects a nonzero multirecord offset
+args: -I dummy fru edit 0 oem 15000 3 0 TEST 0 ABCDEFGH 20240102 20250102 hgfedcba
+transcript: fru_kontron_get_fields.tr
+covers: fru
