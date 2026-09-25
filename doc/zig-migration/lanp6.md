@@ -20,6 +20,7 @@ BMC responses:
 
 ```sh
 zig build -Dzig-modules=lanp6
+zig build test-lanp6-unit -Dzig-modules=lanp6
 ./tests/run.sh --binary /path/to/all-c/ipmitool \
   --candidate ./zig-out/bin/ipmitool --filter lan6_
 ```

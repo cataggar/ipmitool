@@ -762,6 +762,7 @@ comptime {
 }
 
 pub fn exportSymbols() void {
+    @setEvalBranchQuota(100_000);
     abi.assertCallSignature(@TypeOf(lookup), @TypeOf(c.lookup_lanp));
     abi.assertCallSignature(@TypeOf(getDynamic), @TypeOf(c.ipmi_get_dynamic_oem_lanp));
     abi.assertCallSignature(@TypeOf(get), @TypeOf(c.ipmi_get_lanp));
