@@ -25,13 +25,16 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <paths.h>
+#include <poll.h>
 #include <signal.h>
 #include <poll.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/un.h>
+#include <termios.h>
 #include <unistd.h>
 
 /*
@@ -66,6 +69,7 @@
 #include <ipmitool/ipmi_sdradd.h>
 #include <ipmitool/ipmi_strings.h>
 #include <ipmitool/ipmi_time.h>
+#include <ipmitool/ipmi_tsol.h>
 #include <ipmitool/ipmi_user.h>
 #include <ipmitool/hpm2.h>
 
