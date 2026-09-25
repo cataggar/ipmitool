@@ -1,0 +1,195 @@
+# IPMI v1.5 Serial over LAN (netfn 0x34), distinct requests and response
+# bytes, input validation, and all error branches reachable with dummy.
+[isol_info_full]
+desc: three parameter reads, masking enabled/privilege/rate high bits
+args: -I dummy isol info
+transcript: isol_full.tr
+covers: isol
+
+[isol_info_csv]
+desc: CSV output has a trailing comma and no newline
+args: -c -I dummy isol info
+transcript: isol_full.tr
+covers: isol
+
+[isol_info_disabled]
+desc: disabled flag, OEM privilege and minimum supported rate
+args: -I dummy isol info
+transcript: isol_disabled.tr
+covers: isol
+
+[isol_info_unsupported]
+desc: unsupported get config reports IPMI v1.5 ISOL not supported
+args: -I dummy isol info
+covers: isol
+
+[isol_info_auth_denied]
+desc: second get config returns a nonzero completion code
+args: -I dummy isol info
+transcript: isol_auth_error.tr
+covers: isol
+
+[isol_info_baud_denied]
+desc: third get config carries a short data buffer with a denial
+args: -I dummy isol info
+transcript: isol_baud_error.tr
+covers: isol
+
+[isol_set_missing]
+desc: set needs a parameter and value
+args: -I dummy isol set enabled
+covers: isol
+
+[isol_set_unknown]
+desc: unknown parameter is checked after reading existing configuration
+args: -I dummy isol set ignored 1
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_bad_boolean]
+desc: only lower case true or false is accepted
+args: -I dummy isol set enabled TRUE
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_bad_privilege]
+desc: invalid privilege prints alternatives
+args: -I dummy isol set privilege-level administrator
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_bad_rate]
+desc: unsupported rate prints valid decimal values
+args: -I dummy isol set bit-rate 0
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_true]
+desc: set enabled true, three gets before one set
+args: -I dummy isol set enabled true
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_false]
+desc: set enabled false
+args: -I dummy isol set enabled false
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_user]
+desc: preserve authentication bit 7 while selecting user
+args: -I dummy isol set privilege-level user
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_operator]
+desc: preserve authentication bit 7 while selecting operator
+args: -I dummy isol set privilege-level operator
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_admin]
+desc: preserve authentication bit 7 while selecting admin
+args: -I dummy isol set privilege-level admin
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_oem]
+desc: preserve authentication bit 7 while selecting OEM
+args: -I dummy isol set privilege-level oem
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_9600]
+desc: lowest supported bit rate
+args: -I dummy isol set bit-rate 9.6
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_19200]
+desc: 19.2 kbps bit rate
+args: -I dummy isol set bit-rate 19.2
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_38400]
+desc: 38.4 kbps bit rate
+args: -I dummy isol set bit-rate 38.4
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_57600]
+desc: 57.6 kbps bit rate
+args: -I dummy isol set bit-rate 57.6
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_115200]
+desc: maximum supported bit rate
+args: -I dummy isol set bit-rate 115.2
+transcript: isol_full.tr
+covers: isol
+
+[isol_set_denied]
+desc: the set command returns a denied completion code
+args: -I dummy isol set enabled false
+transcript: isol_set_error.tr
+covers: isol
+
+[isol_set_read_denied]
+desc: the set command stops before writing on an unsupported get
+args: -I dummy isol set enabled true
+covers: isol
+
+[isol_activate_not_enabled]
+desc: activation does not send an activation request when disabled
+args: -I dummy isol activate
+transcript: isol_disabled.tr
+covers: isol
+
+[isol_activate_ok]
+desc: activation succeeds then EOF ends the session and deactivates it
+args: -I dummy isol activate
+env: IPMI_DUMMY_SOL_SESSION=1
+transcript: isol_full.tr
+covers: isol
+
+[isol_activate_already_active]
+desc: activation completion code 0x80
+args: -I dummy isol activate
+env: IPMI_DUMMY_SOL_SESSION=1
+transcript: isol_activate_error.tr
+covers: isol
+
+[isol_activate_disabled]
+desc: activation completion code 0x81
+args: -I dummy isol activate
+env: IPMI_DUMMY_SOL_SESSION=1
+transcript: isol_activate_disabled.tr
+covers: isol
+
+[isol_activate_limit]
+desc: activation completion code 0x82
+args: -I dummy isol activate
+env: IPMI_DUMMY_SOL_SESSION=1
+transcript: isol_activate_limit.tr
+covers: isol
+
+[isol_activate_short]
+desc: malformed success activation response has three not four bytes
+args: -I dummy isol activate
+env: IPMI_DUMMY_SOL_SESSION=1
+transcript: isol_activate_short.tr
+covers: isol
+
+[isol_activate_unsupported]
+desc: unknown activation failure logs the completion code
+args: -I dummy isol activate
+env: IPMI_DUMMY_SOL_SESSION=1
+transcript: isol_activate_other.tr
+covers: isol
+
+[isol_unknown]
+desc: invalid ISOL subcommand exits nonzero with usage
+args: -I dummy isol deactivate
+covers: isol

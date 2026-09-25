@@ -1,0 +1,24 @@
+#!golden 1
+#!case isol_activate_ok
+#!section exit
+0
+#!section stdout
+[SOL Session operational.  Use ~? for help]
+#!section stderr
+tcgetattr: Inappropriate ioctl for device
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x34 lun=0x00 cmd=0x04 target_cmd=0x00 data=00 01 00 00
+< rule=enabled ccode=0x00 len=2 data=11 83
+> netfn=0x34 lun=0x00 cmd=0x04 target_cmd=0x00 data=00 02 00 00
+< rule=authentication ccode=0x00 len=2 data=12 84
+> netfn=0x34 lun=0x00 cmd=0x04 target_cmd=0x00 data=00 05 00 00
+< rule=baud ccode=0x00 len=2 data=13 8a
+> netfn=0x34 lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 00 00 00
+< rule=activate ccode=0x00 len=4 data=80 01 32 ff
+> netfn=0x34 lun=0x00 cmd=0x01 target_cmd=0x00 data=00 00 00 00 00
+< rule=deactivate ccode=0x00 len=4 data=80 00 32 ff
+bye

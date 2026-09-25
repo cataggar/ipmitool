@@ -200,6 +200,11 @@ ipmi_dummyipmi_open(struct ipmi_intf *intf)
 		perror("dummy failed on connect(): ");
 		return (-1);
 	}
+	/* Opt-in session for golden tests of legacy iSOL activation. */
+	if (getenv("IPMI_DUMMY_SOL_SESSION")) {
+		static struct ipmi_session isol_session;
+		intf->session = &isol_session;
+	}
 	intf->opened = 1;
 	return intf->fd;
 }

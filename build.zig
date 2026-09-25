@@ -237,6 +237,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/kontronoem.zig",
     },
     .{
+        .name = "isol",
+        .replaces = "lib/ipmi_isol.c",
+        .implementation = "src/zig/cmd/isol.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
@@ -1115,7 +1120,30 @@ pub fn build(b: *std.Build) void {
             .files = &.{"fixture.c"},
             .flags = &.{"-DHAVE_TERMIOS_H"},
         });
-        tsol_candidate_mod.linkLibrary(zig_lib.?);
+        // The fixture only supplies TSOL's C dependencies. Linking the main
+        // selection also pulls in unrelated exports (e.g. ISOL), whose C
+        // globals do not exist in this standalone fixture.
+        const tsol_only: [zig_modules.len]bool = blk: {
+            var selected: [zig_modules.len]bool = @splat(false);
+            selected[moduleIndex("tsol")] = true;
+            break :blk selected;
+        };
+        const tsol_options = b.addOptions();
+        tsol_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, &tsol_only));
+        const tsol_exports = b.createModule(.{
+            .root_source_file = b.path(zig_root ++ "/exports.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        tsol_exports.addImport("ipmi_c", bridge_mod);
+        tsol_exports.addImport("build_options", tsol_options.createModule());
+        const tsol_lib = b.addLibrary(.{
+            .name = "ipmitool_tsol_fixture",
+            .linkage = .static,
+            .root_module = tsol_exports,
+        });
+        tsol_candidate_mod.linkLibrary(tsol_lib);
         const tsol_candidate = b.addExecutable(.{ .name = "tsol-candidate", .root_module = tsol_candidate_mod });
         tsol_run.addArg("--candidate");
         tsol_run.addArtifactArg(tsol_candidate);

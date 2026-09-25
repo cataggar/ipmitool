@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/un.h>
+#include <sys/select.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -63,6 +64,7 @@
 #include <ipmitool/ipmi_fru.h>
 #include <ipmitool/ipmi_kontronoem.h>
 #include <ipmitool/ipmi_intf.h>
+#include <ipmitool/ipmi_isol.h>
 #include <ipmitool/ipmi_lanp.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
