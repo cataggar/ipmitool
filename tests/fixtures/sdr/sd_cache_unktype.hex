@@ -1,0 +1,11 @@
+# An OEM record type: the default arm of the switch frees the record
+# and `continue's, but the body bytes *were* consumed, so the record
+# that follows is still parsed correctly.
+
+@sdr/sd_look_3101.hex
+bc 9a  # record ID 0x9abc
+51     # SDR version
+c0     # record type c0h: OEM, not in the switch
+06     # declared length 6
+2c 01 00 de ad be  # body, consumed then discarded
+@sdr/sd_look_3104.hex

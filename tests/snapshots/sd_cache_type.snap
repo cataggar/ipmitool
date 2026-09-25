@@ -1,0 +1,15 @@
+#!golden 1
+#!case sd_cache_type
+#!section exit
+0
+#!section stdout
+CPU1 Temp        | 11h | ok  |  3.1 | 60 degrees C
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=11
+< rule=get_sensor_reading ccode=0x00 len=4 data=3c c0 c0 00
+bye

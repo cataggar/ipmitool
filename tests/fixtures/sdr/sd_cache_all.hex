@@ -1,0 +1,12 @@
+# An SDR cache file for -S holding one record of every type the
+# switch in ipmi_sdr_list_cache_fromfile() files: full, compact,
+# event-only, generic locator, FRU locator, MC locator and entity
+# association.
+
+@sdr/sd_look_3101.hex
+@sdr/sd_look_3104.hex
+@sdr/sd_look_3106.hex
+@sdr/sd_look_310c.hex
+@sdr/sd_look_310a.hex
+@sdr/sd_look_310b.hex
+@sdr/sd_entassoc.hex

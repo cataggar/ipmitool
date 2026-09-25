@@ -1,0 +1,89 @@
+# lib/ipmi_sdr.c - adversarial and edge-case records.
+#
+# Truncated records, ID strings whose declared length disagrees with the data,
+# every ID string type code, out-of-range unit / sensor-type / entity codes,
+# reserved record types and empty OEM records.
+
+[sd_adv_list]
+desc: `sdr list all' over the whole adversarial repository
+args: -I dummy sdr list all
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_elist]
+desc: `sdr elist all' over the adversarial repository
+args: -I dummy sdr elist all
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_csv]
+desc: `-c sdr list all' over the adversarial repository
+args: -I dummy -c sdr list all
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_csv_elist]
+desc: `-c sdr elist all' over the adversarial repository
+args: -I dummy -c sdr elist all
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_verbose]
+desc: `-v sdr list all' - the verbose printers on malformed records
+args: -I dummy -v sdr list all
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_vvv]
+desc: `-vvv sdr list all' - includes the per-record debug trace
+args: -I dummy -vvv sdr list all
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_full]
+desc: `sdr list full' - the truncated full sensor records
+args: -I dummy sdr list full
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_compact]
+desc: `sdr list compact'
+args: -I dummy sdr list compact
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_event]
+desc: `sdr list event'
+args: -I dummy sdr list event
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_fru]
+desc: `sdr list fru'
+args: -I dummy sdr list fru
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_mcloc]
+desc: `sdr list mcloc'
+args: -I dummy sdr list mcloc
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_generic]
+desc: `sdr list generic'
+args: -I dummy sdr list generic
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_dump]
+desc: `sdr dump' over the adversarial repository - every raw record, including the reserved types
+args: -I dummy sdr dump {work}/adv.bin
+transcript: sd_adversarial.tr
+covers: sdr
+
+[sd_adv_info]
+desc: `sdr info' for the adversarial repository
+args: -I dummy sdr info
+transcript: sd_adversarial.tr
+covers: sdr

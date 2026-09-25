@@ -1,0 +1,9 @@
+# Get Device ID fails, so the SDR iterator can never be created.
+
+default_ccode 0xc1
+
+respond get_device_id_err
+  netfn 0x06
+  cmd 0x01
+  ccode 0xc3
+end

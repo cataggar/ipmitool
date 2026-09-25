@@ -1,0 +1,87 @@
+# Completion code 0xca on a partial body read.  ipmi_sdr_get_record() drops
+# sdr_max_read_len to (requested length - 1) and retries; because the variable
+# is a file static the smaller chunk size persists into every later record, so
+# the request log pins both the retry and the persistence.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 02 00 34 12 00 e3 0b 5e 00 00 00 00 02
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond get_sdr_1234_body_ca
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 34 12 05 17
+  times 1
+  ccode 0xca
+  # the first body read asks for 0x17 bytes at offset 5 and
+  # is refused with 0xca `Cannot return number of requested
+  # data bytes'; sdr_max_read_len then shrinks to 0x16 and
+  # stays shrunk for the rest of the process
+end
+
+respond get_sdr_first
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_1234
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_sdr_5678
+  netfn 0x0a
+  cmd 0x23
+  match 5a a5 78 56
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_compact_fan.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 2a c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

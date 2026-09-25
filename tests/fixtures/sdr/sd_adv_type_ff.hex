@@ -1,0 +1,7 @@
+# Record type 0xff: the top of the reserved range.
+
+45 21                        # Record ID = 0x2145
+51                           # SDR version 0x51
+ff                           # Record type 0xff
+04                           # Record length = 4 bytes follow
+aa bb cc dd                  # Opaque body

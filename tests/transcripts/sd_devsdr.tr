@@ -1,0 +1,79 @@
+# The Device SDR path: Get Device SDR Info (04h/20h), Reserve Device SDR
+# Repository (04h/22h) and Get Device SDR (04h/21h) instead of their storage
+# netfn counterparts.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  # device_revision bit 7 set (provides SDRs) and
+  # adtl_device_support bit 1 clear / bit 0 set:
+  # the BMC has Device SDRs but no SDR Repository
+  data 20 81 01 00 02 bd 57 00 00 00 00 00 00 00 00
+end
+
+respond get_dev_sdr_info
+  netfn 0x04
+  cmd 0x20
+  # Get Device SDR Info: 2 sensors
+  data 02 01
+end
+
+respond reserve_dev_sdr
+  netfn 0x04
+  cmd 0x22
+  # Reserve Device SDR Repository is netfn 0x04, not 0x0a
+  data 5a a5
+end
+
+respond get_dev_sdr_first
+  netfn 0x04
+  cmd 0x21
+  match 5a a5 00 00
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_dev_sdr_1234
+  netfn 0x04
+  cmd 0x21
+  match 5a a5 34 12
+  data 78 56
+  partial 4 1 5
+  blob @sdr/sd_full_temp.hex
+end
+
+respond get_dev_sdr_5678
+  netfn 0x04
+  cmd 0x21
+  match 5a a5 78 56
+  data ff ff
+  partial 4 1 5
+  blob @sdr/sd_compact_fan.hex
+end
+
+respond get_sensor_reading
+  netfn 0x04
+  cmd 0x2d
+  data 2a c0 c0 00
+end
+
+respond get_sensor_thresholds
+  netfn 0x04
+  cmd 0x27
+  data 3f 0f 0a 05 4b 55 5f
+end
+
+respond get_sensor_hysteresis
+  netfn 0x04
+  cmd 0x24
+  data 02 02
+end
+
+respond get_sensor_event_enable
+  netfn 0x04
+  cmd 0x29
+  data c0 ff 3f ff 3f
+end

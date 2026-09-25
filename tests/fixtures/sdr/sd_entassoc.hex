@@ -1,0 +1,17 @@
+# SDR Type 08h - Entity Association Record, non-range form.
+
+1b 7a                        # Record ID = 0x7a1b
+51                           # SDR version 0x51
+08                           # Record type 0x08
+0b                           # Record length = 11 bytes follow
+03                           # Container entity ID 0x03
+01                           # Container entity instance 0x01
+60                           # flags: range=0 linked=1 accessible=1
+1d                           # entity ID 1 = 0x1d
+02                           # entity inst 1 = 0x02
+0b                           # entity ID 2 = 0x0b
+05                           # entity inst 2 = 0x05
+15                           # entity ID 3 = 0x15
+03                           # entity inst 3 = 0x03
+07                           # entity ID 4 = 0x07
+02                           # entity inst 4 = 0x02

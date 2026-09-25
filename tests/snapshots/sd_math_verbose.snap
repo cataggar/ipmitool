@@ -1,0 +1,3426 @@
+#!golden 1
+#!case sd_math_verbose
+#!section exit
+0
+#!section stdout
+Sensor ID              : Lin Linear (0x41)
+ Entity ID             : 3.65 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 3.108 (+/- 0.357) Volts
+ Status                : ok
+ Nominal Reading       : 0.864
+ Normal Minimum        : 0.286
+ Normal Maximum        : 1.731
+ Upper non-recoverable : 3.822
+ Upper critical        : 3.567
+ Upper non-critical    : 3.312
+ Lower non-recoverable : 0.337
+ Lower critical        : 0.626
+ Lower non-critical    : 0.915
+ Positive Hysteresis   : 0.459
+ Negative Hysteresis   : 0.748
+ Minimum sensor range  : 0.048
+ Maximum sensor range  : 4.077
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Ln (0x42)
+ Entity ID             : 3.66 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 1.134 (+/- -1.030) Volts
+ Status                : ok
+ Nominal Reading       : -0.146
+ Normal Minimum        : -1.252
+ Normal Maximum        : 0.549
+ Upper non-recoverable : 1.341
+ Upper critical        : 1.272
+ Upper non-critical    : 1.197
+ Lower non-recoverable : -1.088
+ Lower critical        : -0.469
+ Lower non-critical    : -0.089
+ Positive Hysteresis   : -0.779
+ Negative Hysteresis   : -0.290
+ Minimum sensor range  : -3.041
+ Maximum sensor range  : 1.405
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Log10 (0x43)
+ Entity ID             : 3.67 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 0.492 (+/- -0.447) Volts
+ Status                : ok
+ Nominal Reading       : -0.064
+ Normal Minimum        : -0.544
+ Normal Maximum        : 0.238
+ Upper non-recoverable : 0.582
+ Upper critical        : 0.552
+ Upper non-critical    : 0.520
+ Lower non-recoverable : -0.473
+ Lower critical        : -0.204
+ Lower non-critical    : -0.039
+ Positive Hysteresis   : -0.338
+ Negative Hysteresis   : -0.126
+ Minimum sensor range  : -1.321
+ Maximum sensor range  : 0.610
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Log2 (0x44)
+ Entity ID             : 3.68 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 1.636 (+/- -1.486) Volts
+ Status                : ok
+ Nominal Reading       : -0.211
+ Normal Minimum        : -1.807
+ Normal Maximum        : 0.791
+ Upper non-recoverable : 1.934
+ Upper critical        : 1.835
+ Upper non-critical    : 1.728
+ Lower non-recoverable : -1.570
+ Lower critical        : -0.676
+ Lower non-critical    : -0.128
+ Positive Hysteresis   : -1.123
+ Negative Hysteresis   : -0.419
+ Minimum sensor range  : -4.387
+ Maximum sensor range  : 2.027
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin E (0x45)
+ Entity ID             : 3.69 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 22.372 (+/- 1.429) Volts
+ Status                : ok
+ Nominal Reading       : 2.372
+ Normal Minimum        : 1.331
+ Normal Maximum        : 5.645
+ Upper non-recoverable : 45.686
+ Upper critical        : 35.403
+ Upper non-critical    : 27.434
+ Lower non-recoverable : 1.400
+ Lower critical        : 1.870
+ Lower non-critical    : 2.496
+ Positive Hysteresis   : 1.582
+ Negative Hysteresis   : 2.113
+ Minimum sensor range  : 1.049
+ Maximum sensor range  : 58.956
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Exp10 (0x46)
+ Entity ID             : 3.70 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 1281.711 (+/- 2.275) Volts
+ Status                : ok
+ Nominal Reading       : 7.308
+ Normal Minimum        : 1.931
+ Normal Maximum        : 53.801
+ Upper non-recoverable : 6634.222
+ Upper critical        : 3687.992
+ Upper non-critical    : 2050.171
+ Lower non-recoverable : 2.172
+ Lower critical        : 4.225
+ Lower non-critical    : 8.218
+ Positive Hysteresis   : 2.877
+ Negative Hysteresis   : 5.598
+ Minimum sensor range  : 1.116
+ Maximum sensor range  : 11934.109
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Exp2 (0x47)
+ Entity ID             : 3.71 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 8.621 (+/- 1.281) Volts
+ Status                : ok
+ Nominal Reading       : 1.820
+ Normal Minimum        : 1.219
+ Normal Maximum        : 3.319
+ Upper non-recoverable : 14.141
+ Upper critical        : 11.850
+ Upper non-critical    : 9.930
+ Lower non-recoverable : 1.263
+ Lower critical        : 1.543
+ Lower non-critical    : 1.885
+ Positive Hysteresis   : 1.375
+ Negative Hysteresis   : 1.679
+ Minimum sensor range  : 1.034
+ Maximum sensor range  : 16.875
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin 1 X (0x48)
+ Entity ID             : 3.72 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 0.322 (+/- 2.801) Volts
+ Status                : ok
+ Nominal Reading       : 1.158
+ Normal Minimum        : 3.499
+ Normal Maximum        : 0.578
+ Upper non-recoverable : 0.262
+ Upper critical        : 0.280
+ Upper non-critical    : 0.302
+ Lower non-recoverable : 2.969
+ Lower critical        : 1.598
+ Lower non-critical    : 1.093
+ Positive Hysteresis   : 2.179
+ Negative Hysteresis   : 1.337
+ Minimum sensor range  : 20.925
+ Maximum sensor range  : 0.245
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Sqr (0x49)
+ Entity ID             : 3.73 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 9.658 (+/- 0.127) Volts
+ Status                : ok
+ Nominal Reading       : 0.746
+ Normal Minimum        : 0.082
+ Normal Maximum        : 2.996
+ Upper non-recoverable : 14.606
+ Upper critical        : 12.722
+ Upper non-critical    : 10.968
+ Lower non-recoverable : 0.113
+ Lower critical        : 0.392
+ Lower non-critical    : 0.837
+ Positive Hysteresis   : 0.211
+ Negative Hysteresis   : 0.560
+ Minimum sensor range  : 0.002
+ Maximum sensor range  : 16.620
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Cube (0x4a)
+ Entity ID             : 3.74 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 30.016 (+/- 0.045) Volts
+ Status                : ok
+ Nominal Reading       : 0.645
+ Normal Minimum        : 0.023
+ Normal Maximum        : 5.185
+ Upper non-recoverable : 55.821
+ Upper critical        : 45.377
+ Upper non-critical    : 36.324
+ Lower non-recoverable : 0.038
+ Lower critical        : 0.245
+ Lower non-critical    : 0.766
+ Positive Hysteresis   : 0.097
+ Negative Hysteresis   : 0.419
+ Minimum sensor range  : 0.000
+ Maximum sensor range  : 67.757
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Sqrt (0x4b)
+ Entity ID             : 3.75 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 1.763 (+/- 0.597) Volts
+ Status                : ok
+ Nominal Reading       : 0.929
+ Normal Minimum        : 0.535
+ Normal Maximum        : 1.316
+ Upper non-recoverable : 1.955
+ Upper critical        : 1.889
+ Upper non-critical    : 1.820
+ Lower non-recoverable : 0.580
+ Lower critical        : 0.791
+ Lower non-critical    : 0.956
+ Positive Hysteresis   : 0.677
+ Negative Hysteresis   : 0.865
+ Minimum sensor range  : 0.219
+ Maximum sensor range  : 2.019
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Cubert (0x4c)
+ Entity ID             : 3.76 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 1.459 (+/- 0.709) Volts
+ Status                : ok
+ Nominal Reading       : 0.952
+ Normal Minimum        : 0.659
+ Normal Maximum        : 1.201
+ Upper non-recoverable : 1.563
+ Upper critical        : 1.528
+ Upper non-critical    : 1.491
+ Lower non-recoverable : 0.696
+ Lower critical        : 0.855
+ Lower non-critical    : 0.971
+ Positive Hysteresis   : 0.771
+ Negative Hysteresis   : 0.908
+ Minimum sensor range  : 0.363
+ Maximum sensor range  : 1.597
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin HighBit (0x4d)
+ Entity ID             : 3.77 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 0.492 (+/- -0.447) Volts
+ Status                : ok
+ Nominal Reading       : -0.064
+ Normal Minimum        : -0.544
+ Normal Maximum        : 0.238
+ Upper non-recoverable : 0.582
+ Upper critical        : 0.552
+ Upper non-critical    : 0.520
+ Lower non-recoverable : -0.473
+ Lower critical        : -0.204
+ Lower non-critical    : -0.039
+ Positive Hysteresis   : -0.338
+ Negative Hysteresis   : -0.126
+ Minimum sensor range  : -1.321
+ Maximum sensor range  : 0.610
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Lin Rsvd0C (0x4e)
+ Entity ID             : 3.78 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 3.108 (+/- 0.357) Volts
+ Status                : ok
+ Nominal Reading       : 0.864
+ Normal Minimum        : 0.286
+ Normal Maximum        : 1.731
+ Upper non-recoverable : 3.822
+ Upper critical        : 3.567
+ Upper non-critical    : 3.312
+ Lower non-recoverable : 0.337
+ Lower critical        : 0.626
+ Lower non-critical    : 0.915
+ Positive Hysteresis   : 0.459
+ Negative Hysteresis   : 0.748
+ Minimum sensor range  : 0.048
+ Maximum sensor range  : 4.077
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Neg M (0x4f)
+ Entity ID             : 3.79 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : -54.903 (+/- -6.300) Volts
+ Status                : ok
+ Nominal Reading       : -15.303
+ Normal Minimum        : -5.103
+ Normal Maximum        : -30.603
+ Upper non-recoverable : -67.503
+ Upper critical        : -63.003
+ Upper non-critical    : -58.503
+ Lower non-recoverable : -6.003
+ Lower critical        : -11.103
+ Lower non-critical    : -16.203
+ Positive Hysteresis   : -8.100
+ Negative Hysteresis   : -13.200
+ Minimum sensor range  : -0.903
+ Maximum sensor range  : -72.003
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Neg B (0x50)
+ Entity ID             : 3.80 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 3.106 (+/- 0.357) Volts
+ Status                : ok
+ Nominal Reading       : 0.862
+ Normal Minimum        : 0.284
+ Normal Maximum        : 1.729
+ Upper non-recoverable : 3.820
+ Upper critical        : 3.565
+ Upper non-critical    : 3.310
+ Lower non-recoverable : 0.335
+ Lower critical        : 0.624
+ Lower non-critical    : 0.913
+ Positive Hysteresis   : 0.459
+ Negative Hysteresis   : 0.748
+ Minimum sensor range  : 0.046
+ Maximum sensor range  : 4.075
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Max M B (0x51)
+ Entity ID             : 3.81 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 93.518 (+/- 10.731) Volts
+ Status                : ok
+ Nominal Reading       : 26.066
+ Normal Minimum        : 8.692
+ Normal Maximum        : 52.127
+ Upper non-recoverable : 114.980
+ Upper critical        : 107.315
+ Upper non-critical    : 99.650
+ Lower non-recoverable : 10.225
+ Lower critical        : 18.912
+ Lower non-critical    : 27.599
+ Positive Hysteresis   : 13.797
+ Negative Hysteresis   : 22.484
+ Minimum sensor range  : 1.538
+ Maximum sensor range  : 122.645
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Pos Exp (0x52)
+ Entity ID             : 3.82 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : -28989000 (+/- 357000) Volts
+ Status                : ok
+ Nominal Reading       : -31233000.000
+ Normal Minimum        : -31811000.000
+ Normal Maximum        : -30366000.000
+ Upper non-recoverable : -28275000.000
+ Upper critical        : -28530000.000
+ Upper non-critical    : -28785000.000
+ Lower non-recoverable : -31760000.000
+ Lower critical        : -31471000.000
+ Lower non-critical    : -31182000.000
+ Positive Hysteresis   : 459000.000
+ Negative Hysteresis   : 748000.000
+ Minimum sensor range  : -32049000.000
+ Maximum sensor range  : -28020000.000
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Ones Compl (0x53)
+ Entity ID             : 3.83 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : -1.227 (+/- 0.357) Volts
+ Status                : ok
+ Nominal Reading       : 0.864
+ Normal Minimum        : 0.286
+ Normal Maximum        : 1.731
+ Upper non-recoverable : -0.513
+ Upper critical        : -0.768
+ Upper non-critical    : -1.023
+ Lower non-recoverable : 0.337
+ Lower critical        : 0.626
+ Lower non-critical    : 0.915
+ Positive Hysteresis   : 0.459
+ Negative Hysteresis   : 0.748
+ Minimum sensor range  : 0.048
+ Maximum sensor range  : -0.258
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Twos Compl (0x54)
+ Entity ID             : 3.84 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : -1.244 (+/- 0.357) Volts
+ Status                : ok
+ Nominal Reading       : 0.864
+ Normal Minimum        : 0.286
+ Normal Maximum        : 1.731
+ Upper non-recoverable : -0.530
+ Upper critical        : -0.785
+ Upper non-critical    : -1.040
+ Lower non-recoverable : 0.337
+ Lower critical        : 0.626
+ Lower non-critical    : 0.915
+ Positive Hysteresis   : 0.459
+ Negative Hysteresis   : 0.748
+ Minimum sensor range  : 0.048
+ Maximum sensor range  : -0.275
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Not Analog (0x55)
+ Entity ID             : 3.85 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 0xB7 (+/- 0x2A)\x20
+ Status                : ok
+ Nominal Reading       : 0x33
+ Normal Minimum        : 0x11
+ Normal Maximum        : 0x66
+ Upper non-recoverable : 0xE1
+ Upper critical        : 0xD2
+ Upper non-critical    : 0xC3
+ Lower non-recoverable : 0x14
+ Lower critical        : 0x25
+ Lower non-critical    : 0x36
+ Positive Hysteresis   : 0x1B
+ Negative Hysteresis   : 0x2C
+ Minimum sensor range  : 0x03
+ Maximum sensor range  : 0xF0
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Zero M (0x56)
+ Entity ID             : 3.86 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : -0.003 (+/- 0) Volts
+ Status                : ok
+ Nominal Reading       : -0.003
+ Normal Minimum        : -0.003
+ Normal Maximum        : -0.003
+ Upper non-recoverable : -0.003
+ Upper critical        : -0.003
+ Upper non-critical    : -0.003
+ Lower non-recoverable : -0.003
+ Lower critical        : -0.003
+ Lower non-critical    : -0.003
+ Positive Hysteresis   : Unspecified
+ Negative Hysteresis   : Unspecified
+ Minimum sensor range  : -0.003
+ Maximum sensor range  : -0.003
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : Nonlinear (0x57)
+ Entity ID             : 3.87 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : -49500854.610 (+/- -14.010) Volts
+ Status                : ok
+ Nominal Reading       : -49500238.170
+ Normal Minimum        : -49500079.390
+ Normal Maximum        : -49500476.340
+ Upper non-recoverable : -49501050.750
+ Upper critical        : -49500980.700
+ Upper non-critical    : -49500910.650
+ Lower non-recoverable : -49500093.400
+ Lower critical        : -49500172.790
+ Lower non-critical    : -49500252.180
+ Positive Hysteresis   : -126.090
+ Negative Hysteresis   : -205.480
+ Minimum sensor range  : -49500014.010
+ Maximum sensor range  : -49501120.800
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 20
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 20
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 22
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: b
+msg.cmd: 22
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 8
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 8
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 10
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 8
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 2
+msg.netfn: 4
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 5
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 17 00 68 24 00 e3 0b 5e 08 19 2a 3b 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=02 11 01 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 11 05 17
+< rule=get_sdr_1101 ccode=0x00 len=25 data=02 11 20 00 41 03 41 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 11 1c 17
+< rule=get_sdr_1101 ccode=0x00 len=25 data=02 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 01 11 33 07
+< rule=get_sdr_1101 ccode=0x00 len=9 data=02 11 20 4c 69 6e 65 61 72
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=41
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=41
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=41
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 00 05
+< rule=get_sdr_1102 ccode=0x00 len=7 data=03 11 02 11 51 01 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 05 17
+< rule=get_sdr_1102 ccode=0x00 len=25 data=03 11 20 00 42 03 42 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 01 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 1c 17
+< rule=get_sdr_1102 ccode=0x00 len=25 data=03 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c6 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 02 11 33 03
+< rule=get_sdr_1102 ccode=0x00 len=5 data=03 11 20 4c 6e
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=42
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=42
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=42
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 00 05
+< rule=get_sdr_1103 ccode=0x00 len=7 data=04 11 03 11 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 05 17
+< rule=get_sdr_1103 ccode=0x00 len=25 data=04 11 20 00 43 03 43 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 02 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 1c 17
+< rule=get_sdr_1103 ccode=0x00 len=25 data=04 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c9 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 03 11 33 06
+< rule=get_sdr_1103 ccode=0x00 len=8 data=04 11 20 4c 6f 67 31 30
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=43
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=43
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=43
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 00 05
+< rule=get_sdr_1104 ccode=0x00 len=7 data=05 11 04 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 05 17
+< rule=get_sdr_1104 ccode=0x00 len=25 data=05 11 20 00 44 03 44 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 03 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 1c 17
+< rule=get_sdr_1104 ccode=0x00 len=25 data=05 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 04 11 33 05
+< rule=get_sdr_1104 ccode=0x00 len=7 data=05 11 20 4c 6f 67 32
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=44
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=44
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=44
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 00 05
+< rule=get_sdr_1105 ccode=0x00 len=7 data=06 11 05 11 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 05 17
+< rule=get_sdr_1105 ccode=0x00 len=25 data=06 11 20 00 45 03 45 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 04 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 1c 17
+< rule=get_sdr_1105 ccode=0x00 len=25 data=06 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c5 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 05 11 33 02
+< rule=get_sdr_1105 ccode=0x00 len=4 data=06 11 20 45
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=45
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=45
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=45
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 00 05
+< rule=get_sdr_1106 ccode=0x00 len=7 data=07 11 06 11 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 05 17
+< rule=get_sdr_1106 ccode=0x00 len=25 data=07 11 20 00 46 03 46 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 05 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 1c 17
+< rule=get_sdr_1106 ccode=0x00 len=25 data=07 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c9 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 06 11 33 06
+< rule=get_sdr_1106 ccode=0x00 len=8 data=07 11 20 45 78 70 31 30
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=46
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=46
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=46
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 00 05
+< rule=get_sdr_1107 ccode=0x00 len=7 data=08 11 07 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 05 17
+< rule=get_sdr_1107 ccode=0x00 len=25 data=08 11 20 00 47 03 47 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 06 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 1c 17
+< rule=get_sdr_1107 ccode=0x00 len=25 data=08 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 07 11 33 05
+< rule=get_sdr_1107 ccode=0x00 len=7 data=08 11 20 45 78 70 32
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=47
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=47
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=47
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 00 05
+< rule=get_sdr_1108 ccode=0x00 len=7 data=09 11 08 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 05 17
+< rule=get_sdr_1108 ccode=0x00 len=25 data=09 11 20 00 48 03 48 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 07 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 1c 17
+< rule=get_sdr_1108 ccode=0x00 len=25 data=09 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 08 11 33 04
+< rule=get_sdr_1108 ccode=0x00 len=6 data=09 11 20 31 20 58
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=48
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=48
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=48
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 00 05
+< rule=get_sdr_1109 ccode=0x00 len=7 data=0a 11 09 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 05 17
+< rule=get_sdr_1109 ccode=0x00 len=25 data=0a 11 20 00 49 03 49 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 08 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 1c 17
+< rule=get_sdr_1109 ccode=0x00 len=25 data=0a 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 09 11 33 04
+< rule=get_sdr_1109 ccode=0x00 len=6 data=0a 11 20 53 71 72
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=49
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=49
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=49
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 00 05
+< rule=get_sdr_110a ccode=0x00 len=7 data=0b 11 0a 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 05 17
+< rule=get_sdr_110a ccode=0x00 len=25 data=0b 11 20 00 4a 03 4a 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 09 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 1c 17
+< rule=get_sdr_110a ccode=0x00 len=25 data=0b 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0a 11 33 05
+< rule=get_sdr_110a ccode=0x00 len=7 data=0b 11 20 43 75 62 65
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4a
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=4a
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=4a
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 00 05
+< rule=get_sdr_110b ccode=0x00 len=7 data=0c 11 0b 11 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 05 17
+< rule=get_sdr_110b ccode=0x00 len=25 data=0c 11 20 00 4b 03 4b 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 0a 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 1c 17
+< rule=get_sdr_110b ccode=0x00 len=25 data=0c 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c8 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0b 11 33 05
+< rule=get_sdr_110b ccode=0x00 len=7 data=0c 11 20 53 71 72 74
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4b
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=4b
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=4b
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 00 05
+< rule=get_sdr_110c ccode=0x00 len=7 data=0d 11 0c 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 05 17
+< rule=get_sdr_110c ccode=0x00 len=25 data=0d 11 20 00 4c 03 4c 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 0b 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 1c 17
+< rule=get_sdr_110c ccode=0x00 len=25 data=0d 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0c 11 33 07
+< rule=get_sdr_110c ccode=0x00 len=9 data=0d 11 20 43 75 62 65 72 74
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4c
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=4c
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=4c
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 00 05
+< rule=get_sdr_110d ccode=0x00 len=7 data=0e 11 0d 11 51 01 36
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 05 17
+< rule=get_sdr_110d ccode=0x00 len=25 data=0e 11 20 00 4d 03 4d 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 82 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 1c 17
+< rule=get_sdr_110d ccode=0x00 len=25 data=0e 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 cb 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0d 11 33 08
+< rule=get_sdr_110d ccode=0x00 len=10 data=0e 11 20 48 69 67 68 42 69 74
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4d
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=4d
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=4d
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 00 05
+< rule=get_sdr_110e ccode=0x00 len=7 data=0f 11 0e 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 05 17
+< rule=get_sdr_110e ccode=0x00 len=25 data=0f 11 20 00 4e 03 4e 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 0c 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 1c 17
+< rule=get_sdr_110e ccode=0x00 len=25 data=0f 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4c 69 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0e 11 33 07
+< rule=get_sdr_110e ccode=0x00 len=9 data=0f 11 20 52 73 76 64 30 43
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4e
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=4e
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=4e
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 00 05
+< rule=get_sdr_110f ccode=0x00 len=7 data=10 11 0f 11 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 05 17
+< rule=get_sdr_110f ccode=0x00 len=25 data=10 11 20 00 4f 03 4f 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 d4 aa bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 1c 17
+< rule=get_sdr_110f ccode=0x00 len=25 data=10 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c5 4e 65 67
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 0f 11 33 02
+< rule=get_sdr_110f ccode=0x00 len=4 data=10 11 20 4d
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=4f
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=4f
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=4f
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 00 05
+< rule=get_sdr_1110 ccode=0x00 len=7 data=11 11 10 11 51 01 30
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 05 17
+< rule=get_sdr_1110 ccode=0x00 len=25 data=11 11 20 00 50 03 50 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 11 2a 00 ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 1c 17
+< rule=get_sdr_1110 ccode=0x00 len=25 data=11 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c5 4e 65 67
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 10 11 33 02
+< rule=get_sdr_1110 ccode=0x00 len=4 data=11 11 20 42
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=50
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=50
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=50
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 00 05
+< rule=get_sdr_1111 ccode=0x00 len=7 data=12 11 11 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 05 17
+< rule=get_sdr_1111 ccode=0x00 len=25 data=12 11 20 00 51 03 51 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 ff 6a ff 6b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 1c 17
+< rule=get_sdr_1111 ccode=0x00 len=25 data=12 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 4d 61 78
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 11 11 33 04
+< rule=get_sdr_1111 ccode=0x00 len=6 data=12 11 20 4d 20 42
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=51
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=51
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=51
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 00 05
+< rule=get_sdr_1112 ccode=0x00 len=7 data=13 11 12 11 51 01 32
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 05 17
+< rule=get_sdr_1112 ccode=0x00 len=25 data=13 11 20 00 52 03 52 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 1c 17
+< rule=get_sdr_1112 ccode=0x00 len=25 data=13 11 a9 32 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c7 50 6f 73
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 12 11 33 04
+< rule=get_sdr_1112 ccode=0x00 len=6 data=13 11 20 45 78 70
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=52
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=52
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=52
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 00 05
+< rule=get_sdr_1113 ccode=0x00 len=7 data=14 11 13 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 05 17
+< rule=get_sdr_1113 ccode=0x00 len=25 data=14 11 20 00 53 03 53 7f 68 01 01 ff 3f ff 3f 3f 3f 40 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 1c 17
+< rule=get_sdr_1113 ccode=0x00 len=25 data=14 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4f 6e 65
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 13 11 33 07
+< rule=get_sdr_1113 ccode=0x00 len=9 data=14 11 73 20 43 6f 6d 70 6c
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=53
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=53
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=53
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 00 05
+< rule=get_sdr_1114 ccode=0x00 len=7 data=15 11 14 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 05 17
+< rule=get_sdr_1114 ccode=0x00 len=25 data=15 11 20 00 54 03 54 7f 68 01 01 ff 3f ff 3f 3f 3f 80 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 1c 17
+< rule=get_sdr_1114 ccode=0x00 len=25 data=15 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 54 77 6f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 14 11 33 07
+< rule=get_sdr_1114 ccode=0x00 len=9 data=15 11 73 20 43 6f 6d 70 6c
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=54
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=54
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=54
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 00 05
+< rule=get_sdr_1115 ccode=0x00 len=7 data=16 11 15 11 51 01 35
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 05 17
+< rule=get_sdr_1115 ccode=0x00 len=25 data=16 11 20 00 55 03 55 7f 68 01 01 ff 3f ff 3f 3f 3f c0 04 00 00 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 1c 17
+< rule=get_sdr_1115 ccode=0x00 len=25 data=16 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 ca 4e 6f 74
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 15 11 33 07
+< rule=get_sdr_1115 ccode=0x00 len=9 data=16 11 20 41 6e 61 6c 6f 67
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=55
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=55
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=55
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 00 05
+< rule=get_sdr_1116 ccode=0x00 len=7 data=17 11 16 11 51 01 31
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 05 17
+< rule=get_sdr_1116 ccode=0x00 len=25 data=17 11 20 00 56 03 56 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 00 00 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 1c 17
+< rule=get_sdr_1116 ccode=0x00 len=25 data=17 11 a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c6 5a 65 72
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 16 11 33 03
+< rule=get_sdr_1116 ccode=0x00 len=5 data=17 11 6f 20 4d
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=56
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=56
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=56
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 00 05
+< rule=get_sdr_1117 ccode=0x00 len=7 data=ff ff 17 11 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 05 17
+< rule=get_sdr_1117 ccode=0x00 len=25 data=ff ff 20 00 57 03 57 7f 68 01 01 ff 3f ff 3f 3f 3f 00 04 00 71 11 2a bf ab
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 1c 17
+< rule=get_sdr_1117 ccode=0x00 len=25 data=ff ff a9 de 07 33 66 11 f0 03 e1 d2 c3 14 25 36 1b 2c 00 00 00 c9 4e 6f 6e
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 17 11 33 06
+< rule=get_sdr_1117 ccode=0x00 len=8 data=ff ff 6c 69 6e 65 61 72
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=57
+< rule=get_sensor_reading ccode=0x00 len=4 data=b7 c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x23 target_cmd=0x00 data=57 b7
+< rule=get_sensor_factors ccode=0x00 len=7 data=00 2d 86 11 84 21 e7
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=57
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=57
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+bye

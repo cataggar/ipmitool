@@ -1,0 +1,21 @@
+# Clear SDR Repository is refused with 0xd4 `Insufficient privilege level'.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+
+respond reserve_sdr_repo
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+
+respond sdr_repo_clear_err
+  netfn 0x0a
+  cmd 0x27
+  ccode 0xd4
+end

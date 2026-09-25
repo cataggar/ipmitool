@@ -1,0 +1,12 @@
+# A BMC that advertises SDR support in device_revision but neither a Device
+# SDR nor an SDR Repository in adtl_device_support: `Error obtaining SDR info'.
+
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  # provides SDRs, but adtl_device_support bits 0 and 1 are
+  # both clear: neither Device SDRs nor an SDR Repository
+  data 20 81 01 00 02 bc 57 00 00 00 00 00 00 00 00
+end

@@ -1,0 +1,41 @@
+# Full Sensor Record truncated to 42 bytes: the record ends one
+# byte before id_code, so the C reads the buffer's NUL terminator
+# as the ID string type/length and prints no name at all.
+
+01 21                        # Record ID = 0x2101
+51                           # SDR version 0x51
+01                           # Record type 0x01
+2a                           # Record length = 42 bytes follow
+20                           # Sensor owner ID 0x20
+00                           # Owner LUN / channel 0x00
+61                           # Sensor number 97
+03                           # Entity ID 0x03
+01                           # Entity instance 0x01
+7f                           # Sensor initialization 0x7f
+68                           # Sensor capabilities 0x68
+01                           # Sensor type 0x01
+01                           # Event/reading type 0x01
+ff 3f ff 3f 3f 3f            # Event mask / threshold masks
+00                           # Units 1: analog=0 rate=0 mod=0 pct=0
+01                           # Units 2: base unit 0x01
+00                           # Units 3: modifier unit 0x00
+00                           # Linearization 0x00
+01 00                        # M = 1, tolerance = 0
+00 00 00 00                  # B = 0, acc = 0, accexp = 0, dir = 0, Rexp = 0, Bexp = 0
+07                           # Analog flags 0x07
+28                           # Nominal reading 40
+50                           # Normal maximum 80
+0a                           # Normal minimum 10
+ff                           # Sensor maximum reading 255
+00                           # Sensor minimum reading 0
+5f                           # Upper non-recoverable 95
+55                           # Upper critical 85
+4b                           # Upper non-critical 75
+05                           # Lower non-recoverable 5
+0a                           # Lower critical 10
+0f                           # Lower non-critical 15
+02                           # Positive-going hysteresis 2
+02                           # Negative-going hysteresis 2
+00 00                        # Reserved
+00                           # OEM 0x00
+c0                           # ID string type/length 0xc0

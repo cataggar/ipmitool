@@ -1,0 +1,9 @@
+# The two legacy SDR versions 0x01 and 0x02 the version check also
+# accepts, pinning all three arms of the disjunction.
+
+@mark a
+@sdr/sd_look_3101.hex
+@poke a 2 0x01   # SDR version 0x01 - the second accepted version
+@mark b
+@sdr/sd_look_3104.hex
+@poke b 2 0x02   # SDR version 0x02 - the third accepted version

@@ -401,6 +401,41 @@ FAIL mc_info: reference and candidate differ (Get Device ID ...)
    IPMI Version              : 2.0
 ```
 
+## SDR mutation check
+
+The Phase 5 SDR port was checked with 13 **isolated, compiled Zig source
+mutations**, each restored before the next run. `zig build -Dzig-modules=sdr`
+built the changed binary, then `./tests/run.sh --binary ./zig-out/bin/ipmitool
+--filter <case>` compared its output, exit status, and request log with the
+committed snapshot. Every mutant built successfully and was rejected by at
+least one named golden case:
+
+| Wrong behavior introduced | Case that failed | Detection |
+| ------------------------- | ---------------- | --------- |
+| Accept a zero-length repository header | `sd_repo_zerolen` | exit, stderr, requests |
+| Shrink a 0xca retry by two bytes, not one | `sd_repo_shrink` | requests |
+| Ignore cancelled header reservation (0xc5) | `sd_repo_rescancel` | output, requests |
+| Skip logarithmic reading linearization | `sd_math_get_lin_log2` | output |
+| Invert entity ID match during repository lookup | `sd_entity_id_inst` | output, requests |
+| Keep zero-length records in the `-S` cache | `sd_cache_zerolen` | output, requests |
+| Send add-record body chunks one offset too early | `sd_fill_file_two` | requests |
+| Invert uncached name match | `sd_get_byname` | output |
+| Accept truncated `-S` cache record bodies | `sd_cache_bodyshort` | output, stderr, requests |
+| Ignore a short trailing `sdr fill file` header | `sd_fill_file_trailing_header` | stderr |
+| Clear the repository after a truncated input file | `sd_fill_file_trunc` | output, requests |
+| Overwrite a failed file-record Add with a later success | `sd_fill_file_firsterr` | exit |
+| Overwrite a failed built-in-record Add with a later success | `sd_fill_nosat_firsterr` | exit |
+
+The short-header and truncated-file cases accompany a C-and-Zig fix for the
+file import path.
+Previously a missing, truncated, or zero-length input could clear the SDR
+repository (and valid multi-record files could crash because the last list
+link was uninitialized). The updated snapshots now require a clean rejection
+**before any reserve/clear/add requests** for malformed input and successful
+completion for the two-record file. The empty-file case still intentionally
+clears the repository. A failed Add now stays failed even when a subsequent
+record is accepted.
+
 ## Determinism: what is controlled, what is normalized
 
 The bias is heavily towards **controlling** the environment rather than

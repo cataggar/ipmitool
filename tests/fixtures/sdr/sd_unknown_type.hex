@@ -1,0 +1,9 @@
+# A reserved/unknown SDR record type (50h). The C skips it in
+# both the print switch and the cache, so it must round-trip
+# through `sdr dump' untouched and print nothing.
+
+d3 b2                        # Record ID = 0xb2d3
+51                           # SDR version 0x51
+50                           # Record type 0x50
+08                           # Record length = 8 bytes follow
+de ad be ef 01 02 03 04      # Opaque body of an unknown record type

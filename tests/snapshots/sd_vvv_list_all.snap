@@ -1,0 +1,747 @@
+#!golden 1
+#!case sd_vvv_list_all
+#!section exit
+0
+#!section stdout
+Sensor ID              : CPU1 Temp (0xb)
+ Entity ID             : 3.1 (Processor)
+ Sensor Type (Threshold)  : Temperature (0x01)
+ Sensor Reading        : 42 (+/- 0) degrees C
+ Status                : ok
+ Nominal Reading       : 40.000
+ Normal Minimum        : 10.000
+ Normal Maximum        : 80.000
+ Upper non-recoverable : 95.000
+ Upper critical        : 85.000
+ Upper non-critical    : 75.000
+ Lower non-recoverable : 5.000
+ Lower critical        : 10.000
+ Lower non-critical    : 15.000
+ Positive Hysteresis   : 2.000
+ Negative Hysteresis   : 2.000
+ Minimum sensor range  : Unspecified
+ Maximum sensor range  : Unspecified
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : FAN1 Tach (0x1c)
+ Entity ID             : 29.2 (Fan Device)
+ Sensor Type (Threshold)  : Fan (0x04)
+ Sensor Reading        : 0x7B\x20
+ Status                : ok
+ Positive Hysteresis   : 0x02
+ Negative Hysteresis   : 0x02
+ Event Message Control : Per-threshold
+ Readable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Settable Thresholds   : lnr lcr lnc unc ucr unr\x20
+ Threshold Read Mask   : lcr lnc unc ucr\x20
+ Assertions Enabled    : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+ Deassertions Enabled  : lnc- lnc+ lcr- lcr+ lnr- lnr+ unc- unc+ ucr- ucr+ unr- unr+\x20
+
+Sensor ID              : PWR Unit (0x2d)
+Entity ID              : 21.3 (Power Management)
+Sensor Type            : Power Unit (0x09)
+
+Device ID              : GenDev A
+Entity ID              : 11.4 (Add-in Card)
+Device Access Address  : 22h
+Device Slave Address   : 42h
+Address Span           : 00h
+Channel Number         : 5h
+LUN.Bus                : 2h.3h
+Device Type.Modifier   : 8h.1h (Unknown (0x801))
+OEM                    : 00h
+
+Device ID              : FRU Board
+Entity ID              : 11.5 (Add-in Card)
+Device Access Address  : 20h
+Logical FRU Device     : 07h
+Channel Number         : 6h
+LUN.Bus                : 2h.3h
+Device Type.Modifier   : 10h.2h (IPMI FRU Inventory)
+OEM                    : 00h
+
+Device ID              : BMC 24h
+Entity ID              : 7.2 (System Board)
+Device Slave Address   : 24h
+Channel Number         : 7h
+ACPI System P/S Notif  : Required
+ACPI Device P/S Notif  : Not Required
+Controller Presence    : Static
+Logs Init Agent Errors : Yes
+Event Message Gen      : Reserved
+Device Capabilities
+ Chassis Device        : Yes
+ Bridge                : No
+ IPMB Event Generator  : Yes
+ IPMB Event Receiver   : Yes
+ FRU Inventory Device  : Yes
+ SEL Device            : Yes
+ SDR Repository        : Yes
+ Sensor Device         : Yes
+
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0xc1 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+Querying SDR for sensor list
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Using SDR from Repository\x20
+
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 20
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: b
+msg.cmd: 20
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR free space: 4660
+SDR records   : 10
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: a
+msg.cmd: 22
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: b
+msg.cmd: 22
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR reservation ID a55a
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x0000
+SDR record type : 0x01
+SDR record next : 0x5678
+SDR record bytes: 52
+Getting 23 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+Getting 23 bytes from SDR at offset 28
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+Getting 6 bytes from SDR at offset 51
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 8
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x1234
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+Error reading event status for sensor #0b: Invalid command
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x5678
+SDR record type : 0x02
+SDR record next : 0x9abc
+SDR record bytes: 36
+Getting 23 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 25
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+Getting 13 bytes from SDR at offset 28
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x5678
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2d
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 4
+msg.netfn: 5
+msg.cmd: 2d
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 2b
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 5
+msg.cmd: 2b
+msg.seq: 0
+msg.lun: 0
+<<<
+Error reading event status for sensor #1c: Invalid command
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 4
+msg.cmd: 29
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 29
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x9abc
+SDR record type : 0x03
+SDR record next : 0xc3d4
+SDR record bytes: 20
+Getting 20 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 22
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x9abc
+Event Type Code        : 0x6f
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0xc3d4
+SDR record type : 0x10
+SDR record next : 0x2468
+SDR record bytes: 19
+Getting 19 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 21
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0xc3d4
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x2468
+SDR record type : 0x11
+SDR record next : 0x1357
+SDR record bytes: 20
+Getting 20 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 22
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x2468
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x1357
+SDR record type : 0x12
+SDR record next : 0x7a1b
+SDR record bytes: 18
+Getting 18 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 20
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x1357
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x7a1b
+SDR record type : 0x08
+SDR record next : 0x3c5e
+SDR record bytes: 11
+Getting 11 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 13
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x7a1b
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x3c5e
+SDR record type : 0x09
+SDR record next : 0x6f81
+SDR record bytes: 11
+Getting 11 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 13
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0x6f81
+SDR record type : 0xc0
+SDR record next : 0xb2d3
+SDR record bytes: 9
+Getting 9 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 11
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+SDR record ID   : 0xb2d3
+SDR record type : 0x50
+SDR record next : 0xffff
+SDR record bytes: 8
+Getting 8 bytes from SDR at offset 5
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 23
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 10
+msg.netfn: b
+msg.cmd: 23
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 0a 00 34 12 00 e3 0b 5e 08 19 2a 3b 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=78 56 34 12 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 34 12 05 17
+< rule=get_sdr_1234 ccode=0x00 len=25 data=78 56 20 00 0b 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 01 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 34 12 1c 17
+< rule=get_sdr_1234 ccode=0x00 len=25 data=78 56 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 43 50 55
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 34 12 33 06
+< rule=get_sdr_1234 ccode=0x00 len=8 data=78 56 31 20 54 65 6d 70
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=0b
+< rule=get_sensor_reading_0b ccode=0x00 len=4 data=2a c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=0b
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=0b
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 78 56 00 05
+< rule=get_sdr_5678 ccode=0x00 len=7 data=bc 9a 78 56 51 02 24
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 78 56 05 17
+< rule=get_sdr_5678 ccode=0x00 len=25 data=bc 9a 20 00 1c 1d 02 7f 68 04 01 ff 3f ff 3f 3f 3f 00 12 00 23 87 02 02 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 78 56 1c 0d
+< rule=get_sdr_5678 ccode=0x00 len=15 data=bc 9a 00 00 00 c9 46 41 4e 31 20 54 61 63 68
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=1c
+< rule=get_sensor_reading_1c ccode=0x00 len=4 data=7b c0 c0 00
+> netfn=0x04 lun=0x00 cmd=0x2b target_cmd=0x00 data=1c
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x29 target_cmd=0x00 data=1c
+< rule=get_sensor_event_enable ccode=0x00 len=5 data=c0 ff 3f ff 3f
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 bc 9a 00 05
+< rule=get_sdr_9abc ccode=0x00 len=7 data=d4 c3 bc 9a 51 03 14
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 bc 9a 05 14
+< rule=get_sdr_9abc ccode=0x00 len=22 data=d4 c3 20 00 2d 15 03 09 6f 12 41 00 00 c8 50 57 52 20 55 6e 69 74
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 d4 c3 00 05
+< rule=get_sdr_c3d4 ccode=0x00 len=7 data=68 24 d4 c3 51 10 13
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 d4 c3 05 13
+< rule=get_sdr_c3d4 ccode=0x00 len=21 data=68 24 22 42 b3 04 00 08 01 0b 04 00 c8 47 65 6e 44 65 76 20 41
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 68 24 00 05
+< rule=get_sdr_2468 ccode=0x00 len=7 data=57 13 68 24 51 11 14
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 68 24 05 14
+< rule=get_sdr_2468 ccode=0x00 len=22 data=57 13 20 07 93 60 00 10 02 0b 05 00 c9 46 52 55 20 42 6f 61 72 64
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 57 13 00 05
+< rule=get_sdr_1357 ccode=0x00 len=7 data=1b 7a 57 13 51 12 12
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 57 13 05 12
+< rule=get_sdr_1357 ccode=0x00 len=20 data=1b 7a 24 07 ab bf 00 00 00 07 02 00 c7 42 4d 43 20 32 34 68
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 1b 7a 00 05
+< rule=get_sdr_7a1b ccode=0x00 len=7 data=5e 3c 1b 7a 51 08 0b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 1b 7a 05 0b
+< rule=get_sdr_7a1b ccode=0x00 len=13 data=5e 3c 03 01 60 1d 02 0b 05 15 03 07 02
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 5e 3c 00 05
+< rule=get_sdr_3c5e ccode=0x00 len=7 data=81 6f 5e 3c 51 09 0b
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 5e 3c 05 0b
+< rule=get_sdr_3c5e ccode=0x00 len=13 data=81 6f 0b 05 a0 1d 02 1d 06 07 01 07 04
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 81 6f 00 05
+< rule=get_sdr_6f81 ccode=0x00 len=7 data=d3 b2 81 6f 51 c0 09
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 81 6f 05 09
+< rule=get_sdr_6f81 ccode=0x00 len=11 data=d3 b2 a2 02 00 11 22 33 44 55 66
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 d3 b2 00 05
+< rule=get_sdr_b2d3 ccode=0x00 len=7 data=ff ff d3 b2 51 50 08
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 d3 b2 05 08
+< rule=get_sdr_b2d3 ccode=0x00 len=10 data=ff ff de ad be ef 01 02 03 04
+bye

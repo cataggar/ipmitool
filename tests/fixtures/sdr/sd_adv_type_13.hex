@@ -1,0 +1,8 @@
+# Record type 0x13 sits between the locator records and the
+# entity-association records and is not defined.
+
+42 21                        # Record ID = 0x2142
+51                           # SDR version 0x51
+13                           # Record type 0x13
+04                           # Record length = 4 bytes follow
+11 22 33 44                  # Opaque body

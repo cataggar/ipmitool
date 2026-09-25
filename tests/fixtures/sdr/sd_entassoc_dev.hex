@@ -1,0 +1,18 @@
+# SDR Type 09h - Device-relative Entity Association Record,
+# range form (first/last instance pairs).
+
+5e 3c                        # Record ID = 0x3c5e
+51                           # SDR version 0x51
+09                           # Record type 0x09
+0b                           # Record length = 11 bytes follow
+0b                           # Container entity ID 0x0b
+05                           # Container entity instance 0x05
+a0                           # flags: range=1 linked=0 accessible=1
+1d                           # entity ID 1 = 0x1d
+02                           # entity inst 1 = 0x02
+1d                           # entity ID 2 = 0x1d
+06                           # entity inst 2 = 0x06
+07                           # entity ID 3 = 0x07
+01                           # entity inst 3 = 0x01
+07                           # entity ID 4 = 0x07
+04                           # entity inst 4 = 0x04

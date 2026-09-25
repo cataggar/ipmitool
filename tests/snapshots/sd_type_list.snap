@@ -1,0 +1,35 @@
+#!golden 1
+#!case sd_type_list
+#!section exit
+0
+#!section stdout
+Sensor Types:
+\tTemperature               (0x01)   Voltage                   (0x02)
+\tCurrent                   (0x03)   Fan                       (0x04)
+\tPhysical Security         (0x05)   Platform Security         (0x06)
+\tProcessor                 (0x07)   Power Supply              (0x08)
+\tPower Unit                (0x09)   Cooling Device            (0x0a)
+\tOther                     (0x0b)   Memory                    (0x0c)
+\tDrive Slot / Bay          (0x0d)   POST Memory Resize        (0x0e)
+\tSystem Firmwares          (0x0f)   Event Logging Disabled    (0x10)
+\tWatchdog1                 (0x11)   System Event              (0x12)
+\tCritical Interrupt        (0x13)   Button                    (0x14)
+\tModule / Board            (0x15)   Microcontroller           (0x16)
+\tAdd-in Card               (0x17)   Chassis                   (0x18)
+\tChip Set                  (0x19)   Other FRU                 (0x1a)
+\tCable / Interconnect      (0x1b)   Terminator                (0x1c)
+\tSystem Boot Initiated     (0x1d)   Boot Error                (0x1e)
+\tOS Boot                   (0x1f)   OS Critical Stop          (0x20)
+\tSlot / Connector          (0x21)   System ACPI Power State   (0x22)
+\tWatchdog2                 (0x23)   Platform Alert            (0x24)
+\tEntity Presence           (0x25)   Monitor ASIC              (0x26)
+\tLAN                       (0x27)   Management Subsys Health  (0x28)
+\tBattery                   (0x29)   Session Audit             (0x2a)
+\tVersion Change            (0x2b)   FRU State                 (0x2c)
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

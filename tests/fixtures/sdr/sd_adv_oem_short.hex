@@ -1,0 +1,8 @@
+# An OEM record truncated inside the three-byte manufacturer ID.
+
+48 21                        # Record ID = 0x2148
+51                           # SDR version 0x51
+c0                           # Record type 0xc0
+02                           # Record length = 2 bytes follow
+02 00                        # Manufacturer ID (3 bytes LE)
+                             # OEM data
