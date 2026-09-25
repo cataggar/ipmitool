@@ -266,6 +266,11 @@ const zig_modules = [_]ZigModule{
         .replaces = "src/plugins/serial/serial_terminal.c",
         .implementation = "src/zig/intf/serial_terminal.zig",
     },
+    .{
+        .name = "usb",
+        .replaces = "src/plugins/usb/usb.c",
+        .implementation = "src/zig/intf/usb.zig",
+    },
 };
 
 /// Root of the Zig source tree.
@@ -704,6 +709,9 @@ pub fn build(b: *std.Build) void {
     bridge.addIncludePath(b.path("include"));
     bridge.defineCMacro("HAVE_CONFIG_H", "1");
     bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{default_intf}));
+    if (replacedByZig("src/plugins/usb/usb.c", zig_selection)) {
+        bridge.defineCMacro("IPMITOOL_ZIG_USB", "1");
+    }
     const bridge_mod = bridge.createModule();
 
     const zig_options = b.addOptions();
@@ -947,6 +955,21 @@ pub fn build(b: *std.Build) void {
     const zig_user_test = b.addExecutable(.{ .name = "user-password-zig", .root_module = zig_user_test_mod });
     user_step.dependOn(&b.addRunArtifact(zig_user_test).step);
     test_step.dependOn(user_step);
+
+    const usb_test_step = b.step("test-usb", "Run the model SCSI generic USB transport tests");
+    if (!is_linux) {
+        usb_test_step.dependOn(&b.addFail("test-usb needs Linux SG_IO").step);
+    } else if (!enabled[pluginIndex("usb")] and
+        !replacedByZig("src/plugins/usb/usb.c", zig_selection))
+    {
+        usb_test_step.dependOn(&b.addFail("test-usb needs -Dintf-usb=true or -Dzig-modules=usb").step);
+    } else {
+        const usb_unit_tests = b.addTest(.{
+            .root_module = abi_mod,
+            .filters = &.{"intf.usb.test."},
+        });
+        usb_test_step.dependOn(&b.addRunArtifact(usb_unit_tests).step);
+    }
 
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.
@@ -1332,6 +1355,26 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
     const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
     @memset(selection, true);
 
+    // The swapped archive compiles every Zig port, including USB when the
+    // interface is disabled.  Its bridge must expose SG_IO in that case,
+    // without requiring SCSI headers for the ordinary disabled-USB build.
+    const swapped_bridge_mod = if (options.plugins_enabled[pluginIndex("usb")])
+        options.bridge_mod
+    else blk: {
+        const bridge = b.addTranslateC(.{
+            .root_source_file = b.path(zig_bridge_header),
+            .target = options.target,
+            .optimize = options.optimize,
+            .link_libc = true,
+        });
+        bridge.addConfigHeader(options.config_h);
+        bridge.addIncludePath(b.path("include"));
+        bridge.defineCMacro("HAVE_CONFIG_H", "1");
+        bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{options.default_intf}));
+        bridge.defineCMacro("IPMITOOL_ZIG_USB", "1");
+        break :blk bridge.createModule();
+    };
+
     const core_mod = b.createModule(.{
         .target = options.target,
         .optimize = options.optimize,
@@ -1360,7 +1403,7 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .optimize = options.optimize,
         .link_libc = true,
     });
-    exports_mod.addImport("ipmi_c", options.bridge_mod);
+    exports_mod.addImport("ipmi_c", swapped_bridge_mod);
     exports_mod.addImport("build_options", zig_options.createModule());
     addZigCShims(
         b,

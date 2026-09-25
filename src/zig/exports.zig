@@ -109,6 +109,9 @@ comptime {
     if (selected("serial-terminal")) {
         @import("intf/serial_terminal.zig").exportSymbols();
     }
+    if (selected("usb")) {
+        @import("intf/usb.zig").exportSymbols();
+    }
 }
 
 fn selected(comptime name: []const u8) bool {

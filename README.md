@@ -104,6 +104,7 @@ defaults:
 | `-Dintf-serial` | on | serial basic/terminal mode |
 | `-Dintf-dummy` | on | test interface used by the golden test harness |
 | `-Dintf-usb` | off | AMI USB |
+| `-Dzig-modules=usb` | off | Replace `usb.c` with the Zig AMI USB transport; combine with `-Dintf-usb=true` |
 | `-Dopenssl` | on | link `libcrypto`; `false` also disables lanplus |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
 | `-Dipmishell` | on | `ipmitool shell`/`exec`; requires `libreadline` |
@@ -130,6 +131,13 @@ found the build fails with an explicit error rather than quietly dropping the
 The autotools build (`./bootstrap && ./configure && make`) is still present and
 still works. It is kept as a cross-check while the code base is incrementally
 rewritten in Zig and will be removed once the migration is complete.
+
+The opt-in AMI USB transport uses Linux `/proc/scsi/sg/device_strs`, `/dev/sg*`
+and `SG_IO`, not libusb. Neither C nor Zig USB builds require libusb; a
+system with Linux SCSI generic headers is needed to build this transport.
+Its Zig port has simulated SCSI-device tests, but has not been validated on
+AMI hardware. Run the focused model-device suite with
+`zig build test-usb -Dintf-usb=true -Dzig-modules=usb`.
 
 ## Requirements
 

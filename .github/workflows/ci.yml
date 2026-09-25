@@ -216,6 +216,11 @@ jobs:
       - name: zig build test
         run: zig build test --summary all
 
+      - name: Test and build opt-in Zig USB transport
+        run: |
+          zig build test-usb -Dintf-usb=true -Dzig-modules=usb --summary all
+          zig build -Dintf-usb=true -Dzig-modules=usb --summary all
+
       - name: Golden tests with lanplus, OpenSSL, and shell disabled
         # The all-Zig comparison selects every port, including disabled
         # interfaces; these cases must still link without lanplus's C tables.
