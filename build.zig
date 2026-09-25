@@ -870,6 +870,53 @@ pub fn build(b: *std.Build) void {
     unit_step.dependOn(&unit_tests.step);
     test_step.dependOn(unit_step);
 
+    // The golden harness cannot supply getpass()'s static buffer or a NULL
+    // prompt result. Exercise the actual C and Zig user modules with the same
+    // scripted prompt and sendrecv stubs.
+    const user_step = b.step("test-user", "Test C and Zig user password commands");
+    const c_user_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, c_user_mod, config_h, default_intf);
+    c_user_mod.addCSourceFiles(.{
+        .files = &.{ "tests/user_password.c", "lib/ipmi_user.c" },
+        .flags = flags,
+        .language = .c,
+    });
+    const c_user_test = b.addExecutable(.{ .name = "user-password-c", .root_module = c_user_mod });
+    user_step.dependOn(&b.addRunArtifact(c_user_test).step);
+
+    const user_only = parseZigModules(b, "user");
+    const user_options = b.addOptions();
+    user_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, user_only));
+    const zig_user_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/exports.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    zig_user_mod.addImport("ipmi_c", bridge_mod);
+    zig_user_mod.addImport("build_options", user_options.createModule());
+    const zig_user_lib = b.addLibrary(.{ .name = "user-password-zig-lib", .linkage = .static, .root_module = zig_user_mod });
+
+    const zig_user_test_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, zig_user_test_mod, config_h, default_intf);
+    zig_user_test_mod.addCSourceFiles(.{
+        .files = &.{"tests/user_password.c"},
+        .flags = flags,
+        .language = .c,
+    });
+    zig_user_test_mod.linkLibrary(zig_user_lib);
+    const zig_user_test = b.addExecutable(.{ .name = "user-password-zig", .root_module = zig_user_test_mod });
+    user_step.dependOn(&b.addRunArtifact(zig_user_test).step);
+    test_step.dependOn(user_step);
+
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.
     if (zig_lib) |lib| test_step.dependOn(&lib.step);

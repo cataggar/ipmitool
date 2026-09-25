@@ -20,27 +20,9 @@
 //!   subcommand handlers are bare globals declared nowhere, so there is no C
 //!   declaration for `assertCallSignature` to compare against; their
 //!   signatures are transcribed from the definitions in the `.c`.
-//! * **`ask_password()` returns a pointer into `getpass()`'s static buffer.**
-//!   That is what makes the confirmation loop in `ipmi_user_password()` a
-//!   no-op: `password` and `tmp` alias, so `strncmp()` always reports a match.
-//!   See issue #39.
-//! * **Upstream defects are reproduced deliberately.**  See issue #39:
-//!   - `ipmi_user_password()` reads the confirmation password twice into the
-//!     same static buffer, so the "Passwords do not match" check can never
-//!     fire.
-//!   - `ipmi_user_password()` calls `strnlen(tmp, ...)` *before* testing `tmp`
-//!     for NULL.
-//!   - `ipmi_user_mod()` stores the `int` result of
-//!     `_ipmi_set_user_password()` in a `uint8_t`, so the negative error
-//!     returns are truncated to 0xFF/0xFC before `eval_ccode()` sees them and
-//!     are misreported as completion codes.
-//!   - `ipmi_user_set_username()` rejects names of 17 bytes or more, but
-//!     `ipmi_user_name()` has already rejected anything over 16, so the guard
-//!     is dead code.
-//!
-//! The `getpass()` prompt paths are not covered by the golden suite: `getpass()`
-//! opens `/dev/tty` when one exists, so its behaviour depends on whether the
-//! suite runs from a terminal.
+//! `ask_password()` returns a pointer into `getpass()`'s static buffer.
+//! The first prompted password must be saved before asking for confirmation;
+//! the bounded copy and request buffer are wiped after use. See issue #39.
 //!
 //! Everything this module needs from C - `printf`, `lprintf`, `val2str`,
 //! `eval_ccode`, `getpass`, `str2int`, `str2uchar` and the `is_ipmi_*`
@@ -109,6 +91,12 @@ fn ipmiUid(id: u8) u8 {
 fn sendrecv(intf: *Intf, req: *Request) ?*Response {
     const send = intf.sendrecv orelse return null;
     return send(intf, req);
+}
+
+fn wipePassword(buf: []u8) void {
+    for (buf) |*byte| {
+        @as(*volatile u8, @ptrCast(byte)).* = 0;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +212,10 @@ fn setUserPassword(
     const data_len: u8 = if (is_twenty_byte != 0) 22 else 18;
     const raw = std.c.malloc(@sizeOf(u8) * data_len) orelse return -4;
     const data: [*]u8 = @ptrCast(raw);
+    defer {
+        wipePassword(data[0..data_len]);
+        std.c.free(raw);
+    }
     @memset(data[0..data_len], 0);
     data[0] = if (is_twenty_byte != 0) 0x80 else 0x00;
     data[0] |= ipmiUid(user_id);
@@ -243,7 +235,6 @@ fn setUserPassword(
     req.msg.data = data;
     req.msg.data_len = data_len;
     const rsp = sendrecv(intf, &req);
-    std.c.free(raw);
     return (rsp orelse return -1).ccode;
 }
 
@@ -590,10 +581,6 @@ fn userPriv(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
 }
 
 /// `ipmi_user_mod()`: the `disable` and `enable` subcommands.
-///
-/// `ccode` is a `uint8_t` in C, so the negative returns of
-/// `_ipmi_set_user_password()` are truncated before `eval_ccode()` sees them.
-/// Reproduced faithfully; see issue #39.
 fn userMod(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     var user_id: u8 = undefined;
 
@@ -609,9 +596,7 @@ fn userMod(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int 
     else
         password_enable_user;
 
-    const ccode: u8 = @truncate(@as(c_uint, @bitCast(
-        setUserPassword(intf, user_id, operation, null, 0),
-    )));
+    const ccode: c_int = setUserPassword(intf, user_id, operation, null, 0);
     if (c.eval_ccode(ccode) != 0) {
         c.lprintf(
             log.Level.err,
@@ -626,6 +611,8 @@ fn userMod(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int 
 /// `ipmi_user_password()`: the `set password` subcommand.
 fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int {
     var password: ?[*:0]const u8 = null;
+    var saved_password: [pw_max_len + 1]u8 = @splat(0);
+    defer wipePassword(&saved_password);
     var ccode: c_int = 0;
     var password_type: u8 = pw_ipmi15_len;
     var user_id: u8 = 0;
@@ -640,13 +627,20 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
             c.lprintf(log.Level.err, "ipmitool: malloc failure");
             return -1;
         }
+        const first_len = c.strnlen(password, pw_max_len + 1);
+        if (first_len > pw_max_len) {
+            c.lprintf(log.Level.err, "Password is too long (> %d bytes)", @as(c_int, pw_max_len));
+            return -1;
+        }
+        @memcpy(saved_password[0..first_len], password.?[0..first_len]);
+        saved_password[first_len] = 0;
         const tmp: ?[*:0]const u8 = askPassword(user_id);
-        const tmplen = c.strnlen(tmp, pw_max_len + 1);
         if (tmp == null) {
             c.lprintf(log.Level.err, "ipmitool: malloc failure");
             return -1;
         }
-        if (c.strncmp(password, tmp, tmplen) != 0) {
+        const tmplen = c.strnlen(tmp, pw_max_len + 1);
+        if (tmplen != first_len or !std.mem.eql(u8, saved_password[0..first_len], tmp.?[0..first_len])) {
             c.lprintf(
                 log.Level.err,
                 "Passwords do not match or are longer than %d",
@@ -654,6 +648,7 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
             );
             return -1;
         }
+        password = saved_password[0..first_len :0].ptr;
     } else {
         password = argv[3];
     }
