@@ -1,0 +1,5 @@
+# Generic Device Locator SDR (10h), 24C01 EEPROM, 128 bytes, eight-byte pages.
+34 12 51 10 1b
+20 a6 b5 00 00 08 12 0b 23 5d c6
+45 65 70 4f 6e 65
+@pad 10 00

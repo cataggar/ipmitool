@@ -18,6 +18,8 @@
 //!     env:         NAME=VALUE, repeatable, added to the fixed environment
 //!     blob:        <dest> <fixture.hex>, writes a hex fixture into the work dir
 //!     text:        <dest> <fixture.txt>, copies a text fixture into the work dir
+//!     capture:     <dest>, snapshot the length and SHA-256 of a generated file
+//!     zig_diff:    true, assert a separate .zig.snap for an intentional safety fix
 //!     registry:    default | none  (IANA PEN registry visible to the binary)
 //!     fixed_time:  epoch seconds returned by time() in the child process
 //!     snapshot:    full | sha256 (compact full-stream digest and edge samples)
@@ -41,6 +43,8 @@ transcript: []const u8 = "default.tr",
 covers: []const []const u8 = &.{},
 env: []const Env = &.{},
 blobs: []const Blob = &.{},
+capture: ?[]const u8 = null,
+zig_diff: bool = false,
 registry: Registry = .default,
 fixed_time: ?i64 = null,
 snapshot_mode: SnapshotMode = .full,
@@ -210,6 +214,14 @@ fn parseInto(
                 try diag.print(gpa, "{s}:{d}: fixed_time: not an epoch second", .{ path, line_no });
                 return error.BadCaseFile;
             };
+        } else if (std.mem.eql(u8, key, "capture")) {
+            c.capture = try gpa.dupe(u8, value);
+        } else if (std.mem.eql(u8, key, "zig_diff")) {
+            if (!std.mem.eql(u8, value, "true")) {
+                try diag.print(gpa, "{s}:{d}: zig_diff: must be true", .{ path, line_no });
+                return error.BadCaseFile;
+            }
+            c.zig_diff = true;
         } else {
             try diag.print(gpa, "{s}:{d}: unknown case key '{s}'", .{ path, line_no, key });
             return error.BadCaseFile;

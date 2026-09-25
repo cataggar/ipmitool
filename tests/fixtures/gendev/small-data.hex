@@ -1,0 +1,4 @@
+# Repeatable nonzero pattern at both ends of a 128-byte read.
+a1 b2 c3 d4 e5 f6 17 28
+@pad 112 5a
+91 82 73 64 55 46 37 28

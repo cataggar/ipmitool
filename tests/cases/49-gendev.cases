@@ -1,0 +1,183 @@
+# Capture the C oracle before implementing the replacement. Names remain
+# short enough for the Unix socket path in long CI checkout paths.
+
+[gd_no_args]
+desc: no subcommand displays help
+args: -I dummy gendev
+covers: gendev
+
+[gd_help]
+desc: explicit help
+args: -I dummy gendev help
+covers: gendev
+
+[gd_unknown]
+desc: reject unknown subcommand
+args: -I dummy gendev invalid
+covers: gendev
+
+[gd_list]
+desc: generic locator list over EEPROM, unsupported device and FRU
+args: -I dummy gendev list
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_list_csv]
+desc: list in CSV output mode
+args: -I dummy -c gendev list
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_list_verbose]
+desc: list in verbose output mode, including bitfields and address span
+args: -I dummy -v gendev list
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_list_no_repo]
+desc: SDR repository cannot be opened
+args: -I dummy gendev list
+covers: gendev
+
+[gd_read_usage]
+desc: missing read arguments
+args: -I dummy gendev read EepOne
+covers: gendev
+zig_diff: true
+
+[gd_write_usage]
+desc: missing write arguments
+args: -I dummy gendev write EepOne
+covers: gendev
+zig_diff: true
+
+[gd_read_missing]
+desc: SDR name does not exist
+args: -I dummy gendev read Missing {work}/out.bin
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_write_missing]
+desc: write target name does not exist
+args: -I dummy gendev write Missing {work}/in.bin
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_read_wrong_type]
+desc: FRU SDR cannot be read as generic locator
+args: -I dummy gendev read "FRU Board" {work}/out.bin
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_write_wrong_type]
+desc: FRU SDR cannot be written as generic locator
+args: -I dummy gendev write "FRU Board" {work}/in.bin
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_read_unsupported]
+desc: non-EEPROM generic locator read must not claim success in Zig
+args: -I dummy gendev read Other {work}/out.bin
+transcript: gendev_small.tr
+covers: gendev
+zig_diff: true
+
+[gd_write_unsupported]
+desc: non-EEPROM generic locator write must not claim success in Zig
+args: -I dummy gendev write Other {work}/in.bin
+transcript: gendev_small.tr
+covers: gendev
+zig_diff: true
+
+[gd_read_open_fail]
+desc: directory cannot be opened as output file
+args: -I dummy gendev read EepOne {work}
+transcript: gendev_small.tr
+covers: gendev
+zig_diff: true
+
+[gd_write_open_fail]
+desc: missing EEPROM input file
+args: -I dummy gendev write EepOne {work}/missing.bin
+transcript: gendev_small.tr
+covers: gendev
+zig_diff: true
+
+[gd_write_size_mismatch]
+desc: reject input file shorter than EEPROM capacity without I2C writes
+args: -I dummy gendev write EepOne {work}/short.bin
+blob: short.bin gendev/unsupported.hex
+transcript: gendev_small.tr
+covers: gendev
+zig_diff: true
+
+[gd_read_small]
+desc: 128 byte EEPROM read, 8-byte pages and encoded channel/lun/bus
+args: -I dummy gendev read EepOne {work}/out.bin
+capture: out.bin
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_read_short]
+desc: BMC returns one byte for an eight-byte EEPROM page
+args: -I dummy gendev read EepOne {work}/out.bin
+transcript: gendev_short.tr
+covers: gendev
+zig_diff: true
+
+[gd_read_retry]
+desc: transient I2C bus error followed by a complete read
+args: -I dummy gendev read EepOne {work}/out.bin
+transcript: gendev_retry.tr
+covers: gendev
+
+[gd_read_error]
+desc: permanent BMC failure is not success, even when C reports exit zero
+args: -I dummy gendev read EepOne {work}/out.bin
+transcript: gendev_error.tr
+covers: gendev
+zig_diff: true
+
+[gd_write_small]
+desc: 128 byte EEPROM write, one-byte offsets and distinct page contents
+args: -I dummy gendev write EepOne {work}/in.bin
+blob: in.bin gendev/small-data.hex
+transcript: gendev_small.tr
+covers: gendev
+
+[gd_write_retry]
+desc: transient NAK on write followed by a successful write
+args: -I dummy gendev write EepOne {work}/in.bin
+blob: in.bin gendev/small-data.hex
+transcript: gendev_retry.tr
+covers: gendev
+
+[gd_write_error]
+desc: permanent write failure reports an error, not success
+args: -I dummy gendev write EepOne {work}/in.bin
+blob: in.bin gendev/small-data.hex
+transcript: gendev_error.tr
+covers: gendev
+zig_diff: true
+
+[gd_write_wide]
+desc: two-byte offsets across 255, address span, maximum 512-byte capacity
+args: -I dummy gendev write EepWide {work}/in.bin
+blob: in.bin gendev/wide-data.hex
+transcript: gendev_wide.tr
+covers: gendev
+
+[gd_read_page16]
+desc: 256-byte EEPROM page capped at 16-byte I2C transfers
+args: -I dummy gendev read Page16 {work}/out.bin
+capture: out.bin
+transcript: gendev_page.tr
+covers: gendev
+
+[gd_write_oversize]
+desc: 131072-byte EEPROM requires a second address bank
+args: -I dummy gendev write TooBig {work}/in.bin
+blob: in.bin gendev/small-data.hex
+transcript: gendev_oversize.tr
+covers: gendev
+zig_diff: true

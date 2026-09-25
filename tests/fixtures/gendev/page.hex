@@ -1,0 +1,5 @@
+# EEPROM with 256-byte pages (24C16), capped to 16-byte IPMI transfers.
+97 53 51 10 1b
+20 ac c2 00 00 0c 20 0b 31 5d c6
+50 61 67 65 31 36
+@pad 10 00

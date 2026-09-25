@@ -1,0 +1,5 @@
+# Generic locator that is not an EEPROM.
+bc 9a 51 10 1b
+20 a8 41 00 00 07 00 0b 01 34 c5
+4f 74 68 65 72
+@pad 11 00

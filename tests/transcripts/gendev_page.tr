@@ -1,0 +1,39 @@
+default_ccode 0xc1
+respond device
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond repository
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 ff ff 00 00 00 00 00 00 00 00 02
+end
+respond reserve
+  netfn 0x0a
+  cmd 0x22
+  data a5 5a
+end
+respond first
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 00 00
+  data ff ff
+  partial 4 1 5
+  blob @gendev/page.hex
+end
+respond page
+  netfn 0x0a
+  cmd 0x23
+  match a5 5a 97 53
+  data ff ff
+  partial 4 1 5
+  blob @gendev/page.hex
+end
+respond read
+  netfn 0x06
+  cmd 0x52
+  match 65 ac 10
+  partial 3 2 2
+  blob @gendev/page-data.hex
+end

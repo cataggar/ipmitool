@@ -228,6 +228,12 @@ enum ipmitool_abi_layout {
 		offsetof(struct sdr_record_mc_locator, id_string),
 	ABI_OFFSETOF_sdr_genloc__id_string =
 		offsetof(struct sdr_record_generic_locator, id_string),
+	ABI_SIZEOF_sdr_genloc = sizeof(struct sdr_record_generic_locator),
+	ABI_ALIGNOF_sdr_genloc = _Alignof(struct sdr_record_generic_locator),
+	ABI_OFFSETOF_sdr_genloc__slave =
+		offsetof(struct sdr_record_generic_locator, dev_slave_addr),
+	ABI_OFFSETOF_sdr_genloc__type =
+		offsetof(struct sdr_record_generic_locator, dev_type),
 
 	/*
 	 * struct sdr_record_full_sensor / struct sdr_record_compact_sensor -
