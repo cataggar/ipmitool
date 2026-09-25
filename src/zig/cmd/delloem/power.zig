@@ -27,26 +27,26 @@ fn fromBtu(value: u64) u32 {
 
 fn status(intf: *Intf) c_int {
     const time_rsp = common.send(intf, 0x0a, 0x48, &.{}) orelse {
-        c.lprintf(log.Level.err, "Error getting BMC time info.");
+        log.print(log.Level.err, "Error getting BMC time info.", .{});
         return -1;
     };
     if (time_rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error getting power management information, return code %x", @as(c_int, time_rsp.ccode));
+        log.print(log.Level.err, "Error getting power management information, return code %x", .{@as(c_int, time_rsp.ccode)});
         return -1;
     }
     const t = common.bytes(time_rsp, 4) orelse return common.short("BMC time");
     const now = common.le32(t);
     const rsp = common.send(intf, 0x30, 0x9c, &.{ 7, 1 }) orelse {
-        c.lprintf(log.Level.err, "Error getting power management information.");
+        log.print(log.Level.err, "Error getting power management information.", .{});
         return -1;
     };
     if (common.license(rsp.ccode)) return -1;
     if (rsp.ccode == 0xc1 or rsp.ccode == 0xcb) {
-        c.lprintf(log.Level.err, "Error getting power management information: Command not supported on this system.");
+        log.print(log.Level.err, "Error getting power management information: Command not supported on this system.", .{});
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error getting power management information, return code %x", @as(c_int, rsp.ccode));
+        log.print(log.Level.err, "Error getting power management information, return code %x", .{@as(c_int, rsp.ccode)});
         return -1;
     }
     const data = common.bytes(rsp, 24) orelse return common.short("power management");
@@ -70,16 +70,16 @@ fn status(intf: *Intf) c_int {
 
 fn clear(intf: *Intf, peak: bool) c_int {
     const rsp = common.send(intf, 0x30, 0x9d, &.{ 7, 1, if (peak) 2 else 1 }) orelse {
-        c.lprintf(log.Level.err, "Error clearing power values.");
+        log.print(log.Level.err, "Error clearing power values.", .{});
         return -1;
     };
     if (common.license(rsp.ccode)) return -1;
     if (rsp.ccode == 0xc1) {
-        c.lprintf(log.Level.err, "Error clearing power values, command not supported on this system.");
+        log.print(log.Level.err, "Error clearing power values, command not supported on this system.", .{});
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error clearing power values: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error clearing power values: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     return 0;
@@ -87,12 +87,12 @@ fn clear(intf: *Intf, peak: bool) c_int {
 
 fn capStatus(intf: *Intf) c_int {
     const rsp = common.send(intf, 0x30, 0xba, &.{ 1, 0xff }) orelse {
-        c.lprintf(log.Level.err, "Error getting powercap status");
+        log.print(log.Level.err, "Error getting powercap status", .{});
         return -1;
     };
     if (common.license(rsp.ccode)) return -1;
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error getting powercap statusr: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error getting powercap statusr: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     const data = common.bytes(rsp, 1) orelse return common.short("powercap status");
@@ -104,16 +104,16 @@ fn capStatus(intf: *Intf) c_int {
 fn toggle(intf: *Intf, enable: bool) c_int {
     if (capStatus(intf) != 0) return -1;
     if (common.power_cap_settable == 0) {
-        c.lprintf(log.Level.err, "Can not set powercap on this system");
+        log.print(log.Level.err, "Can not set powercap on this system", .{});
         return -1;
     }
     const rsp = common.send(intf, 0x30, 0xba, &.{ 0, if (enable) 1 else 0 }) orelse {
-        c.lprintf(log.Level.err, "Error setting powercap status");
+        log.print(log.Level.err, "Error setting powercap status", .{});
         return -1;
     };
     if (common.license(rsp.ccode)) return -1;
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error setting powercap statusr: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error setting powercap statusr: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     return 0;
@@ -122,19 +122,23 @@ fn toggle(intf: *Intf, enable: bool) c_int {
 fn getBudgetData(intf: *Intf, data: *[16]u8, setting: bool) c_int {
     const rc = common.getSys(intf, 0xea, 0, data);
     if (rc < 0) {
-        c.lprintf(log.Level.err, "Error getting power cap.");
+        log.print(log.Level.err, "Error getting power cap.", .{});
         return -1;
     }
     if (common.license(@intCast(rc))) return -1;
     if (rc == 0xc1 or (!setting and rc == 0xcb)) {
-        c.lprintf(log.Level.err, if (setting)
-            "Error getting power cap, command not supported on this system."
-        else
-            "Error getting power cap: Command not supported on this system.");
+        log.print(
+            log.Level.err,
+            if (setting)
+                "Error getting power cap, command not supported on this system."
+            else
+                "Error getting power cap: Command not supported on this system.",
+            .{},
+        );
         return -1;
     }
     if (rc != 0) {
-        c.lprintf(log.Level.err, "Error getting power cap: %s", common.cc(@intCast(rc)));
+        log.print(log.Level.err, "Error getting power cap: %s", .{common.cc(@intCast(rc))});
         return -1;
     }
     if (c.verbose > 1) {
@@ -165,11 +169,11 @@ fn getBudget(intf: *Intf, unit: u8) c_int {
 fn setBudget(intf: *Intf, unit: u8, input: c_int) c_int {
     if (capStatus(intf) != 0) return -1;
     if (common.power_cap_settable == 0) {
-        c.lprintf(log.Level.err, "Can not set powercap on this system");
+        log.print(log.Level.err, "Can not set powercap on this system", .{});
         return -1;
     }
     if (common.power_cap_enabled == 0) {
-        c.lprintf(log.Level.err, "Power cap set feature is not enabled");
+        log.print(log.Level.err, "Power cap set feature is not enabled", .{});
         return -1;
     }
     var cap: [16]u8 = undefined;
@@ -190,31 +194,31 @@ fn setBudget(intf: *Intf, unit: u8, input: c_int) c_int {
         watts = fromBtu(@intCast(input));
     } else if (unit == 3) {
         if (input < 0 or input > 100) {
-            c.lprintf(log.Level.err, "Cap value is out of boundary condition it should be between 0  - 100");
+            log.print(log.Level.err, "Cap value is out of boundary condition it should be between 0  - 100", .{});
             return -1;
         }
         watts = @divTrunc(@as(i64, input) * (@as(i64, maximum) - minimum), 100) + minimum;
-        c.lprintf(log.Level.err, "Cap value in percentage is  %d ", @as(c_int, @intCast(watts)));
+        log.print(log.Level.err, "Cap value in percentage is  %d ", .{@as(c_int, @intCast(watts))});
         common.put16(request[1..3], @intCast(watts));
         request[3] = 0;
     }
     if (watts < minimum or watts > maximum) {
         if (unit == 1) {
-            c.lprintf(log.Level.err, "Cap value is out of boundary condition it should be between %d", @as(c_int, @bitCast(@as(u32, @truncate(btu(minimum))))));
-            c.lprintf(log.Level.err, " -%d", @as(c_int, @bitCast(@as(u32, @truncate(btu(maximum))))));
+            log.print(log.Level.err, "Cap value is out of boundary condition it should be between %d", .{@as(c_int, @bitCast(@as(u32, @truncate(btu(minimum)))))});
+            log.print(log.Level.err, " -%d", .{@as(c_int, @bitCast(@as(u32, @truncate(btu(maximum)))))});
         } else if (unit == 0) {
-            c.lprintf(log.Level.err, "Cap value is out of boundary condition it should be between %d  - %d", @as(c_int, minimum), @as(c_int, maximum));
+            log.print(log.Level.err, "Cap value is out of boundary condition it should be between %d  - %d", .{ @as(c_int, minimum), @as(c_int, maximum) });
         }
         return -1;
     }
     const rc = common.setSys(intf, &request);
     if (rc < 0) {
-        c.lprintf(log.Level.err, "Error setting power cap");
+        log.print(log.Level.err, "Error setting power cap", .{});
         return -1;
     }
     if (common.license(@intCast(rc))) return -1;
     if (rc != 0) {
-        c.lprintf(log.Level.err, "Error setting power cap: %s", common.cc(@intCast(rc)));
+        log.print(log.Level.err, "Error setting power cap: %s", .{common.cc(@intCast(rc))});
         return -1;
     }
     if (c.verbose > 1) _ = c.printf("CC for setpowercap :%d ", rc);
@@ -225,27 +229,39 @@ fn historyData(intf: *Intf, selector: u8, data: []u8) c_int {
     const rc = common.getSys(intf, selector, 0, data);
     const average = selector == 0xeb;
     if (rc < 0) {
-        c.lprintf(log.Level.err, if (average)
-            "Error getting average power consumption history data."
-        else if (selector == 0xec)
-            "Error getting  peak power consumption history data."
-        else
-            "Error getting  peak power consumption history data .");
+        log.print(
+            log.Level.err,
+            if (average)
+                "Error getting average power consumption history data."
+            else if (selector == 0xec)
+                "Error getting  peak power consumption history data."
+            else
+                "Error getting  peak power consumption history data .",
+            .{},
+        );
         return -1;
     }
     if (common.license(@intCast(rc))) return -1;
     if (rc == 0xc1 or rc == 0xcb) {
-        c.lprintf(log.Level.err, if (average)
-            "Error getting average power consumption history data: Command not supported on this system."
-        else
-            "Error getting peak power consumption history data: Command not supported on this system.");
+        log.print(
+            log.Level.err,
+            if (average)
+                "Error getting average power consumption history data: Command not supported on this system."
+            else
+                "Error getting peak power consumption history data: Command not supported on this system.",
+            .{},
+        );
         return -1;
     }
     if (rc != 0) {
-        c.lprintf(log.Level.err, if (average)
-            "Error getting average power consumption history data: %s"
-        else
-            "Error getting peak power consumption history data: %s", common.cc(@intCast(rc)));
+        log.print(
+            log.Level.err,
+            if (average)
+                "Error getting average power consumption history data: %s"
+            else
+                "Error getting peak power consumption history data: %s",
+            .{common.cc(@intCast(rc))},
+        );
         return -1;
     }
     if (c.verbose > 1 and average) {
@@ -313,16 +329,16 @@ fn history(intf: *Intf, unit: u8) c_int {
 
 fn headroom(intf: *Intf, unit: u8) c_int {
     const rsp = common.send(intf, 0x30, 0xbb, &.{}) orelse {
-        c.lprintf(log.Level.err, "Error getting power headroom status");
+        log.print(log.Level.err, "Error getting power headroom status", .{});
         return -1;
     };
     if (common.license(rsp.ccode)) return -1;
     if (rsp.ccode == 0xc1 or rsp.ccode == 0xcb) {
-        c.lprintf(log.Level.err, "Error getting power headroom status: Command not supported on this system ");
+        log.print(log.Level.err, "Error getting power headroom status: Command not supported on this system ", .{});
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error getting power headroom status: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error getting power headroom status: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     const data = common.bytes(rsp, 4) orelse return common.short("power headroom");
@@ -367,7 +383,7 @@ fn sensorBtu(watts: c_int) c_int {
 fn consumption(intf: *Intf, unit: u8) c_int {
     _ = c.printf("\nPower consumption information\n");
     const list_ptr = c.ipmi_sdr_find_sdr_byid(@ptrCast(intf), @constCast("System Level")) orelse {
-        c.lprintf(log.Level.err, "Error : Can not access the System Level sensor data");
+        log.print(log.Level.err, "Error : Can not access the System Level sensor data", .{});
         return -1;
     };
     const sdr: *const SdrList = @ptrCast(@alignCast(list_ptr));
@@ -384,11 +400,11 @@ fn consumption(intf: *Intf, unit: u8) c_int {
     }
     const threshold_rsp: ?*Response = @ptrCast(c.ipmi_sdr_get_sensor_thresholds(@ptrCast(intf), sensor, record[0], record[1] & 3, record[1] >> 4));
     const thresholds = threshold_rsp orelse {
-        c.lprintf(log.Level.err, "Error : Can not access the System Level sensor data");
+        log.print(log.Level.err, "Error : Can not access the System Level sensor data", .{});
         return -1;
     };
     if (thresholds.ccode != 0) {
-        c.lprintf(log.Level.err, "Error : Can not access the System Level sensor data");
+        log.print(log.Level.err, "Error : Can not access the System Level sensor data", .{});
         return -1;
     }
     const data = common.bytes(thresholds, 6) orelse return common.short("sensor thresholds");
@@ -410,16 +426,16 @@ fn consumption(intf: *Intf, unit: u8) c_int {
         _ = c.printf("Failure threshold      : %d W \n", values[2]);
     }
     const rsp = common.send(intf, 0x30, 0xb3, &.{ 0x0a, 0 }) orelse {
-        c.lprintf(log.Level.err, "Error getting instantaneous power consumption data .");
+        log.print(log.Level.err, "Error getting instantaneous power consumption data .", .{});
         return -1;
     };
     if (common.license(rsp.ccode)) return -1;
     if (rsp.ccode == 0xc1 or rsp.ccode == 0xcb) {
-        c.lprintf(log.Level.err, "Error getting instantaneous power consumption data: Command not supported on this system.");
+        log.print(log.Level.err, "Error getting instantaneous power consumption data: Command not supported on this system.", .{});
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error getting instantaneous power consumption data: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error getting instantaneous power consumption data: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     const instant = common.bytes(rsp, 7) orelse return common.short("instantaneous power");
@@ -453,12 +469,12 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
             return -1;
         };
         if (std.mem.indexOfScalar(u8, std.mem.span(amount), '.') != null) {
-            c.lprintf(log.Level.err, "Cap value in Watts, Btu/hr or percent should be whole number");
+            log.print(log.Level.err, "Cap value in Watts, Btu/hr or percent should be whole number", .{});
             return -1;
         }
         var value: c_int = 0;
         if (c.str2int(amount, &value) != 0) {
-            c.lprintf(log.Level.err, "Given capacity value '%s' is invalid.", amount);
+            log.print(log.Level.err, "Given capacity value '%s' is invalid.", .{amount});
             return -1;
         }
         const choice = common.arg(argv, argc, 3);
