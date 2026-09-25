@@ -32,13 +32,6 @@
 //!   `#pragma pack` region, so `translate-c` represents them faithfully -
 //!   including the fact that `channel_access_t.alerting` is an `enum`, and so
 //!   four bytes wide with three bytes of padding in front of it.
-//! * **Two upstream defects are reproduced deliberately.**  See issue #37:
-//!   - `ipmi_print_channel_cipher_suites()` passes `sizeof(*suites)` - the size
-//!     of one `struct cipher_suite_info`, i.e. 12 - as the capacity of a
-//!     `MAX_CIPHER_SUITE_COUNT` (204) element array, so at most twelve cipher
-//!     suites are ever printed however many the BMC reports.
-//!   - `parse_channel_cipher_suite_data()` logs a `size_t` through `%d`.
-//!
 //! Everything this module needs from C - `printf`, `lprintf`, `val2str`,
 //! `str2val`, `str2uchar`, `eval_ccode`, the `is_ipmi_*` validators and the
 //! three `_ipmi_*_user_*` primitives that still live in `lib/ipmi_user.c` - is
@@ -508,15 +501,10 @@ fn parseChannelCipherSuiteData(
         );
 
         if (suite_size == 0) {
-            // `offset` is a size_t passed through `%d`, which is an upstream
-            // format bug.  On every ABI ipmitool builds for, varargs promote
-            // the 64-bit value into the same register or stack slot a 32-bit
-            // one would occupy, so printf reads the low half; reproduce that
-            // by truncating explicitly.  See issue #37.
             c.lprintf(
                 log.Level.info,
-                "Failed to parse cipher suite data at offset %d",
-                @as(c_int, @truncate(@as(isize, @bitCast(offset)))),
+                "Failed to parse cipher suite data at offset %zu",
+                offset,
             );
             break;
         }
@@ -525,6 +513,23 @@ fn parseChannelCipherSuiteData(
         count += 1;
     }
     return count;
+}
+
+test "cipher suite parser stops at the 204-element capacity" {
+    var data: [max_cipher_suite_record_offset * max_cipher_suite_data_len]u8 = @splat(0xff);
+    for (0..max_cipher_suite_count) |i| {
+        const start = i * std_record_size;
+        data[start] = standard_cipher_suite;
+        data[start + 1] = @truncate(i);
+        data[start + 2] = 1;
+        data[start + 3] = 1;
+        data[start + 4] = 1;
+    }
+
+    var suites: [max_cipher_suite_count]CipherSuiteInfo = undefined;
+    try std.testing.expectEqual(suites.len, parseChannelCipherSuiteData(&data, &suites));
+    try std.testing.expectEqual(@as(c_uint, 203), @intFromEnum(suites[203].cipher_suite_id));
+    try std.testing.expectEqual(@as(u8, 1), suites[203].crypt_alg);
 }
 
 /// `ipmi_get_channel_cipher_suites()`.
@@ -602,9 +607,7 @@ fn printChannelCipherSuites(
     channel: u8,
 ) c_int {
     var suites: [max_cipher_suite_count]CipherSuiteInfo = undefined;
-    // Upstream passes `sizeof(*suites)` where `ARRAY_SIZE(suites)` was meant,
-    // capping the parse at twelve records.  Reproduced; see issue #37.
-    var nr_suites: usize = @sizeOf(CipherSuiteInfo);
+    var nr_suites: usize = suites.len;
     const header_str = "ID   IANA    Auth Alg        Integrity Alg   Confidentiality Alg";
 
     const rc = getChannelCipherSuites(intf, payload_type, channel, &suites, &nr_suites);

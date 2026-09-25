@@ -2,8 +2,8 @@
 //!
 //! Importing this file pulls in every header port and therefore every
 //! `comptime` ABI assertion, which is what `zig build test` compiles.  It
-//! deliberately does *not* reach into `cmd/`: those modules `@export` C symbols
-//! and are only ever linked through `exports.zig`.
+//! reaches into `cmd/` only for parser unit tests: those modules `@export` C
+//! symbols and are otherwise linked through `exports.zig`.
 //!
 //! Layout, mirroring the C tree:
 //!
@@ -61,6 +61,7 @@ pub const util = struct {
 };
 
 test {
+    _ = @import("cmd/channel.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);
