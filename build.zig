@@ -1308,6 +1308,26 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
     const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
     @memset(selection, true);
 
+    // The swapped archive compiles every Zig port, including USB when the
+    // interface is disabled.  Its bridge must expose SG_IO in that case,
+    // without requiring SCSI headers for the ordinary disabled-USB build.
+    const swapped_bridge_mod = if (options.plugins_enabled[pluginIndex("usb")])
+        options.bridge_mod
+    else blk: {
+        const bridge = b.addTranslateC(.{
+            .root_source_file = b.path(zig_bridge_header),
+            .target = options.target,
+            .optimize = options.optimize,
+            .link_libc = true,
+        });
+        bridge.addConfigHeader(options.config_h);
+        bridge.addIncludePath(b.path("include"));
+        bridge.defineCMacro("HAVE_CONFIG_H", "1");
+        bridge.defineCMacro("DEFAULT_INTF", b.fmt("\"{s}\"", .{options.default_intf}));
+        bridge.defineCMacro("IPMITOOL_ZIG_USB", "1");
+        break :blk bridge.createModule();
+    };
+
     const core_mod = b.createModule(.{
         .target = options.target,
         .optimize = options.optimize,
@@ -1336,7 +1356,7 @@ fn addSwappedTool(b: *std.Build, options: SwappedOptions) *std.Build.Step.Compil
         .optimize = options.optimize,
         .link_libc = true,
     });
-    exports_mod.addImport("ipmi_c", options.bridge_mod);
+    exports_mod.addImport("ipmi_c", swapped_bridge_mod);
     exports_mod.addImport("build_options", zig_options.createModule());
     addZigCShims(
         b,
