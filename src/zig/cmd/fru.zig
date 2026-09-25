@@ -1,8 +1,8 @@
 //! Staged port of `lib/ipmi_fru.c`. Inventory reads, section-aware writes,
 //! print/list (including SDR discovery, area strings and multirecords), get,
 //! upgEkey and internal-use commands are implemented here. The PICMG
-//! extension decoder, edit and public FRU helpers still use the original C
-//! code through `fru_legacy.c`, not placeholders. Keep the shim until all
+//! extension decoder, OEM edits and public FRU helpers still use the original
+//! C code through `fru_legacy.c`, not placeholders. Keep the shim until all
 //! commands and exported helpers have been ported.
 
 const std = @import("std");
@@ -1216,8 +1216,246 @@ fn getHelp() void {
     c.lprintf(log.Level.notice, "fru get <fruid> oem iana <record> <format> <args> - limited OEM support");
 }
 
+fn fieldEditHeader(intf: *Intf, id: u8, info: *Info) ?[8]u8 {
+    var request_data: [4]u8 = .{ id, 0, 0, 8 };
+    var req = std.mem.zeroes(Request);
+    req.msg.netfn_lun.netfn = ipmi.NetFn.storage;
+    req.msg.cmd = c.GET_FRU_DATA;
+    req.msg.data = &request_data;
+    req.msg.data_len = 4;
+    const rsp = sendrecv(intf, &req) orelse {
+        _ = c.printf(" Device not present (No Response)\n");
+        return null;
+    };
+    if (rsp.ccode != 0) {
+        _ = c.printf(" Device not present (%s)\n", c.val2str(rsp.ccode, c.completion_code_vals));
+        return null;
+    }
+    if (c.verbose > 1) c.printbuf(&rsp.data, rsp.data_len, "FRU DATA");
+    if (rsp.data_len < 9) return null;
+    const header: [8]u8 = rsp.data[1..9].*;
+    if (header[0] != 1) {
+        _ = c.printf(" Unknown FRU header version 0x%02x", @as(c_uint, header[0]));
+        return null;
+    }
+    _ = info;
+    return header;
+}
+
+fn editFieldRebuild(intf: *Intf, id: u8, info: *Info, header: [8]u8, section_offset: usize, kind: u8, index: u8, text: []const u8, allocator: Allocator) c_int {
+    const new_size = if (text.len > 9) std.mem.alignForward(usize, @as(usize, info.size) + text.len, 8) else @as(usize, info.size);
+    const old = allocator.alloc(u8, info.size) catch {
+        _ = c.printf("Out of memory!\n");
+        return -1;
+    };
+    defer allocator.free(old);
+    @memset(old, 0);
+    const rebuilt = allocator.alloc(u8, new_size) catch {
+        _ = c.printf("Out of memory!\n");
+        return -1;
+    };
+    defer allocator.free(rebuilt);
+    @memset(rebuilt, 0);
+
+    _ = c.printf("Read All FRU area\n");
+    _ = c.printf("Fru Size       : %u bytes\n", @as(c_uint, info.size));
+    readArea(intf, id, info, 0, old) catch {};
+    _ = c.printf("Copy to new FRU\n");
+    @memcpy(rebuilt[0..old.len], old);
+
+    var field_offset = section_offset + if (kind == 'b') @as(usize, 6) else @as(usize, 3);
+    if (section_offset + 2 > old.len) return -1;
+    const section_original: usize = @as(usize, old[section_offset + 1]) * 8;
+    if (section_original < 2 or section_original > old.len - section_offset) return -1;
+    var value_buffer: [128]u8 = undefined;
+    var old_value: []const u8 = "";
+    var field_start: usize = 0;
+    for (0..@as(usize, index) + 1) |_| {
+        field_start = field_offset;
+        old_value = field(old, &field_offset, &value_buffer);
+    }
+    if (old_value.len == 0 or text.len > 63) {
+        _ = c.printf("Field not found (1)!\n");
+        return -1;
+    }
+
+    var padding: isize = 0;
+    for (2..section_original) |back| {
+        if (old[section_offset + section_original - back] != 0) break;
+        padding += 1;
+    }
+    var section_length: usize = section_original;
+    const change: isize = @as(isize, @intCast(text.len)) - @as(isize, @intCast(old_value.len));
+    _ = c.printf("Section Length: %u\n", @as(c_uint, @intCast(section_length)));
+    _ = c.printf("Padding Length: %u\n", @as(c_uint, @intCast(padding)));
+    _ = c.printf("NumByte Change: %i\n", @as(c_int, @intCast(change)));
+    _ = c.printf("Start SecChange: %x\n", @as(c_uint, old[field_start]));
+    _ = c.printf("End SecChange  : %x\n", @as(c_uint, old[@min(field_start + text.len + 1, old.len - 1)]));
+    _ = c.printf("Start Section : %x\n", @as(c_uint, old[section_offset]));
+    _ = c.printf("End Sec wo Pad: %x\n", @as(c_uint, old[section_offset + section_length - 2 - @as(usize, @intCast(padding))]));
+    _ = c.printf("End Section   : %x\n", @as(c_uint, old[section_offset + section_length - 1]));
+    padding -= change;
+    _ = c.printf("New Padding Length: %i\n", @as(c_int, @intCast(padding)));
+
+    var shifted_header = header;
+    if (padding < 0 or padding >= 8) {
+        const block_change: isize = if (padding >= 8) -@divTrunc(padding, 8) else 1 - @divTrunc(padding + 1, 8);
+        section_length = @intCast(@as(isize, @intCast(section_length)) + block_change * 8);
+        padding += block_change * 8;
+        _ = c.printf("change_block_cnt: %i\n", @as(c_int, @intCast(block_change)));
+        _ = c.printf("New Padding Length: %i\n", @as(c_int, @intCast(padding)));
+        _ = c.printf("header.offset.board: %i\n", @as(c_int, header[3]));
+        var last_block: u8 = 0;
+        var end_of_fru: usize = 0;
+        for (1..6) |area_index| {
+            const block = header[area_index];
+            if (block == 0) continue;
+            const source_offset = @as(usize, block) * 8;
+            if (source_offset >= old.len) continue;
+            if (block > last_block) {
+                last_block = block;
+                end_of_fru = @min(old.len, (@as(usize, block) + old[source_offset + 1]) * 8);
+                if (area_index == 5) {
+                    end_of_fru = source_offset;
+                    if (source_offset + 5 <= old.len and (old[source_offset + 1] & 0x80) != 0)
+                        end_of_fru += 5 + old[source_offset + 2];
+                }
+            }
+            if (source_offset <= section_offset) continue;
+            const length = if (area_index == 5)
+                @as(usize, old[source_offset + 2])
+            else
+                @as(usize, old[source_offset + 1]) * 8;
+            const shifted = @as(isize, @intCast(source_offset)) + block_change * 8;
+            if (shifted < 0 or shifted + @as(isize, @intCast(length)) > rebuilt.len or length > old.len - source_offset) return -1;
+            @memcpy(rebuilt[@as(usize, @intCast(shifted))..][0..length], old[source_offset..][0..length]);
+            shifted_header[area_index] = @intCast(@as(isize, block) + block_change);
+        }
+        if (block_change < 0) {
+            const erase_start = @as(isize, @intCast(end_of_fru)) + block_change * 8;
+            const erase_len: usize = @intCast(-block_change * 8);
+            if (erase_start >= 0 and erase_start + @as(isize, @intCast(erase_len)) <= rebuilt.len)
+                @memset(rebuilt[@as(usize, @intCast(erase_start))..][0..erase_len], 0);
+        }
+        const changed_size = @as(isize, info.size) + block_change * 8;
+        if (changed_size <= 0 or changed_size > rebuilt.len) return -1;
+        info.size = @intCast(changed_size);
+        shifted_header[7] = areaChecksum(shifted_header[0..]);
+        @memcpy(rebuilt[0..8], &shifted_header);
+    }
+    if (padding < 0 or padding >= 8) {
+        _ = c.printf("Internal error, padding length %i (must be from 0 to 7) ", @as(c_int, @intCast(padding)));
+        return -1;
+    }
+    _ = c.printf("Updating Field : '%.*s' with '%.*s' ... (Length from '%d' to '%d')\n", @as(c_int, @intCast(old_value.len)), old_value.ptr, @as(c_int, @intCast(text.len)), text.ptr, @as(c_int, old[field_start]), @as(c_int, @intCast(0xc0 + text.len)));
+    rebuilt[field_start] = @intCast(0xc0 + text.len);
+    @memcpy(rebuilt[field_start + 1 ..][0..text.len], text);
+    const remaining: usize = section_length - 1 - (field_start - section_offset + text.len + 1);
+    _ = c.printf("Copying remaining of sections: %d \n", @as(c_int, @intCast(remaining)));
+    if (field_offset + remaining > old.len or field_start + 1 + text.len + remaining > rebuilt.len) return -1;
+    @memcpy(rebuilt[field_start + 1 + text.len ..][0..remaining], old[field_offset..][0..remaining]);
+    const pad_len: usize = @intCast(padding);
+    @memset(rebuilt[section_offset + section_length - 1 - pad_len ..][0..pad_len], 0);
+    rebuilt[section_offset + section_length - 1] = areaChecksum(rebuilt[section_offset..][0..section_length]);
+    const area_sum: u8 = -%rebuilt[section_offset + section_length - 1];
+    _ = c.printf("Calculate New Checksum: %x\n", @as(c_uint, @bitCast(-@as(c_int, area_sum))));
+    _ = c.printf("Writing new FRU.\n");
+    _ = writeArea(intf, id, info, 0, rebuilt[0..info.size], allocator) catch false;
+    _ = c.printf("Done.\n");
+    return 1;
+}
+
+fn areaChecksum(bytes: []const u8) u8 {
+    var sum: u8 = 0;
+    for (bytes[0 .. bytes.len - 1]) |byte| sum +%= byte;
+    return -%sum;
+}
+
+fn editField(intf: *Intf, id: u8, kind: u8, field_index: u8, new_value: [*c]u8, allocator: Allocator) c_int {
+    var data: [1]u8 = .{id};
+    var req = std.mem.zeroes(Request);
+    req.msg.netfn_lun.netfn = ipmi.NetFn.storage;
+    req.msg.cmd = c.GET_FRU_INFO;
+    req.msg.data = &data;
+    req.msg.data_len = 1;
+    const info_rsp = sendrecv(intf, &req) orelse {
+        _ = c.printf(" Device not present (No Response)\n");
+        return -1;
+    };
+    if (info_rsp.ccode != 0) {
+        _ = c.printf(" Device not present (%s)\n", c.val2str(info_rsp.ccode, c.completion_code_vals));
+        return -1;
+    }
+    if (info_rsp.data_len < 3) return -1;
+    var info = Info{ .size = @as(u16, info_rsp.data[0]) | (@as(u16, info_rsp.data[1]) << 8), .access = (info_rsp.data[2] & 1) != 0 };
+    if (info.size == 0) {
+        _ = c.printf(" Invalid FRU size %d", @as(c_int, info.size));
+        return -1;
+    }
+    const header = fieldEditHeader(intf, id, &info) orelse return -1;
+    const section_index: usize = switch (kind) {
+        'c' => 2,
+        'b' => 3,
+        'p' => 4,
+        else => {
+            _ = c.printf("Wrong field type.");
+            return -1;
+        },
+    };
+    const section_offset: usize = @as(usize, header[section_index]) * 8;
+    var area_prefix: [3]u8 = @splat(0);
+    readArea(intf, id, &info, section_offset, &area_prefix) catch return -1;
+    const section_len: usize = @as(usize, area_prefix[1]) * 8;
+    if (section_len < 2 or section_offset > info.size or section_len > info.size - section_offset) return -1;
+    const area = allocator.alloc(u8, section_len) catch {
+        _ = c.printf("Out of memory!\n");
+        return -1;
+    };
+    defer allocator.free(area);
+    @memset(area, 0);
+    readArea(intf, id, &info, section_offset, area) catch return -1;
+    const start: usize = if (kind == 'b') 6 else 3;
+    var offset = start;
+    var field_start: usize = 0;
+    var value_buffer: [128]u8 = undefined;
+    var old_value: []const u8 = "";
+    const index: u8 = field_index -% 0x30;
+    for (0..@as(usize, index) + 1) |_| {
+        field_start = offset;
+        old_value = field(area, &offset, &value_buffer);
+    }
+    if (old_value.len == 0) {
+        _ = c.printf("Field not found !\n");
+        return -1;
+    }
+    const replacement = std.mem.span(@as([*:0]const u8, @ptrCast(new_value)));
+    if (replacement.len != old_value.len)
+        return editFieldRebuild(intf, id, &info, header, section_offset, kind, index, replacement, allocator);
+    _ = c.printf("Updating Field '%.*s' with '%.*s' ...\n", @as(c_int, @intCast(old_value.len)), old_value.ptr, @as(c_int, @intCast(replacement.len)), replacement.ptr);
+    @memcpy(area[field_start + 1 ..][0..replacement.len], replacement);
+    area[section_len - 1] = areaChecksum(area);
+    _ = writeArea(intf, id, &info, section_offset, area, allocator) catch false;
+    return 1;
+}
+
+fn editHelp() void {
+    c.lprintf(log.Level.notice, "fru edit <fruid> field <section> <index> <string> - edit FRU string");
+    c.lprintf(log.Level.notice, "fru edit <fruid> oem iana <record> <format> <args> - limited OEM support");
+}
+
 fn fruMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     const in = intf orelse return -1;
+    if (argc >= 3 and equals(argv[0], "edit") and equals(argv[2], "field")) {
+        if (argc != 6) {
+            c.lprintf(log.Level.err, "Not enough parameters given.");
+            editHelp();
+            return -1;
+        }
+        var id: u8 = 0;
+        if (c.is_fru_id(argv[1], &id) != 0) return -1;
+        if (c.verbose != 0) _ = c.printf("FRU ID           : %d\n", @as(c_int, id));
+        return editField(in, id, argv[3][0], argv[4][0], argv[5], std.heap.page_allocator);
+    }
     if (argc >= 1 and equals(argv[0], "get")) {
         if (argc > 1 and equals(argv[1], "help")) {
             getHelp();
