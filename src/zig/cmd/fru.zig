@@ -1,14 +1,15 @@
 //! Staged port of `lib/ipmi_fru.c`. Inventory reads, section-aware writes,
 //! print/list (including SDR discovery, area strings and multirecords), get,
 //! upgEkey and internal-use commands are implemented here. The PICMG
-//! extension decoder, OEM edits and public FRU helpers still use the original
-//! C code through `fru_legacy.c`, not placeholders. Keep the shim until all
-//! commands and exported helpers have been ported.
+//! OEM edits and public FRU helpers still use the original C code through
+//! `fru_legacy.c`, not placeholders. Keep the shim until all commands and
+//! exported helpers have been ported.
 
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
+const picmg = @import("fru_picmg.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
 
@@ -309,7 +310,7 @@ fn signed16(data: []const u8) i16 {
     return @bitCast(le16(data));
 }
 
-fn showMultirecord(body: []const u8, record_type: u8, buffer: *[260]u8) void {
+fn showMultirecord(body: []const u8, record_type: u8) void {
     switch (record_type) {
         c.FRU_RECORD_TYPE_POWER_SUPPLY_INFORMATION => {
             if (body.len < 24) return;
@@ -365,7 +366,7 @@ fn showMultirecord(body: []const u8, record_type: u8, buffer: *[260]u8) void {
             const iana: u32 = @as(u32, body[0]) | (@as(u32, body[1]) << 8) | (@as(u32, body[2]) << 16);
             if (iana == c.IPMI_OEM_PICMG) {
                 _ = c.printf("  PICMG Extension Record\n");
-                c.ipmi_fru_zig_picmg_print(buffer, 5, @intCast(body.len));
+                picmg.print(body);
             } else {
                 _ = c.printf("  OEM (%s) Record\n", c.val2str(iana, c.ipmi_oem_info));
             }
@@ -408,7 +409,7 @@ fn multirecordPrint(intf: *Intf, id: u8, info: *Info, offset: usize) void {
         if (body_len != 0)
             readArea(intf, id, info, off + 5, record[5..][0..body_len]) catch break;
         off += 5 + body_len;
-        showMultirecord(record[5..][0..body_len], record[0], &record);
+        showMultirecord(record[5..][0..body_len], record[0]);
         if ((record[1] & 0x80) != 0 or off >= info.size) break;
     }
     c.lprintf(log.Level.debug, "Multi-Record area ends at: %i (%xh)", @as(c_int, @intCast(off)), @as(c_uint, @intCast(off)));

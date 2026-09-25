@@ -7,9 +7,3 @@
 #define ipmi_fru_main ipmi_fru_main_legacy
 #include "../../../lib/ipmi_fru.c"
 #undef ipmi_fru_main
-
-void
-ipmi_fru_zig_picmg_print(uint8_t *data, int offset, int length)
-{
-	ipmi_fru_picmg_ext_print(data, offset, length);
-}

@@ -229,9 +229,9 @@ section-aware protection), `fru print/list` (including SDR discovery and
 multirecords), `fru internaluse` (info/print/read/write), `fru get` (bounded
 Kontron OEM traversal), `fru upgEkey` (bounded source validation and target
 write), and `fru edit ... field` (same-size updates and area rebuild/resizing).
-The PICMG extension decoder and OEM edits are still called through the shim;
-the external FRU helper ABIs also remain in C. None of this constitutes a
-full translation-unit port yet.
+PICMG extension records are decoded in Zig. OEM edits are still called
+through the shim; the external FRU helper ABIs also remain in C. None of this
+constitutes a full translation-unit port yet.
 The original `lib/ipmi_fru.c` is unchanged: `cmd/fru_legacy.c` includes it
 with its main entry point renamed to `ipmi_fru_main_legacy`, so commands not
 yet ported retain their complete implementation rather than returning dummy
