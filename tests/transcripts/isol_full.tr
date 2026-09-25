@@ -1,0 +1,88 @@
+# IPMI v1.5 Serial over LAN: revision byte plus a distinct value in each
+# parameter.  High bits exercise the three masks and privilege preservation.
+default_ccode 0xc1
+respond enabled
+  netfn 0x34
+  cmd 0x04
+  match 00 01 00 00
+  data 11 83
+end
+respond authentication
+  netfn 0x34
+  cmd 0x04
+  match 00 02 00 00
+  data 12 84
+end
+respond baud
+  netfn 0x34
+  cmd 0x04
+  match 00 05 00 00
+  data 13 8a
+end
+respond set_enabled_true
+  netfn 0x34
+  cmd 0x03
+  match 00 01 01
+end
+respond set_enabled_false
+  netfn 0x34
+  cmd 0x03
+  match 00 01 00
+end
+respond set_user
+  netfn 0x34
+  cmd 0x03
+  match 00 02 82
+end
+respond set_operator
+  netfn 0x34
+  cmd 0x03
+  match 00 02 83
+end
+respond set_admin
+  netfn 0x34
+  cmd 0x03
+  match 00 02 84
+end
+respond set_oem
+  netfn 0x34
+  cmd 0x03
+  match 00 02 85
+end
+respond set_9600
+  netfn 0x34
+  cmd 0x03
+  match 00 05 06
+end
+respond set_19200
+  netfn 0x34
+  cmd 0x03
+  match 00 05 07
+end
+respond set_38400
+  netfn 0x34
+  cmd 0x03
+  match 00 05 08
+end
+respond set_57600
+  netfn 0x34
+  cmd 0x03
+  match 00 05 09
+end
+respond set_115200
+  netfn 0x34
+  cmd 0x03
+  match 00 05 0a
+end
+respond activate
+  netfn 0x34
+  cmd 0x01
+  match 01 00 00 00 00
+  data 80 01 32 ff
+end
+respond deactivate
+  netfn 0x34
+  cmd 0x01
+  match 00 00 00 00 00
+  data 80 00 32 ff
+end

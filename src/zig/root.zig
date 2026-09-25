@@ -2,8 +2,8 @@
 //!
 //! Importing this file pulls in every header port and therefore every
 //! `comptime` ABI assertion, which is what `zig build test` compiles.  It
-//! reaches into `cmd/` only for parser unit tests: those modules `@export` C
-//! symbols and are otherwise linked through `exports.zig`.
+//! imports command ports only for tests; their C symbols are exported when
+//! selected through `exports.zig`.
 //!
 //! Layout, mirroring the C tree:
 //!
@@ -98,6 +98,7 @@ test {
     _ = intf.serial_basic;
     _ = intf.serial_terminal;
     _ = intf.usb;
+    _ = @import("cmd/isol.zig");
     _ = util.bswap;
     _ = util.helper;
     _ = util.log;

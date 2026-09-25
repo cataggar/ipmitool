@@ -49,6 +49,9 @@ const log = @import("../util/log.zig");
 
 const Intf = intf_mod.Intf;
 
+/// The C dummy's opt-in session for iSOL activation golden tests.
+var isol_session: intf_mod.Session = std.mem.zeroes(intf_mod.Session);
+
 const native_endian = builtin.target.cpu.arch.endian();
 
 /// `IPMI_DUMMY_DEFAULTSOCK`, taken from the C header rather than restated, so
@@ -210,6 +213,9 @@ fn open(intf: *Intf) callconv(.c) c_int {
         c.perror("dummy failed on connect(): ");
         // The socket is neither closed nor un-opened; see note 5 above.
         return -1;
+    }
+    if (c.getenv("IPMI_DUMMY_SOL_SESSION") != null) {
+        intf.session = &isol_session;
     }
     intf.opened = 1;
     return intf.fd;

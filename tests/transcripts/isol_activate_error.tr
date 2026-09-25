@@ -1,0 +1,25 @@
+default_ccode 0xc1
+respond enabled
+  netfn 0x34
+  cmd 0x04
+  match 00 01 00 00
+  data 11 01
+end
+respond authentication
+  netfn 0x34
+  cmd 0x04
+  match 00 02 00 00
+  data 12 04
+end
+respond baud
+  netfn 0x34
+  cmd 0x04
+  match 00 05 00 00
+  data 13 06
+end
+respond already_active
+  netfn 0x34
+  cmd 0x01
+  match 01 00 00 00 00
+  ccode 0x80
+end

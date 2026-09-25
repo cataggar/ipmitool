@@ -190,6 +190,22 @@ real client can never emit it) to unblock the `accept` loop. This is
 deliberate: cancelling a task that is blocked in `accept` is not reliable, and a
 harness that occasionally deadlocks is worse than no harness.
 
+ISOL activation expects `intf->session` even on the dummy interface, which
+normally has no session. Cases with `env: IPMI_DUMMY_SOL_SESSION=1` opt in to a
+zero-initialized session in both dummy implementations; the default interface
+and all other fixtures are unchanged. The success fixture ends the interactive
+session at stdin EOF and records the deactivation request. Malformed
+activation replies and denied completion codes are also golden fixtures.
+Successful Get ISOL Config replies shorter than two bytes are an intentional
+safety exception: C reads stale bytes from the dummy's static response, while
+the Zig port returns `ShortResponse`. A Zig unit test checks all three
+selectors; denial responses with short payloads remain golden-covered.
+The port also tests missing session and SOL send callback errors and caps
+malformed SOL output lengths at `IPMI_BUF_SIZE`, rather than dereferencing
+missing callbacks or reading beyond the response buffer. Out-of-range file
+descriptors are rejected before `fd_set` indexing; terminal mode is restored
+on an early select failure rather than left raw.
+
 ## Layout
 
 ```
