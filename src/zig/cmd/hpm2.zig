@@ -39,27 +39,27 @@ fn getCapabilities(intf: *Intf, caps: *Attach) callconv(.c) c_int {
     req.msg.data_len = rq.len;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.notice, "Error sending request.");
+        log.print(log.Level.notice, "Error sending request.", .{});
         return -1;
     };
     if (rsp.ccode == 0xc1) {
-        c.lprintf(log.Level.debug, "IPM Controller is not HPM.2 compatible");
+        log.print(log.Level.debug, "IPM Controller is not HPM.2 compatible", .{});
         return rsp.ccode;
     } else if (rsp.ccode != 0) {
-        c.lprintf(log.Level.notice, "Get HPM.x Capabilities request failed, compcode = %x", @as(c_uint, rsp.ccode));
+        log.print(log.Level.notice, "Get HPM.x Capabilities request failed, compcode = %x", .{@as(c_uint, rsp.ccode)});
         return rsp.ccode;
     }
 
     if (rsp.data_len < 2 or rsp.data_len > 10) {
-        c.lprintf(log.Level.notice, "Bad response length, len=%d", rsp.data_len);
+        log.print(log.Level.notice, "Bad response length, len=%d", .{rsp.data_len});
         return -1;
     }
     if (rsp.data[1] != 2) {
-        c.lprintf(log.Level.notice, "Bad HPM.x ID, id=%d", @as(c_int, rsp.data[1]));
+        log.print(log.Level.notice, "Bad HPM.x ID, id=%d", .{@as(c_int, rsp.data[1])});
         return rsp.ccode;
     }
     if (rsp.data_len < 4) {
-        c.lprintf(log.Level.notice, "Bad response length, len=%d", rsp.data_len);
+        log.print(log.Level.notice, "Bad response length, len=%d", .{rsp.data_len});
         return -1;
     }
 
@@ -68,33 +68,33 @@ fn getCapabilities(intf: *Intf, caps: *Attach) callconv(.c) c_int {
     caps.lan_channel_mask = std.mem.littleToNative(u16, caps.lan_channel_mask);
 
     if (caps.hpm2_revision_id == 0) {
-        c.lprintf(log.Level.notice, "Bad HPM.2 revision, rev=%d", @as(c_int, caps.hpm2_revision_id));
+        log.print(log.Level.notice, "Bad HPM.2 revision, rev=%d", .{@as(c_int, caps.hpm2_revision_id)});
         return -1;
     }
     if (caps.lan_channel_mask == 0) return -1;
     if (rsp.data_len < 8) {
-        c.lprintf(log.Level.notice, "Bad response length, len=%d", rsp.data_len);
+        log.print(log.Level.notice, "Bad response length, len=%d", .{rsp.data_len});
         return -1;
     }
     if (caps.hpm2_lan_params_start < 0xc0) {
-        c.lprintf(log.Level.notice, "Bad HPM.2 LAN params start, start=%x", @as(c_uint, caps.hpm2_lan_params_start));
+        log.print(log.Level.notice, "Bad HPM.2 LAN params start, start=%x", .{@as(c_uint, caps.hpm2_lan_params_start)});
         return -1;
     }
     if (caps.hpm2_lan_params_rev != c.HPM2_LAN_PARAMS_REV) {
-        c.lprintf(log.Level.notice, "Bad HPM.2 LAN params revision, rev=%d", @as(c_int, caps.hpm2_lan_params_rev));
+        log.print(log.Level.notice, "Bad HPM.2 LAN params revision, rev=%d", .{@as(c_int, caps.hpm2_lan_params_rev)});
         return -1;
     }
     if (caps.hpm2_caps & c.HPM2_CAPS_SOL_EXTENSION == 0) return 0;
     if (rsp.data_len < 10) {
-        c.lprintf(log.Level.notice, "Bad response length, len=%d", rsp.data_len);
+        log.print(log.Level.notice, "Bad response length, len=%d", .{rsp.data_len});
         return -1;
     }
     if (caps.hpm2_sol_params_start < 0xc0) {
-        c.lprintf(log.Level.notice, "Bad HPM.2 SOL params start, start=%x", @as(c_uint, caps.hpm2_sol_params_start));
+        log.print(log.Level.notice, "Bad HPM.2 SOL params start, start=%x", .{@as(c_uint, caps.hpm2_sol_params_start)});
         return -1;
     }
     if (caps.hpm2_sol_params_rev != c.HPM2_SOL_PARAMS_REV) {
-        c.lprintf(log.Level.notice, "Bad HPM.2 SOL params revision, rev=%d", @as(c_int, caps.hpm2_sol_params_rev));
+        log.print(log.Level.notice, "Bad HPM.2 SOL params revision, rev=%d", .{@as(c_int, caps.hpm2_sol_params_rev)});
         return -1;
     }
     return 0;
@@ -109,22 +109,22 @@ fn getLanChannelCapabilities(intf: *Intf, start: u8, caps: *Channel) callconv(.c
     req.msg.data = &rq;
     req.msg.data_len = rq.len;
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.notice, "Error sending request.");
+        log.print(log.Level.notice, "Error sending request.", .{});
         return -1;
     };
     if (rsp.ccode == 0x80) {
-        c.lprintf(log.Level.debug, "HPM.2 Channel Caps parameter is not supported");
+        log.print(log.Level.debug, "HPM.2 Channel Caps parameter is not supported", .{});
         return rsp.ccode;
     } else if (rsp.ccode != 0) {
-        c.lprintf(log.Level.notice, "Get LAN Configuration Parameters request failed, compcode = %x", @as(c_uint, rsp.ccode));
+        log.print(log.Level.notice, "Get LAN Configuration Parameters request failed, compcode = %x", .{@as(c_uint, rsp.ccode)});
         return rsp.ccode;
     }
     if (rsp.data_len != @sizeOf(Channel) + 1) {
-        c.lprintf(log.Level.notice, "Bad response length, len=%d", rsp.data_len);
+        log.print(log.Level.notice, "Bad response length, len=%d", .{rsp.data_len});
         return -1;
     }
     if (rsp.data[0] != 0x11) {
-        c.lprintf(log.Level.notice, "Bad HPM.2 LAN parameter revision, rev=%d", @as(c_int, rsp.data[0]));
+        log.print(log.Level.notice, "Bad HPM.2 LAN parameter revision, rev=%d", .{@as(c_int, rsp.data[0])});
         return -1;
     }
     @memcpy(std.mem.asBytes(caps), rsp.data[1 .. @sizeOf(Channel) + 1]);
@@ -143,11 +143,10 @@ fn detectMaxPayloadSize(intf: *Intf) callconv(.c) c_int {
 
     c.ipmi_intf_set_max_request_data_size(@ptrCast(intf), channel.max_inbound_pld_size -% 7);
     c.ipmi_intf_set_max_response_data_size(@ptrCast(intf), channel.max_outbound_pld_size -% 8);
-    c.lprintf(
+    log.print(
         log.Level.debug,
         "Set maximum request size to %d\nSet maximum response size to %d",
-        @as(c_int, intf.max_request_data_size),
-        @as(c_int, intf.max_response_data_size),
+        .{ @as(c_int, intf.max_request_data_size), @as(c_int, intf.max_response_data_size) },
     );
     return 0;
 }

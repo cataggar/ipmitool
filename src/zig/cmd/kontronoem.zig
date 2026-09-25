@@ -202,19 +202,19 @@ fn serialField(buf: [*]u8, capacity: u32, start: u32, skips: usize, serial: []co
     var offset = start;
     for (0..skips) |_| {
         if (!fieldFits(buf, offset, capacity)) {
-            c.lprintf(log.Level.err, "Failed to read FRU Area string.");
+            log.print(log.Level.err, "Failed to read FRU Area string.", .{});
             return false;
         }
         skipString(buf, &offset);
     }
     if (!fieldFits(buf, offset, capacity)) {
-        c.lprintf(log.Level.err, "Failed to read FRU Area string.");
+        log.print(log.Level.err, "Failed to read FRU Area string.", .{});
         return false;
     }
     var ignored = offset;
     const field = c.get_fru_area_str(buf, &ignored);
     if (field == null) {
-        c.lprintf(log.Level.err, "Failed to read FRU Area string.");
+        log.print(log.Level.err, "Failed to read FRU Area string.", .{});
         return false;
     }
     defer c.free(field);
@@ -223,7 +223,7 @@ fn serialField(buf: [*]u8, capacity: u32, start: u32, skips: usize, serial: []co
         return false;
     }
     if (serial.len > capacity - offset - 1) {
-        c.lprintf(log.Level.err, "Failed to read FRU Area string.");
+        log.print(log.Level.err, "Failed to read FRU Area string.", .{});
         return false;
     }
     @memcpy(buf[offset + 1 ..][0..serial.len], serial);
@@ -257,7 +257,7 @@ fn setSerial(intf: *Intf) c_int {
         return -1;
     }
     const allocation = c.malloc(fru.info.size) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return -1;
     };
     defer c.free(allocation);
@@ -297,7 +297,7 @@ fn setMfgDate(intf: *Intf) c_int {
         return -1;
     }
     const allocation = c.malloc(fru.info.size) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return -1;
     };
     defer c.free(allocation);
@@ -312,7 +312,7 @@ fn setMfgDate(intf: *Intf) c_int {
 
 fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     if (argc == 0) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         help();
         return -1;
     }
@@ -339,7 +339,7 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     }
     if (std.mem.eql(u8, command, "nextboot")) {
         if (argc < 2) {
-            c.lprintf(log.Level.err, "Not enough parameters given.");
+            log.print(log.Level.err, "Not enough parameters given.", .{});
             nextbootHelp();
             return -1;
         }
@@ -350,7 +350,7 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         _ = c.printf("Nextboot set failed\n");
         return -1;
     }
-    c.lprintf(log.Level.err, "Invalid Kontron command: %s", argv[0]);
+    log.print(log.Level.err, "Invalid Kontron command: %s", .{argv[0]});
     help();
     return -1;
 }

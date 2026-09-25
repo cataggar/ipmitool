@@ -56,6 +56,12 @@ args: -I dummy sel list
 transcript: sel_quanta.tr
 covers: sel
 
+[slq_platform_verbose]
+desc: Quanta platform ID debug logging with a promoted byte and %hhx
+args: -I dummy -vv sel get 1
+transcript: sel_quanta.tr
+covers: sel
+
 [slq_elist]
 desc: Quanta extended SEL listing
 args: -I dummy sel elist

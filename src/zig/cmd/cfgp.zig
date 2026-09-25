@@ -146,17 +146,17 @@ fn parseSel(ctx_opt: ?*Context, argc: c_int, argv: [*c][*c]const u8, sel_opt: ?*
         sel.block = if (p.hasBlocks()) -1 else 0;
         if (argc == 1 or !p.isSet()) return 1;
         if (c.str2int(argv[1], &sel.set) != 0 or sel.set < 0 or (sel.set == 0 and p.firstSet() != 0)) {
-            c.lprintf(log.Level.err, "invalid set selector");
+            log.print(log.Level.err, "invalid set selector", .{});
             return -1;
         }
         if (argc == 2 or !p.hasBlocks()) return 2;
         if (c.str2int(argv[2], &sel.block) != 0 or sel.block < 0 or (sel.block == 0 and p.firstBlock() != 0)) {
-            c.lprintf(log.Level.err, "invalid block selector");
+            log.print(log.Level.err, "invalid block selector", .{});
             return -1;
         }
         return 3;
     }
-    c.lprintf(log.Level.err, "invalid parameter");
+    log.print(log.Level.err, "invalid parameter", .{});
     return -1;
 }
 
@@ -165,16 +165,16 @@ fn parseData(ctx_opt: ?*Context, sel_opt: ?*const Sel, argc: c_int, argv: [*c][*
     const sel = sel_opt orelse return -1;
     if (argv == null) return -1;
     if (sel.param < 0 or sel.param >= ctx.count) {
-        c.lprintf(log.Level.err, "invalid parameter, must be one of:");
+        log.print(log.Level.err, "invalid parameter, must be one of:", .{});
         usage(ctx.set, ctx.count, 1);
         return -1;
     }
     if (sel.set == -1) {
-        c.lprintf(log.Level.err, "set selector is not specified");
+        log.print(log.Level.err, "set selector is not specified", .{});
         return -1;
     }
     if (sel.block == -1) {
-        c.lprintf(log.Level.err, "block selector is not specified");
+        log.print(log.Level.err, "block selector is not specified", .{});
         return -1;
     }
     const p = descriptor(ctx, sel.param);

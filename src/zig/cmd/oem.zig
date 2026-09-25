@@ -6,8 +6,8 @@
 //! the C names and signatures, so `lib/ipmi_main.c`, `src/plugins/lan/lan.c`
 //! and `src/plugins/lanplus/*.c` link against it unchanged and unaware.
 //!
-//! Everything this module still needs from C — `lprintf`, `ipmi_sel_oem_init`,
-//! `ipmi_intf_session_set_authtype` — is reached through the `ipmi_c` bridge.
+//! The retained SEL and interface helpers are reached through `ipmi_c`;
+//! logging uses the typed API shared with the selected Zig logger.
 
 const std = @import("std");
 
@@ -76,7 +76,7 @@ fn setupSupermicro(intf: *Intf) callconv(.c) c_int {
 
 fn setupIbm(_: *Intf) callconv(.c) c_int {
     const filename = std.c.getenv("IPMI_OEM_IBM_DATAFILE") orelse {
-        c.lprintf(log.Level.err, "Unable to read IPMI_OEM_IBM_DATAFILE from environment");
+        log.print(log.Level.err, "Unable to read IPMI_OEM_IBM_DATAFILE from environment", .{});
         return -1;
     };
     return c.ipmi_sel_oem_init(filename);
@@ -90,13 +90,13 @@ fn setupQuanta(intf: *Intf) callconv(.c) c_int {
 
 /// `ipmi_oem_print` - print the list of OEM handles.
 fn print() callconv(.c) void {
-    c.lprintf(log.Level.notice, "\nOEM Support:");
+    log.print(log.Level.notice, "\nOEM Support:", .{});
     for (&oem_list) |*handle| {
         const name = handle.name orelse break;
         const desc = handle.desc orelse break;
-        c.lprintf(log.Level.notice, "\t%-12s %s", name, desc);
+        log.print(log.Level.notice, "\t%-12s %s", .{ name, desc });
     }
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "", .{});
 }
 
 /// `ipmi_oem_setup` - do the initial setup of an OEM handle.
@@ -121,10 +121,10 @@ fn setup(intf: *Intf, oemtype: ?[*:0]u8) callconv(.c) c_int {
 
         // Run the optional setup function if it is defined.
         const handle_setup = handle.setup orelse return 0;
-        c.lprintf(
+        log.print(
             log.Level.debug,
             "Running OEM setup for \"%s\"",
-            handle.desc orelse @as([*:0]const u8, ""),
+            .{handle.desc orelse @as([*:0]const u8, "")},
         );
         return handle_setup(intf);
     }

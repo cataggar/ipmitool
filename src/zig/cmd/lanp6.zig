@@ -237,7 +237,7 @@ fn lanError(rsp: ?*Response, param: *const Lanp, action: [*:0]const u8, quiet: c
             cc == c.IPMI_CC_INV_DATA_FIELD_IN_REQ)) return cc;
         break :blk c.val2str(cc, if (cc >= 0xc0) c.completion_code_vals else vals(&lanp_cc_vals));
     } else "No response";
-    c.lprintf(if (rsp != null and rsp.?.ccode == 0) log.Level.debug else log.Level.err, "Failed to %s %s: %s", action, param.name, reason);
+    log.print(if (rsp != null and rsp.?.ccode == 0) log.Level.debug else log.Level.err, "Failed to %s %s: %s", .{ action, param.name, reason });
     return if (rsp) |response| response.ccode else -1;
 }
 
@@ -277,13 +277,13 @@ fn getDynamic(
         .data_len = 4,
         .data = &payload,
     } };
-    c.lprintf(log.Level.info, "Getting parameter '%s' set %d block %d", param.name, set, block);
+    log.print(log.Level.info, "Getting parameter '%s' set %d block %d", .{ param.name, set, block });
     const rsp = send(intf, &req) orelse return lanError(null, param, "get", quiet);
     if (rsp.ccode != 0) return lanError(rsp, param, "get", quiet);
     // A successful reply includes a parameter revision byte. The C version
     // copied from data + 1 even if data_len was zero (a negative copy size).
     if (!copyReply(rsp, raw[0..@intCast(param.size)])) {
-        c.lprintf(log.Level.err, "Failed to get %s: Invalid response length", param.name);
+        log.print(log.Level.err, "Failed to get %s: Invalid response length", .{param.name});
         return -1;
     }
     return 0;
@@ -326,7 +326,7 @@ fn setDynamic(
         .data_len = @intCast(n + 2),
         .data = &payload,
     } };
-    c.lprintf(log.Level.info, "Setting parameter '%s'", param.name);
+    log.print(log.Level.info, "Setting parameter '%s'", .{param.name});
     const rsp = send(intf, &req);
     if (rsp == null or rsp.?.ccode != 0) return lanError(rsp, param, "set", 0);
     return 0;
@@ -337,7 +337,7 @@ fn setParam(priv: ?*anyopaque, param: c_int, data: ?*const anyopaque) callconv(.
 }
 
 fn invalidValue() c_int {
-    c.lprintf(log.Level.err, "invalid value");
+    log.print(log.Level.err, "invalid value", .{});
     return -1;
 }
 
@@ -666,20 +666,20 @@ fn main(intf: *Intf, input_argc: c_int, input_argv: [*c][*c]u8) callconv(.c) c_i
         }
         channel = c.find_lan_channel(@ptrCast(intf), 1);
         if (channel == 0) {
-            c.lprintf(log.Level.err, "No LAN channel found");
+            log.print(log.Level.err, "No LAN channel found", .{});
             return -1;
         }
         argc -= 1;
         argv += 1;
     } else {
         if (c.str2int(argv[1], &channel) != 0) {
-            c.lprintf(log.Level.err, "Invalid channel: %s", argv[1]);
+            log.print(log.Level.err, "Invalid channel: %s", .{argv[1]});
             return -1;
         }
         // A LAN channel is 0..14 or 0xe (current channel). Do not truncate a
         // signed int into a different on-wire channel.
         if (channel < 0 or channel > 0x0e) {
-            c.lprintf(log.Level.err, "Invalid channel: %s", argv[1]);
+            log.print(log.Level.err, "Invalid channel: %s", .{argv[1]});
             return -1;
         }
         argc -= 2;
@@ -694,15 +694,15 @@ fn main(intf: *Intf, input_argc: c_int, input_argv: [*c][*c]u8) callconv(.c) c_i
     var lp: Priv = .{ .intf = @ptrCast(intf), .channel = channel };
     switch (cmd) {
         cmd_lock => {
-            c.lprintf(log.Level.notice, "Lock parameter(s)...");
+            log.print(log.Level.notice, "Lock parameter(s)...", .{});
             return lock(&lp);
         },
         cmd_commit => {
-            c.lprintf(log.Level.notice, "Commit parameter(s)...");
+            log.print(log.Level.notice, "Commit parameter(s)...", .{});
             return commit(&lp);
         },
         cmd_discard => {
-            c.lprintf(log.Level.notice, "Discard parameter(s)...");
+            log.print(log.Level.notice, "Discard parameter(s)...", .{});
             return discard(&lp);
         },
         else => {},
@@ -722,7 +722,7 @@ fn main(intf: *Intf, input_argc: c_int, input_argv: [*c][*c]u8) callconv(.c) c_i
 
     switch (cmd) {
         cmd_save, cmd_print => {
-            c.lprintf(log.Level.notice, "Getting parameter(s)...");
+            log.print(log.Level.notice, "Getting parameter(s)...", .{});
             if (c.ipmi_cfgp_get(&ctx, &sel) != 0) return -1;
             if (cmd == cmd_print) return c.ipmi_cfgp_print(&ctx, &sel, c.stdout);
             var saved_cmd: [20]u8 = undefined;
@@ -736,7 +736,7 @@ fn main(intf: *Intf, input_argc: c_int, input_argv: [*c][*c]u8) callconv(.c) c_i
         },
         cmd_set => {
             if (c.ipmi_cfgp_parse_data(&ctx, &sel, argc, @ptrCast(argv)) != 0) return -1;
-            c.lprintf(log.Level.notice, "Setting parameter(s)...");
+            log.print(log.Level.notice, "Setting parameter(s)...", .{});
             if (!nolock and lock(&lp) != 0) return -1;
             const ret = c.ipmi_cfgp_set(&ctx, &sel);
             if (nolock) return ret;
