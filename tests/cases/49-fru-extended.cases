@@ -147,6 +147,12 @@ args: -I dummy -v fru print 0
 transcript: fru_picmg_variants.tr
 covers: fru
 
+[fru_print_picmg_topology]
+desc: decode PICMG address table, power feed and topology descriptors
+args: -I dummy -v fru print 0
+transcript: fru_picmg_topology.tr
+covers: fru
+
 [fru_print_short_board]
 desc: area length read advertises two bytes but contains only one
 args: -I dummy fru print 0

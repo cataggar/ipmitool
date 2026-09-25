@@ -1,0 +1,88 @@
+@mark backplane
+c0 02
+@mark backplane_len
+00
+@mark backplane_sum
+00
+@mark backplane_hsum
+00
+@mark backplane_body
+5a 31 00 04 00 08 20 01 21 a3 00
+@fill_size backplane_len backplane_body
+@fill_checksum backplane_sum backplane_body
+@fill_checksum backplane_hsum backplane
+
+@mark address
+c0 02
+@mark address_len
+00
+@mark address_sum
+00
+@mark address_hsum
+00
+@mark address_body
+5a 31 00 10 00 14
+01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13 14
+01 20 02 07
+@fill_size address_len address_body
+@fill_checksum address_sum address_body
+@fill_checksum address_hsum address
+
+@mark power
+c0 02
+@mark power_len
+00
+@mark power_sum
+00
+@mark power_hsum
+00
+@mark power_body
+5a 31 00 11 00 01 7b 00 ff ff 64 01 20 02
+@fill_size power_len power_body
+@fill_checksum power_sum power_body
+@fill_checksum power_hsum power
+
+@mark board
+c0 02
+@mark board_len
+00
+@mark board_sum
+00
+@mark board_hsum
+00
+@mark board_body
+5a 31 00 14 00 01
+00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+05 11 00 20
+@fill_size board_len board_body
+@fill_checksum board_sum board_body
+@fill_checksum board_hsum board
+
+@mark carrier
+c0 02
+@mark carrier_len
+00
+@mark carrier_sum
+00
+@mark carrier_hsum
+00
+@mark carrier_body
+5a 31 00 18 00 80 01 81 23 01
+@fill_size carrier_len carrier_body
+@fill_checksum carrier_sum carrier_body
+@fill_checksum carrier_hsum carrier
+
+@mark amc
+c0 82
+@mark amc_len
+00
+@mark amc_sum
+00
+@mark amc_hsum
+00
+@mark amc_body
+5a 31 00 19 00 00
+@fill_size amc_len amc_body
+@fill_checksum amc_sum amc_body
+@fill_checksum amc_hsum amc
+@pad 31 0x00
