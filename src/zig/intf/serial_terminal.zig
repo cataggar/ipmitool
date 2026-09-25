@@ -115,11 +115,11 @@ fn readPacket(intf: *Intf, out: []u8) serial.Error![]const u8 {
                 continue;
             }
             const open_bracket = std.mem.lastIndexOfScalar(u8, line[0..len], '[') orelse {
-                c.lprintf(log.Level.err, "Serial response is invalid");
+                log.print(log.Level.err, "Serial response is invalid", .{});
                 return error.InvalidResponse;
             };
             return decode(line[open_bracket + 1 .. len - 1], out) catch |err| {
-                c.lprintf(log.Level.err, "Serial response is invalid");
+                log.print(log.Level.err, "Serial response is invalid", .{});
                 return err;
             };
         }
@@ -177,7 +177,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     var retry: c_int = 0;
     while (retry < intf.ssn_params.retry) : (retry += 1) {
         const built = serial.build(.terminal, intf, req, &msg, system_interface) catch {
-            c.lprintf(log.Level.err, "ipmitool: Message data is too long");
+            log.print(log.Level.err, "ipmitool: Message data is too long", .{});
             return null;
         };
         serial.flush(intf.fd);

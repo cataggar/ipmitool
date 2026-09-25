@@ -22,6 +22,10 @@ args: -I dummy notacommand
 desc: -I with an interface that does not exist
 args: -I notaninterface mc info
 
+[global_open_missing_device]
+desc: open interface reports the three attempted device paths and errno
+args: -I open -d 249 -vv mc info
+
 [global_missing_option_arg]
 desc: an option that needs an argument but does not get one
 args: -I dummy -H

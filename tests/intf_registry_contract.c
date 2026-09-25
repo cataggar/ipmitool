@@ -136,7 +136,8 @@ static void check_table(void)
 	assert(ipmi_intf_load(selected->name) == selected);
 	selected->setup = setup_bad;
 	assert(ipmi_intf_load(selected->name) == NULL);
-	assert(setups == 3);
+	assert(ipmi_intf_load(NULL) == NULL);
+	assert(setups == 4);
 	selected->setup = NULL;
 	puts("selection-ok");
 }

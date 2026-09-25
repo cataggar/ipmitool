@@ -146,7 +146,7 @@ fn isSupported(intflist: [*]const IntfSupport, candidate: *const Intf) bool {
 /// `ipmi_intf_print()`: the `Interfaces:` block of `ipmitool -h`.
 fn ipmiIntfPrint(intflist: ?[*]IntfSupport) callconv(.c) void {
     const def_intf = defaultInterface(&ipmi_intf_table);
-    c.lprintf(log.Level.notice, "Interfaces:");
+    log.print(log.Level.notice, "Interfaces:", .{});
 
     for (ipmi_intf_table) |entry| {
         const candidate = entry orelse break;
@@ -155,15 +155,17 @@ fn ipmiIntfPrint(intflist: ?[*]IntfSupport) callconv(.c) void {
             if (!isSupported(list, candidate)) continue;
         }
 
-        c.lprintf(
+        log.print(
             log.Level.notice,
             "\t%-12s  %s %s",
-            @as([*c]const u8, @ptrCast(&candidate.name)),
-            @as([*c]const u8, @ptrCast(&candidate.desc)),
-            @as([*c]const u8, if (def_intf == candidate) "[default]" else ""),
+            .{
+                @as([*c]const u8, @ptrCast(&candidate.name)),
+                @as([*c]const u8, @ptrCast(&candidate.desc)),
+                @as([*c]const u8, if (def_intf == candidate) "[default]" else ""),
+            },
         );
     }
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "", .{});
 }
 
 /// `ipmi_intf_load()`: look an interface up by name and run its `setup()`.
@@ -182,7 +184,7 @@ fn ipmiIntfLoad(name: ?[*:0]u8) callconv(.c) ?*Intf {
         if (setup(i) < 0) {
             // With no `-I` the C passes the null `name` straight to "%s" and
             // glibc renders "(null)"; kept, the message is observable.
-            c.lprintf(log.Level.err, "Unable to setup interface %s", name);
+            log.print(log.Level.err, "Unable to setup interface %s", .{name});
             return null;
         }
     }
@@ -320,11 +322,11 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
     const params = &self.ssn_params;
 
     const hostname = params.hostname orelse {
-        c.lprintf(log.Level.err, "No hostname specified!");
+        log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     };
     if (c.strlen(hostname) == 0) {
-        c.lprintf(log.Level.err, "No hostname specified!");
+        log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     }
 
@@ -340,7 +342,7 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
 
     var rp0: [*c]c.struct_addrinfo = null;
     if (c.getaddrinfo(hostname, &service, &hints, &rp0) != 0) {
-        c.lprintf(log.Level.err, "Address lookup for %s failed", hostname);
+        log.print(log.Level.err, "Address lookup for %s failed", .{hostname});
         return -1;
     }
 
@@ -382,11 +384,10 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
                     0,
                     c.NI_NUMERICHOST,
                 ) == 0) {
-                    c.lprintf(
+                    log.print(
                         log.Level.debug,
                         "Trying address: %s scope=%d",
-                        @as([*c]const u8, &hbuf),
-                        @as(c_uint, addr6.scope_id),
+                        .{ @as([*c]const u8, &hbuf), @as(c_uint, addr6.scope_id) },
                     );
                 }
                 if (c.connect(self.fd, rp.*.ai_addr, rp.*.ai_addrlen) != -1) {
@@ -399,10 +400,10 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
                 var ifaddrs: [*c]c.struct_ifaddrs = null;
 
                 if (c.getifaddrs(&ifaddrs) < 0) {
-                    c.lprintf(
+                    log.print(
                         log.Level.err,
                         "Interface address lookup for %s failed",
-                        hostname,
+                        .{hostname},
                     );
                     break;
                 }
@@ -429,15 +430,17 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
                         0,
                         c.NI_NUMERICHOST,
                     ) == 0) {
-                        c.lprintf(
+                        log.print(
                             log.Level.debug,
                             "Testing %s interface address: %s scope=%d",
-                            @as([*c]const u8, if (ifa.*.ifa_name != null)
-                                ifa.*.ifa_name
-                            else
-                                "???"),
-                            @as([*c]const u8, &hbuf),
-                            @as(c_uint, tmp6.scope_id),
+                            .{
+                                @as([*c]const u8, if (ifa.*.ifa_name != null)
+                                    ifa.*.ifa_name
+                                else
+                                    "???"),
+                                @as([*c]const u8, &hbuf),
+                                @as(c_uint, tmp6.scope_id),
+                            },
                         );
                     }
 
@@ -464,11 +467,13 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
                     if (addr6.scope_id != 0 or !in6IsAddrLinklocal(&tmp6.addr)) {
                         if (c.connect(self.fd, rp.*.ai_addr, rp.*.ai_addrlen) != -1) {
                             hints.ai_family = rp.*.ai_family;
-                            c.lprintf(
+                            log.print(
                                 log.Level.debug,
                                 "Successful connected on %s interface with scope id %d",
-                                @as([*c]const u8, ifa.*.ifa_name),
-                                @as(c_uint, tmp6.scope_id),
+                                .{
+                                    @as([*c]const u8, ifa.*.ifa_name),
+                                    @as(c_uint, tmp6.scope_id),
+                                },
                             );
                             break; // Success.
                         }
@@ -574,10 +579,10 @@ fn getBridgingLevel(intf: *const Intf) callconv(.c) u8 {
 
 fn setMaxRequestDataSize(intf: *Intf, size: u16) callconv(.c) void {
     if (size < default_payload_size) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Request size is too small (%d), leave default size",
-            @as(c_int, size),
+            .{@as(c_int, size)},
         );
         return;
     }
@@ -591,10 +596,10 @@ fn setMaxRequestDataSize(intf: *Intf, size: u16) callconv(.c) void {
 
 fn setMaxResponseDataSize(intf: *Intf, size: u16) callconv(.c) void {
     if (size < default_payload_size - 1) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Response size is too small (%d), leave default size",
-            @as(c_int, size),
+            .{@as(c_int, size)},
         );
         return;
     }

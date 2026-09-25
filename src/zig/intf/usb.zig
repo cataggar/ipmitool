@@ -111,7 +111,7 @@ fn scsiProbeNew(num_ami_devices: *c_int, sg_nos: [*c]c_int) callconv(.c) c_int {
 fn openCD(intf: *Intf, name: [*c]u8) callconv(.c) c_int {
     intf.fd = sysOpen(@ptrCast(name), c.O_RDWR);
     if (intf.fd == -1) {
-        c.lprintf(log.Level.err, "OpenCD:Unable to open device, %s", c.strerror(std.c._errno().*));
+        log.print(log.Level.err, "OpenCD:Unable to open device, %s", .{c.strerror(std.c._errno().*)});
         return 1;
     }
     return 0;
@@ -140,12 +140,12 @@ fn sendScsiCmd(
     hdr.timeout = if (timeout == 0) 20000 else timeout;
 
     if (sysIoctl(fd, &hdr) < 0) {
-        c.lprintf(log.Level.err, "sendscsicmd_SGIO: SG_IO ioctl error");
+        log.print(log.Level.err, "sendscsicmd_SGIO: SG_IO ioctl error", .{});
         return 1;
     }
     if (hdr.status != 0) return 1;
     if (timeout != 0 and (hdr.info & c.SG_INFO_OK_MASK) != c.SG_INFO_OK) {
-        c.lprintf(log.Level.debug, "sendscsicmd_SGIO: SG_INFO_OK - Not OK");
+        log.print(log.Level.debug, "sendscsicmd_SGIO: SG_INFO_OK - Not OK", .{});
         return 1;
     }
     // A successful status with a short read is not a complete header, ID or
@@ -167,11 +167,11 @@ fn isG2Drive(fd: c_int) callconv(.c) c_int {
     const rc = identify(fd, &sig);
     _ = sysFlock(fd, c.LOCK_UN);
     if (rc != 0) {
-        c.lprintf(log.Level.debug, "IsG2Drive:Unable to send ID command to the device");
+        log.print(log.Level.debug, "IsG2Drive:Unable to send ID command to the device", .{});
         return 1;
     }
     if (!std.mem.eql(u8, std.mem.sliceTo(&sig, 0), "$$$AMI$$$")) {
-        c.lprintf(log.Level.err, "IsG2Drive:Signature mismatch when ID command sent");
+        log.print(log.Level.err, "IsG2Drive:Signature mismatch when ID command sent", .{});
         return 1;
     }
     return 0;
@@ -181,7 +181,7 @@ fn findG2CDROM(intf: *Intf) callconv(.c) c_int {
     var devices: [16]c_int = undefined;
     var count: c_int = devices.len;
     if (scsiProbeNew(&count, &devices) != 0 or count == 0) {
-        c.lprintf(log.Level.debug, "Unable to find Virtual CDROM Device");
+        log.print(log.Level.debug, "Unable to find Virtual CDROM Device", .{});
         return 0;
     }
     for (devices[0..@intCast(count)]) |number| {
@@ -189,7 +189,7 @@ fn findG2CDROM(intf: *Intf) callconv(.c) c_int {
         _ = c.sprintf(&name, "/dev/sg%d", number);
         if (openCD(intf, &name) != 0) continue;
         if (isG2Drive(intf.fd) == 0) {
-            c.lprintf(log.Level.debug, "USB Device found");
+            log.print(log.Level.debug, "USB Device found", .{});
             return 1;
         }
         _ = sysClose(intf.fd);
@@ -200,7 +200,7 @@ fn findG2CDROM(intf: *Intf) callconv(.c) c_int {
 
 fn setup(intf: *Intf) callconv(.c) c_int {
     if (findG2CDROM(intf) == 0) {
-        c.lprintf(log.Level.err, "Error in USB session setup");
+        log.print(log.Level.err, "Error in USB session setup", .{});
         return -1;
     }
     intf.opened = 1;
@@ -243,7 +243,7 @@ fn recvCmd(fd: c_int, buf: [*c]u8, sector: u8, len: u16) callconv(.c) c_int {
 
 fn readCD(fd: c_int, sector: u8, buf: [*c]u8, len: u32) callconv(.c) c_int {
     if (len > max_scsi_transfer or recvCmd(fd, buf, sector, @intCast(len)) != 0) {
-        c.lprintf(log.Level.err, "Error while reading CD-Drive");
+        log.print(log.Level.err, "Error while reading CD-Drive", .{});
         return -1;
     }
     return 0;
@@ -251,7 +251,7 @@ fn readCD(fd: c_int, sector: u8, buf: [*c]u8, len: u32) callconv(.c) c_int {
 
 fn writeCD(fd: c_int, sector: u8, buf: [*c]u8, timeout: c_uint, len: u32) callconv(.c) c_int {
     if (len > max_scsi_transfer or sendCmd(fd, buf, sector, @intCast(len), timeout) != 0) {
-        c.lprintf(log.Level.err, "Error while writing to CD-Drive");
+        log.print(log.Level.err, "Error while writing to CD-Drive", .{});
         return -1;
     }
     return 0;
@@ -274,11 +274,11 @@ fn waitForCompletion(intf: *Intf, header: *ConfigCmd, timeout: u32, len: u32) ca
     var elapsed: u32 = 0;
     while (true) {
         if (readCD(intf.fd, cmd_sector, @ptrCast(header), len) != 0) {
-            c.lprintf(log.Level.err, "ReadCD returned ERROR");
+            log.print(log.Level.err, "ReadCD returned ERROR", .{});
             return 1;
         }
         if (header.Status & in_process == 0) {
-            c.lprintf(log.Level.debug, "Command completed");
+            log.print(log.Level.debug, "Command completed", .{});
             return 0;
         }
         sysSleep();
@@ -310,11 +310,11 @@ fn sendData(
     header.DataInLen = request_len;
     const initial_timeout: u32 = if (timeout == 0) 3000 else 0;
     if (writeCD(intf.fd, cmd_sector, @ptrCast(&header), initial_timeout, @sizeOf(ConfigCmd)) != 0) {
-        c.lprintf(log.Level.err, "Error in Write CD of SCSI_AMIDEF_CMD_SECTOR");
+        log.print(log.Level.err, "Error in Write CD of SCSI_AMIDEF_CMD_SECTOR", .{});
         return -1;
     }
     if (writeSplitData(intf, request, data_sector, request_len, timeout) != 0) {
-        c.lprintf(log.Level.err, "Error in WriteSplitData of SCSI_AMIDEF_DATA_SECTOR");
+        log.print(log.Level.err, "Error in WriteSplitData of SCSI_AMIDEF_DATA_SECTOR", .{});
         return -1;
     }
     if (timeout == 0) {
@@ -322,14 +322,14 @@ fn sendData(
     }
     const waited = waitForCompletion(intf, &header, timeout, @sizeOf(ConfigCmd));
     if (waited != 0) {
-        c.lprintf(log.Level.err, "WaitForCommandComplete failed");
+        log.print(log.Level.err, "WaitForCommandComplete failed", .{});
         return -waited;
     }
     switch (header.Status) {
         0 => {
             if (header.DataOutLen > capacity or header.DataOutLen > max_scsi_transfer) return -1;
             if (readSplitData(intf, response, data_sector, header.DataOutLen) != 0) {
-                c.lprintf(log.Level.err, "Err ReadSplitData SCSI_AMIDEF_DATA_SCTR");
+                log.print(log.Level.err, "Err ReadSplitData SCSI_AMIDEF_DATA_SCTR", .{});
                 return -1;
             }
             response_len.* = @intCast(header.DataOutLen);
@@ -338,10 +338,10 @@ fn sendData(
             if (readCD(intf.fd, cmd_sector, @ptrCast(&header), @sizeOf(ConfigCmd)) != 0) return -1;
             return 0;
         },
-        1 => c.lprintf(log.Level.err, "Too much data"),
-        2 => c.lprintf(log.Level.err, "Too little data"),
-        3 => c.lprintf(log.Level.err, "Unsupported command"),
-        else => c.lprintf(log.Level.err, "Unknown status"),
+        1 => log.print(log.Level.err, "Too much data", .{}),
+        2 => log.print(log.Level.err, "Too little data", .{}),
+        3 => log.print(log.Level.err, "Unsupported command", .{}),
+        else => log.print(log.Level.err, "Unknown status", .{}),
     }
     return header.Status;
 }
@@ -372,7 +372,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
         if (rc == 0) break;
     }
     if (rc != 0 or reply_len < 1) {
-        c.lprintf(log.Level.err, "Error while sending command using SendDataToUSBDriver");
+        log.print(log.Level.err, "Error while sending command using SendDataToUSBDriver", .{});
         rsp.ccode = if (rc != 0) @truncate(@as(u32, @bitCast(rc))) else 0xff;
         rsp.data_len = 0;
         return &rsp;

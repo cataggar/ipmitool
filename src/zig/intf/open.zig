@@ -247,7 +247,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
     _ = c.sprintf(&ipmi_dev, "/dev/ipmi%d", devnum);
     _ = c.sprintf(&ipmi_devfs, "/dev/ipmi/%d", devnum);
     _ = c.sprintf(&ipmi_devfs2, "/dev/ipmidev/%d", devnum);
-    c.lprintf(log.Level.debug, "Using ipmi device %d", devnum);
+    log.print(log.Level.debug, "Using ipmi device %d", .{devnum});
 
     intf.fd = sysOpen(@ptrCast(&ipmi_dev), c.O_RDWR);
 
@@ -257,12 +257,10 @@ fn open(intf: *Intf) callconv(.c) c_int {
             intf.fd = sysOpen(@ptrCast(&ipmi_devfs2), c.O_RDWR);
         }
         if (intf.fd < 0) {
-            c.lperror(
+            log.perror(
                 log.Level.err,
                 "Could not open device at %s or %s or %s",
-                &ipmi_dev,
-                &ipmi_devfs,
-                &ipmi_devfs2,
+                .{ &ipmi_dev, &ipmi_devfs, &ipmi_devfs2 },
             );
             return -1;
         }
@@ -272,7 +270,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
 
     if (sysIoctl(intf.fd, ipmictl_set_gets_events_cmd, &receive_events) < 0) {
         // The descriptor stays open; see note 1 above.
-        c.lperror(log.Level.err, "Could not enable event receiver");
+        log.perror(log.Level.err, "Could not enable event receiver", .{});
         return -1;
     }
 
@@ -282,10 +280,10 @@ fn open(intf: *Intf) callconv(.c) c_int {
     if (intf.my_addr != 0) {
         if (intf.set_my_addr.?(intf, @truncate(intf.my_addr)) < 0) {
             // `opened` is already 1 and the descriptor is still open; note 2.
-            c.lperror(log.Level.err, "Could not set IPMB address");
+            log.perror(log.Level.err, "Could not set IPMB address", .{});
             return -1;
         }
-        c.lprintf(log.Level.debug, "Set IPMB address to 0x%x", intf.my_addr);
+        log.print(log.Level.debug, "Set IPMB address to 0x%x", .{intf.my_addr});
     }
 
     intf.manufacturer_id = @enumFromInt(c.ipmi_get_oem(@ptrCast(intf)));
@@ -296,7 +294,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
 fn setMyAddr(intf: *Intf, addr: u8) callconv(.c) c_int {
     var a: c_uint = addr;
     if (sysIoctl(intf.fd, ipmictl_set_my_address_cmd, &a) < 0) {
-        c.lperror(log.Level.err, "Could not set IPMB address");
+        log.perror(log.Level.err, "Could not set IPMB address", .{});
         return -1;
     }
     intf.my_addr = addr;
@@ -367,26 +365,30 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
         // Use the IPMB address if needed.
         ipmb_addr.slave_addr = @truncate(intf.target_addr);
         ipmb_addr.lun = req.msg.netfn_lun.lun;
-        c.lprintf(
+        log.print(
             log.Level.debug,
             "Sending request 0x%x to IPMB target @ 0x%x:0x%x (from 0x%x)",
-            @as(c_int, req.msg.cmd),
-            intf.target_addr,
-            @as(c_int, intf.target_channel),
-            intf.my_addr,
+            .{
+                @as(c_int, req.msg.cmd),
+                intf.target_addr,
+                @as(c_int, intf.target_channel),
+                intf.my_addr,
+            },
         );
 
         if (intf.transit_addr != 0 and intf.transit_addr != intf.my_addr) {
             var index: u8 = 0;
 
-            c.lprintf(
+            log.print(
                 log.Level.debug,
                 "Encapsulating data sent to end target [0x%02x,0x%02x] using transit [0x%02x,0x%02x] from 0x%x ",
-                @as(c_int, 0x40 | intf.target_channel),
-                intf.target_addr,
-                @as(c_int, intf.transit_channel),
-                intf.transit_addr,
-                intf.my_addr,
+                .{
+                    @as(c_int, 0x40 | intf.target_channel),
+                    intf.target_addr,
+                    @as(c_int, intf.transit_channel),
+                    intf.transit_addr,
+                    intf.my_addr,
+                },
             );
 
             // Convert the message to a 'Send Message'.  The supplied request is
@@ -410,7 +412,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
             data_len = @as(c_int, req.msg.data_len) + 8;
             data = @ptrCast(@alignCast(c.malloc(@intCast(data_len))));
             if (data == null) {
-                c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                log.print(log.Level.err, "ipmitool: malloc failure", .{});
                 return null;
             }
 
@@ -455,10 +457,10 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
         _req.addr_len = @sizeOf(IpmbAddr);
     } else {
         // Otherwise use the system interface.
-        c.lprintf(
+        log.print(
             log.Level.debug + 2,
             "Sending request 0x%x to System Interface",
-            @as(c_int, req.msg.cmd),
+            .{@as(c_int, req.msg.cmd)},
         );
         bmc_addr.lun = req.msg.netfn_lun.lun;
         _req.addr = @ptrCast(&bmc_addr);
@@ -482,7 +484,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     }
 
     if (sysIoctl(intf.fd, ipmictl_send_command, &_req) < 0) {
-        c.lperror(log.Level.err, "Unable to send command");
+        log.perror(log.Level.err, "Unable to send command", .{});
         c.free_n(@ptrCast(&data));
         return null;
     }
@@ -506,16 +508,16 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
             if (!(retval < 0 and std.c._errno().* == c.EINTR)) break;
         }
         if (retval < 0) {
-            c.lperror(log.Level.err, "I/O Error");
+            log.perror(log.Level.err, "I/O Error", .{});
             c.free_n(@ptrCast(&data));
             return null;
         } else if (retval == 0) {
-            c.lprintf(log.Level.err, "No data available");
+            log.print(log.Level.err, "No data available", .{});
             c.free_n(@ptrCast(&data));
             return null;
         }
         if (!fdIsSet(intf.fd, &rset)) {
-            c.lprintf(log.Level.err, "No data available");
+            log.print(log.Level.err, "No data available", .{});
             c.free_n(@ptrCast(&data));
             return null;
         }
@@ -527,7 +529,7 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
 
         // Get data.
         if (sysIoctl(intf.fd, ipmictl_receive_msg_trunc, &recv) < 0) {
-            c.lperror(log.Level.err, "Error receiving message");
+            log.perror(log.Level.err, "Error receiving message", .{});
             if (std.c._errno().* != c.EMSGSIZE) {
                 c.free_n(@ptrCast(&data));
                 return null;
@@ -539,11 +541,10 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
         // until it's out of messages.  -EAGAIN is returned if the list is empty,
         // but basically if it returns a message, check if it's alright.
         if (_req.msgid != recv.msgid) {
-            c.lprintf(
+            log.print(
                 log.Level.notice,
                 "Received a response with unexpected ID %ld vs. %ld",
-                recv.msgid,
-                _req.msgid,
+                .{ recv.msgid, _req.msgid },
             );
         }
         if (_req.msgid == recv.msgid) break;
@@ -564,10 +565,10 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     }
 
     if (intf.transit_addr != 0 and intf.transit_addr != intf.my_addr) {
-        c.lprintf(
+        log.print(
             log.Level.debug,
             "Decapsulating data received from transit IPMB target @ 0x%x",
-            intf.transit_addr,
+            .{intf.transit_addr},
         );
 
         // Completion code, then check the data.
