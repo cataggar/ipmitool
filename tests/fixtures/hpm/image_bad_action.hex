@@ -1,0 +1,7 @@
+# Checksum-valid but unknown action type (0xff + component 1 + checksum 0).
+@mark image
+@hpm/image.hex
+@truncate 88
+@poke image 38 0xff
+@poke image 40 0x00
+@md5 image

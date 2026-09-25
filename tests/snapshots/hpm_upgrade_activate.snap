@@ -1,0 +1,65 @@
+#!golden 1
+#!case hpm_upgrade_activate
+#!section exit
+0
+#!section stdout no-final-newline
+Validating firmware image integrity...OK
+Performing preparation stage...OK
+
+-------------------------------------------------------------------------------
+|ID  | Name        |                     Versions                        | %  |
+|    |             |      Active     |      Backup     |      File       |    |
+|----|-------------|-----------------|-----------------|-----------------|----|
+|   0|IPMC         |   1.02 34000000 |   1.01 22000000 |   1.00 00000000 |  0%|\x08\x08\x08\x08\x08100%|
+|    |Upload Time: 00:00             | Image Size:      16 bytes              |
+-------------------------------------------------------------------------------
+   \x20
+#!section stderr
+
+PICMG HPM.1 Upgrade Agent 1.0.9:\x20
+
+
+Performing upgrade stage:
+(*) Component requires Payload Cold Reset
+Performing activation stage:\x20
+
+Firmware upgrade procedure successful
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_discover ccode=0x00 len=2 data=00 23
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=hpm_target_capabilities ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=hpm_comp0_general_properties ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 02
+< rule=hpm_comp0_description ccode=0x00 len=13 data=00 49 50 4d 43 20 20 20 20 20 20 20 20
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 01
+< rule=hpm_comp0_current_version ccode=0x00 len=7 data=00 01 02 34 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 03
+< rule=hpm_comp0_rollback_version ccode=0x00 len=7 data=00 01 01 22 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 04
+< rule=hpm_comp0_deferred_version ccode=0x00 len=7 data=00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=hpm_target_capabilities ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=hpm_comp0_general_properties ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x31 target_cmd=0x00 data=00 01 01
+< rule=hpm_prepare ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x31 target_cmd=0x00 data=00 01 02
+< rule=hpm_upload ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 00 de ad be ef de ad be ef de ad be ef de ad be ef
+< rule=hpm_block ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x33 target_cmd=0x00 data=00 00 10 00 00 00
+< rule=hpm_finish ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x35 target_cmd=0x00 data=00
+< rule=hpm_activate ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x36 target_cmd=0x00 data=00
+< rule=hpm_selftest ccode=0x00 len=3 data=00 55 00
+bye

@@ -1,0 +1,5 @@
+# Image with a valid header and digest, but no action records.
+@mark image
+@hpm/image.hex
+@truncate 35
+@md5 image

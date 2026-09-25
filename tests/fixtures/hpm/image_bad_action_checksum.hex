@@ -1,0 +1,6 @@
+# Header and MD5 valid; the upload-action checksum itself is corrupt.
+@mark image
+@hpm/image.hex
+@truncate 88
+@poke image 40 0xfe
+@md5 image

@@ -1,0 +1,23 @@
+# Deterministic negative replies: reject target capabilities and activation.
+default_ccode 0xc1
+respond picmg_discover
+  netfn 0x2c
+  cmd 0x00
+  match 00
+  data 00 23
+end
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data @mc/device_id.hex
+end
+respond caps_error
+  netfn 0x2c
+  cmd 0x2e
+  ccode 0xcc
+end
+respond activation_error
+  netfn 0x2c
+  cmd 0x35
+  ccode 0x81
+end

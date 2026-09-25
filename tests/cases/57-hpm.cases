@@ -1,0 +1,148 @@
+# HPM.1 oracle additions. All actions use the dummy transport, never hardware.
+[hpm_target_capabilities]
+desc: Decode target capabilities, timeouts and all component bits
+args: -I dummy hpm targetcap
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_component_general]
+desc: Decode component general properties bitfield
+args: -I dummy hpm compprop 0 0
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_component_description]
+desc: Render the 12-byte component description
+args: -I dummy hpm compprop 0 2
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_component_version]
+desc: Decode component active firmware version
+args: -I dummy hpm compprop 0 1
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_upgrade_status]
+desc: Get status of the last long-duration HPM command
+args: -I dummy hpm upgstatus
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_rollback_status]
+desc: Query a successful rollback with affected-component bitmask
+args: -I dummy hpm rollbackstatus
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_selftest_result]
+desc: Query successful HPM selftest
+args: -I dummy hpm selftestresult
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_manual_rollback]
+desc: Manual rollback polls rollback status and reports affected component
+args: -I dummy hpm rollback
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_activate_override]
+desc: Override automatic rollback flag is included in activation request
+args: -I dummy hpm activate norollback
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_activate_default]
+desc: Default activation omits optional rollback-override byte
+args: -I dummy hpm activate
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_abort]
+desc: Abort outstanding HPM upgrade
+args: -I dummy hpm abort
+transcript: hpm_flow.tr
+covers: hpm
+
+[hpm_target_error]
+desc: BMC fails Get Target Upgrade Capabilities with completion code
+args: -I dummy hpm check
+transcript: hpm_errors.tr
+covers: hpm
+
+[hpm_activate_error]
+desc: BMC rejects firmware activation
+args: -I dummy hpm activate
+transcript: hpm_errors.tr
+covers: hpm
+
+[hpm_check_empty]
+desc: Valid image contains zero action records
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_empty.hex
+covers: hpm
+
+[hpm_check_bad_action]
+desc: Image has valid MD5 but unknown action record type
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_bad_action.hex
+covers: hpm
+
+[hpm_check_action_checksum]
+desc: Image has valid MD5 but corrupt action record checksum
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_bad_action_checksum.hex
+covers: hpm
+
+[hpm_check_header_checksum]
+desc: Image has valid MD5 but corrupt header checksum
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_bad_header_checksum.hex
+covers: hpm
+
+[hpm_check_short_action]
+desc: Image ends after two bytes of action header
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_short_action.hex
+covers: hpm
+
+[hpm_check_64]
+desc: Display metadata of a checksum-valid 64-byte image
+args: -I dummy hpm check {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_64.hex
+covers: hpm
+
+[hpm_upgrade_64]
+desc: Chunked firmware upload, initiate prepare/upgrade and finish (dummy only)
+args: -I dummy hpm upgrade {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_64.hex
+covers: hpm
+
+[hpm_upgrade_retry]
+desc: Reduce upload block after c7, retry a transient 83, then complete (dummy only)
+args: -I dummy hpm upgrade {work}/fw.img
+transcript: hpm_retry.tr
+blob: fw.img hpm/image_64.hex
+covers: hpm
+
+[hpm_upgrade_activate]
+desc: Chunked firmware upload followed by activation/selftest (dummy only)
+args: -I dummy hpm upgrade {work}/fw.img activate
+transcript: hpm_flow.tr
+blob: fw.img hpm/image_unattended.hex
+covers: hpm
+
+[hpm_compare_16]
+desc: Compare action uploads blocks but skips prepare/backup
+args: -I dummy hpm compare {work}/fw.img
+transcript: hpm_flow.tr
+blob: fw.img hpm/image.hex
+covers: hpm
