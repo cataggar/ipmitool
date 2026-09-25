@@ -1,0 +1,17 @@
+#!golden 1
+#!case lanp_set_arp_interval_too_large
+#!section exit
+1
+#!section stdout
+#!section stderr
+Given ARP interval '128' is too big.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0b 00 00
+< rule=interval ccode=0x00 len=2 data=11 05
+bye

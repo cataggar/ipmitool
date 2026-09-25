@@ -1,0 +1,20 @@
+#!golden 1
+#!case lanp_set_bad_threshold
+#!section exit
+1
+#!section stdout
+#!section stderr
+lan set <channel> bad_pass_thresh <thresh_num> <1|0> <reset_interval> <lockout_interval>
+        <thresh_num>         Bad Password Threshold number.
+        <1|0>                1 = generate a Session Audit sensor event.
+                             0 = do not generate an event.
+        <reset_interval>     Attempt Count Reset Interval. In tens of seconds.
+        <lockount_interval>  User Lockout Interval. In tens of seconds.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=get_channel_info ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+bye

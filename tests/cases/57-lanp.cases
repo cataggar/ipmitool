@@ -1,0 +1,377 @@
+# IPv4 LAN configuration; C snapshots capture output, exit status and each IPMI request.
+[lanp_print_full]
+desc: print all IPv4, auth, VLAN and cipher settings
+args: -I dummy lan print 1
+transcript: lanp_print.tr
+covers: lan
+
+[lanp_print_auto]
+desc: automatically discover first LAN channel
+args: -I dummy lan print
+transcript: lanp_print.tr
+covers: lan
+
+[lanp_print_short]
+desc: incomplete BMC replies and unsupported settings
+args: -I dummy lan print 1
+transcript: lanp_short.tr
+covers: lan
+
+[lanp_print_nonlan]
+desc: reject non-LAN channel
+args: -I dummy lan print 1
+transcript: channel_lan_notlan.tr
+covers: lan
+
+[lanp_print_bad_channel]
+desc: reject malformed channel
+args: -I dummy lan print ab
+covers: lan
+
+[lanp_print_bad_channel_num]
+desc: reject channel 0
+args: -I dummy lan print 0
+covers: lan
+
+[lanp_print_too_many]
+desc: reject extra print argument
+args: -I dummy lan print 1 2
+covers: lan
+
+[lanp_set_ipaddr]
+desc: write IP address and verify readback
+args: -I dummy lan set 1 ipaddr 192.0.2.10
+transcript: lanp_write.tr
+covers: lan
+
+[lanp_set_ipaddr_verbose]
+desc: verbose LAN write includes verified data dump
+args: -vv -I dummy lan set 1 ipaddr 192.0.2.10
+transcript: lanp_write.tr
+covers: lan
+
+[lanp_set_ip_rejected]
+desc: BMC refuses IP write, commit/unlock still issued
+args: -I dummy lan set 1 ipaddr 192.0.2.10
+transcript: lanp_reject.tr
+covers: lan
+
+[lanp_set_ip_locked]
+desc: take Set-in-Progress lock before changing IP, then commit and unlock
+args: -I dummy lan set 1 ipaddr 192.0.2.10
+transcript: lanp_lock.tr
+covers: lan
+
+[lanp_set_mac]
+desc: set MAC address and read back six bytes
+args: -I dummy lan set 1 macaddr 02:11:22:33:44:55
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_mask]
+desc: set IPv4 subnet mask
+args: -I dummy lan set 1 netmask 255.255.0.0
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_source]
+desc: set address source to DHCP
+args: -I dummy lan set 1 ipsrc dhcp
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_defgw_ip]
+desc: set default gateway IP
+args: -I dummy lan set 1 defgw ipaddr 192.0.2.1
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_defgw_mac]
+desc: set default gateway MAC
+args: -I dummy lan set 1 defgw macaddr 02:11:22:33:44:55
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_bakgw_ip]
+desc: set backup gateway IP
+args: -I dummy lan set 1 bakgw ipaddr 192.0.2.1
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_bakgw_mac]
+desc: set backup gateway MAC
+args: -I dummy lan set 1 bakgw macaddr 02:11:22:33:44:55
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_snmp]
+desc: pad community string to exactly eighteen bytes
+args: -I dummy lan set 1 snmp public
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_cipher_privs]
+desc: pack fifteen privilege symbols into eight nibbles
+args: -I dummy lan set 1 cipher_privs cuoaOXXXXXXXXXX
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_threshold]
+desc: pack both 16-bit intervals little endian
+args: -I dummy lan set 1 bad_pass_thresh 4 1 6 12
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_vlan_priority]
+desc: set VLAN priority
+args: -I dummy lan set 1 vlan priority 3
+transcript: lanp_writes.tr
+covers: lan
+
+[lanp_set_vlan_off]
+desc: disable VLAN using existing VLAN ID
+args: -I dummy lan set 1 vlan id off
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_vlan_id]
+desc: pack VLAN ID and enable bit into a two-byte parameter
+args: -I dummy lan set 1 vlan id 291
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_auth]
+desc: retain other privileges when updating admin auth
+args: -I dummy lan set 1 auth admin md5
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_arp_interval]
+desc: convert seconds to BMC half-second ARP units
+args: -I dummy lan set 1 arp interval 3
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_arp_generate]
+desc: read-modify-write gratuitous ARP bit
+args: -I dummy lan set 1 arp generate on
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_arp_respond]
+desc: read-modify-write ARP response bit
+args: -I dummy lan set 1 arp respond on
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_arp_interval_too_large]
+desc: refuse interval that cannot fit in one byte
+args: -I dummy lan set 1 arp interval 128
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_set_auth_missing_type]
+desc: reject auth without type without sending writes
+args: -I dummy lan set 1 auth admin
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_print_read_error]
+desc: fail if BMC rejects a mandatory LAN parameter
+args: -I dummy lan print 1
+transcript: lanp_print_error.tr
+covers: lan
+
+[lanp_set_invalid_ip]
+desc: IPv4 octet outside byte range
+args: -I dummy lan set 1 ipaddr 256.2.3.4
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_invalid_ip_parts]
+desc: incomplete IPv4 address
+args: -I dummy lan set 1 ipaddr 1.2.3
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_invalid_mac]
+desc: MAC parser refuses malformed address
+args: -I dummy lan set 1 macaddr xx:22:33:44:55:66
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_invalid_netmask]
+desc: netmask parser refuses out-of-range octet
+args: -I dummy lan set 1 netmask 255.255.999.0
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_invalid_gateway]
+desc: gateway parser refuses malformed IPv4 address
+args: -I dummy lan set 1 defgw ipaddr 1.2.3
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_invalid_channel]
+desc: set refuses channel outside LAN range
+args: -I dummy lan set 0 ipsrc static
+covers: lan
+
+[lanp_set_invalid_source]
+desc: unknown source prints source usage
+args: -I dummy lan set 1 ipsrc bogus
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_invalid_cipher]
+desc: cipher privilege string must have exactly fifteen symbols
+args: -I dummy lan set 1 cipher_privs Xabc
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_bad_cipher_symbol]
+desc: invalid cipher symbol prints usage
+args: -I dummy lan set 1 cipher_privs XcuoaOXXzXXXXXX
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_bad_vlan]
+desc: VLAN ID must be between 1 and 4094
+args: -I dummy lan set 1 vlan id 4095
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_bad_priority]
+desc: priority cannot exceed 7
+args: -I dummy lan set 1 vlan priority 8
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_set_bad_threshold]
+desc: bad password threshold's event bit is boolean
+args: -I dummy lan set 1 bad_pass_thresh 4 2 6 12
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_stats_get]
+desc: nine packet counters are network-order 16-bit values
+args: -I dummy lan stats get 1
+transcript: lanp_stats.tr
+covers: lan
+
+[lanp_stats_verbose]
+desc: verbose stats print raw BMC bytes before counters
+args: -vv -I dummy lan stats get 1
+transcript: lanp_stats.tr
+covers: lan
+
+[lanp_stats_clear]
+desc: clear packet counters
+args: -I dummy lan stats clear 1
+transcript: lanp_stats.tr
+covers: lan
+
+[lanp_stats_short]
+desc: BMC sends short stats response
+args: -I dummy lan stats get 1
+transcript: lanp_short.tr
+covers: lan
+
+[lanp_stats_invalid]
+desc: stats subcommand is not recognized
+args: -I dummy lan stats bad 1
+transcript: channel_lan.tr
+covers: lan
+
+[lanp_alert_short]
+desc: BMC sends incomplete alert type/address
+args: -I dummy lan alert print 1 1
+transcript: lanp_alert_short.tr
+covers: lan
+
+[lanp_alert_print]
+desc: inspect alert type, IP, gateway and MAC
+args: -I dummy lan alert print 1 1
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_print_all]
+desc: print all destinations including zero
+args: -I dummy lan alert print 1
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_invalid]
+desc: reject invalid alert destination
+args: -I dummy lan alert print 1 3
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_ack]
+desc: alert setting reads existing type and writes modified bytes
+args: -I dummy lan alert set 1 1 ack on
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_ip]
+desc: alert IP setting reads existing address and writes modified bytes
+args: -I dummy lan alert set 1 1 ipaddr 203.0.113.9
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_mac]
+desc: update alert MAC but preserve destination selector and IP
+args: -I dummy lan alert set 1 1 macaddr 02:11:22:33:44:55
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_gateway]
+desc: select backup alert gateway
+args: -I dummy lan alert set 1 1 gateway backup
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_type]
+desc: select OEM alert destination type
+args: -I dummy lan alert set 1 1 type oem2
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_time]
+desc: update alert retry interval
+args: -I dummy lan alert set 1 1 time 30
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_set_retry]
+desc: mask alert retry count to three bits
+args: -I dummy lan alert set 1 1 retry 9
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_invalid_ip]
+desc: refuse malformed alert destination IPv4 address
+args: -I dummy lan alert set 1 1 ipaddr 999.1.2.3
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_alert_invalid_time]
+desc: refuse retry interval over 255
+args: -I dummy lan alert set 1 1 time 256
+transcript: lanp_alert.tr
+covers: lan
+
+[lanp_bad_port]
+desc: global CLI port parser rejects malformed port before LAN command
+args: -I dummy -p invalid lan print 1
+covers: lan
+
+[lanp_help]
+desc: LAN command usage
+args: -I dummy lan help
+covers: lan
+
+[lanp_set_help]
+desc: LAN set usage
+args: -I dummy lan set help anything
+covers: lan

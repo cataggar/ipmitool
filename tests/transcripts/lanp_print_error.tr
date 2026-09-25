@@ -1,0 +1,6 @@
+default_ccode 0xc1
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end

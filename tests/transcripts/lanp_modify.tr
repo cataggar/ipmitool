@@ -1,0 +1,54 @@
+default_ccode 0x80
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+respond progress
+  netfn 0x0c
+  cmd 0x02
+  match 01 00
+  ccode 0x80
+end
+respond arp
+  netfn 0x0c
+  cmd 0x02
+  match 01 0a
+  data 11 03
+end
+respond interval
+  netfn 0x0c
+  cmd 0x02
+  match 01 0b
+  data 11 05
+end
+respond auth_initial
+  netfn 0x0c
+  cmd 0x02
+  match 01 02
+  times 1
+  data 11 01 02 04 10 00
+end
+respond auth_changed
+  netfn 0x0c
+  cmd 0x02
+  match 01 02
+  data 11 01 02 04 04 00
+end
+respond vlan_initial
+  netfn 0x0c
+  cmd 0x02
+  match 01 14
+  times 1
+  data 11 23 81
+end
+respond vlan_disabled
+  netfn 0x0c
+  cmd 0x02
+  match 01 14
+  data 11 23 01
+end
+respond write
+  netfn 0x0c
+  cmd 0x01
+end

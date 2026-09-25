@@ -1,0 +1,19 @@
+#!golden 1
+#!case lanp_stats_short
+#!section exit
+1
+#!section stdout
+#!section stderr
+Get LAN Stats command failed: Unsupported parameter
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x04 target_cmd=0x00 data=01 00
+< rule=default ccode=0x80 len=0 data=
+bye

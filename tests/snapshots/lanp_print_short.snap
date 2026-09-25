@@ -1,0 +1,58 @@
+#!golden 1
+#!case lanp_print_short
+#!section exit
+0
+#!section stdout
+Cipher Suite Priv Max   : Not Available
+Bad Password Threshold  : Not Available
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 00 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 01 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 02 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 04 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 03 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 06 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 05 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 10 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 07 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0a 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0b 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0c 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0d 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0e 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 0f 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 14 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 15 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 16 00 00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 18 00 00
+< rule=short_priv ccode=0x00 len=2 data=11 01
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 1a 00 00
+< rule=short_threshold ccode=0x00 len=2 data=11 01
+bye

@@ -1,0 +1,30 @@
+# BMC implements Set-in-Progress (unlike most fixtures that return 0x80).
+default_ccode 0x80
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+respond unlocked
+  netfn 0x0c
+  cmd 0x02
+  match 01 00
+  times 1
+  data 11 00
+end
+respond locked
+  netfn 0x0c
+  cmd 0x02
+  match 01 00
+  data 11 01
+end
+respond readback
+  netfn 0x0c
+  cmd 0x02
+  match 01 03
+  data 11 c0 00 02 0a
+end
+respond write
+  netfn 0x0c
+  cmd 0x01
+end

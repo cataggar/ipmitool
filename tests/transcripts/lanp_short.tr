@@ -1,0 +1,18 @@
+default_ccode 0x80
+respond medium
+  netfn 0x06
+  cmd 0x42
+  data 01 04 01 84 f2 1b 00 00 00
+end
+respond short_priv
+  netfn 0x0c
+  cmd 0x02
+  match 01 18
+  data 11 01
+end
+respond short_threshold
+  netfn 0x0c
+  cmd 0x02
+  match 01 1a
+  data 11 01
+end

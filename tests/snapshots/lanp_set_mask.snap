@@ -1,0 +1,25 @@
+#!golden 1
+#!case lanp_set_mask
+#!section exit
+0
+#!section stdout
+Setting LAN Subnet Mask to 255.255.0.0
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 00 00 00
+< rule=progress ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 06 ff ff 00 00
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 06 00 00
+< rule=mask ccode=0x00 len=5 data=11 ff ff 00 00
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 02
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 00
+< rule=write ccode=0x00 len=0 data=
+bye

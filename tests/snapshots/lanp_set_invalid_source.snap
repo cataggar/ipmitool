@@ -1,0 +1,19 @@
+#!golden 1
+#!case lanp_set_invalid_source
+#!section exit
+1
+#!section stdout
+#!section stderr
+lan set <channel> ipsrc <source>
+  none   = unspecified
+  static = static address (manually configured)
+  dhcp   = address obtained by BMC running DHCP
+  bios   = address loaded by BIOS or system software
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=get_channel_info ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+bye
