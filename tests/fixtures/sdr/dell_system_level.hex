@@ -1,0 +1,16 @@
+# Reuse the threshold full-sensor record, replacing the ID with Dell's
+# "System Level" lookup name.  Its three extra bytes increase record length.
+@mark record
+@sdr/sd_full_temp.hex
+@poke record 4 0x37
+@poke record 47 0xcc
+@poke record 48 0x53
+@poke record 49 0x79
+@poke record 50 0x73
+@poke record 51 0x74
+@poke record 52 0x65
+@poke record 53 0x6d
+@poke record 54 0x20
+@poke record 55 0x4c
+@poke record 56 0x65
+76 65 6c

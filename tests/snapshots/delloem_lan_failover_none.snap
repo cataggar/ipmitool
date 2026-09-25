@@ -1,0 +1,19 @@
+#!golden 1
+#!case delloem_lan_failover_none
+#!section exit
+0
+#!section stdout no-final-newline
+configured successfully
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x30 lun=0x00 cmd=0x29 target_cmd=0x00 data=
+< rule=nic_get ccode=0x00 len=2 data=02 03
+> netfn=0x30 lun=0x00 cmd=0x28 target_cmd=0x00 data=02 00
+< rule=nic_set ccode=0x00 len=0 data=
+bye

@@ -145,6 +145,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cli/main.zig and src/zig/cli/tool.zig",
     },
     .{
+        .name = "delloem",
+        .replaces = "lib/ipmi_delloem.c",
+        .implementation = "src/zig/cmd/delloem.zig",
+    },
+    .{
         .name = "oem",
         .replaces = "lib/ipmi_oem.c",
         .implementation = "src/zig/cmd/oem.zig",
@@ -1302,6 +1307,18 @@ pub fn build(b: *std.Build) void {
         test_step.dependOn(&shell_pty.step);
     }
 
+    const dell_test_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/delloem_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    dell_test_mod.addImport("ipmi_c", bridge_mod);
+    const dell_tests = b.addTest(.{ .root_module = dell_test_mod });
+    const dell_step = b.step("test-delloem", "Run Dell OEM Zig parser and wire-layout tests");
+    dell_step.dependOn(&b.addRunArtifact(dell_tests).step);
+    test_step.dependOn(dell_step);
+
     // Every registered Zig module has to keep compiling even when it is not
     // selected, otherwise a port only breaks for whoever passes the flag.
     if (zig_lib) |lib| test_step.dependOn(&lib.step);
@@ -1369,7 +1386,14 @@ pub fn build(b: *std.Build) void {
     });
 
     const golden_step = b.step("test-golden", "Run the golden CLI test suite");
-    golden_step.dependOn(&addGolden(b, golden_exe, ipmitool, null, replacedByZig("lib/ipmi_gendev.c", zig_selection)).step);
+    golden_step.dependOn(&addGolden(
+        b,
+        golden_exe,
+        ipmitool,
+        null,
+        replacedByZig("lib/ipmi_gendev.c", zig_selection),
+        moduleSelected("delloem", zig_selection),
+    ).step);
     const fru_oem_step = b.step("test-fru-oem", "Run fixed Zig-only OEM edit cases");
     if (zig_selection[fruIndex()]) {
         fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, ipmitool).step);
@@ -1394,7 +1418,7 @@ pub fn build(b: *std.Build) void {
             .bridge_mod = bridge_mod,
             .system_libs = swapped_libs,
         });
-        golden_step.dependOn(&addGolden(b, golden_exe, swapped, null, true).step);
+        golden_step.dependOn(&addGolden(b, golden_exe, swapped, null, true, true).step);
         if (!zig_selection[fruIndex()])
             fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, swapped).step);
     }
@@ -1491,7 +1515,7 @@ pub fn build(b: *std.Build) void {
         // Differential cases need /a and /b beneath each case name; a build
         // cache path plus a 36-character case exceeds sockaddr_un.sun_path in
         // longer checkout paths. The harness removes this short scratch root.
-        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-golden"), false);
+        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-golden"), false, false);
         compare.addArg("--candidate");
         compare.addFileArg(candidate.getEmittedBin());
         cli_step.dependOn(&compare.step);
@@ -1612,6 +1636,7 @@ fn addGolden(
     exe: *std.Build.Step.Compile,
     work_dir: ?[]const u8,
     zig_gendev: bool,
+    zig_deviations: bool,
 ) *std.Build.Step.Run {
     const run = b.addRunArtifact(golden_exe);
     run.setName(b.fmt("golden {s}", .{exe.name}));
@@ -1624,6 +1649,7 @@ fn addGolden(
     run.addArgs(&.{ "--repo", b.build_root.path orelse "." });
     run.addArg("--binary");
     run.addFileArg(exe.getEmittedBin());
+    if (zig_deviations) run.addArg("--zig-deviations");
     // A private scratch root per run: the default and the Zig-swapped suites
     // are independent steps and the build runner may execute them at the same
     // time.  `tmpPath` lives in the cache and is cleaned up on success.
@@ -2049,6 +2075,13 @@ fn replacedByZig(path: []const u8, zig_selection: []const bool) bool {
         for (module.also_replaces) |extra| {
             if (std.mem.eql(u8, extra, path)) return true;
         }
+    }
+    return false;
+}
+
+fn moduleSelected(name: []const u8, zig_selection: []const bool) bool {
+    for (zig_modules, zig_selection) |module, selected| {
+        if (selected and std.mem.eql(u8, module.name, name)) return true;
     }
     return false;
 }

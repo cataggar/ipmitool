@@ -1,0 +1,12 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd 02 00
+  data @pad 10 0x00 10
+end
+respond sd_card
+  netfn 0x30
+  cmd 0xa4
+  match 00 00
+  data 00 fc 00 02 00 00 00 01 00 00 01 00
+end

@@ -1,0 +1,42 @@
+#!golden 1
+#!case delloem_power_clear_bad
+#!section exit
+1
+#!section stdout
+#!section stderr
+
+   powermonitor
+      Shows power tracking statistics\x20
+
+   powermonitor clear cumulativepower
+      Reset cumulative power reading
+
+   powermonitor clear peakpower
+      Reset peak power reading
+
+   powermonitor powerconsumption
+      Displays power consumption in <watt|btuphr>
+
+   powermonitor powerconsumptionhistory <watt|btuphr>
+      Displays power consumption history\x20
+
+   powermonitor getpowerbudget
+      Displays power cap in <watt|btuphr>
+
+   powermonitor setpowerbudget <val><watt|btuphr|percent>
+      Allows user to set the  power cap in <watt|BTU/hr|percentage>
+
+   powermonitor enablepowercap\x20
+      To enable set power cap
+
+   powermonitor disablepowercap\x20
+      To disable set power cap
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+bye

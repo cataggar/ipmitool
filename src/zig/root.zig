@@ -84,6 +84,7 @@ test {
     _ = @import("cmd/gendev.zig");
     _ = @import("frontend/ipmishell.zig");
     _ = @import("cmd/pef.zig");
+    _ = @import("cmd/delloem.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);

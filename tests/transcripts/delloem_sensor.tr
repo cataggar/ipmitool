@@ -1,0 +1,53 @@
+# Full Dell power-consumption path: SDR lookup, sensor, thresholds, OEM
+# instantaneous power and headroom.
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data @pad 10 0x00 10
+end
+respond device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+end
+respond sdr_repo_info
+  netfn 0x0a
+  cmd 0x20
+  data 51 01 00 34 12 00 e3 0b 5e 08 19 2a 3b 02
+end
+respond reserve_sdr
+  netfn 0x0a
+  cmd 0x22
+  data 5a a5
+end
+respond system_level_sdr
+  netfn 0x0a
+  cmd 0x23
+  data ff ff
+  partial 4 1 5
+  blob @sdr/dell_system_level.hex
+end
+respond sensor
+  netfn 0x04
+  cmd 0x2d
+  match 0b
+  data 2a c0 00 00
+end
+respond thresholds
+  netfn 0x04
+  cmd 0x27
+  match 0b
+  data 3f 00 00 00 4b 55
+end
+respond instant
+  netfn 0x30
+  cmd 0xb3
+  match 0a 00
+  data 2c 01 7b 00 00 00 00
+end
+respond headroom
+  netfn 0x30
+  cmd 0xbb
+  data 96 00 fa 00
+end

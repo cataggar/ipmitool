@@ -1,0 +1,53 @@
+#!golden 1
+#!case delloem_lcd_bad_mode
+#!section exit
+0
+#!section stdout
+#!section stderr
+Invalid DellOEM command: unexpected
+
+Generic DELL HW:
+   lcd set {none}|{default}|{custom <text>}
+      Set LCD text displayed during non-fault conditions
+
+iDRAC 11g or iDRAC 12g or  iDRAC 13g :
+   lcd set {mode}|{lcdqualifier}|{errordisplay}
+      Allows you to set the LCD mode and user-defined string.
+
+   lcd set mode {none}|{modelname}|{ipv4address}|{macaddress}|
+   {systemname}|{servicetag}|{ipv6address}|{ambienttemp}
+   {systemwatt }|{assettag}|{userdefined}<text>
+\t   Allows you to set the LCD display mode to any of the preceding
+      parameters
+
+   lcd set lcdqualifier {watt}|{btuphr}|{celsius}|{fahrenheit}
+      Allows you to set the unit for the system ambient temperature mode.
+
+   lcd set errordisplay {sel}|{simple}
+      Allows you to set the error display.
+
+   lcd info
+      Show LCD text that is displayed during non-fault conditions
+
+
+   lcd set vkvm{active}|{inactive}
+      Set vKVM active and inactive, message will be displayed on lcd
+      when vKVM is active and vKVM session is in progress
+
+   lcd set frontpanelaccess {viewandmodify}|{viewonly}|{disabled}
+      Set LCD mode to view and modify, view only or disabled\x20
+
+   lcd status
+      Show LCD Status for vKVM display<active|inactive>
+      and Front Panel access mode {viewandmodify}|{viewonly}|{disabled}
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 e7 00 00
+< rule=lcd_support ccode=0x00 len=5 data=11 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+bye

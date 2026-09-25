@@ -1,0 +1,31 @@
+#!golden 1
+#!case delloem_power_history_short
+#!section exit
+0
+#!section stdout no-final-newline
+Power Consumption History
+
+Statistic                   Last Minute     Last Hour     Last Day     Last Week
+
+Average Power Consumption   100 W             0 W           0 W          0 W  \x20
+Max Power Consumption       120 W           220 W         320 W        420 W  \x20
+Min Power Consumption        50 W           150 W         250 W        350 W  \x20
+
+Max Power Time
+Last Minute     : S+ 00:00:00Last Hour       : S+ 00:00:00Last Day        : S+ 00:00:00Last Week       : S+ 00:00:00Min Power Time
+Last Minute     : S+ 00:00:00Last Hour       : S+ 00:00:00Last Day        : S+ 00:00:00Last Week       : S+ 00:00:00
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 eb 00 00
+< rule=avg ccode=0x00 len=2 data=eb 64
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 ec 00 00
+< rule=peak ccode=0x00 len=9 data=ec 78 00 dc 00 40 01 a4 01
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 ed 00 00
+< rule=min ccode=0x00 len=9 data=ed 32 00 96 00 fa 00 5e 01
+bye

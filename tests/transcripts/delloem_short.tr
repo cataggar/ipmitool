@@ -1,0 +1,48 @@
+# Successful, but truncated, BMC replies: these paths used to index rsp->data
+# without checking rsp->data_len.  The oracle's zeroed dummy response makes its
+# output deterministic; the Zig port must reject the truncation instead.
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data 11
+end
+respond lcd_support
+  netfn 0x06
+  cmd 0x59
+  match 00 e7
+  data 11
+end
+respond led_support
+  netfn 0x30
+  cmd 0xd5
+  match 01 00
+  data
+end
+respond led_map
+  netfn 0x30
+  cmd 0xd5
+  match 01 07
+  data 00
+end
+respond nic_get
+  netfn 0x30
+  cmd 0x25
+  data
+end
+respond lom10
+  netfn 0x06
+  cmd 0x59
+  match 00 cb
+  data 11 01
+end
+respond cap_status
+  netfn 0x30
+  cmd 0xba
+  data
+end
+respond headroom
+  netfn 0x30
+  cmd 0xbb
+  data 01
+end

@@ -1,0 +1,62 @@
+# Legacy 10g: the validator does not answer; the C default IMC is 10g.
+respond lcd_support
+  netfn 0x06
+  cmd 0x59
+  match 00 e7 00 00
+  data 11 01 00 00 00
+end
+respond lcd_mode
+  netfn 0x06
+  cmd 0x59
+  match 00 c2 00 00
+  data 11 01 00 00
+end
+respond lcd_model0
+  netfn 0x06
+  cmd 0x59
+  match 00 d1 00 00
+  data 11 00 00 0e 50 6f 77 65 72 45 64 67 65 20 31 30 47 20
+end
+respond lcd_caps
+  netfn 0x06
+  cmd 0x59
+  match 00 cf 00 00
+  data 11 01 01 3e 00 00 00
+end
+respond lcd_set
+  netfn 0x06
+  cmd 0x58
+end
+respond lom10
+  netfn 0x06
+  cmd 0x59
+  match 00 cb 00 00
+  data 11 02 00 11 22 33 44 55 66 77 88 99 aa bb
+end
+respond lan_mac
+  netfn 0x0c
+  cmd 0x02
+  match 01 05 00 00
+  data 11 08 07 06 05 04 03
+end
+respond nic_get
+  netfn 0x30
+  cmd 0x25
+  data 01
+end
+respond nic_set
+  netfn 0x30
+  cmd 0x24
+end
+respond active_status
+  netfn 0x30
+  cmd 0xc1
+  match 00 00 00
+  data 01 00
+end
+respond active_link
+  netfn 0x30
+  cmd 0xc1
+  match 01 00 00
+  data 00 01
+end

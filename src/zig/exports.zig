@@ -25,6 +25,9 @@ comptime {
     if (selected("cli")) {
         @import("cli/main.zig").exportSymbols();
     }
+    if (selected("delloem")) {
+        @import("cmd/delloem.zig").exportSymbols();
+    }
     if (selected("oem")) {
         _ = @import("cmd/oem.zig");
     }

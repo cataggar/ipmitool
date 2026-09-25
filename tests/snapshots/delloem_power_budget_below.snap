@@ -1,0 +1,19 @@
+#!golden 1
+#!case delloem_power_budget_below
+#!section exit
+1
+#!section stdout
+#!section stderr
+Cap value is out of boundary condition it should be between 200  - 500
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x30 lun=0x00 cmd=0xba target_cmd=0x00 data=01 ff
+< rule=power_cap_status ccode=0x00 len=1 data=03
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 ea 00 00
+< rule=power_budget ccode=0x00 len=16 data=ea 2c 01 00 f4 01 c8 00 01 00 58 02 00 00 00 00
+bye

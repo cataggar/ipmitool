@@ -1,0 +1,614 @@
+# C oracle first: the transcript assertions include request bytes and ordering.
+# The vFlash success case cannot be driven by the dummy CLI (vFlash requires
+# the open/wmi interface) and needs a separate fake-interface test.
+[delloem_help]
+args: -I dummy delloem help
+covers: delloem
+
+[delloem_unknown]
+args: -I dummy delloem bogus
+covers: delloem
+
+[delloem_lcd_help]
+args: -I dummy delloem lcd help
+covers: delloem
+
+[delloem_lcd_info_10g]
+args: -I dummy delloem lcd info
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lcd_status]
+args: -I dummy delloem lcd status
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_info_fragments]
+args: -I dummy delloem lcd info
+transcript: delloem_lcd_text.tr
+covers: delloem
+
+[delloem_lcd_info_12g]
+args: -I dummy delloem lcd info
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_default]
+args: -I dummy delloem lcd set default
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lcd_set_custom]
+args: -I dummy delloem lcd set custom "Fourteen bytes"
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lcd_set_empty]
+args: -I dummy delloem lcd set custom ""
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lcd_set_too_long]
+args: -I dummy delloem lcd set custom "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lcd_partial_error]
+args: -I dummy delloem lcd set custom "Thirty bytes of LCD text here!"
+transcript: delloem_lcd_partial_error.tr
+covers: delloem
+
+[delloem_lcd_set_mode]
+args: -I dummy delloem lcd set mode systemwatt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_text_fragment]
+args: -I dummy delloem lcd set mode userdefined "Thirty bytes of LCD text here!"
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_verbose]
+args: -I dummy -vv delloem lcd info
+transcript: delloem_lcd_text.tr
+covers: delloem
+
+[delloem_lcd_mode_none]
+args: -I dummy delloem lcd set mode none
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_modelname]
+args: -I dummy delloem lcd set mode modelname
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_ipv4]
+args: -I dummy delloem lcd set mode ipv4address
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_mac]
+args: -I dummy delloem lcd set mode macaddress
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_systemname]
+args: -I dummy delloem lcd set mode systemname
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_service]
+args: -I dummy delloem lcd set mode servicetag
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_ipv6]
+args: -I dummy delloem lcd set mode ipv6address
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_temp]
+args: -I dummy delloem lcd set mode ambienttemp
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_mode_asset]
+args: -I dummy delloem lcd set mode assettag
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_qualifier_watt]
+args: -I dummy delloem lcd set lcdqualifier watt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_qualifier_btuphr]
+args: -I dummy delloem lcd set lcdqualifier btuphr
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_qualifier_celsius]
+args: -I dummy delloem lcd set lcdqualifier celsius
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_sel]
+args: -I dummy delloem lcd set errordisplay sel
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_qualifier]
+args: -I dummy delloem lcd set lcdqualifier fahrenheit
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_error]
+args: -I dummy delloem lcd set errordisplay simple
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_kvm]
+args: -I dummy delloem lcd set vkvm active
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_lock]
+args: -I dummy delloem lcd set frontpanelaccess viewonly
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_lock_disabled]
+args: -I dummy delloem lcd set frontpanelaccess disabled
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_lock_modify]
+args: -I dummy delloem lcd set frontpanelaccess viewandmodify
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_set_kvm_inactive]
+args: -I dummy delloem lcd set vkvm inactive
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_bad_line]
+args: -I dummy delloem lcd set line banana mode none
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_bad_mode]
+args: -I dummy delloem lcd set mode unexpected
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lcd_unsupported]
+args: -I dummy delloem lcd info
+covers: delloem
+
+[delloem_mac_help]
+args: -I dummy delloem mac help
+covers: delloem
+
+[delloem_mac_10g_list]
+args: -I dummy delloem mac list
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_mac_10g_get]
+args: -I dummy delloem mac get 1
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_mac_12g_list]
+args: -I dummy delloem mac list
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_mac_12g_virtual]
+args: -I dummy delloem mac get 8
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_mac_11g_list]
+args: -I dummy delloem mac list
+transcript: delloem_11g.tr
+covers: delloem
+
+[delloem_mac_11g_idrac]
+args: -I dummy delloem mac get 8
+transcript: delloem_11g.tr
+covers: delloem
+
+[delloem_mac_verbose]
+args: -I dummy -vv delloem mac list
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_mac_lan_fallback]
+args: -I dummy delloem mac get 8
+transcript: delloem_mac_fallback.tr
+covers: delloem
+
+[delloem_mac_bad_arg]
+args: -I dummy delloem mac get 9
+covers: delloem
+
+[delloem_mac_short]
+zig_deviation: true
+args: -I dummy delloem mac list
+transcript: delloem_short.tr
+covers: delloem
+
+[delloem_lan_help]
+args: -I dummy delloem lan help
+covers: delloem
+
+[delloem_lan_get_10g]
+args: -I dummy delloem lan get
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lan_set_10g]
+args: -I dummy delloem lan set shared with failover lom2
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lan_set_shared]
+args: -I dummy delloem lan set shared
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lan_set_legacy_all]
+args: -I dummy delloem lan set shared with failover all loms
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lan_get_12g]
+args: -I dummy delloem lan get
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_active_12g]
+args: -I dummy delloem lan get active
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_active_10g]
+args: -I dummy delloem lan get active
+transcript: delloem_10g.tr
+covers: delloem
+
+[delloem_lan_set_12g]
+args: -I dummy delloem lan set shared with failover all loms
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_lom1]
+args: -I dummy delloem lan set shared with lom1
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_lom2]
+args: -I dummy delloem lan set shared with lom2
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_lom4]
+args: -I dummy delloem lan set shared with lom4
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_failover_none]
+args: -I dummy delloem lan set shared with failover none
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_failover_lom4]
+args: -I dummy delloem lan set shared with failover lom4
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_dedicated]
+args: -I dummy delloem lan set dedicated
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_set_conflict]
+args: -I dummy delloem lan set shared with failover lom1
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_bad_mode]
+args: -I dummy delloem lan set shared incorrectly
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_lan_short]
+zig_deviation: true
+args: -I dummy delloem lan get
+transcript: delloem_short.tr
+covers: delloem
+
+[delloem_power_help]
+args: -I dummy delloem powermonitor help
+covers: delloem
+
+[delloem_power_status]
+args: -I dummy delloem powermonitor status
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_default]
+args: -I dummy delloem powermonitor
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_clear_peak]
+args: -I dummy delloem powermonitor clear peakpower
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_clear_cumulative]
+args: -I dummy delloem powermonitor clear cumulativepower
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_clear_bad]
+args: -I dummy delloem powermonitor clear unexpected
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_watt]
+args: -I dummy delloem powermonitor getpowerbudget watt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_default]
+args: -I dummy delloem powermonitor getpowerbudget
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_verbose]
+args: -I dummy -vv delloem powermonitor getpowerbudget
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_btu]
+args: -I dummy delloem powermonitor getpowerbudget btuphr
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_set]
+args: -I dummy delloem powermonitor setpowerbudget 300 watt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_pct]
+args: -I dummy delloem powermonitor setpowerbudget 50 percent
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_set_btu]
+args: -I dummy delloem powermonitor setpowerbudget 1024 btuphr
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_budget_below]
+args: -I dummy delloem powermonitor setpowerbudget 199 watt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_bad_fraction]
+args: -I dummy delloem powermonitor setpowerbudget 3.14 watt
+covers: delloem
+
+[delloem_power_bad_pct]
+args: -I dummy delloem powermonitor setpowerbudget 101 percent
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_cap_enable]
+args: -I dummy delloem powermonitor enablepowercap
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_cap_disable]
+args: -I dummy delloem powermonitor disablepowercap
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_history]
+args: -I dummy delloem powermonitor powerconsumptionhistory watt
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_history_verbose]
+args: -I dummy -vv delloem powermonitor powerconsumptionhistory
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_history_btu]
+args: -I dummy delloem powermonitor powerconsumptionhistory btuphr
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_consumption_no_sdr]
+args: -I dummy delloem powermonitor powerconsumption
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_power_sensor]
+args: -I dummy delloem powermonitor powerconsumption watt
+transcript: delloem_sensor.tr
+covers: delloem
+
+[delloem_power_sensor_verbose]
+args: -I dummy -vv delloem powermonitor powerconsumption
+transcript: delloem_sensor.tr
+covers: delloem
+
+[delloem_power_sensor_btu]
+args: -I dummy delloem powermonitor powerconsumption btuphr
+transcript: delloem_sensor.tr
+covers: delloem
+
+[delloem_power_sensor_short]
+args: -I dummy delloem powermonitor powerconsumption
+transcript: delloem_sensor_short.tr
+zig_deviation: true
+covers: delloem
+
+[delloem_power_status_short]
+args: -I dummy delloem powermonitor status
+transcript: delloem_status_short.tr
+zig_deviation: true
+covers: delloem
+
+[delloem_power_short]
+args: -I dummy delloem powermonitor getpowerbudget
+transcript: delloem_short.tr
+covers: delloem
+
+[delloem_power_budget_short]
+args: -I dummy delloem powermonitor getpowerbudget
+transcript: delloem_budget_short.tr
+zig_deviation: true
+covers: delloem
+
+[delloem_power_history_short]
+args: -I dummy delloem powermonitor powerconsumptionhistory
+transcript: delloem_history_short.tr
+zig_deviation: true
+covers: delloem
+
+[delloem_power_license]
+args: -I dummy delloem powermonitor enablepowercap
+transcript: delloem_errors.tr
+covers: delloem
+
+[delloem_power_budget_license]
+args: -I dummy delloem powermonitor getpowerbudget
+transcript: delloem_errors.tr
+covers: delloem
+
+[delloem_lcd_get_error]
+args: -I dummy delloem lcd info
+transcript: delloem_errors.tr
+covers: delloem
+
+[delloem_mac_error]
+args: -I dummy delloem mac list
+transcript: delloem_errors.tr
+covers: delloem
+
+[delloem_lan_get_error]
+args: -I dummy delloem lan get
+transcript: delloem_errors.tr
+covers: delloem
+
+[delloem_setled_help]
+args: -I dummy delloem setled help
+covers: delloem
+
+[delloem_setled_state]
+args: -I dummy delloem setled 02:1f.3 present online identify critical
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_setled_all_states]
+args: -I dummy delloem setled 02:1f.3 present online hotspare identify rebuilding fault predict critical failed
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_setled_empty_mask]
+args: -I dummy delloem setled 02:1f.3
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_setled_domain]
+args: -I dummy delloem setled 0000:02:1f.3 fault failed
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_setled_bad_address]
+args: -I dummy delloem setled invalid fault
+transcript: delloem_12g.tr
+covers: delloem
+
+[delloem_setled_unsupported]
+args: -I dummy delloem setled 02:1f.3 fault
+covers: delloem
+
+[delloem_setled_map_error]
+args: -I dummy delloem setled 02:1f.3 fault
+transcript: delloem_errors.tr
+covers: delloem
+
+[delloem_setled_set_error]
+args: -I dummy delloem setled 02:1f.3 identify
+transcript: delloem_led_set_error.tr
+covers: delloem
+
+[delloem_setled_out_of_range]
+args: -I dummy delloem setled 100:20.8 fault
+transcript: delloem_12g.tr
+zig_deviation: true
+covers: delloem
+
+[delloem_setled_short_map]
+zig_deviation: true
+args: -I dummy delloem setled 02:1f.3 fault
+transcript: delloem_short.tr
+covers: delloem
+
+[delloem_vflash_restricted]
+args: -I dummy delloem vFlash info Card
+covers: delloem
+
+[delloem_vflash_help]
+args: -I dummy delloem vFlash help
+env: IPMI_DUMMY_EMULATE_OPEN=1
+covers: delloem
+
+[delloem_vflash_card]
+args: -I dummy delloem vFlash info Card
+env: IPMI_DUMMY_EMULATE_OPEN=1
+transcript: delloem_vflash.tr
+covers: delloem
+
+[delloem_vflash_verbose]
+args: -I dummy -vv delloem vFlash info Card
+env: IPMI_DUMMY_EMULATE_OPEN=1
+transcript: delloem_vflash.tr
+covers: delloem
+
+[delloem_vflash_no_card]
+args: -I dummy delloem vFlash info Card
+env: IPMI_DUMMY_EMULATE_OPEN=1
+transcript: delloem_vflash_missing.tr
+covers: delloem
+
+[delloem_vflash_license]
+args: -I dummy delloem vFlash info Card
+env: IPMI_DUMMY_EMULATE_OPEN=1
+transcript: delloem_vflash_license.tr
+covers: delloem
+
+[delloem_vflash_short]
+zig_deviation: true
+args: -I dummy delloem vFlash info Card
+env: IPMI_DUMMY_EMULATE_OPEN=1
+transcript: delloem_vflash_short.tr
+covers: delloem
+
+[delloem_vflash_bad_command]
+args: -I dummy delloem vFlash info Unknown
+env: IPMI_DUMMY_EMULATE_OPEN=1
+covers: delloem
+
+[delloem_vflash_extra_arg]
+args: -I dummy delloem vFlash info Card extra
+env: IPMI_DUMMY_EMULATE_OPEN=1
+covers: delloem

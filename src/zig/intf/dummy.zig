@@ -218,6 +218,12 @@ fn open(intf: *Intf) callconv(.c) c_int {
         intf.session = &isol_session;
     }
     intf.opened = 1;
+    if (c.getenv("IPMI_DUMMY_EMULATE_OPEN")) |flag| {
+        if (c.strcmp(flag, "1") == 0) {
+            @memset(&intf.name, 0);
+            @memcpy(intf.name[0..4], "open");
+        }
+    }
     return intf.fd;
 }
 

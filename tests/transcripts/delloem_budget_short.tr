@@ -1,0 +1,12 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data @pad 10 0x00 10
+end
+respond cap
+  netfn 0x06
+  cmd 0x59
+  match 00 ea
+  data ea 2c 01
+end

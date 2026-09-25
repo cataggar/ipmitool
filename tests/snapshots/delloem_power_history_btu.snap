@@ -1,0 +1,31 @@
+#!golden 1
+#!case delloem_power_history_btu
+#!section exit
+0
+#!section stdout no-final-newline
+Power Consumption History
+
+Statistic                   Last Minute     Last Hour     Last Day     Last Week
+
+Average Power Consumption   341 BTU/hr      682 BTU/hr   1023 BTU/hr  1365 BTU/hr
+Max Power Consumption       409 BTU/hr      750 BTU/hr   1092 BTU/hr  1433 BTU/hr
+Min Power Consumption       170 BTU/hr      511 BTU/hr    853 BTU/hr  1194 BTU/hr
+
+Max Power Time
+Last Minute     : 10/23/23 22:06:56 UTCLast Hour       : 10/23/23 22:06:56 UTCLast Day        : 10/23/23 22:06:56 UTCLast Week       : 10/23/23 22:06:56 UTCMin Power Time
+Last Minute     : 10/23/23 22:06:56 UTCLast Hour       : 10/23/23 22:06:56 UTCLast Day        : 10/23/23 22:06:56 UTCLast Week       : 10/23/23 22:06:56 UTC
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 dd 02 00
+< rule=validator ccode=0x00 len=11 data=00 00 00 00 00 00 00 00 00 00 10
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 eb 00 00
+< rule=avg_history ccode=0x00 len=9 data=eb 64 00 c8 00 2c 01 90 01
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 ec 00 00
+< rule=peak_history ccode=0x00 len=25 data=ec 78 00 dc 00 40 01 a4 01 80 ee 36 65 80 ee 36 65 80 ee 36 65 80 ee 36 65
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 ed 00 00
+< rule=min_history ccode=0x00 len=25 data=ed 32 00 96 00 fa 00 5e 01 80 ee 36 65 80 ee 36 65 80 ee 36 65 80 ee 36 65
+bye

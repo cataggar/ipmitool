@@ -1,0 +1,24 @@
+respond validator
+  netfn 0x06
+  cmd 0x59
+  match 00 dd
+  data @pad 10 0x00 10
+end
+respond avg
+  netfn 0x06
+  cmd 0x59
+  match 00 eb
+  data eb 64
+end
+respond peak
+  netfn 0x06
+  cmd 0x59
+  match 00 ec
+  data ec 78 00 dc 00 40 01 a4 01
+end
+respond min
+  netfn 0x06
+  cmd 0x59
+  match 00 ed
+  data ed 32 00 96 00 fa 00 5e 01
+end

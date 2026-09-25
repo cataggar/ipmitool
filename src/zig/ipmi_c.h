@@ -61,6 +61,10 @@
 #endif
 #include <ipmitool/ipmi_cc.h>
 #include <ipmitool/ipmi_chassis.h>
+#include <ipmitool/ipmi_delloem.h>
+/* lib/ipmi_delloem.c exports this LCD helper but its header only declares main. */
+int ipmi_lcd_get_platform_model_name(struct ipmi_intf *intf, char *lcdstring,
+                                     uint8_t max_length, uint8_t field_type);
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_dcmi.h>
