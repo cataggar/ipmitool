@@ -1,0 +1,183 @@
+#!golden 1
+#!case lanp_log_auth_debug
+#!section exit
+0
+#!section stdout
+#!section stderr
+ipmitool version <VERSION>
+
+Loading IANA PEN Registry...
+Running Get PICMG Properties my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 80
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Error response 0x80 from Get PICMG Properties
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 80
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Unknown (0x80)
+Acquire IPMB address
+Discovered IPMB address 0x0
+Interface address: my_addr 0x20 transit 0:0 target 0x20:0 ipmb_target 0
+
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 6
+msg.cmd: 42
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: 7
+msg.cmd: 42
+msg.seq: 0
+msg.lun: 0
+<<<
+Channel type: 802.3 LAN
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+Auth Type Enable        : callback=0x01 user=0x02 operator=0x04 admin=0x10 oem=0x00
+authtype data (5 bytes)
+ 01 02 04 04 00
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 80
+data_len: 0
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+Get LAN Parameter 'Set in Progress' command failed: Unsupported parameter
+>>> IPMI req
+msg.data_len: 7
+msg.netfn: c
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 0
+msg.netfn: d
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+Waiting for Set LAN Parameter to complete...
+SET DATA (5 bytes)
+ 01 02 04 04 00
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 6
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+READ DATA (5 bytes)
+ 01 02 04 04 00
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: c
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 0
+msg.netfn: d
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: c
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 0
+msg.netfn: d
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0x80 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=medium ccode=0x00 len=9 data=01 04 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 02 00 00
+< rule=auth_initial ccode=0x00 len=6 data=11 01 02 04 10 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 00 00 00
+< rule=progress ccode=0x80 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 02 01 02 04 04 00
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 02 00 00
+< rule=auth_changed ccode=0x00 len=6 data=11 01 02 04 04 00
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 02
+< rule=write ccode=0x00 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x01 target_cmd=0x00 data=01 00 00
+< rule=write ccode=0x00 len=0 data=
+bye
+#!section files
