@@ -6,9 +6,29 @@ desc: echo retains trailing spaces before its newline
 args: -I dummy echo first second
 covers: echo
 
+[shellcmd_echo_empty]
+desc: echo with no words writes only a newline
+args: -I dummy echo
+covers: echo
+
+[shellcmd_echo_utf8]
+desc: echo leaves UTF-8 bytes and a trailing space after an empty word
+args: -I dummy echo café ""
+covers: echo
+
 [shellcmd_set_localaddr]
 desc: set writes a valid local IPMB address
 args: -I dummy set localaddr 0x20
+covers: set
+
+[shellcmd_set_localaddr_zero]
+desc: set pads a zero local address to two hex digits
+args: -I dummy set localaddr 0
+covers: set
+
+[shellcmd_set_targetaddr_ff]
+desc: set writes the largest target address with two hex digits
+args: -I dummy set targetaddr 0xff
 covers: set
 
 [shellcmd_set_bad_targetaddr]
@@ -31,6 +51,12 @@ desc: script quotes and comments, keeps executing after a bad set
 args: -I dummy exec {work}/shell-script.txt
 blob: shell-script.txt shell/commands.hex
 covers: exec
+
+[shellcmd_exec_stdout_order]
+desc: C-buffered SDR output stays between Zig echo and set responses
+args: -I dummy exec {work}/shell-stdout-order.txt
+blob: shell-stdout-order.txt shell/stdout-order.hex
+covers: exec echo set sdr
 
 [shellcmd_exec_request]
 desc: script dispatches a BMC request and continues after its failure

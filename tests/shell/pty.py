@@ -301,14 +301,18 @@ class ShellTests(unittest.TestCase):
         SCRIPT.write_text("echo '#quoted' # trailing\n", encoding="utf-8")
         self.assertIn(b"#quoted ", cli(ZIG, "exec", str(SCRIPT)).stdout)
         for args in [
-            ("echo", "hello", "world"), ("set", "csv", "bad"),
+            ("echo",), ("echo", "hello", "world"), ("echo", "café", ""),
+            ("set", "csv", "bad"),
             ("set", "port", "65536"), ("set", "localaddr", "0x20"),
-            ("set", "targetaddr", "0xff"), ("set", "host", "example.com"),
+            ("set", "localaddr", "0x00"), ("set", "targetaddr", "0xff"),
+            ("set", "host", "example.com"), ("set", "hostname", "example.com"),
             ("set", "privlvl", "invalid"), ("set", "privlvl", "ADMINISTRATOR"),
             ("set", "authtype", "invalid"), ("set", "authtype", "MD5"),
-            ("set", "user", "operator"), ("set", "pass", "test"),
+            ("set", "user", "operator"), ("set", "username", "abcdefghijklmnopq"),
+            ("set", "pass", "test"), ("set", "password", "test"),
             ("set", "verbose"), ("set", "csv"), ("set", "csv", "2"),
-            ("set", "port", "623"), ("set", "targetaddr", "bad"),
+            ("set", "port", "623"), ("--", "set", "port", "-1"),
+            ("set", "targetaddr", "bad"),
             ("set", "hostname"), ("set", "unknown", "value"),
             ("set", "help"), ("set",), ("exec",),
         ]:
@@ -321,6 +325,40 @@ class ShellTests(unittest.TestCase):
                         (oracle.returncode, oracle.stdout, oracle.stderr),
                         args,
                     )
+
+    def test_shell_stdout_order_after_buffered_c_command(self):
+        SCRIPT.write_text(
+            "echo before\nsdr entity list\nset localaddr 0x20\necho after\n",
+            encoding="utf-8",
+        )
+        zig = cli(ZIG, "exec", str(SCRIPT))
+        self.assertEqual(zig.returncode, 0, zig.stderr)
+        markers = (
+            b"before \n", b"Entity IDs:\n", b"PICMG Alarm Panel",
+            b"Set local IPMB address to 0x20\n", b"after \n",
+        )
+        positions = [zig.stdout.find(marker) for marker in markers]
+        self.assertTrue(
+            all(pos >= 0 for pos in positions) and positions == sorted(positions),
+            zig.stdout,
+        )
+        if C:
+            oracle = cli(C, "exec", str(SCRIPT))
+            self.assertEqual(
+                (zig.returncode, zig.stdout, zig.stderr),
+                (oracle.returncode, oracle.stdout, oracle.stderr),
+            )
+
+    def test_shell_stdout_write_failure_is_not_success(self):
+        for args in (("echo", "broken"), ("set", "localaddr", "0xff")):
+            with self.subTest(args=args):
+                with open("/dev/full", "wb") as full:
+                    run = subprocess.run(
+                        [ZIG, "-I", "dummy", *args], stdout=full,
+                        stderr=subprocess.PIPE, env=env(), timeout=5, check=False,
+                    )
+                self.assertNotEqual(run.returncode, 0, run.stderr)
+                self.assertIn(b": stdout WriteFailed", run.stderr)
 
     def test_redirected_input_eof_and_status(self):
         run = subprocess.run(
