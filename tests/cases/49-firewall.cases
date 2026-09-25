@@ -245,9 +245,10 @@ desc: setting subfunction requires command
 args: -I dummy firewall enable lun 0 netfn 4 subfn 2
 covers: firewall
 
+# GNU getopt permutes options past the command unless '--' stops it.
 [fw_negative_command]
-desc: a negative command is treated as omitted by the C parser
-args: -I dummy firewall info lun 0 netfn 4 command -2
+desc: a negative command reaches the firewall parser and is treated as omitted
+args: -I dummy -- firewall info lun 0 netfn 4 command -2
 transcript: firewall_rich.tr
 covers: firewall
 
