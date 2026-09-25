@@ -1,0 +1,7 @@
+default_ccode 0xc1
+
+respond status_error
+  netfn 0x04
+  cmd 0x15
+  ccode 0xab
+end

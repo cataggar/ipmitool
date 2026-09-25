@@ -1,6 +1,7 @@
 //! Platform Event Filtering command and public C ABI of lib/ipmi_pef.c.
 //! All request and response sizes are validated before accessing BMC data.
 //! Selected with `-Dzig-modules=pef`.
+//! Diagnostics use the shared typed logger, with the C logger as fallback.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -151,11 +152,11 @@ fn exchange(intf: *Intf, netfn: u6, cmd: u8, data: []const u8, text: [*:0]const 
     const rsp = send(intf, netfn, cmd, data) orelse return null;
     if (rsp.ccode == 0x80) return null;
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, " **Error %x in '%s' command", @as(c_uint, rsp.ccode), text);
+        log.print(log.Level.err, " **Error %x in '%s' command", .{ @as(c_uint, rsp.ccode), text });
         return null;
     }
     if (rsp.data_len < min) {
-        c.lprintf(log.Level.err, "Unexpected data length received.");
+        log.print(log.Level.err, "Unexpected data length received.", .{});
         return null;
     }
     if (c.verbose > 2) c.printbuf(@ptrCast(&rsp.data), rsp.data_len, text);
@@ -463,7 +464,7 @@ fn listFilters(intf: *Intf) c_int {
     var cap = std.mem.zeroes(Capabilities);
     if (!evaluate(getCapabilities(intf, &cap))) return -1;
     if (cap.event_filter_count == 0) {
-        c.lprintf(log.Level.err, "PEF Event Filtering isn't supported.");
+        log.print(log.Level.err, "PEF Event Filtering isn't supported.", .{});
         return -1;
     }
     // C's uint8_t loop wraps at 255; use usize so the valid maximum terminates.
@@ -471,7 +472,7 @@ fn listFilters(intf: *Intf) c_int {
         first_field = true;
         var entry = std.mem.zeroes(FilterEntry);
         if (!evaluate(getFilterEntry(intf, @intCast(index), &entry))) {
-            c.lprintf(log.Level.err, "Failed to get PEF Event Filter Entry %i.", @as(c_int, @intCast(index)));
+            log.print(log.Level.err, "Failed to get PEF Event Filter Entry %i.", .{@as(c_int, @intCast(index))});
             continue;
         }
         printFilterEntry(&entry);
@@ -484,18 +485,18 @@ fn filterEnable(intf: *Intf, enable: bool, id: u8) c_int {
     var size: u8 = 0;
     if (!evaluate(getTableSize(intf, 5, &size))) return -1;
     if (size == 0) {
-        c.lprintf(log.Level.err, "PEF Filter isn't supported.");
+        log.print(log.Level.err, "PEF Filter isn't supported.", .{});
         return -1;
     }
     if (id > size) {
-        c.lprintf(log.Level.err, "PEF Filter ID out of range. Valid range is (1..%d).", @as(c_int, size));
+        log.print(log.Level.err, "PEF Filter ID out of range. Valid range is (1..%d).", .{@as(c_int, size)});
         return -1;
     }
     var cfg = std.mem.zeroes(FilterCfg);
     if (!evaluate(setFilterCfg(intf, id, &cfg))) return -1;
     cfg.cfg = if (enable) cfg.cfg | 0x80 else cfg.cfg & 0x7f;
     if (!evaluate(setFilterCfg(intf, id, &cfg))) {
-        c.lprintf(log.Level.err, "Failed to %s PEF Filter ID %d.", @as([*:0]const u8, if (enable) "enable" else "disable"), @as(c_int, id));
+        log.print(log.Level.err, "Failed to %s PEF Filter ID %d.", .{ @as([*:0]const u8, if (enable) "enable" else "disable"), @as(c_int, id) });
         return -1;
     }
     _ = c.printf("PEF Filter ID %u is %s now.\n", @as(c_uint, id), @as([*:0]const u8, if (enable) "enabled" else "disabled"));
@@ -504,7 +505,7 @@ fn filterEnable(intf: *Intf, enable: bool, id: u8) c_int {
 
 fn retrieve(intf: *Intf, netfn: u6, cmd: u8, selector: *const [4]u8, label: [*:0]const u8, min: usize) ?*Response {
     return exchange(intf, netfn, cmd, selector, label, min) orelse {
-        c.lprintf(log.Level.err, " **Error retrieving %s", label);
+        log.print(log.Level.err, " **Error retrieving %s", .{label});
         return null;
     };
 }
@@ -523,7 +524,7 @@ fn oemLanDestination(intf: *Intf, dest: u8) void {
     var address: [128]u8 = @splat(0);
     var length: usize = data[4];
     if (length >= address.len) {
-        c.lprintf(log.Level.err, "Unexpected data length received.");
+        log.print(log.Level.err, "Unexpected data length received.", .{});
         return;
     }
     const initial = @min(length, @as(usize, c.IPMI_SYSINFO_SET0_SIZE - 3));
@@ -531,13 +532,13 @@ fn oemLanDestination(intf: *Intf, dest: u8) void {
     var set: usize = 1;
     while (length > 11) : (set += 1) {
         if (set > 255 or set * 11 >= address.len) {
-            c.lprintf(log.Level.err, "Unexpected data length received.");
+            log.print(log.Level.err, "Unexpected data length received.", .{});
             return;
         }
         if (c.ipmi_mc_getsysinfo(cIntf(intf), c.IPMI_SYSINFO_DELL_IPV6_DESTADDR, @intCast(set), dest, 19, &data) != 0) return;
         const part = @min(length - 11, @as(usize, c.IPMI_SYSINFO_SETN_SIZE - 2));
         if (set * 11 + part >= address.len) {
-            c.lprintf(log.Level.err, "Unexpected data length received.");
+            log.print(log.Level.err, "Unexpected data length received.", .{});
             return;
         }
         @memcpy(address[set * 11 ..][0..part], data[3..][0..part]);
@@ -553,7 +554,7 @@ fn lanDestination(intf: *Intf, ch: u8, dest: u8) void {
     selector[2] = dest;
     const dtype = retrieve(intf, ipmi.NetFn.transport, 2, &selector, "Alert destination type", 5) orelse return;
     if (dtype.data[1] != dest) {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "Alert destination type");
+        log.print(log.Level.err, " **Error retrieving %s", .{"Alert destination type"});
         return;
     }
     const kind: u8 = dtype.data[2] & 7;
@@ -574,7 +575,7 @@ fn lanDestination(intf: *Intf, ch: u8, dest: u8) void {
     selector[2] = dest;
     const addr = retrieve(intf, ipmi.NetFn.transport, 2, &selector, "Alert destination info", 14) orelse return;
     if (addr.data[1] != dest) {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "Alert destination info");
+        log.print(log.Level.err, " **Error retrieving %s", .{"Alert destination info"});
         return;
     }
     var ipbuf: [32]u8 = @splat(0);
@@ -595,7 +596,7 @@ fn serialDial(intf: *Intf, label: [*:0]const u8, selector: [4]u8) void {
     while (offset < 96) {
         const rsp = retrieve(intf, ipmi.NetFn.transport, 0x11, &req, label, 19) orelse return;
         if (rsp.data[1] != selector[1] or rsp.data[2] != req[3]) {
-            c.lprintf(log.Level.err, " **Error retrieving %s", label);
+            log.print(log.Level.err, " **Error retrieving %s", .{label});
             return;
         }
         @memcpy(string[offset .. offset + 16], rsp.data[3..19]);
@@ -615,7 +616,7 @@ fn serialTap(intf: *Intf, selector: [4]u8) void {
     req[1] = 25;
     const account = retrieve(intf, ipmi.NetFn.transport, 0x11, &req, "TAP account info", 3) orelse return;
     if (account.data[1] != req[2]) {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "TAP account info");
+        log.print(log.Level.err, " **Error retrieving %s", .{"TAP account info"});
         return;
     }
     const dial_id: u8 = account.data[2] >> 4;
@@ -625,7 +626,7 @@ fn serialTap(intf: *Intf, selector: [4]u8) void {
     req[2] = settings_id;
     const settings = retrieve(intf, ipmi.NetFn.transport, 0x11, &req, "TAP service settings", 3) orelse return;
     if (settings.data[1] != req[2]) {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "TAP service settings");
+        log.print(log.Level.err, " **Error retrieving %s", .{"TAP service settings"});
         return;
     }
     printStr("TAP confirmation", description(confirmations, settings.data[2]));
@@ -644,7 +645,7 @@ fn serialDestination(intf: *Intf, ch: u8, dest: u8) void {
     selector[2] = dest;
     const info = retrieve(intf, ipmi.NetFn.transport, 0x11, &selector, "Alert destination info", 5) orelse return;
     if (info.data[1] != dest) {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "Alert destination info");
+        log.print(log.Level.err, " **Error retrieving %s", .{"Alert destination info"});
         return;
     }
     // The C printer interprets the reply at data[0], not data[1]; retain
@@ -661,7 +662,7 @@ fn listPolicies(intf: *Intf) c_int {
     var size: u8 = 0;
     if (!evaluate(getTableSize(intf, 8, &size))) return -1;
     if (size == 0) {
-        c.lprintf(log.Level.err, "PEF Alert Policy isn't supported.");
+        log.print(log.Level.err, "PEF Alert Policy isn't supported.", .{});
         return -1;
     }
     for (1..@as(usize, size) + 1) |index| {
@@ -693,18 +694,18 @@ fn policyEnable(intf: *Intf, enable: bool, id: u8) c_int {
     var size: u8 = 0;
     if (!evaluate(getTableSize(intf, 8, &size))) return -1;
     if (size == 0) {
-        c.lprintf(log.Level.err, "PEF Policy isn't supported.");
+        log.print(log.Level.err, "PEF Policy isn't supported.", .{});
         return -1;
     }
     if (id > size) {
-        c.lprintf(log.Level.err, "PEF Policy ID out of range. Valid range is (1..%d).", @as(c_int, size));
+        log.print(log.Level.err, "PEF Policy ID out of range. Valid range is (1..%d).", .{@as(c_int, size)});
         return -1;
     }
     var entry = std.mem.zeroes(PolicyEntry);
     if (!evaluate(getPolicyEntry(intf, id, &entry))) return -1;
     entry.entry.policy = if (enable) entry.entry.policy | 8 else entry.entry.policy & 0xf7;
     if (!evaluate(setPolicyEntry(intf, id, &entry))) {
-        c.lprintf(log.Level.err, "Failed to %s PEF Policy ID %d.", @as([*:0]const u8, if (enable) "enable" else "disable"), @as(c_int, id));
+        log.print(log.Level.err, "Failed to %s PEF Policy ID %d.", .{ @as([*:0]const u8, if (enable) "enable" else "disable"), @as(c_int, id) });
         return -1;
     }
     _ = c.printf("PEF Policy ID %u is %s now.\n", @as(c_uint, id), @as([*:0]const u8, if (enable) "enabled" else "disabled"));
@@ -714,12 +715,12 @@ fn policyEnable(intf: *Intf, enable: bool, id: u8) c_int {
 fn getInfo(intf: *Intf) c_int {
     var size: u8 = 0;
     if (!evaluate(getTableSize(intf, 8, &size))) {
-        c.lprintf(log.Level.warn, "Failed to get size of PEF Policy Table.");
+        log.print(log.Level.warn, "Failed to get size of PEF Policy Table.", .{});
         size = 0;
     }
     var cap = std.mem.zeroes(Capabilities);
     if (!evaluate(getCapabilities(intf, &cap))) {
-        c.lprintf(log.Level.err, "Failed to get PEF Capabilities.");
+        log.print(log.Level.err, "Failed to get PEF Capabilities.", .{});
         return -1;
     }
     print1xd("Version", cap.version);
@@ -728,7 +729,7 @@ fn getInfo(intf: *Intf) c_int {
     var sys_guid = std.mem.zeroes(SystemGuid);
     const rc = getSystemGuid(intf, &sys_guid);
     if (rc != 0x80 and !evaluate(rc)) {
-        c.lprintf(log.Level.err, "Failed to get PEF System GUID. %i", rc);
+        log.print(log.Level.err, "Failed to get PEF System GUID. %i", .{rc});
         return -1;
     }
     if (sys_guid.data1 == 1) {
@@ -746,7 +747,7 @@ fn getInfo(intf: *Intf) c_int {
 
 fn getStatus(intf: *Intf) c_int {
     const rsp = exchange(intf, ipmi.NetFn.se, 0x15, &.{}, "Last S/W processed ID", 10) orelse {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "Last S/W processed ID");
+        log.print(log.Level.err, " **Error retrieving %s", .{"Last S/W processed ID"});
         return -1;
     };
     const timestamp = std.mem.readInt(u32, rsp.data[0..4], .little);
@@ -756,13 +757,13 @@ fn getStatus(intf: *Intf) c_int {
     print2xd("Last BMC processed ID", rsp.data[9], rsp.data[8]);
     const control = [3]u8{ 1, 0, 0 };
     const state = exchange(intf, ipmi.NetFn.se, 0x13, &control, "PEF control", 2) orelse {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "PEF control");
+        log.print(log.Level.err, " **Error retrieving %s", .{"PEF control"});
         return -1;
     };
     flags(controls, 3, state.data[1]);
     const active = [3]u8{ 2, 0, 0 };
     const action = exchange(intf, ipmi.NetFn.se, 0x13, &active, "PEF action", 2) orelse {
-        c.lprintf(log.Level.err, " **Error retrieving %s", "PEF action");
+        log.print(log.Level.err, " **Error retrieving %s", .{"PEF action"});
         return -1;
     };
     flags(actions, 2, action.data[1]);
@@ -771,42 +772,54 @@ fn getStatus(intf: *Intf) c_int {
 }
 
 fn filterHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "usage: pef filter help\n" ++
-        "\tpef filter list\n" ++
-        "       pef filter enable <id = 1..n>\n" ++
-        "       pef filter disable <id = 1..n>\n" ++
-        "       pef filter create <id = 1..n> <params>\n" ++
-        "       pef filter delete <id = 1..n>");
+    log.print(
+        log.Level.notice,
+        "usage: pef filter help\n" ++
+            "\tpef filter list\n" ++
+            "       pef filter enable <id = 1..n>\n" ++
+            "       pef filter disable <id = 1..n>\n" ++
+            "       pef filter create <id = 1..n> <params>\n" ++
+            "       pef filter delete <id = 1..n>",
+        .{},
+    );
 }
 
 fn policyHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "usage: pef policy help\n" ++
-        "       pef policy list\n" ++
-        "       pef policy enable <id = 1..n>\n" ++
-        "       pef policy disable <id = 1..n>\n" ++
-        "       pef policy create <id = 1..n> <params>\n" ++
-        "       pef policy delete <id = 1..n>");
+    log.print(
+        log.Level.notice,
+        "usage: pef policy help\n" ++
+            "       pef policy list\n" ++
+            "       pef policy enable <id = 1..n>\n" ++
+            "       pef policy disable <id = 1..n>\n" ++
+            "       pef policy create <id = 1..n> <params>\n" ++
+            "       pef policy delete <id = 1..n>",
+        .{},
+    );
 }
 
 fn pefHelp() callconv(.c) void {
-    c.lprintf(log.Level.notice, "usage: pef help\n" ++
-        "       pef capabilities\n" ++
-        "       pef event <params>\n" ++
-        "       pef filter list\n" ++
-        "       pef filter enable <id = 1..n>\n" ++
-        "       pef filter disable <id = 1..n>\n" ++
-        "       pef filter create <id = 1..n> <params>\n" ++
-        "       pef filter delete <id = 1..n>\n" ++
-        "       pef info\n" ++
-        "       pef policy list\n" ++
-        "       pef policy enable <id = 1..n>\n" ++
-        "       pef policy disable <id = 1..n>\n" ++
-        "       pef policy create <id = 1..n> <params>\n" ++
-        "       pef policy delete <id = 1..n>\n" ++
-        "       pef pet ack <params>\n" ++
-        "       pef status\n" ++
-        "       pef timer get\n" ++
-        "       pef timer set <0x00-0xFF>");
+    log.print(
+        log.Level.notice,
+        "usage: pef help\n" ++
+            "       pef capabilities\n" ++
+            "       pef event <params>\n" ++
+            "       pef filter list\n" ++
+            "       pef filter enable <id = 1..n>\n" ++
+            "       pef filter disable <id = 1..n>\n" ++
+            "       pef filter create <id = 1..n> <params>\n" ++
+            "       pef filter delete <id = 1..n>\n" ++
+            "       pef info\n" ++
+            "       pef policy list\n" ++
+            "       pef policy enable <id = 1..n>\n" ++
+            "       pef policy disable <id = 1..n>\n" ++
+            "       pef policy create <id = 1..n> <params>\n" ++
+            "       pef policy delete <id = 1..n>\n" ++
+            "       pef pet ack <params>\n" ++
+            "       pef status\n" ++
+            "       pef timer get\n" ++
+            "       pef timer set <0x00-0xFF>",
+        .{},
+    );
 }
 
 fn arg(argv: [*c][*c]u8, index: usize) [*:0]const u8 {
@@ -815,7 +828,7 @@ fn arg(argv: [*c][*c]u8, index: usize) [*:0]const u8 {
 
 fn filterMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (argc < 1 or argv == null) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         filterHelp();
         return -1;
     }
@@ -827,33 +840,33 @@ fn filterMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (eql(sub, "list")) return listFilters(intf);
     if (eql(sub, "enable") or eql(sub, "disable")) {
         if (argc != 2) {
-            c.lprintf(log.Level.err, "Not enough arguments given.");
+            log.print(log.Level.err, "Not enough arguments given.", .{});
             filterHelp();
             return -1;
         }
         var id: u8 = 0;
         if (c.str2uchar(arg(argv, 1), &id) != 0) {
-            c.lprintf(log.Level.err, "Invalid PEF Event Filter ID given: %s", arg(argv, 1));
+            log.print(log.Level.err, "Invalid PEF Event Filter ID given: %s", .{arg(argv, 1)});
             return -1;
         }
         if (id == 0) {
-            c.lprintf(log.Level.err, "PEF Event Filter ID out of range. Valid range is <1..255>.");
+            log.print(log.Level.err, "PEF Event Filter ID out of range. Valid range is <1..255>.", .{});
             return -1;
         }
         return filterEnable(intf, eql(sub, "enable"), id);
     }
     if (eql(sub, "create") or eql(sub, "delete")) {
-        c.lprintf(log.Level.err, "Not implemented.");
+        log.print(log.Level.err, "Not implemented.", .{});
         return 1;
     }
-    c.lprintf(log.Level.err, "Invalid PEF Filter command: %s", sub);
+    log.print(log.Level.err, "Invalid PEF Filter command: %s", .{sub});
     filterHelp();
     return 1;
 }
 
 fn policyMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (argc < 1 or argv == null) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         policyHelp();
         return -1;
     }
@@ -865,33 +878,33 @@ fn policyMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (eql(sub, "list")) return listPolicies(intf);
     if (eql(sub, "enable") or eql(sub, "disable")) {
         if (argc != 2) {
-            c.lprintf(log.Level.err, "Not enough arguments given.");
+            log.print(log.Level.err, "Not enough arguments given.", .{});
             policyHelp();
             return -1;
         }
         var id: u8 = 0;
         if (c.str2uchar(arg(argv, 1), &id) != 0) {
-            c.lprintf(log.Level.err, "Invalid PEF Policy ID given: %s", arg(argv, 1));
+            log.print(log.Level.err, "Invalid PEF Policy ID given: %s", .{arg(argv, 1)});
             return -1;
         }
         if (id == 0 or id > 127) {
-            c.lprintf(log.Level.err, "PEF Policy ID out of range. Valid range is <1..127>.");
+            log.print(log.Level.err, "PEF Policy ID out of range. Valid range is <1..127>.", .{});
             return -1;
         }
         return policyEnable(intf, eql(sub, "enable"), id);
     }
     if (eql(sub, "create") or eql(sub, "delete")) {
-        c.lprintf(log.Level.err, "Not implemented.");
+        log.print(log.Level.err, "Not implemented.", .{});
         return 1;
     }
-    c.lprintf(log.Level.err, "Invalid PEF Policy command: %s", sub);
+    log.print(log.Level.err, "Invalid PEF Policy command: %s", .{sub});
     policyHelp();
     return 1;
 }
 
 fn pefMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (argc < 1 or argv == null) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         pefHelp();
         return -1;
     }
@@ -905,10 +918,10 @@ fn pefMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     if (eql(sub, "info")) return getInfo(intf);
     if (eql(sub, "status")) return getStatus(intf);
     if (eql(sub, "capabilities") or eql(sub, "event") or eql(sub, "pet") or eql(sub, "timer")) {
-        c.lprintf(log.Level.err, "Not implemented.");
+        log.print(log.Level.err, "Not implemented.", .{});
         return 1;
     }
-    c.lprintf(log.Level.err, "Invalid PEF command: '%s'\n", sub);
+    log.print(log.Level.err, "Invalid PEF command: '%s'\n", .{sub});
     return -1;
 }
 

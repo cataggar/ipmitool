@@ -2,6 +2,7 @@
 //! The discovery bitmap, command masks and subfunction masks retain the C
 //! protocol's separate requests and completion-code behavior. In particular,
 //! reset visits every command on every pair, including unsupported pairs.
+//! Diagnostics use the shared typed logger, with the C logger as fallback.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -94,42 +95,42 @@ fn printBitfield(bf: []const u8, invert: bool, level: c_int) void {
             _ = c.printf("%02x", @as(c_uint, value));
             if ((i + 1) % 4 == 0) _ = c.printf(" ");
         } else {
-            c.lprintf(level, "%02x", @as(c_uint, value));
-            if ((i + 1) % 4 == 0) c.lprintf(level, " ");
+            log.print(level, "%02x", .{@as(c_uint, value)});
+            if ((i + 1) % 4 == 0) log.print(level, " ", .{});
         }
     }
     if (level < 0) {
         _ = c.printf("\n");
     } else {
-        c.lprintf(level, "\n");
+        log.print(level, "\n", .{});
     }
 }
 
 fn usage() void {
-    c.lprintf(log.Level.notice, "Firmware Firewall Commands:");
-    c.lprintf(log.Level.notice, "\tinfo [channel H] [lun L]");
-    c.lprintf(log.Level.notice, "\tinfo [channel H] [lun L [netfn N [command C [subfn S]]]]");
-    c.lprintf(log.Level.notice, "\tenable [channel H] [lun L [netfn N [command C [subfn S]]]]");
-    c.lprintf(log.Level.notice, "\tdisable [channel H] [lun L [netfn N [command C [subfn S]]]] [force])");
-    c.lprintf(log.Level.notice, "\treset [channel H]");
-    c.lprintf(log.Level.notice, "\t\twhere H is a Channel, L is a LUN, N is a NetFn,");
-    c.lprintf(log.Level.notice, "\t\tC is a Command and S is a Sub-Function");
+    log.print(log.Level.notice, "Firmware Firewall Commands:", .{});
+    log.print(log.Level.notice, "\tinfo [channel H] [lun L]", .{});
+    log.print(log.Level.notice, "\tinfo [channel H] [lun L [netfn N [command C [subfn S]]]]", .{});
+    log.print(log.Level.notice, "\tenable [channel H] [lun L [netfn N [command C [subfn S]]]]", .{});
+    log.print(log.Level.notice, "\tdisable [channel H] [lun L [netfn N [command C [subfn S]]]] [force])", .{});
+    log.print(log.Level.notice, "\treset [channel H]", .{});
+    log.print(log.Level.notice, "\t\twhere H is a Channel, L is a LUN, N is a NetFn,", .{});
+    log.print(log.Level.notice, "\t\tC is a Command and S is a Sub-Function", .{});
 }
 
 fn infoUsage() callconv(.c) void {
-    c.lprintf(log.Level.notice, "info [channel H]");
-    c.lprintf(log.Level.notice, "\tList all of the firewall information for all LUNs, NetFns");
-    c.lprintf(log.Level.notice, "\tand Commands, This is a long list and is not very human readable.");
-    c.lprintf(log.Level.notice, "info [channel H] lun L");
-    c.lprintf(log.Level.notice, "\tThis also prints a long list that is not very human readable.");
-    c.lprintf(log.Level.notice, "info [channel H] lun L netfn N");
-    c.lprintf(log.Level.notice, "\tThis prints out information for a single LUN/NetFn pair.");
-    c.lprintf(log.Level.notice, "\tThat is not really very usable, but at least it is short.");
-    c.lprintf(log.Level.notice, "info [channel H] lun L netfn N command C");
-    c.lprintf(log.Level.notice, "\tThis is the one you want -- it prints out detailed human");
-    c.lprintf(log.Level.notice, "\treadable information.  It shows the support, configurable, and");
-    c.lprintf(log.Level.notice, "\tenabled bits for the Command C on LUN/NetFn pair L,N and the");
-    c.lprintf(log.Level.notice, "\tsame information about each of its Sub-functions.");
+    log.print(log.Level.notice, "info [channel H]", .{});
+    log.print(log.Level.notice, "\tList all of the firewall information for all LUNs, NetFns", .{});
+    log.print(log.Level.notice, "\tand Commands, This is a long list and is not very human readable.", .{});
+    log.print(log.Level.notice, "info [channel H] lun L", .{});
+    log.print(log.Level.notice, "\tThis also prints a long list that is not very human readable.", .{});
+    log.print(log.Level.notice, "info [channel H] lun L netfn N", .{});
+    log.print(log.Level.notice, "\tThis prints out information for a single LUN/NetFn pair.", .{});
+    log.print(log.Level.notice, "\tThat is not really very usable, but at least it is short.", .{});
+    log.print(log.Level.notice, "info [channel H] lun L netfn N command C", .{});
+    log.print(log.Level.notice, "\tThis is the one you want -- it prints out detailed human", .{});
+    log.print(log.Level.notice, "\treadable information.  It shows the support, configurable, and", .{});
+    log.print(log.Level.notice, "\tenabled bits for the Command C on LUN/NetFn pair L,N and the", .{});
+    log.print(log.Level.notice, "\tsame information about each of its Sub-functions.", .{});
 }
 
 fn parseArgs(argv: [][*:0]u8, p: *Params) c_int {
@@ -143,7 +144,7 @@ fn parseArgs(argv: [][*:0]u8, p: *Params) c_int {
         } else if (eql(argv[i], "lun") and i + 1 < argv.len) {
             i += 1;
             if (c.str2int(argv[i], &p.lun) != 0) {
-                c.lprintf(log.Level.err, "Given lun '%s' is invalid.", argv[i]);
+                log.print(log.Level.err, "Given lun '%s' is invalid.", .{argv[i]});
                 return -1;
             }
         } else if (eql(argv[i], "force")) {
@@ -151,49 +152,49 @@ fn parseArgs(argv: [][*:0]u8, p: *Params) c_int {
         } else if (eql(argv[i], "netfn") and i + 1 < argv.len) {
             i += 1;
             if (c.str2int(argv[i], &p.netfn) != 0) {
-                c.lprintf(log.Level.err, "Given netfn '%s' is invalid.", argv[i]);
+                log.print(log.Level.err, "Given netfn '%s' is invalid.", .{argv[i]});
                 return -1;
             }
         } else if (eql(argv[i], "command") and i + 1 < argv.len) {
             i += 1;
             if (c.str2int(argv[i], &p.command) != 0) {
-                c.lprintf(log.Level.err, "Given command '%s' is invalid.", argv[i]);
+                log.print(log.Level.err, "Given command '%s' is invalid.", .{argv[i]});
                 return -1;
             }
         } else if (eql(argv[i], "subfn") and i + 1 < argv.len) {
             i += 1;
             if (c.str2int(argv[i], &p.subfn) != 0) {
-                c.lprintf(log.Level.err, "Given subfn '%s' is invalid.", argv[i]);
+                log.print(log.Level.err, "Given subfn '%s' is invalid.", .{argv[i]});
                 return -1;
             }
         }
     }
     if (p.subfn >= max_subfn) {
-        c.lprintf(log.Level.err, "subfn is out of range (0-%d)", @as(c_int, max_subfn - 1));
+        log.print(log.Level.err, "subfn is out of range (0-%d)", .{@as(c_int, max_subfn - 1)});
         return -1;
     }
     if (p.command >= max_command) {
-        c.lprintf(log.Level.err, "command is out of range (0-%d)", @as(c_int, max_command - 1));
+        log.print(log.Level.err, "command is out of range (0-%d)", .{@as(c_int, max_command - 1)});
         return -1;
     }
     if (p.netfn >= c.MAX_NETFN) {
-        c.lprintf(log.Level.err, "netfn is out of range (0-%d)", @as(c_int, c.MAX_NETFN - 1));
+        log.print(log.Level.err, "netfn is out of range (0-%d)", .{@as(c_int, c.MAX_NETFN - 1)});
         return -1;
     }
     if (p.lun >= max_lun) {
-        c.lprintf(log.Level.err, "lun is out of range (0-%d)", @as(c_int, max_lun - 1));
+        log.print(log.Level.err, "lun is out of range (0-%d)", .{@as(c_int, max_lun - 1)});
         return -1;
     }
     if (p.netfn >= 0 and p.lun < 0) {
-        c.lprintf(log.Level.err, "if netfn is set, so must be lun");
+        log.print(log.Level.err, "if netfn is set, so must be lun", .{});
         return -1;
     }
     if (p.command >= 0 and p.netfn < 0) {
-        c.lprintf(log.Level.err, "if command is set, so must be netfn");
+        log.print(log.Level.err, "if command is set, so must be netfn", .{});
         return -1;
     }
     if (p.subfn >= 0 and p.command < 0) {
-        c.lprintf(log.Level.err, "if subfn is set, so must be command");
+        log.print(log.Level.err, "if subfn is set, so must be command", .{});
         return -1;
     }
     return 0;
@@ -202,11 +203,11 @@ fn parseArgs(argv: [][*:0]u8, p: *Params) c_int {
 fn getNetfnSupport(intf: *Intf, channel: c_int, lun: *[max_lun]u8, netfn: *[16]u8) c_int {
     var data = [_]u8{@truncate(@as(c_uint, @bitCast(channel)))};
     const rsp = sendrecv(intf, c.BMC_GET_NETFN_SUPPORT, &data) orelse {
-        c.lprintf(log.Level.err, "Get NetFn Support command failed");
+        log.print(log.Level.err, "Get NetFn Support command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Get NetFn Support command failed: %s", ccString(rsp.ccode));
+        log.print(log.Level.err, "Get NetFn Support command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
     for (lun, 0..) |*entry, l| entry.* = (rsp.data[0] >> @as(u3, @intCast(2 * l))) & 3;
@@ -249,11 +250,11 @@ fn getCommandMask(intf: *Intf, p: *const Params, pair: *Pair, kind: MaskKind) c_
             @truncate(@as(c_uint, @bitCast(p.lun))),
         };
         const rsp = sendrecv(intf, kind.command(), &data) orelse {
-            c.lprintf(log.Level.err, "%s (LUN=%d, NetFn=%d, op=%d) command failed", kind.label(), p.lun, p.netfn, @as(c_int, @intCast(op)));
+            log.print(log.Level.err, "%s (LUN=%d, NetFn=%d, op=%d) command failed", .{ kind.label(), p.lun, p.netfn, @as(c_int, @intCast(op)) });
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "%s (LUN=%d, NetFn=%d, op=%d) command failed: %s", kind.label(), p.lun, p.netfn, @as(c_int, @intCast(op)), ccString(rsp.ccode));
+            log.print(log.Level.err, "%s (LUN=%d, NetFn=%d, op=%d) command failed: %s", .{ kind.label(), p.lun, p.netfn, @as(c_int, @intCast(op)), ccString(rsp.ccode) });
             return -1;
         }
         @memcpy(mask[op * 16 ..][0..16], rsp.data[0..16]);
@@ -301,11 +302,11 @@ fn getSubfnMask(intf: *Intf, p: *const Params, cmd: *Command, kind: SubfnKind) c
         @truncate(@as(c_uint, @bitCast(p.command))),
     };
     const rsp = sendrecv(intf, kind.command(), &data) orelse {
-        c.lprintf(log.Level.err, "%s (LUN=%d, NetFn=%d, command=%d) command failed", kind.label(), p.lun, p.netfn, p.command);
+        log.print(log.Level.err, "%s (LUN=%d, NetFn=%d, command=%d) command failed", .{ kind.label(), p.lun, p.netfn, p.command });
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "%s (LUN=%d, NetFn=%d, command=%d) command failed: %s", kind.label(), p.lun, p.netfn, p.command, ccString(rsp.ccode));
+        log.print(log.Level.err, "%s (LUN=%d, NetFn=%d, command=%d) command failed: %s", .{ kind.label(), p.lun, p.netfn, p.command, ccString(rsp.ccode) });
         return -1;
     }
     const dest: *[subfn_bytes]u8 = switch (kind) {
@@ -318,13 +319,13 @@ fn getSubfnMask(intf: *Intf, p: *const Params, cmd: *Command, kind: SubfnKind) c
 }
 
 fn setCommandEnables(intf: *Intf, p: *const Params, pair: *const Pair, mask: *[command_bytes]u8, gun: bool) c_int {
-    c.lprintf(log.Level.info, "support:            ");
+    log.print(log.Level.info, "support:            ", .{});
     printBitfield(&pair.command_mask, true, log.Level.info);
-    c.lprintf(log.Level.info, "configurable:       ");
+    log.print(log.Level.info, "configurable:       ", .{});
     printBitfield(&pair.config_mask, false, log.Level.info);
-    c.lprintf(log.Level.info, "enabled:            ");
+    log.print(log.Level.info, "enabled:            ", .{});
     printBitfield(&pair.enable_mask, false, log.Level.info);
-    c.lprintf(log.Level.info, "enable mask before: ");
+    log.print(log.Level.info, "enable mask before: ", .{});
     printBitfield(mask, false, log.Level.info);
     for (mask, 0..) |*byte, i| {
         byte.* = (pair.config_mask[i] & byte.*) | (~pair.config_mask[i] & pair.enable_mask[i]);
@@ -335,7 +336,7 @@ fn setCommandEnables(intf: *Intf, p: *const Params, pair: *const Pair, mask: *[c
         mask[i] = (pair.config_mask[i] & @as(u8, c.SET_COMMAND_ENABLE_BIT)) |
             (~pair.config_mask[i] & pair.enable_mask[i]);
     }
-    c.lprintf(log.Level.info, "enable mask after: ");
+    log.print(log.Level.info, "enable mask after: ", .{});
     printBitfield(mask, false, log.Level.info);
 
     for (0..2) |op| {
@@ -345,11 +346,11 @@ fn setCommandEnables(intf: *Intf, p: *const Params, pair: *const Pair, mask: *[c
         data[2] = @truncate(@as(c_uint, @bitCast(p.lun)));
         @memcpy(data[3..19], mask[op * 16 ..][0..16]);
         const rsp = sendrecv(intf, c.BMC_SET_COMMAND_ENABLES, &data) orelse {
-            c.lprintf(log.Level.err, "Set Command Enables (LUN=%d, NetFn=%d, op=%d) command failed", p.lun, p.netfn, @as(c_int, @intCast(op)));
+            log.print(log.Level.err, "Set Command Enables (LUN=%d, NetFn=%d, op=%d) command failed", .{ p.lun, p.netfn, @as(c_int, @intCast(op)) });
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(log.Level.err, "Set Command Enables (LUN=%d, NetFn=%d, op=%d) command failed: %s", p.lun, p.netfn, @as(c_int, @intCast(op)), ccString(rsp.ccode));
+            log.print(log.Level.err, "Set Command Enables (LUN=%d, NetFn=%d, op=%d) command failed: %s", .{ p.lun, p.netfn, @as(c_int, @intCast(op)), ccString(rsp.ccode) });
             return -1;
         }
     }
@@ -357,18 +358,18 @@ fn setCommandEnables(intf: *Intf, p: *const Params, pair: *const Pair, mask: *[c
 }
 
 fn setSubfnEnables(intf: *Intf, p: *const Params, cmd: *const Command, mask: *[subfn_bytes]u8) c_int {
-    c.lprintf(log.Level.info, "support:            ");
+    log.print(log.Level.info, "support:            ", .{});
     printBitfield(&cmd.subfn_support, true, log.Level.info);
-    c.lprintf(log.Level.info, "configurable:       ");
+    log.print(log.Level.info, "configurable:       ", .{});
     printBitfield(&cmd.subfn_config, false, log.Level.info);
-    c.lprintf(log.Level.info, "enabled:            ");
+    log.print(log.Level.info, "enabled:            ", .{});
     printBitfield(&cmd.subfn_enable, false, log.Level.info);
-    c.lprintf(log.Level.info, "enable mask before: ");
+    log.print(log.Level.info, "enable mask before: ", .{});
     printBitfield(mask, false, log.Level.info);
     for (mask, 0..) |*byte, i| {
         byte.* = (cmd.subfn_config[i] & byte.*) | (~cmd.subfn_config[i] & cmd.subfn_enable[i]);
     }
-    c.lprintf(log.Level.info, "enable mask after: ");
+    log.print(log.Level.info, "enable mask after: ", .{});
     printBitfield(mask, false, log.Level.info);
 
     var data: [8]u8 = undefined;
@@ -378,11 +379,11 @@ fn setSubfnEnables(intf: *Intf, p: *const Params, cmd: *const Command, mask: *[s
     data[3] = @truncate(@as(c_uint, @bitCast(p.command)));
     @memcpy(data[4..8], mask);
     const rsp = sendrecv(intf, c.BMC_SET_COMMAND_SUBFUNCTION_ENABLES, &data) orelse {
-        c.lprintf(log.Level.err, "Set Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed", p.lun, p.netfn, p.command);
+        log.print(log.Level.err, "Set Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed", .{ p.lun, p.netfn, p.command });
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Set Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed: %s", p.lun, p.netfn, p.command, ccString(rsp.ccode));
+        log.print(log.Level.err, "Set Command Sub-function Enables (LUN=%d, NetFn=%d, command=%d) command failed: %s", .{ p.lun, p.netfn, p.command, ccString(rsp.ccode) });
         return -1;
     }
     return 0;
@@ -407,7 +408,7 @@ fn gatherInfo(intf: *Intf, p: *Params, bmc: *Bmc) void {
         const l: usize = @intCast(p.lun);
         const n: usize = @intCast(@divTrunc(p.netfn, 2));
         if (bmc.lun[l].support == 0 or bmc.lun[l].netfn[n].support == 0) {
-            c.lprintf(log.Level.err, "LUN or LUN/NetFn pair %d,%d not supported", p.lun, p.netfn);
+            log.print(log.Level.err, "LUN or LUN/NetFn pair %d,%d not supported", .{ p.lun, p.netfn });
             return;
         }
         const pair = &bmc.lun[l].netfn[n];
@@ -456,7 +457,7 @@ fn gatherInfo(intf: *Intf, p: *Params, bmc: *Bmc) void {
 
 fn newBmc() ?*Bmc {
     const bmc = allocator.create(Bmc) catch {
-        c.lprintf(log.Level.err, "malloc struct bmc_fn_support failed");
+        log.print(log.Level.err, "malloc struct bmc_fn_support failed", .{});
         return null;
     };
     bmc.* = .{};
@@ -477,7 +478,7 @@ fn info(intf: *Intf, args: [][*:0]u8) c_int {
         const n: usize = @intCast(@divTrunc(p.netfn, 2));
         const cmd = &bmc.lun[l].netfn[n].command[@intCast(p.command)];
         if (bmc.lun[l].support == 0 or bmc.lun[l].netfn[n].support == 0 or cmd.support == 0) {
-            c.lprintf(log.Level.err, "Command 0x%02x not supported on LUN/NetFn pair %02x,%02x", p.command, p.lun, p.netfn);
+            log.print(log.Level.err, "Command 0x%02x not supported on LUN/NetFn pair %02x,%02x", .{ p.command, p.lun, p.netfn });
             return 0;
         }
         _ = c.printf("(A)vailable, (C)onfigurable, (E)nabled: | A | C | E |\n");
@@ -491,7 +492,7 @@ fn info(intf: *Intf, args: [][*:0]u8) c_int {
         const n: usize = @intCast(@divTrunc(p.netfn, 2));
         const pair = &bmc.lun[l].netfn[n];
         if (bmc.lun[l].support == 0 or pair.support == 0) {
-            c.lprintf(log.Level.err, "LUN or LUN/NetFn pair %02x,%02x not supported", p.lun, p.netfn);
+            log.print(log.Level.err, "LUN or LUN/NetFn pair %02x,%02x not supported", .{ p.lun, p.netfn });
             return 0;
         }
         _ = c.printf("Commands on LUN 0x%02x, NetFn 0x%02x\n", p.lun, p.netfn);
@@ -573,7 +574,7 @@ fn enableDisable(intf: *Intf, enable: bool, args: [][*:0]u8) c_int {
 
 fn reset(intf: *Intf, args: [][*:0]u8) c_int {
     if (args.len == 0) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         usage();
         return -1;
     }

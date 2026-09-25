@@ -210,6 +210,12 @@ args: -I dummy pef status
 transcript: pef_status.tr
 covers: pef
 
+[pef_log_status_hex]
+desc: C-oracle PEF status error formats hex completion code and quoted command
+args: -I dummy pef status
+transcript: pef_log_hex.tr
+covers: pef
+
 [pef_status_flags_verbose]
 args: -v -I dummy pef status
 transcript: pef_status.tr

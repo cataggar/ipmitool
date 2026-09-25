@@ -384,6 +384,11 @@ would wrap).
 Run `zig build test-pef-unit` for the focused PEF unit tests without
 running unrelated crypto vector fixtures.
 
+The PEF, firewall and DCMI command ports now use the archive's typed logger
+for their diagnostics; with the C logger selected, calls still use its
+variadic ABI. `pef_log_status_hex` and `fw_log_unsupported_hex` pin the
+original hexadecimal diagnostics against the default C oracle.
+
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:
 

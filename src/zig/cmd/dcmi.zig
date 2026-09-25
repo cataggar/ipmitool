@@ -1,10 +1,13 @@
 //! DCMI 1.5 command driver. Selected with `-Dzig-modules=dcmi`.
 //! Responses belong to the interface and are consumed before another sendrecv.
 //! Unlike the C implementation, no reply byte is read beyond `data_len`.
+//! Diagnostics use the shared typed logger, including errno-aware `perror`,
+//! and fall back to the C logger when Zig logging is not selected.
 
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const log = @import("../util/log.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
@@ -152,9 +155,9 @@ fn choose(b: bool, yes: [*:0]const u8, no: [*:0]const u8) [*:0]const u8 {
     return if (b) yes else no;
 }
 fn usage(table: []const Item, title: [*:0]const u8) void {
-    c.lprintf(err_level, "\n%s", title);
-    for (table) |entry| c.lprintf(err_level, "    %s    %s", entry.name, entry.desc);
-    c.lprintf(err_level, "");
+    log.print(err_level, "\n%s", .{title});
+    for (table) |entry| log.print(err_level, "    %s    %s", .{ entry.name, entry.desc });
+    log.print(err_level, "", .{});
 }
 fn bits(table: []const Item, mask: u8) void {
     for (table, 0..) |entry, idx| {
@@ -177,7 +180,7 @@ fn length(rsp: *Response) usize {
 }
 fn valid(rsp: ?*Response, size: usize) bool {
     const r = rsp orelse {
-        c.lprintf(err_level, "\n    Unable to get DCMI information");
+        log.print(err_level, "\n    Unable to get DCMI information", .{});
         return false;
     };
     if (r.ccode != 0) {
@@ -185,11 +188,11 @@ fn valid(rsp: ?*Response, size: usize) bool {
             @ptrCast(&dcmi_ccode_vals)
         else
             c.completion_code_vals;
-        c.lprintf(err_level, "\n    DCMI request failed because: %s (%x)", c.val2str(r.ccode, cc), @as(c_uint, r.ccode));
+        log.print(err_level, "\n    DCMI request failed because: %s (%x)", .{ c.val2str(r.ccode, cc), @as(c_uint, r.ccode) });
         return false;
     }
     if (length(r) < 1) {
-        c.lprintf(err_level, "\n    Unable to get DCMI information");
+        log.print(err_level, "\n    Unable to get DCMI information", .{});
         return false;
     }
     if (r.data[0] != group) {
@@ -197,7 +200,7 @@ fn valid(rsp: ?*Response, size: usize) bool {
         return false;
     }
     if (length(r) < size) {
-        c.lprintf(err_level, "DCMI response is too short");
+        log.print(err_level, "DCMI response is too short", .{});
         return false;
     }
     return true;
@@ -242,24 +245,24 @@ fn discover(intf: *Intf) c_int {
         var msg = [2]u8{ group, @intCast(selector) };
         const rsp = req(intf, 1, &msg);
         if (!valid(rsp, 1)) {
-            c.lprintf(err_level, "Error discovering %s capabilities!\n", name(&capabilities, @intCast(selector)));
+            log.print(err_level, "Error discovering %s capabilities!\n", .{name(&capabilities, @intCast(selector))});
             return -1;
         }
         if (length(rsp.?) < 8) {
-            c.lprintf(err_level, "ERROR!  This command is not compatible with this version");
-            c.lprintf(err_level, "Error discovering %s capabilities!\n", name(&capabilities, @intCast(selector)));
+            log.print(err_level, "ERROR!  This command is not compatible with this version", .{});
+            log.print(err_level, "Error discovering %s capabilities!\n", .{name(&capabilities, @intCast(selector))});
             return -1;
         }
         const d = &rsp.?.data;
         const conform = word(d, 1);
         if (conform != 1 and conform != 0x101 and conform != 0x501) {
-            c.lprintf(err_level, "ERROR!  This command is not available on this platform");
-            c.lprintf(err_level, "Error discovering %s capabilities!\n", name(&capabilities, @intCast(selector)));
+            log.print(err_level, "ERROR!  This command is not available on this platform", .{});
+            log.print(err_level, "Error discovering %s capabilities!\n", .{name(&capabilities, @intCast(selector))});
             return -1;
         }
         if (d[3] != 1 and d[3] != 2) {
-            c.lprintf(err_level, "ERROR!  This command is not compatible with this version");
-            c.lprintf(err_level, "Error discovering %s capabilities!\n", name(&capabilities, @intCast(selector)));
+            log.print(err_level, "ERROR!  This command is not compatible with this version", .{});
+            log.print(err_level, "Error discovering %s capabilities!\n", .{name(&capabilities, @intCast(selector))});
             return -1;
         }
         switch (selector) {
@@ -339,7 +342,7 @@ fn setString(intf: *Intf, mc: bool, arg: [*:0]u8) c_int {
     const text = std.mem.span(arg);
     const size = text.len + @intFromBool(mc);
     if (size > 64) {
-        c.lprintf(err_level, "\nValue is too long.");
+        log.print(err_level, "\nValue is too long.", .{});
         return -1;
     }
     _ = c.printf(if (mc) "\n Set Management Controller Identifier String Command: " else "\n Set Asset Tag: ");
@@ -414,20 +417,20 @@ fn powerSet(intf: *Intf, args: []const ?[*:0]u8) c_int {
         msg[0] = group;
         const action = find(&.{ .{ .val = 0, .name = "no_action" }, .{ .val = 1, .name = "power_off" }, .{ .val = 17, .name = "sel_logging" } }, argAt(args, 2));
         if (action == 0xff) {
-            c.lprintf(err_level, "Given Action '%s' is invalid.", argAt(args, 2));
+            log.print(err_level, "Given Action '%s' is invalid.", .{argAt(args, 2)});
             return -1;
         }
         msg[4] = @intCast(action);
         const limit = parse(u16, argAt(args, 4)) orelse {
-            c.lprintf(err_level, "Given Limit '%s' is invalid.", argAt(args, 4));
+            log.print(err_level, "Given Limit '%s' is invalid.", .{argAt(args, 4)});
             return -1;
         };
         const correction = parse(u32, argAt(args, 6)) orelse {
-            c.lprintf(err_level, "Given Correction '%s' is invalid.", argAt(args, 6));
+            log.print(err_level, "Given Correction '%s' is invalid.", .{argAt(args, 6)});
             return -1;
         };
         const sample = parse(u16, argAt(args, 8)) orelse {
-            c.lprintf(err_level, "Given Sample '%s' is invalid.", argAt(args, 8));
+            log.print(err_level, "Given Sample '%s' is invalid.", .{argAt(args, 8)});
             return -1;
         };
         putWord(&msg, 5, limit);
@@ -458,14 +461,14 @@ fn powerSet(intf: *Intf, args: []const ?[*:0]u8) c_int {
                         break :blk 0xff;
                     };
                     if (action == 0xff) {
-                        c.lprintf(err_level, "Given %s '%s' is invalid.", option, value);
+                        log.print(err_level, "Given %s '%s' is invalid.", .{ option, value });
                         return -1;
                     }
                     msg[4] = @intCast(action);
                 },
                 1, 2, 3 => |opt| {
                     const n = parse(u32, value) orelse {
-                        c.lprintf(err_level, "Given %s '%s' is invalid.", option, value);
+                        log.print(err_level, "Given %s '%s' is invalid.", .{ option, value });
                         return -1;
                     };
                     if (opt == 2) putDword(&msg, 7, n) else putWord(&msg, if (opt == 1) 5 else 13, @truncate(n));
@@ -486,7 +489,7 @@ fn power(intf: *Intf, args: []const ?[*:0]u8) c_int {
                 if (result == 0xff) {
                     // print_strs(..., verthorz=1) does not log the names;
                     // its horizontal list is written to stdout.
-                    c.lprintf(err_level, "\nInvalid sample time. Valid times are: ");
+                    log.print(err_level, "\nInvalid sample time. Valid times are: ", .{});
                     for (samples, 0..) |entry, i| {
                         _ = c.printf("%s", entry.name);
                         if (i + 1 < samples.len) _ = c.printf(" | ");
@@ -516,7 +519,7 @@ fn power(intf: *Intf, args: []const ?[*:0]u8) c_int {
 fn sensorRecord(intf: *Intf, id: u16) c_int {
     const itr = c.ipmi_sdr_start(@ptrCast(intf), 0);
     if (itr == null) {
-        c.lprintf(err_level, "Unable to open SDR for reading");
+        log.print(err_level, "Unable to open SDR for reading", .{});
         return -1;
     }
     defer c.ipmi_sdr_end(itr);
@@ -554,7 +557,7 @@ fn sensors(intf: *Intf) c_int {
             }
             const count: usize = rsp.?.data[2];
             if (count == 0 or count > 8 or count > remaining or length(rsp.?) < 3 + count * 2) {
-                c.lprintf(err_level, "DCMI sensor response has an invalid record count");
+                log.print(err_level, "DCMI sensor response has an invalid record count", .{});
                 rc = -1;
                 break;
             }
@@ -585,7 +588,7 @@ fn temps(intf: *Intf) c_int {
             if (!valid(rsp, 3)) return -1;
             const returned: usize = rsp.?.data[2];
             if (returned == 0 or returned > count or length(rsp.?) < 3 + 2 * returned) {
-                c.lprintf(err_level, "DCMI temperature response has an invalid reading count");
+                log.print(err_level, "DCMI temperature response has an invalid reading count", .{});
                 return -1;
             }
             for (0..returned) |i| {
@@ -626,7 +629,7 @@ fn thermal(intf: *Intf, args: []const ?[*:0]u8) c_int {
         return -1;
     }
     if (args.len < 4) {
-        c.lprintf(notice_level, if (action == 0) "Get <entityID> <instanceID>" else "Set <entityID> <instanceID>");
+        log.print(notice_level, if (action == 0) "Get <entityID> <instanceID>" else "Set <entityID> <instanceID>", .{});
         return -1;
     }
     if (action == 1 and args.len < 9) {
@@ -634,20 +637,20 @@ fn thermal(intf: *Intf, args: []const ?[*:0]u8) c_int {
         return -1;
     }
     const entity = parse(u8, argAt(args, 2)) orelse {
-        c.lprintf(err_level, "Given Entity ID '%s' is invalid.", argAt(args, 2));
+        log.print(err_level, "Given Entity ID '%s' is invalid.", .{argAt(args, 2)});
         return -1;
     };
     const instance = parse(u8, argAt(args, 3)) orelse {
-        c.lprintf(err_level, "Given Instance ID '%s' is invalid.", argAt(args, 3));
+        log.print(err_level, "Given Instance ID '%s' is invalid.", .{argAt(args, 3)});
         return -1;
     };
     if (action == 0) return thermalGet(intf, entity, instance);
     const temp = parse(u8, argAt(args, 7)) orelse {
-        c.lprintf(err_level, "Given Temp Limit '%s' is invalid.", argAt(args, 7));
+        log.print(err_level, "Given Temp Limit '%s' is invalid.", .{argAt(args, 7)});
         return -1;
     };
     const seconds = parse(u16, argAt(args, 8)) orelse {
-        c.lprintf(err_level, "Given Sampling Time '%s' is invalid.", argAt(args, 8));
+        log.print(err_level, "Given Sampling Time '%s' is invalid.", .{argAt(args, 8)});
         return -1;
     };
     const persistence = find(&thermal_opts, argAt(args, 4));
@@ -670,7 +673,7 @@ fn getConfig(intf: *Intf) c_int {
         var msg = [3]u8{ group, @intCast(selector), 0 };
         const rsp = req(intf, 0x13, &msg);
         if (!valid(rsp, if (selector > 3) 6 else 5)) {
-            c.lprintf(err_level, "Error Get DCMI Configuration Parameters!");
+            log.print(err_level, "Error Get DCMI Configuration Parameters!", .{});
             return -1;
         }
         const d = &rsp.?.data;
@@ -703,12 +706,12 @@ fn setConfig(intf: *Intf, args: []const ?[*:0]u8) c_int {
     var value: u16 = 1;
     if (!is(argAt(args, 1), "activate_dhcp")) {
         value = parse(u16, argAt(args, 2)) orelse {
-            c.lprintf(err_level, "Given %s '%s' is invalid.", argAt(args, 1), argAt(args, 2));
+            log.print(err_level, "Given %s '%s' is invalid.", .{ argAt(args, 1), argAt(args, 2) });
             return -1;
         };
         param = @truncate(find(&config_opts, argAt(args, 1)));
     }
-    if (!valid(setConfigWire(intf, param, value), 1)) c.lprintf(err_level, "Error Set DCMI Configuration Parameters!");
+    if (!valid(setConfigWire(intf, param, value), 1)) log.print(err_level, "Error Set DCMI Configuration Parameters!", .{});
     return 0; // The C CLI does not propagate the BMC failure for this command.
 }
 
@@ -724,24 +727,24 @@ fn oobDiscover(intf: *Intf) c_int {
         if (params.timeout == 0) params.timeout = c.IPMI_LAN_TIMEOUT;
         if (params.retry == 0) params.retry = c.IPMI_LAN_RETRY;
         if (params.hostname == null or params.hostname.?[0] == 0) {
-            c.lprintf(err_level, "No hostname specified!");
+            log.print(err_level, "No hostname specified!", .{});
             return -1;
         }
         intf.abort = 1;
         intf.session.?.sol_data.sequence_number = 1;
         if (c.ipmi_intf_socket_connect(@ptrCast(intf)) == -1) {
-            c.lprintf(err_level, "Could not open socket!");
+            log.print(err_level, "Could not open socket!", .{});
             return -1;
         }
         if (intf.fd < 0) {
-            c.lperror(err_level, "Connect to %s failed", params.hostname);
+            log.perror(err_level, "Connect to %s failed", .{params.hostname});
             if (intf.close) |close| close(intf);
             return -1;
         }
         intf.opened = 1;
         return c.ipmiv2_lan_ping(@ptrCast(intf));
     }
-    c.lprintf(err_level, "DCMI Discovery is available only when LANplus(IPMI v2.0) is enabled.");
+    log.print(err_level, "DCMI Discovery is available only when LANplus(IPMI v2.0) is enabled.", .{});
     return -1;
 }
 
@@ -766,7 +769,7 @@ fn dcmiMain(intf_opt: ?*Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c)
         2 => rc = sensors(intf),
         3 => {
             rc = getString(intf, false);
-            if (rc < 0) c.lprintf(err_level, "Error getting asset tag!");
+            if (rc < 0) log.print(err_level, "Error getting asset tag!", .{});
         },
         4 => {
             if (args.len < 2) {
@@ -774,11 +777,11 @@ fn dcmiMain(intf_opt: ?*Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c)
                 return -1;
             }
             rc = setString(intf, false, args[1].?);
-            if (rc < 0) c.lprintf(err_level, "\nError setting asset tag!");
+            if (rc < 0) log.print(err_level, "\nError setting asset tag!", .{});
         },
         5 => {
             rc = getString(intf, true);
-            if (rc < 0) c.lprintf(err_level, "Error getting management controller identifier string!");
+            if (rc < 0) log.print(err_level, "Error getting management controller identifier string!", .{});
         },
         6 => {
             if (args.len < 2) {
@@ -786,23 +789,23 @@ fn dcmiMain(intf_opt: ?*Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c)
                 return -1;
             }
             rc = setString(intf, true, args[1].?);
-            if (rc < 0) c.lprintf(err_level, "Error setting management controller identifier string!");
+            if (rc < 0) log.print(err_level, "Error setting management controller identifier string!", .{});
         },
         7 => rc = thermal(intf, args),
         8 => {
             rc = temps(intf);
-            if (rc < 0) c.lprintf(err_level, "Error get temperature readings!");
+            if (rc < 0) log.print(err_level, "Error get temperature readings!", .{});
         },
         9 => rc = getConfig(intf),
         10 => rc = setConfig(intf, args),
         11 => {
             if (intf.session == null) {
-                c.lprintf(err_level, "\nOOB discovery is available only via RMCP interface.");
+                log.print(err_level, "\nOOB discovery is available only via RMCP interface.", .{});
                 return -1;
             }
             rc = oobDiscover(intf);
             if (rc < 0) {
-                c.lprintf(err_level, "\nOOB discovering capabilities failed.");
+                log.print(err_level, "\nOOB discovering capabilities failed.", .{});
                 return -1;
             }
         },
@@ -874,7 +877,7 @@ fn printStrs(vs: [*c]const c.struct_dcmi_cmd, title: [*c]const u8, level: c_int,
         if (level < 0) {
             _ = c.printf("\n%s\n", title);
         } else {
-            c.lprintf(level, "\n%s", title);
+            log.print(level, "\n%s", .{title});
         }
     }
     var i: usize = 0;
@@ -885,7 +888,7 @@ fn printStrs(vs: [*c]const c.struct_dcmi_cmd, title: [*c]const u8, level: c_int,
             else
                 _ = c.printf("%s", vs[i].str);
         } else {
-            c.lprintf(level, "    %s    %s", vs[i].str, vs[i].desc);
+            log.print(level, "    %s    %s", .{ vs[i].str, vs[i].desc });
         }
         if (horizontal == 1 and vs[i + 1].str != null) _ = c.printf(" | ");
     }
@@ -893,7 +896,7 @@ fn printStrs(vs: [*c]const c.struct_dcmi_cmd, title: [*c]const u8, level: c_int,
         if (level < 0) {
             _ = c.printf("\n");
         } else {
-            c.lprintf(level, "");
+            log.print(level, "", .{});
         }
     }
 }
