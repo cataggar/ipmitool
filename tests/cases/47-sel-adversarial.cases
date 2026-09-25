@@ -45,6 +45,30 @@ args: -I dummy sel list
 transcript: sel_walk_ccode.tr
 covers: sel
 
+[sl_walk_info_short]
+desc: list rejects a two-byte Get SEL Info response
+args: -I dummy sel list
+transcript: sel_info_short_walk.tr
+covers: sel
+
+[sl_last_info_short]
+desc: list last rejects a short second Get SEL Info response
+args: -I dummy sel list last 1
+transcript: sel_info_short_last.tr
+covers: sel
+
+[sl_resv_short]
+desc: clear rejects a zero-byte Reserve SEL response
+args: -I dummy sel clear
+transcript: sel_resv_short.tr
+covers: sel
+
+[sl_resv_one]
+desc: delete rejects a one-byte Reserve SEL response
+args: -I dummy sel delete 1
+transcript: sel_resv_one.tr
+covers: sel
+
 [sl_oemmsg_list]
 desc: sel -O: OEM records described by a translation file
 args: -I dummy -O {work}/oem.txt sel list
@@ -91,6 +115,76 @@ desc: sel interpret: an empty file
 args: -I dummy sel interpret 674 {work}/log.txt pps
 transcript: sel_interpret.tr
 text: log.txt sel/pps_empty.txt
+covers: sel
+
+[sl_int_valid]
+desc: sel interpret initializes timestamp and every record field
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_valid.txt
+covers: sel
+
+[sl_int_missing_time]
+desc: sel interpret: missing timestamp delimiter
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_time.txt
+covers: sel
+
+[sl_int_missing_origin]
+desc: sel interpret: missing origin delimiter
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_origin.txt
+covers: sel
+
+[sl_int_missing_sensor]
+desc: sel interpret: missing sensor delimiter
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_sensor.txt
+covers: sel
+
+[sl_int_missing_data]
+desc: sel interpret: only one event data byte
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_data.txt
+covers: sel
+
+[sl_int_missing_fru]
+desc: sel interpret: no numeric FRU ID
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_fru.txt
+covers: sel
+
+[sl_int_missing_cause]
+desc: sel interpret: FRU cause without equals delimiter
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_missing_cause.txt
+covers: sel
+
+[sl_int_long]
+desc: sel interpret: line longer than 255 bytes
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_long.txt
+covers: sel
+
+[sl_int_255]
+desc: sel interpret: complete line of exactly 255 bytes
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_255.txt
+covers: sel
+
+[sl_int_256]
+desc: sel interpret: reject 256-byte line at the buffer edge
+args: -I dummy sel interpret 674 {work}/log.txt pps
+transcript: sel_interpret.tr
+text: log.txt sel/pps_256.txt
 covers: sel
 
 [sl_int_badid]

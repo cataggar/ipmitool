@@ -3786,21 +3786,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -3812,126 +3797,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 6
-msg.netfn: a
-msg.cmd: 43
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 18
-msg.netfn: b
-msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -4101,6 +3966,81 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
 msg.data_len: 0
 msg.netfn: 6
 msg.cmd: 1
@@ -4206,21 +4146,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -4232,21 +4157,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -4956,21 +4866,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -4982,126 +4877,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 6
-msg.netfn: a
-msg.cmd: 43
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 18
-msg.netfn: b
-msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -5271,21 +5046,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -5297,126 +5057,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 6
-msg.netfn: a
-msg.cmd: 43
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 18
-msg.netfn: b
-msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -5586,21 +5226,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -5612,126 +5237,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 6
-msg.netfn: a
-msg.cmd: 43
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 18
-msg.netfn: b
-msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -5901,21 +5406,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -5927,126 +5417,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 6
-msg.netfn: a
-msg.cmd: 43
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 18
-msg.netfn: b
-msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -6216,21 +5586,6 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
 msg.data_len: 6
 msg.netfn: a
 msg.cmd: 43
@@ -6242,126 +5597,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 6
-msg.netfn: a
-msg.cmd: 43
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 18
-msg.netfn: b
-msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -6531,6 +5766,81 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
 msg.data_len: 0
 msg.netfn: 6
 msg.cmd: 1
@@ -6636,6 +5946,81 @@ msg.seq: 0
 msg.lun: 0
 <<<
 >>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
 msg.data_len: 0
 msg.netfn: 6
 msg.cmd: 1
@@ -6677,6 +6062,261 @@ ccode: 0
 data_len: 15
 msg.netfn: 7
 msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 6
+msg.cmd: 1
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 15
+msg.netfn: 7
+msg.cmd: 1
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 6
+msg.netfn: a
+msg.cmd: 43
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 18
+msg.netfn: b
+msg.cmd: 43
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -8207,21 +7847,6 @@ ccode: 0
 data_len: 18
 msg.netfn: b
 msg.cmd: 43
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
 msg.seq: 0
 msg.lun: 0
 <<<
@@ -8681,12 +8306,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 26 00 00 ff
 < rule=get_sel_0026 ccode=0x00 len=18 data=27 00 26 05 02 4d 3e 2f 6a 20 00 04 c1 25 6f 81 5b c7
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8709,12 +8330,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 28 00 00 ff
 < rule=get_sel_0028 ccode=0x00 len=18 data=29 00 28 05 02 4d 3e 2f 6a 20 00 04 c1 25 6f a3 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8737,12 +8354,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 2a 00 00 ff
 < rule=get_sel_002a ccode=0x00 len=18 data=2b 00 2a 05 02 4d 3e 2f 6a 20 00 04 c1 26 6f a1 5b c7
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8837,12 +8450,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 35 00 00 ff
 < rule=get_sel_0035 ccode=0x00 len=18 data=36 00 35 05 02 4d 3e 2f 6a 20 00 04 c2 29 6f a2 a5 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8865,12 +8474,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 37 00 00 ff
 < rule=get_sel_0037 ccode=0x00 len=18 data=38 00 37 05 02 4d 3e 2f 6a 20 00 04 c2 2a 6f a2 5a 03
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8893,12 +8498,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 39 00 00 ff
 < rule=get_sel_0039 ccode=0x00 len=18 data=3a 00 39 05 02 4d 3e 2f 6a 20 00 04 c2 2a 6f a1 39 42
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8921,12 +8522,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 3b 00 00 ff
 < rule=get_sel_003b ccode=0x00 len=18 data=3c 00 3b 05 02 4d 3e 2f 6a 20 00 04 c2 2a 6f a5 39 42
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8949,12 +8546,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 3d 00 00 ff
 < rule=get_sel_003d ccode=0x00 len=18 data=3e 00 3d 05 02 4d 3e 2f 6a 20 00 04 c3 29 6f a2 5a 03
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -8977,12 +8570,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 3f 00 00 ff
 < rule=get_sel_003f ccode=0x00 len=18 data=40 00 3f 05 02 4d 3e 2f 6a 20 00 04 c3 29 6f a1 5a 03
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -9005,12 +8594,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 41 00 00 ff
 < rule=get_sel_0041 ccode=0x00 len=18 data=42 00 41 05 02 4d 3e 2f 6a 20 00 04 c3 2a 6f a0 39 81
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -9033,12 +8618,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 43 00 00 ff
 < rule=get_sel_0043 ccode=0x00 len=18 data=44 00 43 05 02 4d 3e 2f 6a 20 00 04 c3 2a 6f a4 39 42
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -9061,12 +8642,8 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 45 00 00 ff
 < rule=get_sel_0045 ccode=0x00 len=18 data=46 00 45 05 02 4d 3e 2f 6a 20 00 04 c3 2a 6f a6 39 42
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -9271,8 +8848,6 @@ msg.lun: 0
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 5e 00 00 ff
 < rule=get_sel_005e ccode=0x00 len=18 data=5f 00 5e 05 02 4d 3e 2f 6a 20 00 04 d5 61 6f a0 11 22
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=

@@ -7,8 +7,8 @@
  801 | 06/14/26 | 23:50:37 UTC | Memory #0x41 | Correctable ECC (@DIMMB7(CPU3)) | Asserted
  802 | 06/14/26 | 23:50:37 UTC | Memory #0x42 | Correctable ECC (@DIMMS.(CPU3)) | Asserted
  803 | 06/14/26 | 23:50:37 UTC | Memory #0x43 | Correctable ECC (@DIMMQ.(CPU3)) | Asserted
- 804 | 06/14/26 | 23:50:37 UTC | Memory #0x44 | Correctable ECC (@DIMMK-2(P15M2)) | Asserted
- 805 | 06/14/26 | 23:50:37 UTC | Memory #0x45 | Correctable ECC (@DIMMK-2(P15M2)) | Asserted
+ 804 | 06/14/26 | 23:50:37 UTC | Memory #0x44 | Correctable ECC (@DIMMG-2(P15M2)) | Asserted
+ 805 | 06/14/26 | 23:50:37 UTC | Memory #0x45 | Correctable ECC (@DIMMG-2(P15M2)) | Asserted
  806 | 06/14/26 | 23:50:37 UTC | Memory #0x46 | Correctable ECC (@DIMMK.(CPU3)) | Asserted
  807 | 06/14/26 | 23:50:37 UTC | Memory #0x47 | Correctable ECC (@DIMMK.(CPU3)) | Asserted
  808 | 06/14/26 | 23:50:37 UTC | Memory #0x48 | Correctable ECC (@DIMMK.(CPU7)) | Asserted

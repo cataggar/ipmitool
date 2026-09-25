@@ -49,7 +49,7 @@ SEL Record ID          : 0b03
  Event Type            : Sensor-specific Discrete
  Event Direction       : Assertion Event
  Event Data            : 005a0b
- Description           : Correctable ECC (@DIMME1(P12M2))
+ Description           : Correctable ECC (@DIMMA1(P12M2))
 
 SEL Record ID          : 0b04
  Record Type           : 02
@@ -121,7 +121,7 @@ SEL Record ID          : 0b13
  Event Type            : Sensor-specific Discrete
  Event Direction       : Assertion Event
  Event Data            : 00f90d
- Description           : Correctable ECC (@DIMMO0(P14M2))
+ Description           : Correctable ECC (@DIMMK0(P14M2))
 
 SEL Record ID          : 0b14
  Record Type           : 02

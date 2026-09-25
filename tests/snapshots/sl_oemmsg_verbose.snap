@@ -8,7 +8,7 @@ SEL Record ID          : 5001
  Record Type           : e0  (OEM non-timestamped)
  OEM Defined           : 3132334435363777883a3b3c3d [...D...w.....]
 
- | Kernel fault Code = 0x31 Sub = 0x33 Flags = 0x77 End = 0x3b | Any E0 recordSEL Record ID          : 5002
+ | Kernel fault Code = 0x33 Sub = 0x35 Flags = 0x3a End = 0x3d | Any E0 recordSEL Record ID          : 5002
  Record Type           : e0  (OEM non-timestamped)
  OEM Defined           : 3132339935363777883a3b3c3d [.......w.....]
 

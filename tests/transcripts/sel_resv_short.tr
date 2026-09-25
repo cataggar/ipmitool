@@ -1,0 +1,8 @@
+# A successful Reserve SEL response with no reservation ID bytes.
+default_ccode 0xc1
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data
+end

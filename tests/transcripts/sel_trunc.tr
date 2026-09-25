@@ -1,13 +1,9 @@
 # A BMC whose Get SEL Entry replies are truncated to every length from zero to
 # seventeen bytes.
 # 
-# ipmi_sel_get_std_entry() reads eighteen bytes out of the reply without ever
-# consulting rsp->data_len, so a short reply is decoded from whatever the
-# previous reply left behind in the interface's static response buffer.  Record
+# Short replies must be rejected before unpacking, even if a previous reply
+# left valid-looking data in the interface's static response buffer. Record
 # 3000h is fetched first to seed that buffer with a known pattern.
-# 
-# This is the parser's behaviour, not a recommendation; see the tracking issue
-# for lib/ipmi_sel.c's missing length checks.
 
 default_ccode 0xc1
 

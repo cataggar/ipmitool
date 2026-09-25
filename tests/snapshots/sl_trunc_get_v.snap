@@ -1,7 +1,7 @@
 #!golden 1
 #!case sl_trunc_get_v
 #!section exit
-0
+1
 #!section stdout
 SEL Record ID          : 3000
  Record Type           : 02
@@ -13,54 +13,6 @@ SEL Record ID          : 3000
  Event Type            : Threshold
  Event Direction       : Assertion Event
  Event Data            : 51a1b1
- Description           : Lower Non-critical going high
-
-SEL Record ID          : 0302
- Record Type           : 02
- Timestamp             : S+ 70/002 00:26:39 GMT
- Generator ID          : 0001
- EvM Revision          : 00
- Sensor Type           : reserved
- Sensor Number         : 00
- Event Type            : Unspecified
- Event Direction       : Assertion Event
- Event Data            : 51a1b1
- Description           :\x20
-
-SEL Record ID          : 3005
- Record Type           : 02
- Timestamp             : S+ 70/002 00:26:39 GMT
- Generator ID          : 0001
- EvM Revision          : 00
- Sensor Type           : reserved
- Sensor Number         : 00
- Event Type            : Unspecified
- Event Direction       : Assertion Event
- Event Data            : 51a1b1
- Description           :\x20
-
-SEL Record ID          : 3011
- Record Type           : 02
- Timestamp             : 06/14/26 23:50:37 UTC
- Generator ID          : 0020
- EvM Revision          : 04
- Sensor Type           : Memory
- Sensor Number         : 90
- Event Type            : Threshold
- Event Direction       : Assertion Event
- Event Data            : 61a1b1
- Description           : Lower Non-critical going high
-
-SEL Record ID          : 3012
- Record Type           : 02
- Timestamp             : 06/14/26 23:50:37 UTC
- Generator ID          : 0020
- EvM Revision          : 04
- Sensor Type           : Memory
- Sensor Number         : 91
- Event Type            : Threshold
- Event Direction       : Assertion Event
- Event Data            : 61c1b1
  Description           : Lower Non-critical going high
 
 #!section stderr
@@ -192,70 +144,7 @@ msg.cmd: 43
 msg.seq: 0
 msg.lun: 0
 <<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
+Get SEL Entry 3001 command failed: Invalid data length 0
 >>> IPMI req
 msg.data_len: 6
 msg.netfn: a
@@ -271,70 +160,7 @@ msg.cmd: 43
 msg.seq: 0
 msg.lun: 0
 <<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
+Get SEL Entry 3005 command failed: Invalid data length 4
 >>> IPMI req
 msg.data_len: 6
 msg.netfn: a
@@ -350,70 +176,7 @@ msg.cmd: 43
 msg.seq: 0
 msg.lun: 0
 <<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
+Get SEL Entry 3011 command failed: Invalid data length 16
 >>> IPMI req
 msg.data_len: 6
 msg.netfn: a
@@ -429,70 +192,7 @@ msg.cmd: 43
 msg.seq: 0
 msg.lun: 0
 <<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
->>> IPMI req
-msg.data_len: 0
-msg.netfn: 6
-msg.cmd: 1
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: 0
-data_len: 15
-msg.netfn: 7
-msg.cmd: 1
-msg.seq: 0
-msg.lun: 0
-<<<
->>> IPMI req
-msg.data_len: 0
-msg.netfn: a
-msg.cmd: 20
-msg.target_cmd: 0
-msg.lun: 0
->>>
-<<< IPMI rsp
-ccode: c1
-data_len: 0
-msg.netfn: b
-msg.cmd: 20
-msg.seq: 0
-msg.lun: 0
-<<<
-Error obtaining SDR info: Invalid command
-Unable to open SDR for reading
+Get SEL Entry 3012 command failed: Invalid data length 17
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
 < rule=default ccode=0xc1 len=0 data=
@@ -510,42 +210,10 @@ Unable to open SDR for reading
 < rule=default ccode=0xc1 len=0 data=
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 01 30 00 ff
 < rule=get_sel_3001 ccode=0x00 len=0 data=
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 05 30 00 ff
 < rule=get_sel_3005 ccode=0x00 len=4 data=ff ff 05 30
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 11 30 00 ff
 < rule=get_sel_3011 ccode=0x00 len=16 data=ff ff 11 30 02 4d 3e 2f 6a 20 00 04 0c 90 01 61
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 12 30 00 ff
 < rule=get_sel_3012 ccode=0x00 len=17 data=ff ff 12 30 02 4d 3e 2f 6a 20 00 04 0c 91 01 61 c1
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
-> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
-< rule=default ccode=0xc1 len=0 data=
 bye

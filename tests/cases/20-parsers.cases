@@ -139,7 +139,7 @@ transcript: sel.tr
 covers: sel
 
 [sel_truncated_entry]
-desc: BMC returns a SEL entry shorter than the mandatory 16 bytes
+desc: a short SEL entry is rejected without printing stale response bytes
 args: -I dummy sel list
 transcript: sel_truncated.tr
 covers: sel

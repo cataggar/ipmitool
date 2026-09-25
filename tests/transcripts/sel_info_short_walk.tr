@@ -1,0 +1,8 @@
+# The first Get SEL Info response has fewer than three bytes.
+default_ccode 0xc1
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 01
+end

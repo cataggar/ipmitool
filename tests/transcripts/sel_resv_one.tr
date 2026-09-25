@@ -1,0 +1,8 @@
+# A successful Reserve SEL response with only the low ID byte.
+default_ccode 0xc1
+
+respond reserve_sel
+  netfn 0x0a
+  cmd 0x42
+  data cd
+end

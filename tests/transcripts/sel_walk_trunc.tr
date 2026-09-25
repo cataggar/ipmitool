@@ -1,7 +1,7 @@
 # A three-entry log whose middle reply carries only nine bytes.
 # 
-# The walk keeps going because the next record ID happens to survive in the
-# first two bytes; the rest of the record is stale data from the previous reply.
+# The walk must retry that ID, then stop without printing the incomplete
+# record or proceeding to its purported next ID.
 
 default_ccode 0xc1
 

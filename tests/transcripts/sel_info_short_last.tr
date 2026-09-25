@@ -1,0 +1,15 @@
+# The second Get SEL Info response, used for `sel list last`, is truncated.
+default_ccode 0xc1
+
+respond get_sel_info_first
+  netfn 0x0a
+  cmd 0x40
+  data 51 01 00 00 00 00 00 00 00 00 00 00 00 00
+  times 1
+end
+
+respond get_sel_info_second
+  netfn 0x0a
+  cmd 0x40
+  data 51
+end

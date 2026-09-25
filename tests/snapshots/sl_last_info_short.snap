@@ -1,0 +1,17 @@
+#!golden 1
+#!case sl_last_info_short
+#!section exit
+1
+#!section stdout
+#!section stderr
+Get SEL Info command failed: Invalid data length 1
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info_first ccode=0x00 len=14 data=51 01 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x40 target_cmd=0x00 data=
+< rule=get_sel_info_second ccode=0x00 len=1 data=51
+bye

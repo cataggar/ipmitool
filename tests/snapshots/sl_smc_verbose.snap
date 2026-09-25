@@ -61,7 +61,7 @@ SEL Record ID          : 0804
  Event Type            : Sensor-specific Discrete
  Event Direction       : Assertion Event
  Event Data            : 00b70e
- Description           : Correctable ECC (@DIMMK-2(P15M2))
+ Description           : Correctable ECC (@DIMMG-2(P15M2))
 
 SEL Record ID          : 0805
  Record Type           : 02
@@ -73,7 +73,7 @@ SEL Record ID          : 0805
  Event Type            : Sensor-specific Discrete
  Event Direction       : Assertion Event
  Event Data            : 00b70e
- Description           : Correctable ECC (@DIMMK-2(P15M2))
+ Description           : Correctable ECC (@DIMMG-2(P15M2))
 
 SEL Record ID          : 0806
  Record Type           : 02
