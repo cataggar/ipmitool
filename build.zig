@@ -1248,6 +1248,20 @@ pub fn build(b: *std.Build) void {
     }
     test_step.dependOn(strings_tables_step);
 
+    const strings_lookup_step = b.step("test-strings-lookup-data", "Test C-free lookup rules with and without SHA256");
+    inline for (.{ false, true }) |sha256| {
+        const feature_options = b.addOptions();
+        feature_options.addOption(bool, "have_crypto_sha256", sha256);
+        const lookup_mod = b.createModule(.{
+            .root_source_file = b.path("src/zig/util/strings.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        lookup_mod.addImport("build_options", feature_options.createModule());
+        strings_lookup_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = lookup_mod })).step);
+    }
+    test_step.dependOn(strings_lookup_step);
+
     const registry_parse_mod = b.createModule(.{
         .root_source_file = b.path("src/zig/util/registry_parse.zig"),
         .target = target,

@@ -122,6 +122,7 @@ test {
     _ = util.helper;
     _ = util.log;
     _ = util.strings;
+    _ = @import("util/strings_tables_validation.zig");
     _ = util.strings.tables;
     _ = util.time;
 }
