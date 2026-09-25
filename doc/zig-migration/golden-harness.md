@@ -46,6 +46,7 @@ zig build test-golden
 zig build test-golden -- --filter fru_
 zig build test-golden -- --update
 zig build test-cli                    # diff the C and Zig frontends directly
+zig build test-cli-cutover -Dzig-modules=ipmishell  # compare shared CLI via the Zig shell
 
 # Standalone, without the build system, against the baseline oracle
 # (see baseline-oracle.md).
@@ -118,6 +119,17 @@ with only `-Dzig-modules=cli` selected, then compares all golden cases
 (streams, exits and dummy requests) without relying on local snapshot feature
 flags. It also checks failed devices and transports, terminal password/key
 prompts and SIGINT handling in `tests/cli/runtime.py`.
+
+`zig build test-cli-cutover -Dzig-modules=ipmishell` keeps the Zig shell editor
+and command backends identical in both binaries. The oracle compiles
+`lib/ipmi_main.c`; the candidate selects `cli`, omits that C translation unit,
+and resolves `ipmi_main`, `ipmi_cmd_run`, and `ipmi_cmd_print` from Zig. The
+golden cases compare streams and dummy requests, the runtime checks PTY and
+signals through the C daemon caller, and the shell suite checks editing/history
+while comparing dispatch, help, `set`, and `exec` byte-for-byte. Selecting
+`ipmishell` avoids a readline dependency; use
+`-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false` on hosts without
+OpenSSL development headers.
 
 The binary under test is picked in this order: `--binary`, `$IPMITOOL_BINARY`,
 `$IPMITOOL_ORACLE`, `tests/oracle/ipmitool`.

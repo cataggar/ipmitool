@@ -175,6 +175,26 @@ class ShellTests(unittest.TestCase):
         self.assertIn(b"smile \r\n", data)
         self.assertIn(b"cafeX \r\n", data)
 
+    def test_shared_cli_dispatch_and_help(self):
+        def run(binary):
+            return subprocess.run(
+                [binary, "-I", "dummy", "shell"],
+                input=b"help\necho via-shell\nnot-a-command\nexit\n",
+                capture_output=True, env=env(), timeout=5, check=False,
+            )
+
+        zig = run(ZIG)
+        self.assertEqual(zig.returncode, 0, zig.stderr)
+        self.assertIn(b"Commands:", zig.stderr)
+        self.assertIn(b"via-shell ", zig.stdout)
+        self.assertIn(b"Invalid command: not-a-command", zig.stderr)
+        if C:
+            oracle = run(C)
+            self.assertEqual(
+                (zig.returncode, zig.stdout, zig.stderr),
+                (oracle.returncode, oracle.stdout, oracle.stderr),
+            )
+
     def test_eof_and_malformed_command(self):
         status, data = pty([
             (b"ipmitool> ", b"echo 'oops\r"),
