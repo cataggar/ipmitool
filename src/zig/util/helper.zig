@@ -8,9 +8,10 @@
 //!
 //! Three conventions follow from that:
 //!
-//! * **General formatting stays in libc.**  `printf` and `fprintf` are
-//!   called through the bridge so `%-32s`, `%#x` and stdout/stderr interleaving
-//!   remain unchanged.  Byte-to-hex formatting uses Zig's fixed ASCII digits;
+//! * **Other general formatting stays in libc.**  The value-table stdout
+//!   printers and verbose byte dumps use Zig writers, with a C stdout flush
+//!   before value-table output to preserve mixed C/Zig output order.
+//!   Byte-to-hex formatting uses Zig's fixed ASCII digits;
 //!   unlike locale-sensitive formatting, `%2.2x` of a byte is always two
 //!   lowercase hexadecimal characters.
 //! * **General numeric parsing stays in libc:** `str2long()` and friends
@@ -345,95 +346,119 @@ pub fn str2val(str: [*:0]const u8, vs: [*]const ValStr) u16 {
 /// `print_valstr()`: dump a table to stdout (`loglevel < 0`) or to the log.
 pub fn printValstr(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_int) callconv(.c) void {
     const table = vs orelse return;
+    if (loglevel < 0) return emitValstr(false, table, title);
 
     if (title) |name| {
-        if (loglevel < 0) {
-            _ = c.printf("\n%s:\n\n", name);
-        } else {
-            log.print(loglevel, "\n%s:\n", .{name});
-        }
+        log.print(loglevel, "\n%s:\n", .{name});
     }
 
-    if (loglevel < 0) {
-        _ = c.printf("  VALUE\tHEX\tSTRING\n");
-        _ = c.printf("==============================================\n");
-    } else {
-        log.print(loglevel, "  VAL\tHEX\tSTRING", .{});
-        log.print(loglevel, "==============================================", .{});
-    }
+    log.print(loglevel, "  VAL\tHEX\tSTRING", .{});
+    log.print(loglevel, "==============================================", .{});
 
     var i: usize = 0;
     while (table[i].str) |str| : (i += 1) {
         const val = table[i].val;
-        if (loglevel < 0) {
-            if (val < 256) {
-                _ = c.printf("  %d\t0x%02x\t%s\n", val, val, str);
-            } else {
-                _ = c.printf("  %d\t0x%04x\t%s\n", val, val, str);
-            }
+        if (val < 256) {
+            log.print(loglevel, "  %d\t0x%02x\t%s", .{ val, val, str });
         } else {
-            if (val < 256) {
-                log.print(loglevel, "  %d\t0x%02x\t%s", .{ val, val, str });
-            } else {
-                log.print(loglevel, "  %d\t0x%04x\t%s", .{ val, val, str });
-            }
+            log.print(loglevel, "  %d\t0x%04x\t%s", .{ val, val, str });
         }
     }
 
-    if (loglevel < 0) {
-        _ = c.printf("\n");
-    } else {
-        log.print(loglevel, "", .{});
-    }
+    log.print(loglevel, "", .{});
 }
 
 /// `print_valstr_2col()`: as `printValstr()`, but two entries per line.
 pub fn printValstr2col(vs: ?[*]const ValStr, title: ?[*:0]const u8, loglevel: c_int) callconv(.c) void {
     const table = vs orelse return;
+    if (loglevel < 0) return emitValstr(true, table, title);
 
     if (title) |name| {
-        if (loglevel < 0) {
-            _ = c.printf("\n%s:\n\n", name);
-        } else {
-            log.print(loglevel, "\n%s:\n", .{name});
-        }
+        log.print(loglevel, "\n%s:\n", .{name});
     }
 
     var i: usize = 0;
     while (table[i].str) |str| : (i += 1) {
         if (table[i + 1].str) |next| {
-            if (loglevel < 0) {
-                _ = c.printf(
-                    "  %4d  %-32s    %4d  %-32s\n",
-                    table[i].val,
-                    str,
-                    table[i + 1].val,
-                    next,
-                );
-            } else {
-                log.print(
-                    loglevel,
-                    "  %4d  %-32s    %4d  %-32s\n",
-                    .{ table[i].val, str, table[i + 1].val, next },
-                );
-            }
+            log.print(
+                loglevel,
+                "  %4d  %-32s    %4d  %-32s\n",
+                .{ table[i].val, str, table[i + 1].val, next },
+            );
             // Consumed two entries; the loop's own increment adds the second.
             i += 1;
         } else {
             // Last one.
-            if (loglevel < 0) {
-                _ = c.printf("  %4d  %-32s\n", table[i].val, str);
-            } else {
-                log.print(loglevel, "  %4d  %-32s\n", .{ table[i].val, str });
-            }
+            log.print(loglevel, "  %4d  %-32s\n", .{ table[i].val, str });
         }
     }
 
-    if (loglevel < 0) {
-        _ = c.printf("\n");
-    } else {
-        log.print(loglevel, "", .{});
+    log.print(loglevel, "", .{});
+}
+
+fn emitValstr(comptime two_columns: bool, table: [*]const ValStr, title: ?[*:0]const u8) void {
+    const name = if (two_columns) "print_valstr_2col" else "print_valstr";
+    // libc may have buffered preceding printf output even when Zig writes
+    // directly to the same file descriptor.
+    if (c.fflush(c.stdout) != 0)
+        std.debug.panic("{s}: libc stdout flush failed: {d}", .{ name, std.c._errno().* });
+
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    const heading: ?[]const u8 = if (title) |text| std.mem.span(text) else null;
+    const result = if (two_columns)
+        writeValstr2col(&stdout.interface, table, heading)
+    else
+        writeValstr(&stdout.interface, table, heading);
+    result catch std.debug.panic("{s}: stdout write failed: {t}", .{ name, stdout.err orelse error.WriteFailed });
+    stdout.interface.flush() catch
+        std.debug.panic("{s}: stdout flush failed: {t}", .{ name, stdout.err orelse error.WriteFailed });
+}
+
+fn writeValstr(writer: *std.Io.Writer, table: [*]const ValStr, title: ?[]const u8) std.Io.Writer.Error!void {
+    if (title) |name| try writer.print("\n{s}:\n\n", .{name});
+    try writer.writeAll("  VALUE\tHEX\tSTRING\n==============================================\n");
+    var i: usize = 0;
+    while (table[i].str) |str| : (i += 1) {
+        const val = table[i].val;
+        const decimal: i32 = @bitCast(val);
+        if (val < 256) {
+            try writer.print("  {d}\t0x{x:0>2}\t{s}\n", .{ decimal, val, std.mem.span(str) });
+        } else {
+            try writer.print("  {d}\t0x{x:0>4}\t{s}\n", .{ decimal, val, std.mem.span(str) });
+        }
     }
+    try writer.writeByte('\n');
+}
+
+fn writeValstrColumn(writer: *std.Io.Writer, val: u32, name: [*:0]const u8) std.Io.Writer.Error!void {
+    var digits: [11]u8 = undefined;
+    const decimal = std.fmt.bufPrint(&digits, "{d}", .{@as(i32, @bitCast(val))}) catch unreachable;
+    const prefix_padding = " " ** 4;
+    if (decimal.len < prefix_padding.len)
+        try writer.writeAll(prefix_padding[0 .. prefix_padding.len - decimal.len]);
+    try writer.print("{s}  ", .{decimal});
+    const text = std.mem.span(name);
+    try writer.writeAll(text);
+    const padding = " " ** 32;
+    if (text.len < padding.len) try writer.writeAll(padding[0 .. padding.len - text.len]);
+}
+
+fn writeValstr2col(writer: *std.Io.Writer, table: [*]const ValStr, title: ?[]const u8) std.Io.Writer.Error!void {
+    if (title) |name| try writer.print("\n{s}:\n\n", .{name});
+    var i: usize = 0;
+    while (table[i].str) |str| {
+        try writer.writeAll("  ");
+        try writeValstrColumn(writer, table[i].val, str);
+        if (table[i + 1].str) |next| {
+            try writer.writeAll("    ");
+            try writeValstrColumn(writer, table[i + 1].val, next);
+            i += 2;
+        } else {
+            i += 1;
+        }
+        try writer.writeByte('\n');
+    }
+    try writer.writeByte('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -1158,6 +1183,137 @@ pub fn exportSymbols() void {
 // and printf.  Functions that call `lprintf()` or read `verbose` also need the
 // golden CLI differential tests, which link the selected archive.
 // ---------------------------------------------------------------------------
+
+fn writeLibcValstrPart(writer: *std.Io.Writer, comptime format: [*:0]const u8, args: anytype) !void {
+    var text: [1024]u8 = undefined;
+    const len = @call(.auto, c.snprintf, .{ &text, text.len, format } ++ args);
+    try std.testing.expect(len >= 0 and len < text.len);
+    try writer.writeAll(text[0..@intCast(len)]);
+}
+
+fn writeLibcValstr(writer: *std.Io.Writer, table: [*]const ValStr, title: ?[*:0]const u8, comptime two_columns: bool) !void {
+    if (title) |name| try writeLibcValstrPart(writer, "\n%s:\n\n", .{name});
+    if (two_columns) {
+        var i: usize = 0;
+        while (table[i].str) |str| {
+            if (table[i + 1].str) |next| {
+                try writeLibcValstrPart(writer, "  %4d  %-32s    %4d  %-32s\n", .{
+                    table[i].val, str, table[i + 1].val, next,
+                });
+                i += 2;
+            } else {
+                try writeLibcValstrPart(writer, "  %4d  %-32s\n", .{ table[i].val, str });
+                i += 1;
+            }
+        }
+    } else {
+        try writeLibcValstrPart(writer, "  VALUE\tHEX\tSTRING\n", .{});
+        try writeLibcValstrPart(writer, "==============================================\n", .{});
+        var i: usize = 0;
+        while (table[i].str) |str| : (i += 1) {
+            if (table[i].val < 256) {
+                try writeLibcValstrPart(writer, "  %d\t0x%02x\t%s\n", .{ table[i].val, table[i].val, str });
+            } else {
+                try writeLibcValstrPart(writer, "  %d\t0x%04x\t%s\n", .{ table[i].val, table[i].val, str });
+            }
+        }
+    }
+    try writeLibcValstrPart(writer, "\n", .{});
+}
+
+fn expectValstrStdoutParity(table: [*]const ValStr, title: ?[*:0]const u8, comptime two_columns: bool) !void {
+    var zig_buf: [4096]u8 = undefined;
+    var zig_writer = std.Io.Writer.fixed(&zig_buf);
+    const heading: ?[]const u8 = if (title) |name| std.mem.span(name) else null;
+    if (two_columns) {
+        try writeValstr2col(&zig_writer, table, heading);
+    } else {
+        try writeValstr(&zig_writer, table, heading);
+    }
+
+    var c_buf: [4096]u8 = undefined;
+    var c_writer = std.Io.Writer.fixed(&c_buf);
+    try writeLibcValstr(&c_writer, table, title, two_columns);
+    try std.testing.expectEqualSlices(u8, c_writer.buffered(), zig_writer.buffered());
+}
+
+test "valstr stdout formats zero, short, long and odd tables like libc" {
+    const empty = [_]ValStr{.{ .val = 0, .str = null }};
+    const one = [_]ValStr{
+        .{ .val = 255, .str = "last byte" },
+        .{ .val = 0, .str = null },
+    };
+    const pair = [_]ValStr{
+        .{ .val = 255, .str = "A" },
+        .{ .val = 256, .str = "B" },
+        .{ .val = 0, .str = null },
+    };
+    const long = [_]ValStr{
+        .{ .val = 0, .str = "X" ** 31 },
+        .{ .val = 255, .str = "Y" ** 32 },
+        .{ .val = 256, .str = "Z" ** 33 },
+        .{ .val = 0x8000_0000, .str = "é" },
+        .{ .val = 0xffff_ffff, .str = "W" ** 160 },
+        .{ .val = 0, .str = null },
+    };
+    inline for (.{ false, true }) |two_columns| {
+        try expectValstrStdoutParity(&empty, null, two_columns);
+        try expectValstrStdoutParity(&empty, "", two_columns);
+        try expectValstrStdoutParity(&one, "Values", two_columns);
+        try expectValstrStdoutParity(&pair, null, two_columns);
+        try expectValstrStdoutParity(&long, "Long & wide", two_columns);
+    }
+}
+
+test "valstr stdout golden includes both final blank lines and the 255/256 hex boundary" {
+    const table = [_]ValStr{
+        .{ .val = 255, .str = "A" },
+        .{ .val = 256, .str = "B" },
+        .{ .val = 0, .str = null },
+    };
+    var storage: [200]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writeValstr(&writer, &table, "Codes");
+    try std.testing.expectEqualStrings(
+        "\nCodes:\n\n" ++
+            "  VALUE\tHEX\tSTRING\n==============================================\n" ++
+            "  255\t0xff\tA\n  256\t0x0100\tB\n\n",
+        writer.buffered(),
+    );
+
+    writer = std.Io.Writer.fixed(&storage);
+    try writeValstr2col(&writer, &table, "Codes");
+    try std.testing.expectEqualStrings(
+        "\nCodes:\n\n" ++
+            "   255  A" ++ (" " ** 31) ++
+            "     256  B" ++ (" " ** 31) ++ "\n\n",
+        writer.buffered(),
+    );
+}
+
+test "valstr stdout propagates initial and late writer failures" {
+    const one = [_]ValStr{
+        .{ .val = 1, .str = "one" },
+        .{ .val = 0, .str = null },
+    };
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeValstr(&failing, &one, null));
+    try std.testing.expectError(error.WriteFailed, writeValstr2col(&failing, &one, null));
+
+    var complete_buf: [128]u8 = undefined;
+    var complete = std.Io.Writer.fixed(&complete_buf);
+    try writeValstr(&complete, &one, null);
+    var short: [128]u8 = undefined;
+    var late = std.Io.Writer.fixed(short[0 .. complete.buffered().len - 1]);
+    try std.testing.expectError(error.WriteFailed, writeValstr(&late, &one, null));
+    try std.testing.expectEqualSlices(u8, complete.buffered()[0 .. complete.buffered().len - 1], late.buffered());
+
+    complete = std.Io.Writer.fixed(&complete_buf);
+    try writeValstr2col(&complete, &one, null);
+    late = std.Io.Writer.fixed(short[0 .. complete.buffered().len - 1]);
+    try std.testing.expectError(error.WriteFailed, writeValstr2col(&late, &one, null));
+    try std.testing.expectEqualSlices(u8, complete.buffered()[0 .. complete.buffered().len - 1], late.buffered());
+}
 
 test "printbuf uses lowercase hex and wraps after sixteen bytes" {
     var bytes: [18]u8 = undefined;

@@ -321,6 +321,26 @@ The selected helper writes `printbuf`'s verbose hex dump through Zig stderr
 I/O instead of libc `fprintf`. Sixteen-byte line wraps and header/hex bytes
 remain golden-tested; a failed write terminates explicitly.
 
+For `loglevel < 0`, the selected `print_valstr` and `print_valstr_2col` write
+through Zig's streaming stdout writer. They first check `fflush(stdout)` to
+drain any preceding libc `printf` output, then check both Zig writes and the
+writer's final flush; failures terminate explicitly rather than returning a
+successful `void` call. Subsequent C output remains after the Zig bytes.
+The title, header, decimal and minimum-width hex fields, byte-counted
+32-column padding (including UTF-8), and trailing blank lines retain their
+C layout. `%d` on the original unsigned table values renders their signed
+32-bit interpretation, including values above `INT_MAX`. The `loglevel >= 0`
+logging path is unchanged, and the original `lib/helper.c` remains the C
+oracle. `zig build test-helper-valstr-unit` compares zero/short/long/odd
+tables, 255/256 and width boundaries with libc `snprintf`, and tests early
+and late writer failures. `zig build test-helper-valstr-golden` runs the
+same C caller against both original and selected helpers, pinning both
+stdout variants with buffered C output before and after each table. CLI
+goldens `raw_missing_args` (one-column logging path) and `sd_entity_list`
+(two-column stdout path) additionally cover the selected tool. On hosts
+without readline/OpenSSL headers, use `-Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lanplus=false`.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or

@@ -1084,6 +1084,72 @@ pub fn build(b: *std.Build) void {
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
 
+    const helper_valstr_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.helper.test.valstr stdout"},
+    });
+    b.step("test-helper-valstr-unit", "Check value-table stdout formatting against libc")
+        .dependOn(&b.addRunArtifact(helper_valstr_unit).step);
+
+    const valstr_c_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, valstr_c_mod, config_h, default_intf);
+    valstr_c_mod.addCSourceFiles(.{
+        .files = &.{ "tests/helper_valstr_stdout.c", "lib/helper.c", "lib/log.c" },
+        .flags = &base_cflags,
+    });
+    const valstr_c = b.addExecutable(.{ .name = "helper-valstr-c", .root_module = valstr_c_mod });
+
+    const valstr_options = b.addOptions();
+    valstr_options.addOption([]const []const u8, "zig_modules", &.{"helper"});
+    valstr_options.addOption(bool, "have_crypto_sha256", openssl);
+    const valstr_lib_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/exports.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    valstr_lib_mod.addImport("ipmi_c", bridge_mod);
+    valstr_lib_mod.addImport("build_options", valstr_options.createModule());
+    const valstr_lib = b.addLibrary(.{
+        .name = "helper_valstr_zig",
+        .linkage = .static,
+        .root_module = valstr_lib_mod,
+    });
+    const valstr_zig_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, valstr_zig_mod, config_h, default_intf);
+    valstr_zig_mod.addCSourceFiles(.{
+        .files = &.{ "tests/helper_valstr_stdout.c", "lib/log.c" },
+        .flags = &base_cflags,
+    });
+    valstr_zig_mod.linkLibrary(valstr_lib);
+    const valstr_zig = b.addExecutable(.{ .name = "helper-valstr-zig", .root_module = valstr_zig_mod });
+    const valstr_golden =
+        "C before one\nCodes:\n\n" ++
+        "  VALUE\tHEX\tSTRING\n==============================================\n" ++
+        "  255\t0xff\tA\n  256\t0x0100\tB\n  -1\t0xffffffff\tC\n\n" ++
+        "C after one\n" ++
+        "C before two\nCodes:\n\n" ++
+        "   255  A" ++ (" " ** 31) ++ "     256  B" ++ (" " ** 31) ++ "\n" ++
+        "    -1  C" ++ (" " ** 31) ++ "\n\n" ++
+        "C after two\n";
+    const valstr_step = b.step("test-helper-valstr-golden", "Compare both stdout printers and mixed C/Zig output order");
+    inline for (.{ valstr_c, valstr_zig }) |fixture| {
+        const run = b.addRunArtifact(fixture);
+        run.setEnvironmentVariable("LC_ALL", "C");
+        run.expectStdOutEqual(valstr_golden);
+        run.expectStdErrEqual("");
+        valstr_step.dependOn(&run.step);
+    }
+    test_step.dependOn(valstr_step);
+
     const strings_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"util.strings.test."},
