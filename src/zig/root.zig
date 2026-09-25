@@ -86,6 +86,7 @@ test {
     _ = @import("cmd/pef.zig");
     _ = @import("cmd/delloem.zig");
     _ = @import("cmd/sunoem.zig");
+    _ = @import("frontend/shell_commands.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);

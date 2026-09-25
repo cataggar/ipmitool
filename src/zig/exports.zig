@@ -185,6 +185,7 @@ comptime {
     }
     if (selected("ipmishell")) {
         @import("frontend/ipmishell.zig").exportSymbols();
+        @import("frontend/shell_commands.zig").exportSymbols();
     }
 }
 

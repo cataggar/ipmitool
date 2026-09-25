@@ -7,6 +7,12 @@ replacement has no readline dependency; ordinary builds without this module
 continue to compile the C oracle through Phase 7. `-Dipmishell=false` hides
 only `shell` as before, not `exec`, `set`, or `echo`.
 
+The interactive editor and shared word parser live in
+`src/zig/frontend/ipmishell.zig`. The non-interactive `exec`, `set`, and
+`echo` entry points live in `src/zig/frontend/shell_commands.zig`; both are
+exported together only when `ipmishell` is selected. The default build still
+uses `src/ipmishell.c` for all three commands.
+
 The interactive editor uses a PTY's termios raw mode and a native Zig history
 list (up/down arrows). Left/right arrows, Home/End, Delete, Backspace,
 Ctrl-A/E/U/K, and Ctrl-D edit a line; Ctrl-C cancels it. Empty Ctrl-D or an
@@ -28,7 +34,7 @@ the 2047-byte C buffer are rejected and skipped rather than executed as
 multiple unrelated fragments. No shell expansion or persistent history file
 is added.
 
-Run `zig build test-unit -Dzig-modules=ipmishell` and
+Run `zig build test-shell-unit -Dzig-modules=ipmishell` for the shared parser and
 `zig build test-shell -Dzig-modules=ipmishell` for automated PTY/CLI coverage
 (also part of `zig build test` when selected). The shell suite also accepts
 `python3 tests/shell/pty.py zig-out/bin/ipmitool` after a normal build;
@@ -36,3 +42,6 @@ if available, pass a
 second path to the binary built *without* the Zig module; the suite compares
 the C `exec`/`set`/`echo` outputs and status with Zig. The test server listens
 on a worktree-local Unix socket and stops when the suite finishes.
+`zig build test-golden -Dzig-modules=ipmishell -- --filter shellcmd_`
+compares both the selected Zig binary and the all-Zig binary against eight
+additional `exec`/`set`/`echo` snapshots recorded from the default C oracle.

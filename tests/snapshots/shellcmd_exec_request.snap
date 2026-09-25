@@ -1,0 +1,17 @@
+#!golden 1
+#!case shellcmd_exec_request
+#!section exit
+1
+#!section stdout
+after\x20
+#!section stderr
+Unable to send RAW command (channel=0x0 netfn=0x6 lun=0x0 cmd=0x1 rsp=0xc1): Invalid command
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=default ccode=0xc1 len=0 data=
+bye
+#!section files
