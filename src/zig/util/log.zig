@@ -107,7 +107,7 @@ pub fn logInit(
     const wanted = if (name) |n| std.mem.span(n) else name_default;
     // C reports the failure and carries on with a NULL name.
     const copy: ?[:0]u8 = allocator.dupeZ(u8, wanted) catch blk: {
-        _ = c.fprintf(c.stderr, "ipmitool: malloc failure\n");
+        emitStderrLine("ipmitool: malloc failure", null);
         break :blk null;
     };
 
@@ -160,9 +160,24 @@ fn selectedInProduct() bool {
     return false;
 }
 
+fn writeStderrLine(writer: *std.Io.Writer, message: []const u8, reason: ?[]const u8) std.Io.Writer.Error!void {
+    try writer.writeAll(message);
+    if (reason) |text| {
+        try writer.writeAll(": ");
+        try writer.writeAll(text);
+    }
+    try writer.writeAll("\n");
+}
+
+fn emitStderrLine(message: []const u8, reason: ?[]const u8) void {
+    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
+    writeStderrLine(&stderr.interface, message, reason) catch
+        std.debug.panic("ipmitool: stderr write failed: {t}", .{stderr.err orelse error.WriteFailed});
+}
+
 /// Callers compiled alongside the C logger keep its state and ABI.  When the
-/// Zig logger is selected, formatting and emission stay in Zig; only the
-/// libc printf/syslog functions are called, never a C variadic definition.
+/// Zig logger is selected, formatting stays in Zig; libc formats the message
+/// and handles daemon syslog, but stderr is written through Zig I/O.
 pub fn print(level: c_int, format: [*:0]const u8, args: anytype) void {
     if (comptime selectedInProduct()) {
         if (!enabled(level)) return;
@@ -170,7 +185,7 @@ pub fn print(level: c_int, format: [*:0]const u8, args: anytype) void {
         if (logpriv.?.daemon) {
             c.syslog(level, "%s", &printf_msg);
         } else {
-            _ = c.fprintf(c.stderr, "%s\n", &printf_msg);
+            emitStderrLine(std.mem.sliceTo(&printf_msg, 0), null);
         }
     } else {
         @call(.auto, c.lprintf, .{ level, format } ++ args);
@@ -185,7 +200,7 @@ pub fn perror(level: c_int, format: [*:0]const u8, args: anytype) void {
         if (logpriv.?.daemon) {
             c.syslog(level, "%s: %s", &perror_msg, reason);
         } else {
-            _ = c.fprintf(c.stderr, "%s: %s\n", &perror_msg, reason);
+            emitStderrLine(std.mem.sliceTo(&perror_msg, 0), std.mem.sliceTo(reason, 0));
         }
     } else {
         @call(.auto, c.lperror, .{ level, format } ++ args);
@@ -201,7 +216,7 @@ fn lvprintf(level: c_int, format: [*:0]const u8, args: VaList) callconv(.c) void
     if (logpriv.?.daemon) {
         c.syslog(level, "%s", &printf_msg);
     } else {
-        _ = c.fprintf(c.stderr, "%s\n", &printf_msg);
+        emitStderrLine(std.mem.sliceTo(&printf_msg, 0), null);
     }
 }
 
@@ -218,7 +233,7 @@ fn lvperror(level: c_int, format: [*:0]const u8, args: VaList) callconv(.c) void
     if (logpriv.?.daemon) {
         c.syslog(level, "%s: %s", &perror_msg, reason);
     } else {
-        _ = c.fprintf(c.stderr, "%s: %s\n", &perror_msg, reason);
+        emitStderrLine(std.mem.sliceTo(&perror_msg, 0), std.mem.sliceTo(reason, 0));
     }
 }
 
@@ -233,7 +248,7 @@ fn frontendMessage(level: c_int, message: [*:0]const u8) callconv(.c) void {
     if (logpriv.?.daemon) {
         c.syslog(level, "%s", message);
     } else {
-        _ = c.fprintf(c.stderr, "%s\n", message);
+        emitStderrLine(std.mem.span(message), null);
     }
 }
 
@@ -243,7 +258,7 @@ fn frontendError(level: c_int, message: [*:0]const u8, errnum: c_int) callconv(.
     if (logpriv.?.daemon) {
         c.syslog(level, "%s: %s", message, reason);
     } else {
-        _ = c.fprintf(c.stderr, "%s: %s\n", message, reason);
+        emitStderrLine(std.mem.span(message), std.mem.sliceTo(reason, 0));
     }
 }
 
@@ -292,6 +307,21 @@ test "level aliases match log.h" {
     try std.testing.expectEqual(c.LOG_WARN, Level.warn);
     try std.testing.expectEqual(@as(c_int, c.LOG_MSG_LENGTH), msg_length);
     try std.testing.expectEqualStrings(c.LOG_NAME_DEFAULT, name_default);
+}
+
+test "stderr lines preserve message and errno text and reject write failure" {
+    var buffer: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&buffer);
+    try writeStderrLine(&writer, "opening registry", "Permission denied");
+    try std.testing.expectEqualStrings("opening registry: Permission denied\n", writer.buffered());
+
+    var plain_buffer: [8]u8 = undefined;
+    var plain_writer = std.Io.Writer.fixed(&plain_buffer);
+    try writeStderrLine(&plain_writer, "message", null);
+    try std.testing.expectEqualStrings("message\n", plain_writer.buffered());
+
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeStderrLine(&failing, "message", null));
 }
 
 test "log_init is idempotent and log_halt resets it" {
