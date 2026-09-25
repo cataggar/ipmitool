@@ -56,20 +56,19 @@ fn getPlatformId(intf: *Intf) callconv(.c) c.qct_platform_t {
     req.msg.data_len = data.len;
 
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, "Get Platform ID command failed");
+        log.print(log.Level.err, "Get Platform ID command failed", .{});
         return 0;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             "Get Platform ID command failed: %#x %s",
-            @as(c_int, rsp.ccode),
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{ @as(c_int, rsp.ccode), c.val2str(rsp.ccode, c.completion_code_vals) },
         );
         return 0;
     }
     const platform_id = rsp.data[0];
-    c.lprintf(log.Level.debug, "Platform ID: %hhx", @as(c_int, platform_id));
+    log.print(log.Level.debug, "Platform ID: %hhx", .{@as(c_int, platform_id)});
     return @intCast(platform_id);
 }
 
@@ -81,7 +80,7 @@ fn getEvtDesc(intf: *Intf, rec: ?*c.struct_sel_event_record) callconv(.c) [*c]u8
 
     const desc: [*c]u8 = @ptrCast(c.malloc(desc_size));
     if (desc == null) {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     }
     _ = c.memset(desc, 0, desc_size);
@@ -95,15 +94,15 @@ fn getEvtDesc(intf: *Intf, rec: ?*c.struct_sel_event_record) callconv(.c) [*c]u8
     req.msg.netfn_lun.netfn = @intCast(c.IPMI_NETFN_APP);
     req.msg.cmd = @intCast(c.BMC_GET_DEVICE_ID);
     const rsp = intf.sendrecv.?(intf, &req) orelse {
-        c.lprintf(log.Level.err, " Error getting system info");
+        log.print(log.Level.err, " Error getting system info", .{});
         c.free(desc);
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             log.Level.err,
             " Error getting system info: %s",
-            c.val2str(rsp.ccode, c.completion_code_vals),
+            .{c.val2str(rsp.ccode, c.completion_code_vals)},
         );
         c.free(desc);
         return null;

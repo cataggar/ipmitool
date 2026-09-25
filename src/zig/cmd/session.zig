@@ -117,12 +117,12 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
         }
         const rsp = intf.sendrecv.?(intf, &req);
         if (rsp == null) {
-            c.lprintf(log.Level.err, "Get Session Info command failed");
+            log.print(log.Level.err, "Get Session Info command failed", .{});
         } else if (rsp.?.ccode != 0) {
-            c.lprintf(
+            log.print(
                 log.Level.err,
                 "Get Session Info command failed: %s",
-                c.val2str(rsp.?.ccode, c.completion_code_vals),
+                .{c.val2str(rsp.?.ccode, c.completion_code_vals)},
             );
         } else {
             const len: usize = @intCast(@min(@max(rsp.?.data_len, 0), info_size));
@@ -131,7 +131,7 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
             return 0;
         }
         if (request_type == current and c.strcmp(@ptrCast(&intf.name), "lan") != 0) {
-            c.lprintf(log.Level.err, "It is likely that the channel in use does not support sessions");
+            log.print(log.Level.err, "It is likely that the channel in use does not support sessions", .{});
         }
         return -1;
     }
@@ -142,11 +142,11 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
         data[0] = @intCast(slot);
         slot += 1;
         const rsp = intf.sendrecv.?(intf, &req) orelse {
-            c.lprintf(log.Level.err, "Get Session Info command failed");
+            log.print(log.Level.err, "Get Session Info command failed", .{});
             return -1;
         };
         if (rsp.ccode != 0 and rsp.ccode != 0xcc and rsp.ccode != 0xcb) {
-            c.lprintf(log.Level.err, "Get Session Info command failed: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+            log.print(log.Level.err, "Get Session Info command failed: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
             return -1;
         }
         if (rsp.data_len < 3) return -1;
@@ -158,7 +158,7 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
 }
 
 fn usage() void {
-    c.lprintf(log.Level.notice, "Session Commands: info <active | all | id 0xnnnnnnnn | handle 0xnn>");
+    log.print(log.Level.notice, "Session Commands: info <active | all | id 0xnnnnnnnn | handle 0xnn>", .{});
 }
 
 fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
@@ -167,7 +167,7 @@ fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         return 0;
     }
     if (c.strcmp(argv[0], "info") != 0) {
-        c.lprintf(log.Level.err, "Invalid SESSION command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid SESSION command: %s", .{argv[0]});
         usage();
         return -1;
     }
@@ -184,18 +184,18 @@ fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
     } else if (c.strcmp(argv[1], "id") == 0 or c.strcmp(argv[1], "handle") == 0) {
         const id = c.strcmp(argv[1], "id") == 0;
         if (argc < 3) {
-            c.lprintf(log.Level.err, if (id) "Missing id argument" else "Missing handle argument");
+            log.print(log.Level.err, if (id) "Missing id argument" else "Missing handle argument", .{});
             usage();
             return -1;
         }
         request_type = if (id) by_id else by_handle;
         if (c.str2uint(argv[2], &value) != 0) {
-            c.lprintf(log.Level.err, "HEX number expected, but '%s' given.", argv[2]);
+            log.print(log.Level.err, "HEX number expected, but '%s' given.", .{argv[2]});
             usage();
             return -1;
         }
     } else {
-        c.lprintf(log.Level.err, "Invalid SESSION info parameter: %s", argv[1]);
+        log.print(log.Level.err, "Invalid SESSION info parameter: %s", .{argv[1]});
         usage();
         return -1;
     }

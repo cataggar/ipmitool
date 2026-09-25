@@ -12,6 +12,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("../intf/intf.zig");
+const log = @import("../util/log.zig");
 const tables = @import("dimm_spd_tables.zig");
 
 const Intf = intf_mod.Intf;
@@ -195,9 +196,12 @@ fn spdPrintFru(intf: *Intf, id: u8) callconv(.c) c_int {
     }
     const fru_size: usize = @as(usize, rsp.data[1]) << 8 | rsp.data[0];
     const access = rsp.data[2] & 1;
-    c.lprintf(c.LOG_DEBUG, "fru.size = %d bytes (accessed by %s)", @as(c_int, @intCast(fru_size)), if (access != 0) "words" else "bytes");
+    log.print(c.LOG_DEBUG, "fru.size = %d bytes (accessed by %s)", .{
+        @as(c_int, @intCast(fru_size)),
+        if (access != 0) "words" else "bytes",
+    });
     if (fru_size == 0) {
-        c.lprintf(c.LOG_ERR, " Invalid FRU size %d", @as(c_int, 0));
+        log.print(c.LOG_ERR, " Invalid FRU size %d", .{@as(c_int, 0)});
         return -1;
     }
     const spd = std.heap.c_allocator.alloc(u8, fru_size) catch {
