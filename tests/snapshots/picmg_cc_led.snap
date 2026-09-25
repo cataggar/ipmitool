@@ -1,0 +1,17 @@
+#!golden 1
+#!case picmg_cc_led
+#!section exit
+1
+#!section stdout
+#!section stderr
+LED get state failed with CC code 0xc9
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 01 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 01 00
+> netfn=0x2c lun=0x00 cmd=0x08 target_cmd=0x00 data=00 01 02
+< rule=led_get ccode=0xc9 len=0 data=
+bye

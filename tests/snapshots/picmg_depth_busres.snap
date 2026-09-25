@@ -1,0 +1,29 @@
+#!golden 1
+#!case picmg_depth_busres
+#!section exit
+0
+#!section stdout
+Resource 0x00 'Metallic Test Bus pair #1 ' : 0x01 [No control]\x20
+Resource 0x01 'Metallic Test Bus pair #2 ' : 0x01 [No control]\x20
+Resource 0x02 'Synch clock group 1 (CLK1)' : 0x01 [No control]\x20
+Resource 0x03 'Synch clock group 2 (CLK2)' : 0x01 [No control]\x20
+Resource 0x04 'Synch clock group 3 (CLK3)' : 0x01 [No control]\x20
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x17 target_cmd=0x00 data=00 00 00
+< rule=busres ccode=0x00 len=2 data=00 01
+> netfn=0x2c lun=0x00 cmd=0x17 target_cmd=0x00 data=00 00 01
+< rule=busres ccode=0x00 len=2 data=00 01
+> netfn=0x2c lun=0x00 cmd=0x17 target_cmd=0x00 data=00 00 02
+< rule=busres ccode=0x00 len=2 data=00 01
+> netfn=0x2c lun=0x00 cmd=0x17 target_cmd=0x00 data=00 00 03
+< rule=busres ccode=0x00 len=2 data=00 01
+> netfn=0x2c lun=0x00 cmd=0x17 target_cmd=0x00 data=00 00 04
+< rule=busres ccode=0x00 len=2 data=00 01
+bye

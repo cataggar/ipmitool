@@ -201,6 +201,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/event.zig",
     },
     .{
+        .name = "picmg",
+        .replaces = "lib/ipmi_picmg.c",
+        .implementation = "src/zig/cmd/picmg.zig",
+    },
+    .{
         .name = "sensor",
         .replaces = "lib/ipmi_sensor.c",
         .implementation = "src/zig/cmd/sensor.zig",

@@ -1,0 +1,34 @@
+#!golden 1
+#!case picmg_depth_amc_get
+#!section exit
+0
+#!section stdout
+   Link device :         0x03
+   Link Grouping ID:     0x04
+   Link Type Extension:  Gen 2 - SSC
+   Link Type:            PCI EXPRESS
+   Link Designator:\x20
+      Channel Number:    0x02
+      Port Flag:         0x05
+   STATE:                enabled
+
+   Link device :         0x03
+   Link Grouping ID:     0x05
+   Link Type Extension:  0x02
+   Link Type:            Reserved
+   Link Designator:\x20
+      Channel Number:    0x02
+      Port Flag:         0x00
+   STATE:                disabled
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x1a target_cmd=0x00 data=00 02 03
+< rule=amc_port_get ccode=0x00 len=9 data=00 25 30 04 01 10 20 05 00
+bye

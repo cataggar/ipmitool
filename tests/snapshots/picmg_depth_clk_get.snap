@@ -1,0 +1,26 @@
+#!golden 1
+#!case picmg_depth_clk_get
+#!section exit
+0
+#!section stdout
+CLK resource id   :   3 [ Unknown (0x03) ]
+CLK id            :   2 [ Clock 2 ]
+CLK setting       : 0x0c
+ - state:     enabled
+ - direction: Source
+ - PLL ctrl:  0x0
+  - Index:    1
+  - Family:   2 [ Reserved for PCI Express ]\x20
+  - AccLVL:   3 [ Unknown (0x03) ]\x20
+  - Freq:   305419896
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x2d target_cmd=0x00 data=00 02 03
+< rule=clk_get ccode=0x00 len=9 data=00 0c 01 02 03 78 56 34 12
+bye

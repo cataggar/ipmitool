@@ -1,0 +1,16 @@
+#!golden 1
+#!case picmg_depth_activate
+#!section exit
+0
+#!section stdout
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x0c target_cmd=0x00 data=00 01 01
+< rule=activation ccode=0x00 len=1 data=00
+bye

@@ -60,6 +60,7 @@
 #include <ipmitool/ipmi_intf.h>
 #include <ipmitool/ipmi_mc.h>
 #include <ipmitool/ipmi_oem.h>
+#include <ipmitool/ipmi_picmg.h>
 #include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_sel.h>
@@ -201,6 +202,55 @@ struct ipmi_rs *ipmi_sdr_get_sensor_event_enable(struct ipmi_intf *intf,
 						 uint8_t target, uint8_t lun,
 						 uint8_t channel);
 void printf_sdr_usage(void);
+
+/* Global symbols defined by lib/ipmi_picmg.c but absent from its header. */
+struct sAmcAddrMap {
+	unsigned char ipmbLAddr;
+	char *amcBayId;
+	unsigned char siteNum;
+};
+extern struct sAmcAddrMap amcAddrMap[13];
+void ipmi_picmg_help(void);
+int is_amc_channel(const char *, uint8_t *);
+int is_amc_dev(const char *, int32_t *);
+int is_amc_intf(const char *, int32_t *);
+int is_amc_port(const char *, int32_t *);
+int is_clk_acc(const char *, uint8_t *);
+int is_clk_family(const char *, uint8_t *);
+int is_clk_freq(const char *, uint32_t *);
+int is_clk_id(const char *, uint8_t *);
+int is_clk_index(const char *, uint8_t *);
+int is_clk_resid(const char *, int8_t *);
+int is_clk_setting(const char *, uint8_t *);
+int is_enable(const char *, uint8_t *);
+int is_led_color(const char *, uint8_t *);
+int is_led_function(const char *, uint8_t *);
+int is_led_id(const char *, uint8_t *);
+int is_link_group(const char *, uint8_t *);
+int is_link_type(const char *, uint8_t *);
+int is_link_type_ext(const char *, uint8_t *);
+int ipmi_picmg_getaddr(struct ipmi_intf *, int, char **);
+int ipmi_picmg_properties(struct ipmi_intf *, int);
+int ipmi_picmg_fru_activation(struct ipmi_intf *, char **, unsigned char);
+int ipmi_picmg_fru_activation_policy_get(struct ipmi_intf *, char **);
+int ipmi_picmg_fru_activation_policy_set(struct ipmi_intf *, char **);
+int ipmi_picmg_portstate_get(struct ipmi_intf *, int32_t, uint8_t, int);
+int ipmi_picmg_portstate_set(struct ipmi_intf *, int32_t, uint8_t, int32_t,
+			    uint8_t, uint8_t, uint8_t, uint8_t);
+int ipmi_picmg_amc_portstate_get(struct ipmi_intf *, int32_t, uint8_t, int);
+int ipmi_picmg_amc_portstate_set(struct ipmi_intf *, uint8_t, int32_t,
+				uint8_t, uint8_t, uint8_t, uint8_t, int32_t);
+int ipmi_picmg_get_led_properties(struct ipmi_intf *, char **);
+int ipmi_picmg_get_led_capabilities(struct ipmi_intf *, char **);
+int ipmi_picmg_get_led_state(struct ipmi_intf *, char **);
+int ipmi_picmg_set_led_state(struct ipmi_intf *, char **);
+int ipmi_picmg_get_power_level(struct ipmi_intf *, char **);
+int ipmi_picmg_set_power_level(struct ipmi_intf *, char **);
+enum picmg_bused_resource_mode { PICMG_BUSED_RESOURCE_SUMMARY };
+int ipmi_picmg_bused_resource(struct ipmi_intf *, enum picmg_bused_resource_mode);
+int ipmi_picmg_fru_control(struct ipmi_intf *, char **);
+int ipmi_picmg_clk_get(struct ipmi_intf *, uint8_t, int8_t, int);
+int ipmi_picmg_clk_set(struct ipmi_intf *, int, char **);
 
 /*
  * `src/plugins/ipmi_intf.c` defines these two without a prototype in

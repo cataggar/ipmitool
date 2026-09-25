@@ -1,0 +1,24 @@
+#!golden 1
+#!case picmg_depth_led_get
+#!section exit
+0
+#!section stdout
+LED states:\t\t\t\t\t\t  7\t[LOCAL CONTROL|OVERRIDE|LAMPTEST]
+  Local Control function:     1  [BLINKING]
+  Local Control On-Duration:  a
+  Local Control Color:        3  [GREEN]
+  Override function:     ff  [BLINKING]
+  Override On-Duration:  0
+  Override Color:        2  [RED]
+  Lamp test duration:    64
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x01 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=properties ccode=0x00 len=4 data=00 32 0f 00
+> netfn=0x2c lun=0x00 cmd=0x08 target_cmd=0x00 data=00 01 02
+< rule=led_get ccode=0x00 len=9 data=00 07 01 0a 03 ff 00 02 64
+bye
