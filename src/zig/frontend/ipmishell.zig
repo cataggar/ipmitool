@@ -21,12 +21,12 @@ fn eq(a: []const u8, b: []const u8) bool {
     return std.mem.eql(u8, a, b);
 }
 
-fn out(bytes: []const u8) void {
+fn out(bytes: []const u8) error{Io}!void {
     var offset: usize = 0;
     while (offset < bytes.len) {
         const n = c.write(1, bytes.ptr + offset, bytes.len - offset);
         if (n < 0 and std.c._errno().* == c.EINTR) continue;
-        if (n <= 0) break;
+        if (n <= 0) return error.Io;
         offset += @intCast(n);
     }
 }
@@ -39,25 +39,25 @@ fn columns(bytes: []const u8) usize {
     return n;
 }
 
-fn redraw(line: []const u8, cursor: usize, previous: *usize, ansi: bool) void {
+fn redraw(line: []const u8, cursor: usize, previous: *usize, ansi: bool) error{Io}!void {
     if (ansi) {
-        out("\r\x1b[2K" ++ prompt);
+        try out("\r\x1b[2K" ++ prompt);
     } else {
-        out("\r" ++ prompt);
+        try out("\r" ++ prompt);
     }
-    out(line);
+    try out(line);
     const width = columns(line);
     if (!ansi) {
         var blanks = previous.* -| width;
-        while (blanks > 0) : (blanks -= 1) out(" ");
+        while (blanks > 0) : (blanks -= 1) try out(" ");
         // Backspace is supported even by terminals without ANSI escape codes.
         blanks = previous.* -| width;
         var back = columns(line[cursor..]) + blanks;
-        while (back > 0) : (back -= 1) out("\x08");
+        while (back > 0) : (back -= 1) try out("\x08");
     } else if (cursor < line.len) {
         var buf: [32]u8 = undefined;
         const move = std.fmt.bufPrint(&buf, "\x1b[{d}D", .{columns(line[cursor..])}) catch unreachable;
-        out(move);
+        try out(move);
     }
     previous.* = width;
 }
@@ -153,7 +153,7 @@ fn readLine(intf: *Intf, history: []const []u8) error{ OutOfMemory, Cancelled, I
         if (interactive) _ = c.tcsetattr(0, c.TCSANOW, &old);
     }
 
-    out(prompt);
+    try out(prompt);
     var escape: u8 = 0;
     var csi_number: usize = 0;
     var ticks: usize = 0;
@@ -184,7 +184,7 @@ fn readLine(intf: *Intf, history: []const []u8) error{ OutOfMemory, Cancelled, I
         if (n < 0 and std.c._errno().* == c.EINTR) continue;
         if (n < 0) return error.Io;
         if (n == 0) {
-            out("\n");
+            try out("\n");
             return if (editor.line.items.len == 0) null else try allocator.dupe(u8, editor.line.items);
         }
         if (interactive and escape == 1) {
@@ -213,7 +213,7 @@ fn readLine(intf: *Intf, history: []const []u8) error{ OutOfMemory, Cancelled, I
                 },
                 else => {},
             }
-            redraw(editor.line.items, editor.cursor, &rendered_columns, ansi);
+            try redraw(editor.line.items, editor.cursor, &rendered_columns, ansi);
             continue;
         }
         if (interactive and byte == 0x1b) {
@@ -222,18 +222,18 @@ fn readLine(intf: *Intf, history: []const []u8) error{ OutOfMemory, Cancelled, I
         }
         switch (byte) {
             '\r', '\n' => {
-                out("\r\n");
+                try out("\r\n");
                 return try allocator.dupe(u8, editor.line.items);
             },
             3 => {
                 if (interactive) {
-                    out("^C\r\n");
+                    try out("^C\r\n");
                     return error.Cancelled;
                 }
             },
             4 => {
                 if (editor.line.items.len == 0) {
-                    out("\n");
+                    try out("\n");
                     return null;
                 }
                 if (interactive) editor.delete();
@@ -257,7 +257,7 @@ fn readLine(intf: *Intf, history: []const []u8) error{ OutOfMemory, Cancelled, I
             },
             else => if (byte >= 32 or byte == '\t') try editor.insert(byte),
         }
-        if (interactive) redraw(editor.line.items, editor.cursor, &rendered_columns, ansi);
+        if (interactive) try redraw(editor.line.items, editor.cursor, &rendered_columns, ansi);
     }
 }
 

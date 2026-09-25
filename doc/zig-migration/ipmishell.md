@@ -23,6 +23,9 @@ about every 30 seconds while idle. `TERM=dumb` (or an unset `TERM`) uses
 carriage returns and backspaces instead of ANSI cursor control. On redirected
 input, the editor still accepts commands without requiring a terminal,
 including a last line with no newline.
+Failed output writes (including zero-byte writes) abort line editing with a
+reported I/O error and restore the terminal instead of continuing to process
+input. Interrupted and partial writes are retried until complete.
 
 Intentional parser differences from the C source: literal `~` inside quotes
 is preserved (C replaces it with a space); `#` starts a script comment only
