@@ -387,6 +387,20 @@ instead enables LAN+ with Zig crypto:
 -Dinternal-md5=true -Dintf-lanplus=true
 -Dzig-modules=lanplus,lanplus-crypt,lanplus-crypt-impl -- --filter lanplus/pong`.
 
+The three selected LAN+ open-session, RAKP 2 and RAKP 4 verbose dumps use
+`util/stdout.zig` to pre-flush buffered C stdout, stream typed Zig output and
+fail explicitly on write or final flush errors. The C ABI, packet layout,
+verbosity threshold, status-failure behavior, lookup tables, SHA256 feature
+gate, and original C source remain unchanged. The legacy spelling, spacing
+and auth-code newline quirks are byte-preserved. With LAN+ enabled,
+`zig build test-lanplus-dump-stdout` compares the original C caller to the
+selected Zig ABI under both SHA256 feature options, including verbosity 0/2,
+success/failure, all auth arms, mixed C/Zig ordering and writer failures.
+Without OpenSSL headers, use `-Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lanplus=true
+-Dzig-modules=lanplus-crypt,lanplus-crypt-impl`; the transport fixture gate
+can additionally select `lanplus,lanplus-dump` to exercise packet parity.
+
 On musl, `src/zig/util/helper.zig` uses Zig's Linux `statx` for no-follow path
 and opened-file checks because the translated `struct stat` is opaque. Its
 verified-file path requires Linux 4.11 or newer; unsupported kernels or
