@@ -1,0 +1,10 @@
+respond get_fru_area_info
+  netfn 0x0a
+  cmd 0x10
+  data 00 01 00
+end
+respond short_read
+  netfn 0x0a
+  cmd 0x11
+  data 08 01 00
+end

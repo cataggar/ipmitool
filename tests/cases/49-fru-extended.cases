@@ -1,0 +1,91 @@
+# Additional FRU oracle coverage. These cases intentionally exercise both
+# file transfer and parser failure paths; the original parser snapshots stay
+# unchanged.
+
+[fru_read_image]
+desc: read the entire 256-byte FRU across transport-sized chunks to a file
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru.tr
+covers: fru
+
+[fru_read_retry]
+desc: a BMC rejects an oversized FRU read once, then accepts smaller chunks
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru_retry.tr
+covers: fru
+
+[fru_write_image]
+desc: write an inventory image through block boundaries after discovering protected regions
+args: -I dummy fru write 0 {work}/inventory.bin
+transcript: fru_write.tr
+blob: inventory.bin fru/board.hex
+covers: fru
+
+[fru_write_missing]
+desc: writing a non-existent file still queries FRU device info
+args: -I dummy fru write 0 {work}/missing.bin
+transcript: fru.tr
+covers: fru
+
+[fru_read_missing_id]
+desc: read rejects an absent FRU id before creating the output file
+args: -I dummy fru read 1 {work}/inventory.bin
+transcript: fru_no_device.tr
+covers: fru
+
+[fru_print_id_max]
+desc: numeric FRU id 255 is accepted and sent as one byte
+args: -I dummy fru print 255
+transcript: fru_no_device.tr
+covers: fru
+
+[fru_print_id_overflow]
+desc: a value outside the FRU id byte range is rejected without IPMI reads
+args: -I dummy fru print 256
+covers: fru
+
+[fru_read_no_filename]
+desc: read without required file path reports usage without querying BMC
+args: -I dummy fru read 0
+covers: fru
+
+[fru_write_no_filename]
+desc: write without required file path reports usage without querying BMC
+args: -I dummy fru write 0
+covers: fru
+
+[fru_print_short_data]
+desc: read FRU Data advertises eight bytes but carries only two
+args: -I dummy fru print 0
+transcript: fru_short_data.tr
+covers: fru
+
+[fru_print_zero_count]
+desc: a zero-length FRU read does not spin forever on incomplete inventory
+args: -I dummy fru print 0
+transcript: fru_zero_count.tr
+covers: fru
+
+[fru_read_short_data]
+desc: read-to-file with an inconsistent count and short response
+args: -I dummy fru read 0 {work}/inventory.bin
+transcript: fru_short_data.tr
+covers: fru
+
+[fru_print_word_access]
+desc: word-addressed eight-byte FRU common header with no additional areas
+args: -I dummy fru print 0
+transcript: fru_word_access.tr
+covers: fru
+
+[fru_print_oem_multirecord]
+desc: nonzero high byte of 24-bit OEM IANA and DC load in multirecord area
+args: -I dummy -v fru print 0
+transcript: fru_multirecord_oem.tr
+covers: fru
+
+[fru_print_sdr_locator]
+desc: discover a second logical FRU via an SDR locator and read device id 7
+args: -I dummy fru print
+transcript: fru_sdr_locator.tr
+covers: fru sdr
