@@ -82,6 +82,7 @@
 #include <ipmitool/ipmi_time.h>
 #include <ipmitool/ipmi_tsol.h>
 #include <ipmitool/ipmi_user.h>
+#include <ipmitool/ipmi_vita.h>
 #include <ipmitool/hpm2.h>
 
 /*

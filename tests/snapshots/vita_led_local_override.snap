@@ -1,0 +1,23 @@
+#!golden 1
+#!case vita_led_local_override
+#!section exit
+0
+#!section stdout
+LED states:                   3\t[LOCAL CONTROL] [OVERRIDE]\x20
+  Local Control function:     1\t[BLINKING]
+  Local Control On-Duration:  22
+  Local Control Color:        4\t[AMBER]
+  Override function:     0\t[OFF]
+  Override On-Duration:  0
+  Override Color:        3\t[GREEN]
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=vita_discover ccode=0x00 len=7 data=03 11 10 00 01 01 00
+> netfn=0x2c lun=0x00 cmd=0x40 target_cmd=0x00 data=03
+< rule=vita_ipmb ccode=0x00 len=7 data=03 41 82 ff 00 01 00
+> netfn=0x2c lun=0x00 cmd=0x08 target_cmd=0x00 data=03 00 04
+< rule=led_local_override ccode=0x00 len=8 data=03 03 01 22 04 00 00 03
+bye

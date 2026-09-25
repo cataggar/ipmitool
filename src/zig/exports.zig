@@ -103,6 +103,9 @@ comptime {
     if (selected("isol")) {
         @import("cmd/isol.zig").exportSymbols();
     }
+    if (selected("vita")) {
+        @import("cmd/vita.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

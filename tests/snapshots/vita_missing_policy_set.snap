@@ -1,0 +1,21 @@
+#!golden 1
+#!case vita_missing_policy_set
+#!section exit
+1
+#!section stdout
+#!section stderr
+usage: policy set <FRU-ID> <MASK> <VALUE>
+    MASK:  [3] affect the Default-Activation-Locked Policy Bit
+           [2] affect the Commanded-Deactivation-Ignored Policy Bit
+           [1] affect the Deactivation-Locked Policy Bit
+           [0] affect the Activation-Locked Policy Bit
+    VALUE: [3] value for the Default-Activation-Locked Policy Bit
+           [2] value for the Commanded-Deactivation-Ignored Policy Bit
+           [1] value for the Deactivation-Locked Policy Bit
+           [0] value for the Activation-Locked Policy Bit
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+bye

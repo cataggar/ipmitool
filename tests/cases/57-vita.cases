@@ -1,0 +1,430 @@
+# C-oracle fixtures for all reachable VITA 46.11 CLI commands, including
+# discover/IPMB acquisition (all cases use the dummy interface).
+
+[vita_full_properties]
+args: -I dummy vita properties
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_addr_default]
+args: -I dummy vita addrinfo
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_addr_255]
+args: -I dummy vita addrinfo 0xff
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_activate_0]
+args: -I dummy vita activate 0
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_deactivate_255]
+args: -I dummy vita deactivate 255
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_frucontrol]
+args: -I dummy vita frucontrol 255 3
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_frucontrol_unknown]
+args: -I dummy vita frucontrol 0 255
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_policy_get]
+args: -I dummy vita policy get 0
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_policy_set]
+args: -I dummy vita policy set 255 0x0f 0x05
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_led_prop]
+args: -I dummy vita led prop 255
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_led_cap]
+args: -I dummy vita led cap 0 255
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_led_get]
+args: -I dummy vita led get 0 0
+transcript: vita_full.tr
+covers: vita
+
+[vita_full_led_set]
+args: -I dummy vita led set 255 255 251 127 15
+transcript: vita_full.tr
+covers: vita
+
+[vita_led_local_off]
+args: -I dummy vita led get 0 1
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_override_on]
+args: -I dummy vita led get 0 2
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_lamptest]
+args: -I dummy vita led get 0 3
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_local_override]
+args: -I dummy vita led get 0 4
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_short_override]
+args: -I dummy vita led get 0 5
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_short_lamp]
+args: -I dummy vita led get 0 6
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_bad_group]
+args: -I dummy vita led get 0 7
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_cap_long]
+args: -I dummy vita led cap 0 2
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_cap_short]
+args: -I dummy vita led cap 0 3
+transcript: vita_states.tr
+covers: vita
+
+[vita_led_cap_no_flags]
+args: -I dummy vita led cap 0 4
+transcript: vita_states.tr
+covers: vita
+
+# The two top-level dispatchers (`policy` and `led`) have no default action.
+[vita_unknown_policy]
+args: -I dummy vita policy
+covers: vita
+
+[vita_unknown_policy_sub]
+args: -I dummy vita policy nope 0
+covers: vita
+
+[vita_unknown_led]
+args: -I dummy vita led
+covers: vita
+
+[vita_unknown_led_sub]
+args: -I dummy vita led nope 0
+covers: vita
+
+[vita_help_subcommand]
+args: -I dummy vita help led set
+covers: vita
+
+[vita_missing_control]
+args: -I dummy vita frucontrol 0
+covers: vita
+
+[vita_missing_activate]
+args: -I dummy vita activate
+covers: vita
+
+[vita_missing_deactivate]
+args: -I dummy vita deactivate
+covers: vita
+
+[vita_missing_policy_get]
+args: -I dummy vita policy get
+covers: vita
+
+[vita_missing_policy_set]
+args: -I dummy vita policy set 0 1
+covers: vita
+
+[vita_missing_led_prop]
+args: -I dummy vita led prop
+covers: vita
+
+[vita_missing_led_cap]
+args: -I dummy vita led cap 0
+covers: vita
+
+[vita_missing_led_get]
+args: -I dummy vita led get 0
+covers: vita
+
+[vita_missing_led_set]
+args: -I dummy vita led set 0 1 2 3
+covers: vita
+
+[vita_invalid_addr_256]
+args: -I dummy vita addrinfo 256
+covers: vita
+
+[vita_invalid_addr_text]
+args: -I dummy vita addrinfo foo
+covers: vita
+
+[vita_invalid_activate]
+args: -I dummy vita activate 0x100
+covers: vita
+
+[vita_invalid_deactivate]
+args: -I dummy vita deactivate 0x100
+covers: vita
+
+[vita_invalid_control_fru]
+args: -I dummy vita frucontrol 256 0
+covers: vita
+
+[vita_invalid_control_option]
+args: -I dummy vita frucontrol 0 256
+covers: vita
+
+[vita_invalid_policy_get]
+args: -I dummy vita policy get x
+covers: vita
+
+[vita_invalid_policy_mask]
+args: -I dummy vita policy set 0 256 1
+covers: vita
+
+[vita_invalid_policy_value]
+args: -I dummy vita policy set 0 1 256
+covers: vita
+
+[vita_invalid_led_prop]
+args: -I dummy vita led prop 256
+covers: vita
+
+[vita_invalid_led_cap]
+args: -I dummy vita led cap 0 256
+covers: vita
+
+[vita_invalid_led_get]
+args: -I dummy vita led get 256 0
+covers: vita
+
+[vita_invalid_led_function]
+args: -I dummy vita led set 0 1 256 1 1
+covers: vita
+
+[vita_invalid_led_duration]
+args: -I dummy vita led set 0 1 1 256 1
+covers: vita
+
+[vita_invalid_led_color]
+args: -I dummy vita led set 0 1 1 1 256
+covers: vita
+
+# Each operation has a rejection, a too-short reply, and an incorrect group.
+[vita_reject_properties]
+args: -I dummy vita properties
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_properties]
+args: -I dummy vita properties
+transcript: vita_short.tr
+covers: vita
+[vita_group_properties]
+args: -I dummy vita properties
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_addr]
+args: -I dummy vita addrinfo
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_addr]
+args: -I dummy vita addrinfo
+transcript: vita_short.tr
+covers: vita
+[vita_group_addr]
+args: -I dummy vita addrinfo
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_control]
+args: -I dummy vita frucontrol 0 1
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_control]
+args: -I dummy vita frucontrol 0 1
+transcript: vita_short.tr
+covers: vita
+[vita_group_control]
+args: -I dummy vita frucontrol 0 1
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_activate]
+args: -I dummy vita activate 0
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_activate]
+args: -I dummy vita activate 0
+transcript: vita_short.tr
+covers: vita
+[vita_group_activate]
+args: -I dummy vita activate 0
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_deactivate]
+args: -I dummy vita deactivate 0
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_deactivate]
+args: -I dummy vita deactivate 0
+transcript: vita_short.tr
+covers: vita
+[vita_group_deactivate]
+args: -I dummy vita deactivate 0
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_policy_get]
+args: -I dummy vita policy get 0
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_policy_get]
+args: -I dummy vita policy get 0
+transcript: vita_short.tr
+covers: vita
+[vita_group_policy_get]
+args: -I dummy vita policy get 0
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_policy_set]
+args: -I dummy vita policy set 0 1 1
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_policy_set]
+args: -I dummy vita policy set 0 1 1
+transcript: vita_short.tr
+covers: vita
+[vita_group_policy_set]
+args: -I dummy vita policy set 0 1 1
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_led_prop]
+args: -I dummy vita led prop 0
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_led_prop]
+args: -I dummy vita led prop 0
+transcript: vita_short.tr
+covers: vita
+[vita_group_led_prop]
+args: -I dummy vita led prop 0
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_led_cap]
+args: -I dummy vita led cap 0 1
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_led_cap]
+args: -I dummy vita led cap 0 1
+transcript: vita_short.tr
+covers: vita
+[vita_group_led_cap]
+args: -I dummy vita led cap 0 1
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_led_get]
+args: -I dummy vita led get 0 1
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_led_get]
+args: -I dummy vita led get 0 1
+transcript: vita_short.tr
+covers: vita
+[vita_group_led_get]
+args: -I dummy vita led get 0 1
+transcript: vita_wrong_group.tr
+covers: vita
+
+[vita_reject_led_set]
+args: -I dummy vita led set 0 1 1 1 1
+transcript: vita_rejected.tr
+covers: vita
+[vita_short_led_set]
+args: -I dummy vita led set 0 1 1 1 1
+transcript: vita_short.tr
+covers: vita
+[vita_group_led_set]
+args: -I dummy vita led set 0 1 1 1 1
+transcript: vita_wrong_group.tr
+covers: vita
+
+# `-v` exposes discovery's LOG_INFO branches and IPMB acquisition's LOG_ERR
+# diagnostics, in addition to checking their on-the-wire request lengths.
+[vita_probe_ccode]
+args: -v -I dummy vita help
+transcript: vita_probe_ccode.tr
+covers: vita
+
+[vita_probe_short]
+args: -v -I dummy vita help
+transcript: vita_probe_short.tr
+covers: vita
+
+[vita_probe_group]
+args: -v -I dummy vita help
+transcript: vita_probe_group.tr
+covers: vita
+
+[vita_probe_standard]
+args: -v -I dummy vita help
+transcript: vita_probe_standard.tr
+covers: vita
+
+[vita_probe_revision]
+args: -v -I dummy vita help
+transcript: vita_probe_revision.tr
+covers: vita
+
+[vita_ipmb_reject]
+args: -v -I dummy vita help
+transcript: vita_ipmb_reject.tr
+covers: vita
+
+[vita_ipmb_short]
+args: -v -I dummy vita help
+transcript: vita_ipmb_short.tr
+covers: vita
+
+[vita_ipmb_group]
+args: -v -I dummy vita help
+transcript: vita_ipmb_group.tr
+covers: vita
+
+[vita_props_reserved_standard]
+args: -v -I dummy vita properties
+transcript: vita_probe_standard.tr
+covers: vita
+
+[vita_props_reserved_frequency]
+args: -v -I dummy vita properties
+transcript: vita_probe_revision.tr
+covers: vita

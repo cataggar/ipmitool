@@ -1,0 +1,76 @@
+#!golden 1
+#!case vita_ipmb_reject
+#!section exit
+0
+#!section stdout
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 7
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Discovered VITA 46.11 Revision 1.0
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 40
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c9
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 40
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Parameter out of range
+Discovered IPMB address 0x0
+VITA commands:
+    properties        - get VSO properties
+    frucontrol        - FRU control
+    addrinfo          - get address information
+    activate          - activate a FRU
+    deactivate        - deactivate a FRU
+    policy get        - get the FRU activation policy
+    policy set        - set the FRU activation policy
+    led prop          - get led properties
+    led cap           - get led color capabilities
+    led get           - get led state
+    led set           - set led state
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=discovered ccode=0x00 len=7 data=03 11 10 00 01 01 00
+> netfn=0x2c lun=0x00 cmd=0x40 target_cmd=0x00 data=03
+< rule=rejected_ipmb_address ccode=0xc9 len=0 data=
+bye

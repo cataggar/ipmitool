@@ -408,7 +408,12 @@ Current parser fixtures:
 
 PICMG and VITA records are exercised through `transcripts/picmg.tr` and
 `transcripts/vita.tr`, since those records are only ever seen as command
-responses rather than as stored structures.
+responses rather than as stored structures. `cases/57-vita.cases` and its
+`vita_*.tr` transcripts also pin every VITA 46.11 subcommand: discovery and
+IPMB address acquisition, boundary FRU/LED IDs, nested help and invalid
+arguments, successful LED/local/override/lamp-test decoding, completion-code
+rejections, wrong group identifiers, and short replies. Regenerate these
+snapshots from a C build **before** changing the Zig replacement.
 
 `-Dzig-modules=quantaoem` replaces the two Quanta SEL helpers, not a standalone
 CLI command. The `sl_quanta_list` and `slq_*` cases exercise them through

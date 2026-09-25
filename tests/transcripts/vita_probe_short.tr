@@ -1,0 +1,7 @@
+default_ccode 0xc1
+respond incomplete_properties
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  data 03 11 10 00
+end

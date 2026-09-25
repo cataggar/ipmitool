@@ -1,0 +1,7 @@
+default_ccode 0xc1
+respond unknown_standard
+  netfn 0x2c
+  cmd 0x00
+  match 03
+  data 03 33 22 03 01 fe ff
+end
