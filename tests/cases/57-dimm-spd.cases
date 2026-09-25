@@ -1,0 +1,55 @@
+# C decoder reference output for all three supported layouts, via the
+# raw I2C reader (DDR3) and the FRU SPD locator (DDR2 and DDR4).
+[dimm_spd_ddr2]
+desc: legacy DDR2 fields and JEDEC continuation bank 2
+args: -I dummy fru
+transcript: spd_fru_ddr2.tr
+covers: fru
+
+[dimm_spd_ddr4]
+desc: DDR4 3DS logical ranks, capacity, manufacturer, date and 20-byte part
+args: -I dummy fru
+transcript: spd_fru_ddr4.tr
+covers: fru
+
+[dimm_spd_ddr3_verbose]
+desc: DDR3 raw SPD reader with verbose printbuf dump
+args: -I dummy -v spd 0 0xa0
+transcript: spd.tr
+covers: spd
+
+[dimm_spd_unknown_vendor]
+desc: DDR3 manufacturer continuation bank outside the JEP106 lookup tables
+args: -I dummy spd 0 0xa0
+transcript: spd_unknown_vendor.tr
+covers: spd
+
+[dimm_spd_truncated_ddr4]
+desc: 348 bytes cannot supply the twentieth DDR4 part-number byte
+args: -I dummy fru
+transcript: spd_fru_short_ddr4.tr
+covers: fru
+
+[dimm_spd_short_info]
+desc: three Get FRU Info bytes are required before reading the SPD size
+args: -I dummy fru
+transcript: spd_fru_short_info.tr
+covers: fru
+
+[dimm_spd_zero_chunk]
+desc: zero-length Read FRU Data must fail rather than loop forever
+args: -I dummy fru
+transcript: spd_fru_zero_chunk.tr
+covers: fru
+
+[dimm_spd_bad_count]
+desc: reject read responses whose claimed count exceeds the reply length
+args: -I dummy fru
+transcript: spd_fru_bad_count.tr
+covers: fru
+
+[dimm_spd_timeout]
+desc: FRU timeout retains the distinguished positive status of one
+args: -I dummy fru
+transcript: spd_fru_timeout.tr
+covers: fru

@@ -297,6 +297,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/fru.zig",
     },
     .{
+        .name = "dimm-spd",
+        .replaces = "lib/dimm_spd.c",
+        .implementation = "src/zig/cmd/dimm_spd.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",

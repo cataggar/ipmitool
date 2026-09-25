@@ -1,0 +1,16 @@
+# Legacy (DDR2) SPD, 256 bytes. The C printer uses its legacy layout for
+# everything except type 0x0b / 0x0c, including unknown memory types.
+80 08 08 0d 0a 02 00 00 04
+@pad 2 0x00
+02
+@pad 5 0x00
+02
+@pad 46 0x00
+# Manufacturer: bank 2, Kingston (continuation then 0x98).
+7f 98
+@pad 7 0x00
+# 18-byte legacy part number, terminated by the C printer at 18 bytes.
+44 44 52 32 2d 50 41 52 54 2d 30 31 32 33 34 35 20 20
+@pad 4 0x00
+01 23 45 67
+@pad 157 0x00

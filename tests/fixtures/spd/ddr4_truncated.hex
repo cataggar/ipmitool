@@ -1,0 +1,3 @@
+# Up to byte 347, one byte short of the DDR4 part-number field.
+@spd/ddr4.hex
+@truncate 348

@@ -130,13 +130,38 @@ type that has no mirror assertion.
 Exposing another header is one `#include` in `src/zig/ipmi_c.h`.
 
 Not every C symbol has a header. `lib/ipmi_raw.c` defines `ipmi_raw_help()` and
-`lib/dimm_spd.c` defines `ipmi_spd_print()`, both with external linkage and
-neither declared in `include/ipmitool/`. Because `extern fn` is not allowed,
-`ipmi_c.h` carries a short block of such prototypes at the bottom, each copied
-from the definition it describes so that a change to either becomes a C compile
-error in the defining translation unit rather than a silent ABI mismatch. Add to
-that block only when no header declares the symbol, and delete the entry when
-the defining `.c` is ported.
+`lib/dimm_spd.c` defines `ipmi_spd_print()` and `ipmi_spd_print_fru()`, all with
+external linkage but no public prototype. Because `extern fn` is not allowed,
+`ipmi_c.h` carries these prototypes so the Zig replacement can check its ABI
+and the Zig raw-SPD reader can call the SPD printer. Keep a prototype while
+another Zig module uses it or the port needs its C signature for an assertion.
+
+The `dimm-spd` swap replaces the complete printer and FRU reader, including
+all twenty externally linked SPD/JEP106 lookup tables. Regenerate the Zig tables
+from the original C data with `python3 tools/gen-spd-tables.py`; `--check`
+verifies that the generated file is current. The printer retains the C output:
+the type byte is at index 2 and a file shorter than 92 bytes fails without
+output. Otherwise it prints `Memory Type` before checking its type-specific
+length:
+
+| SPD type | C field layout | Required bytes | Manufacturer |
+| --- | --- | ---: | --- |
+| `0x0b` DDR3 | density/banks, bus/device widths, ranks, voltage/ECC, date, 18-byte part | 148 | bank/code at 117/118 |
+| `0x0c` DDR4 | package/technology, 3DS logical ranks, density, widths, voltage/ECC, date, 20-byte part | **349** | bank/code at 320/321 |
+| all other types (including DDR, DDR2 and unknown types) | legacy size/voltage/ECC, optional 18-byte part, serial | 100 | `0x7f` continuations at 64–71, code through 72 |
+
+The C DDR4 check accepted 348 bytes, then read part-number byte 348 out of
+bounds; the Zig check requires 349. Manufacturer banks 0–8 use the original
+JEP106 tables; newer DDR3/DDR4 banks print `JEDEC JEP106 update required`.
+The C decoder does not validate SPD-header byte counts or JEDEC CRCs; the Zig
+decoder intentionally does not discard otherwise readable SPD images on those
+grounds. The C FRU wrapper read 16-byte chunks but ignored the decoder's
+return status and could spin on a successful zero-byte read. The Zig wrapper
+validates Get FRU Info and Read FRU Data response lengths before accessing
+them, rejects a zero-byte read, and propagates truncation errors. No-response
+and completion-code messages, including the distinct `0xc3` timeout return
+value of 1, stay unchanged. C-backed DDR2/DDR3/DDR4 outputs and malformed FRU
+cases are pinned in `tests/cases/57-dimm-spd.cases`.
 
 ### C calling Zig: `export` with the original signature
 

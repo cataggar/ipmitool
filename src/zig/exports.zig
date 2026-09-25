@@ -124,6 +124,9 @@ comptime {
     if (selected("fru")) {
         @import("cmd/fru.zig").exportSymbols();
     }
+    if (selected("dimm-spd")) {
+        @import("cmd/dimm_spd.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

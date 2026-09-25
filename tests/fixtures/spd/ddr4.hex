@@ -1,0 +1,15 @@
+# DDR4 SPD, 512 bytes. Byte 4 encodes 4 Gb, two bank groups and eight banks;
+# byte 6 selects a two-die 3DS stack. CRC bytes are intentionally zero: the
+# ipmitool SPD printer displays fields but does not verify the JEDEC CRC.
+23 11 0c 02 54 00 92 00 00 00 00 3f 0b 0b
+@pad 306 0x00
+# [320:321] bank 2, Kingston
+01 98
+00
+# [323:324] year 2025, week 37
+25 37
+# [325:328] serial
+aa bb cc dd
+# [329:348] part number, exactly 20 ASCII bytes
+44 44 52 34 2d 54 45 53 54 2d 58 59 5a 2d 31 32 33 34 35 36
+@pad 163 0x00
