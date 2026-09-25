@@ -108,6 +108,13 @@ transcript: sd_cache.tr
 blob: cache.bin sdr/sd_cache_bodyshort.hex
 covers: sdr
 
+[sd_log_cache_numeric]
+desc: C oracle logs raw header hex bytes and signed decimal read/expected sizes for truncated cached record
+args: -I dummy -vvv -S {work}/cache.bin sdr list
+transcript: sd_cache.tr
+blob: cache.bin sdr/sd_cache_bodyshort.hex
+covers: sdr
+
 [sd_cache_unktype]
 desc: -S cache file holding an unfiled record type
 args: -I dummy -S {work}/cache.bin sdr list

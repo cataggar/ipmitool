@@ -36,6 +36,12 @@
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sdr` is selected.
 //!
+//! * **Diagnostics use the logger in that same archive.** `log.print()` keeps
+//!   the original C printf formats and argument widths; it forwards to
+//!   `lib/log.c` when `log` is not selected and shares the exported Zig logger
+//!   state when it is. The repository and cache diagnostics are pinned by
+//!   the `sd_log_*` C-oracle snapshots.
+//!
 //! Allocation: `malloc`/`calloc`/`realloc`/`free` through the bridge, because
 //! the SDR cache is walked and freed by C code in `lib/ipmi_sensor.c`,
 //! `lib/ipmi_fru.c` and `lib/ipmi_sdradd.c`.
@@ -47,6 +53,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("../intf/intf.zig");
+const log = @import("../util/log.zig");
 
 const Intf = intf_mod.Intf;
 const Request = ipmi.Request;
@@ -1609,7 +1616,7 @@ fn getSensorReadingIpmb(
 ) callconv(.c) ?*Response {
     var sensor_num = sensor;
     if (bridgeToSensor(intf, target, channel)) {
-        c.lprintf(c.LOG_DEBUG, "Bridge to Sensor Intf my/%#x tgt/%#x:%#x Sdr tgt/%#x:%#x\n", intf.my_addr, intf.target_addr, intf.target_channel, target, channel);
+        log.print(c.LOG_DEBUG, "Bridge to Sensor Intf my/%#x tgt/%#x:%#x Sdr tgt/%#x:%#x\n", .{ intf.my_addr, intf.target_addr, intf.target_channel, target, channel });
     }
     const bridge = Bridge.begin(intf, target, channel);
 
@@ -1738,20 +1745,20 @@ fn getHeader(intf: *Intf, itr: *SdrIterator) ?*SdrGetRs {
         sdr_rq.reserve_id = itr.reservation;
         rsp = sendrecv(intf, &req);
         if (rsp == null) {
-            c.lprintf(c.LOG_ERR, "Get SDR %04x command failed", itr.next);
+            log.print(c.LOG_ERR, "Get SDR %04x command failed", .{itr.next});
             continue;
         } else if (rsp.?.ccode == 0xc5) {
             // Lost reservation.
-            c.lprintf(c.LOG_DEBUG, "SDR reservation %04x cancelled. Sleeping a bit and retrying...", itr.reservation);
+            log.print(c.LOG_DEBUG, "SDR reservation %04x cancelled. Sleeping a bit and retrying...", .{itr.reservation});
 
             _ = c.sleep(@bitCast(c.rand() & 3));
 
             if (getReservation(intf, itr.use_built_in, &itr.reservation) < 0) {
-                c.lprintf(c.LOG_ERR, "Unable to renew SDR reservation");
+                log.print(c.LOG_ERR, "Unable to renew SDR reservation", .{});
                 return null;
             }
         } else if (rsp.?.ccode != 0) {
-            c.lprintf(c.LOG_ERR, "Get SDR %04x command failed: %s", itr.next, ccString(rsp.?.ccode));
+            log.print(c.LOG_ERR, "Get SDR %04x command failed: %s", .{ itr.next, ccString(rsp.?.ccode) });
             continue;
         } else {
             break;
@@ -1762,11 +1769,11 @@ fn getHeader(intf: *Intf, itr: *SdrIterator) ?*SdrGetRs {
     const reply = rsp orelse return null;
 
     if (reply.data_len < 2 + 5) {
-        c.lprintf(c.LOG_ERR, "Short Get SDR header response for record 0x%04x", itr.next);
+        log.print(c.LOG_ERR, "Short Get SDR header response for record 0x%04x", .{itr.next});
         return null;
     }
 
-    c.lprintf(c.LOG_DEBUG, "SDR record ID   : 0x%04x", itr.next);
+    log.print(c.LOG_DEBUG, "SDR record ID   : 0x%04x", .{itr.next});
 
     @memcpy(
         std.mem.asBytes(&sdr_rs_static),
@@ -1774,7 +1781,7 @@ fn getHeader(intf: *Intf, itr: *SdrIterator) ?*SdrGetRs {
     );
 
     if (sdr_rs_static.length == 0) {
-        c.lprintf(c.LOG_ERR, "SDR record id 0x%04x: invalid length %d", itr.next, sdr_rs_static.length);
+        log.print(c.LOG_ERR, "SDR record id 0x%04x: invalid length %d", .{ itr.next, sdr_rs_static.length });
         return null;
     }
 
@@ -1782,13 +1789,13 @@ fn getHeader(intf: *Intf, itr: *SdrIterator) ?*SdrGetRs {
     // original back so the follow-up body read does not fail with 0xcb.  The
     // record ID 0000h is the documented exception (IPMI v2.0 section 33.12).
     if (itr.next != 0x0000 and sdr_rs_static.id != itr.next) {
-        c.lprintf(c.LOG_DEBUG, "SDR record id mismatch: 0x%04x", sdr_rs_static.id);
+        log.print(c.LOG_DEBUG, "SDR record id mismatch: 0x%04x", .{sdr_rs_static.id});
         sdr_rs_static.id = @truncate(@as(c_uint, @bitCast(itr.next)));
     }
 
-    c.lprintf(c.LOG_DEBUG, "SDR record type : 0x%02x", sdr_rs_static.type);
-    c.lprintf(c.LOG_DEBUG, "SDR record next : 0x%04x", sdr_rs_static.next);
-    c.lprintf(c.LOG_DEBUG, "SDR record bytes: %d", sdr_rs_static.length);
+    log.print(c.LOG_DEBUG, "SDR record type : 0x%02x", .{sdr_rs_static.type});
+    log.print(c.LOG_DEBUG, "SDR record next : 0x%04x", .{sdr_rs_static.next});
+    log.print(c.LOG_DEBUG, "SDR record bytes: %d", .{sdr_rs_static.length});
 
     return &sdr_rs_static;
 }
@@ -1840,19 +1847,23 @@ fn printSensorEventStatus(
     channel: u8,
 ) callconv(.c) c_int {
     const rsp = getSensorEventStatus(intf, sensor_num, target, lun, channel) orelse {
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Error reading event status for sensor #%02x",
-            @as(c_uint, sensor_num),
+            .{
+                @as(c_uint, sensor_num),
+            },
         );
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Error reading event status for sensor #%02x: %s",
-            @as(c_uint, sensor_num),
-            ccString(rsp.ccode),
+            .{
+                @as(c_uint, sensor_num),
+                ccString(rsp.ccode),
+            },
         );
         return -1;
     }
@@ -1956,19 +1967,23 @@ fn printSensorEventEnable(
     channel: u8,
 ) callconv(.c) c_int {
     const rsp = getSensorEventEnable(intf, sensor_num, target, lun, channel) orelse {
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Error reading event enable for sensor #%02x",
-            @as(c_uint, sensor_num),
+            .{
+                @as(c_uint, sensor_num),
+            },
         );
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Error reading event enable for sensor #%02x: %s",
-            @as(c_uint, sensor_num),
-            ccString(rsp.ccode),
+            .{
+                @as(c_uint, sensor_num),
+                ccString(rsp.ccode),
+            },
         );
         return -1;
     }
@@ -2188,11 +2203,13 @@ fn readSensorValue(
     sr.s_a_units = "";
 
     const rsp = rsp_opt orelse {
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Error reading sensor %s (#%02x)",
-            &sr.s_id,
-            @as(c_uint, sensor.keys.sensor_num),
+            .{
+                &sr.s_id,
+                @as(c_uint, sensor.keys.sensor_num),
+            },
         );
         return sr;
     };
@@ -2201,12 +2218,14 @@ fn readSensorValue(
         if (!((sr.full != null and rsp.ccode == 0xcb) or
             (sr.compact != null and rsp.ccode == 0xcd)))
         {
-            c.lprintf(
+            log.print(
                 c.LOG_DEBUG,
                 "Error reading sensor %s (#%02x): %s",
-                &sr.s_id,
-                @as(c_uint, sensor.keys.sensor_num),
-                ccString(rsp.ccode),
+                .{
+                    &sr.s_id,
+                    @as(c_uint, sensor.keys.sensor_num),
+                    ccString(rsp.ccode),
+                },
             );
         }
         return sr;
@@ -2215,11 +2234,13 @@ fn readSensorValue(
     if (rsp.data_len < 2) {
         // Both the value (data[0]) and its validity (data[1]) are needed to
         // interpret the reading.
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Error reading sensor %s invalid len %d",
-            &sr.s_id,
-            rsp.data_len,
+            .{
+                &sr.s_id,
+                rsp.data_len,
+            },
         );
         return sr;
     }
@@ -2230,11 +2251,13 @@ fn readSensorValue(
 
     if (isScanningDisabled(rsp.data[1])) {
         sr.s_scanning_disabled = 1;
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Sensor %s (#%02x) scanning disabled",
-            &sr.s_id,
-            @as(c_uint, sensor.keys.sensor_num),
+            .{
+                &sr.s_id,
+                @as(c_uint, sensor.keys.sensor_num),
+            },
         );
         return sr;
     }
@@ -2484,10 +2507,12 @@ fn printSensorFc(intf: *Intf, sensor: *CommonSensor, sdr_record_type: u8) callco
             c.ipmi_get_sensor_type(cIntf(intf), sensor.sensor.type),
             @as(c_uint, sensor.sensor.type),
         );
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             " Event Type Code       : 0x%02x",
-            @as(c_uint, sensor.event_type),
+            .{
+                @as(c_uint, sensor.event_type),
+            },
         );
 
         _ = c.printf(" Sensor Reading        : ");
@@ -2850,10 +2875,12 @@ fn printSensorEventonly(intf: *Intf, sensor_opt: ?*EventonlySensor) callconv(.c)
             c.ipmi_get_sensor_type(cIntf(intf), sensor.sensor_type),
             @as(c_uint, sensor.sensor_type),
         );
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Event Type Code        : 0x%02x",
-            @as(c_uint, sensor.event_type),
+            .{
+                @as(c_uint, sensor.event_type),
+            },
         );
         _ = c.printf("\n");
     } else {
@@ -3198,10 +3225,12 @@ fn printSensorOemIntel(oem: *SdrRecordOem) c_int {
         // Speed Control: all three are empty cases upstream.
         0x03, 0x06, 0x07 => {},
         else => {
-            c.lprintf(
+            log.print(
                 c.LOG_DEBUG,
                 "Unknown Intel OEM SDR Record type %02x",
-                @as(c_uint, data[3]),
+                .{
+                    @as(c_uint, data[3]),
+                },
             );
         },
     }
@@ -3275,7 +3304,7 @@ fn printNameFromRawentry(id: u16, rtype: u8, raw: ?[*]u8) callconv(.c) c_int {
         _ = c.snprintf(&desc, desc.len, "%.*s", @as(c_int, (id_code & 0x1f)) + 1, id_string);
     }
 
-    c.lprintf(c.LOG_INFO, "ID: 0x%04x , NAME: %-16s", @as(c_uint, id), &desc);
+    log.print(c.LOG_INFO, "ID: 0x%04x , NAME: %-16s", .{ @as(c_uint, id), &desc });
     return rc;
 }
 
@@ -3357,12 +3386,12 @@ fn printListentry(intf: *Intf, entry: *SdrRecordList) callconv(.c) c_int {
 fn printSdr(intf: *Intf, rtype: u8) callconv(.c) c_int {
     var rc: c_int = 0;
 
-    c.lprintf(c.LOG_DEBUG, "Querying SDR for sensor list");
+    log.print(c.LOG_DEBUG, "Querying SDR for sensor list", .{});
 
     if (sdr_list_itr == null) {
         sdr_list_itr = sdrStart(intf, 0);
         if (sdr_list_itr == null) {
-            c.lprintf(c.LOG_ERR, "Unable to open SDR for reading");
+            log.print(c.LOG_ERR, "Unable to open SDR for reading", .{});
             return -1;
         }
     }
@@ -3378,14 +3407,14 @@ fn printSdr(intf: *Intf, rtype: u8) callconv(.c) c_int {
 
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const rec = getRecord(intf, header, sdr_list_itr.?) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: ipmi_sdr_get_record() failed");
+            log.print(c.LOG_ERR, "ipmitool: ipmi_sdr_get_record() failed", .{});
             rc = -1;
             continue;
         };
 
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 c.free(rec);
                 break;
             },
@@ -3410,7 +3439,7 @@ fn printSdr(intf: *Intf, rtype: u8) callconv(.c) c_int {
             },
         }
 
-        c.lprintf(c.LOG_DEBUG, "SDR record ID   : 0x%04x", @as(c_uint, sdrr.id));
+        log.print(c.LOG_DEBUG, "SDR record ID   : 0x%04x", .{@as(c_uint, sdrr.id)});
 
         if (rtype == header.type or rtype == 0xff or
             (rtype == 0xfe and
@@ -3449,7 +3478,7 @@ fn getReservation(intf: *Intf, use_builtin: c_int, reserve_id: *u16) callconv(.c
 
     // `struct sdr_reserve_repo_rs` is a bare little endian `uint16_t`.
     reserve_id.* = std.mem.bytesToValue(u16, rsp.data[0..2]);
-    c.lprintf(c.LOG_DEBUG, "SDR reservation ID %04x", @as(c_uint, reserve_id.*));
+    log.print(c.LOG_DEBUG, "SDR reservation ID %04x", .{@as(c_uint, reserve_id.*)});
 
     return 0;
 }
@@ -3458,7 +3487,7 @@ fn getReservation(intf: *Intf, use_builtin: c_int, reserve_id: *u16) callconv(.c
 fn sdrStart(intf: *Intf, use_builtin: c_int) callconv(.c) ?*SdrIterator {
     const itr: *SdrIterator = @ptrCast(@alignCast(
         c.malloc(@sizeOf(SdrIterator)) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             return null;
         },
     ));
@@ -3470,16 +3499,18 @@ fn sdrStart(intf: *Intf, use_builtin: c_int) callconv(.c) ?*SdrIterator {
     req.msg.data_len = 0;
 
     var rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(c.LOG_ERR, "Get Device ID command failed");
+        log.print(c.LOG_ERR, "Get Device ID command failed", .{});
         c.free(itr);
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             c.LOG_ERR,
             "Get Device ID command failed: %#x %s",
-            @as(c_uint, rsp.ccode),
-            ccString(rsp.ccode),
+            .{
+                @as(c_uint, rsp.ccode),
+                ccString(rsp.ccode),
+            },
         );
         c.free(itr);
         return null;
@@ -3494,15 +3525,15 @@ fn sdrStart(intf: *Intf, use_builtin: c_int) callconv(.c) ?*SdrIterator {
     if (use_builtin == 0 and (devid[1] & c.IPM_DEV_DEVICE_ID_SDR_MASK) != 0) {
         if ((devid[5] & 0x02) == 0) {
             if ((devid[5] & 0x01) != 0) {
-                c.lprintf(c.LOG_DEBUG, "Using Device SDRs\n");
+                log.print(c.LOG_DEBUG, "Using Device SDRs\n", .{});
                 use_built_in = 1;
             } else {
-                c.lprintf(c.LOG_ERR, "Error obtaining SDR info");
+                log.print(c.LOG_ERR, "Error obtaining SDR info", .{});
                 c.free(itr);
                 return null;
             }
         } else {
-            c.lprintf(c.LOG_DEBUG, "Using SDR from Repository \n");
+            log.print(c.LOG_DEBUG, "Using SDR from Repository \n", .{});
         }
     }
     itr.use_built_in = if (use_builtin != 0) 1 else use_built_in;
@@ -3514,12 +3545,12 @@ fn sdrStart(intf: *Intf, use_builtin: c_int) callconv(.c) ?*SdrIterator {
         req.msg.cmd = GET_SDR_REPO_INFO;
 
         rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(c.LOG_ERR, "Error obtaining SDR info");
+            log.print(c.LOG_ERR, "Error obtaining SDR info", .{});
             c.free(itr);
             return null;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(c.LOG_ERR, "Error obtaining SDR info: %s", ccString(rsp.ccode));
+            log.print(c.LOG_ERR, "Error obtaining SDR info: %s", .{ccString(rsp.ccode)});
             c.free(itr);
             return null;
         }
@@ -3530,25 +3561,27 @@ fn sdrStart(intf: *Intf, use_builtin: c_int) callconv(.c) ?*SdrIterator {
             sdr_info.version != 0x01 and
             sdr_info.version != 0x02)
         {
-            c.lprintf(
+            log.print(
                 c.LOG_WARN,
                 "WARNING: Unknown SDR repository version 0x%02x",
-                @as(c_uint, sdr_info.version),
+                .{
+                    @as(c_uint, sdr_info.version),
+                },
             );
         }
 
         itr.total = sdr_info.count;
         itr.next = 0;
 
-        c.lprintf(c.LOG_DEBUG, "SDR free space: %d", @as(c_int, sdr_info.free));
-        c.lprintf(c.LOG_DEBUG, "SDR records   : %d", @as(c_int, sdr_info.count));
+        log.print(c.LOG_DEBUG, "SDR free space: %d", .{@as(c_int, sdr_info.free)});
+        log.print(c.LOG_DEBUG, "SDR records   : %d", .{@as(c_int, sdr_info.count)});
 
         // Build the SDRR if the repository is empty.
         if (sdr_info.count == 0) {
-            c.lprintf(c.LOG_DEBUG, "Rebuilding SDRR...");
+            log.print(c.LOG_DEBUG, "Rebuilding SDRR...", .{});
 
             if (sdrAddFromSensors(intf, 0) != 0) {
-                c.lprintf(c.LOG_ERR, "Could not build SDRR!");
+                log.print(c.LOG_ERR, "Could not build SDRR!", .{});
                 c.free(itr);
                 return null;
             }
@@ -3569,11 +3602,11 @@ fn sdrStart(intf: *Intf, use_builtin: c_int) callconv(.c) ?*SdrIterator {
 
         itr.total = sdr_info.count;
         itr.next = 0;
-        c.lprintf(c.LOG_DEBUG, "SDR records   : %d", @as(c_int, sdr_info.count));
+        log.print(c.LOG_DEBUG, "SDR records   : %d", .{@as(c_int, sdr_info.count)});
     }
 
     if (getReservation(intf, itr.use_built_in, &itr.reservation) < 0) {
-        c.lprintf(c.LOG_ERR, "Unable to obtain SDR reservation");
+        log.print(c.LOG_ERR, "Unable to obtain SDR reservation", .{});
         c.free(itr);
         return null;
     }
@@ -3617,7 +3650,7 @@ fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*
     if (len < 1) return null;
 
     const data: [*]u8 = @ptrCast(c.malloc(@intCast(len + 1)) orelse {
-        c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+        log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
         return null;
     });
     @memset(data[0..@intCast(len + 1)], 0);
@@ -3654,11 +3687,13 @@ fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*
         // Five header bytes.
         sdr_rq.offset = @intCast(i + 5);
 
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Getting %d bytes from SDR at offset %d",
-            @as(c_int, sdr_rq.length),
-            @as(c_int, sdr_rq.offset),
+            .{
+                @as(c_int, sdr_rq.length),
+                @as(c_int, sdr_rq.offset),
+            },
         );
 
         const rsp_opt = sendrecv(intf, &req);
@@ -3675,7 +3710,7 @@ fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*
             }
         } else if (rsp_opt.?.ccode == c.IPMI_CC_RES_CANCELED) {
             // Lost reservation.
-            c.lprintf(c.LOG_DEBUG, "SDR reservation cancelled. Sleeping a bit and retrying...");
+            log.print(c.LOG_DEBUG, "SDR reservation cancelled. Sleeping a bit and retrying...", .{});
 
             _ = c.sleep(@bitCast(c.rand() & 3));
 
@@ -3691,7 +3726,7 @@ fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*
         // The special completion codes are handled above.
         if (rsp.ccode != 0 or rsp.data_len < 2 + @as(c_int, sdr_rq.length)) {
             if (rsp.ccode == 0) {
-                c.lprintf(c.LOG_ERR, "Short Get SDR response for record 0x%04x", @as(c_uint, header.id));
+                log.print(c.LOG_ERR, "Short Get SDR response for record 0x%04x", .{@as(c_uint, header.id)});
             }
             c.free(data);
             return null;
@@ -3702,7 +3737,7 @@ fn getRecord(intf: *Intf, header: *SdrGetRs, itr: *SdrIterator) callconv(.c) ?[*
     }
 
     if (!recordLengthValid(header.type, data[0..@intCast(len)])) {
-        c.lprintf(c.LOG_ERR, "Invalid SDR record length or name for record 0x%04x", @as(c_uint, header.id));
+        log.print(c.LOG_ERR, "Invalid SDR record length or name for record 0x%04x", .{@as(c_uint, header.id)});
         c.free(data);
         return null;
     }
@@ -3723,7 +3758,7 @@ fn sdrListAdd(head: ?*SdrRecordList, entry: *SdrRecordList) c_int {
 
     const new: *SdrRecordList = @ptrCast(@alignCast(
         c.malloc(@sizeOf(SdrRecordList)) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             return -1;
         },
     ));
@@ -3810,7 +3845,7 @@ fn ensureIterator(intf: *Intf) bool {
     if (sdr_list_itr == null) {
         sdr_list_itr = sdrStart(intf, 0);
         if (sdr_list_itr == null) {
-            c.lprintf(c.LOG_ERR, "Unable to open SDR for reading");
+            log.print(c.LOG_ERR, "Unable to open SDR for reading", .{});
             return false;
         }
     }
@@ -3849,7 +3884,7 @@ fn findSdrBynumtype(intf: *Intf, gen_id: u16, num: u8, rtype: u8) callconv(.c) ?
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 break;
             },
         ));
@@ -3902,7 +3937,7 @@ fn findSdrBysensortype(intf: *Intf, rtype: u8) callconv(.c) ?*SdrRecordList {
     // Check what we have already read.
     const head: *SdrRecordList = @ptrCast(@alignCast(
         c.malloc(@sizeOf(SdrRecordList)) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             return null;
         },
     ));
@@ -3925,7 +3960,7 @@ fn findSdrBysensortype(intf: *Intf, rtype: u8) callconv(.c) ?*SdrRecordList {
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 break;
             },
         ));
@@ -3983,7 +4018,7 @@ fn findSdrByentity(intf: *Intf, entity: *EntityId) callconv(.c) ?*SdrRecordList 
 
     const head: *SdrRecordList = @ptrCast(@alignCast(
         c.malloc(@sizeOf(SdrRecordList)) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             return null;
         },
     ));
@@ -4003,7 +4038,7 @@ fn findSdrByentity(intf: *Intf, entity: *EntityId) callconv(.c) ?*SdrRecordList 
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 break;
             },
         ));
@@ -4041,7 +4076,7 @@ fn findSdrBytype(intf: *Intf, rtype: u8) callconv(.c) ?*SdrRecordList {
 
     const head: *SdrRecordList = @ptrCast(@alignCast(
         c.malloc(@sizeOf(SdrRecordList)) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             return null;
         },
     ));
@@ -4057,7 +4092,7 @@ fn findSdrBytype(intf: *Intf, rtype: u8) callconv(.c) ?*SdrRecordList {
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 break;
             },
         ));
@@ -4157,7 +4192,7 @@ fn findSdrByid(intf: *Intf, id: [*:0]u8) callconv(.c) ?*SdrRecordList {
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 break;
             },
         ));
@@ -4257,12 +4292,12 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
     var bc: c_int = 0;
 
     const file = ifile orelse {
-        c.lprintf(c.LOG_ERR, "No SDR cache filename given");
+        log.print(c.LOG_ERR, "No SDR cache filename given", .{});
         return -1;
     };
 
     const fp = c.ipmi_open_file_read(file) orelse {
-        c.lprintf(c.LOG_ERR, "Unable to open SDR cache %s for reading", file);
+        log.print(c.LOG_ERR, "Unable to open SDR cache %s for reading", .{file});
         return -1;
     };
 
@@ -4272,7 +4307,7 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
         if (bc <= 0) break;
 
         if (bc != 5) {
-            c.lprintf(c.LOG_ERR, "header read %d bytes, expected 5", bc);
+            log.print(c.LOG_ERR, "header read %d bytes, expected 5", .{bc});
             ret = -1;
             break;
         }
@@ -4283,10 +4318,12 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
             header.version != 0x01 and
             header.version != 0x02)
         {
-            c.lprintf(
+            log.print(
                 c.LOG_WARN,
                 "invalid sdr header version %02x",
-                @as(c_uint, header.version),
+                .{
+                    @as(c_uint, header.version),
+                },
             );
             ret = -1;
             break;
@@ -4294,7 +4331,7 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
 
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 ret = -1;
                 break;
             },
@@ -4305,7 +4342,7 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
         sdrr.type = header.type;
 
         const rec: [*]u8 = @ptrCast(c.malloc(@as(usize, header.length) + 1) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             ret = -1;
             c.free(sdrr);
             break;
@@ -4314,12 +4351,14 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
 
         bc = @intCast(c.fread(rec, 1, header.length, fp));
         if (bc != header.length) {
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "record %04x read %d bytes, expected %d",
-                @as(c_uint, header.id),
-                bc,
-                @as(c_int, header.length),
+                .{
+                    @as(c_uint, header.id),
+                    bc,
+                    @as(c_int, header.length),
+                },
             );
             ret = -1;
             c.free(sdrr);
@@ -4328,7 +4367,7 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
         }
 
         if (!recordLengthValid(header.type, rec[0..header.length])) {
-            c.lprintf(c.LOG_ERR, "Invalid SDR record length or name for record 0x%04x", @as(c_uint, header.id));
+            log.print(c.LOG_ERR, "Invalid SDR record length or name for record 0x%04x", .{@as(c_uint, header.id)});
             ret = -1;
             c.free(sdrr);
             c.free(rec);
@@ -4346,10 +4385,12 @@ fn listCacheFromfile(ifile: ?[*:0]const u8) callconv(.c) c_int {
 
         count += 1;
 
-        c.lprintf(
+        log.print(
             c.LOG_DEBUG,
             "Read record %04x from file into cache",
-            @as(c_uint, sdrr.id),
+            .{
+                @as(c_uint, sdrr.id),
+            },
         );
     }
 
@@ -4441,14 +4482,16 @@ fn getInfo(intf: *Intf, sdr_repository_info: *GetSdrRepositoryInfoRsp) callconv(
     req.msg.data_len = 0;
 
     const rsp = sendrecv(intf, &req) orelse {
-        c.lprintf(c.LOG_ERR, "Get SDR Repository Info command failed");
+        log.print(c.LOG_ERR, "Get SDR Repository Info command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(
+        log.print(
             c.LOG_ERR,
             "Get SDR Repository Info command failed: %s",
-            ccString(rsp.ccode),
+            .{
+                ccString(rsp.ccode),
+            },
         );
         return -1;
     }
@@ -4540,7 +4583,7 @@ fn dumpBin(intf: *Intf, ofile: [*:0]const u8) c_int {
 
     // Open a connection to the SDR.
     const itr = sdrStart(intf, 0) orelse {
-        c.lprintf(c.LOG_ERR, "Unable to open SDR for reading");
+        log.print(c.LOG_ERR, "Unable to open SDR for reading", .{});
         return -1;
     };
 
@@ -4550,17 +4593,19 @@ fn dumpBin(intf: *Intf, ofile: [*:0]const u8) c_int {
     while (getNextHeader(intf, itr)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 return -1;
             },
         ));
         @memset(std.mem.asBytes(sdrr), 0);
 
-        c.lprintf(
+        log.print(
             c.LOG_INFO,
             "Record ID %04x (%d bytes)",
-            @as(c_uint, header.id),
-            @as(c_int, header.length),
+            .{
+                @as(c_uint, header.id),
+                @as(c_int, header.length),
+            },
         );
 
         sdrr.id = header.id;
@@ -4570,10 +4615,12 @@ fn dumpBin(intf: *Intf, ofile: [*:0]const u8) c_int {
         sdrr.raw = getRecord(intf, header, itr);
 
         if (sdrr.raw == null) {
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "ipmitool: cannot obtain SDR record %04x",
-                @as(c_uint, header.id),
+                .{
+                    @as(c_uint, header.id),
+                },
             );
             c.free(sdrr);
             return -1;
@@ -4600,28 +4647,32 @@ fn dumpBin(intf: *Intf, ofile: [*:0]const u8) c_int {
 
         var r: c_int = @intCast(c.fwrite(&h, 1, 5, fp));
         if (r != 5) {
-            c.lprintf(c.LOG_ERR, "Error writing header to output file %s", ofile);
+            log.print(c.LOG_ERR, "Error writing header to output file %s", .{ofile});
             rc = -1;
             break;
         }
 
         // Write the SDR entry.
         const raw = sdrr.raw orelse {
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "Error: raw data is null (length=%d)",
-                @as(c_int, sdrr.length),
+                .{
+                    @as(c_int, sdrr.length),
+                },
             );
             rc = -1;
             break;
         };
         r = @intCast(c.fwrite(raw, 1, sdrr.length, fp));
         if (r != sdrr.length) {
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "Error writing %d record bytes to output file %s",
-                @as(c_int, sdrr.length),
-                ofile,
+                .{
+                    @as(c_int, sdrr.length),
+                    ofile,
+                },
             );
             rc = -1;
             break;
@@ -4649,10 +4700,12 @@ fn printType(intf: *Intf, rtype: [*c]u8) callconv(.c) c_int {
     if (c.strncmp(rtype, "0x", 2) == 0) {
         // Begins with `0x`, so let it be entered as a raw hex value.
         if (c.str2uchar(rtype, &sensor_type) != 0) {
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "Given type of sensor \"%s\" is either invalid or out of range.",
-                rtype,
+                .{
+                    rtype,
+                },
             );
             return -1;
         }
@@ -4665,7 +4718,7 @@ fn printType(intf: *Intf, rtype: [*c]u8) callconv(.c) c_int {
             }
         }
         if (sensor_type != x) {
-            c.lprintf(c.LOG_ERR, "Sensor Type \"%s\" not found.", rtype);
+            log.print(c.LOG_ERR, "Sensor Type \"%s\" not found.", .{rtype});
             printSensorTypes();
             return 0;
         }
@@ -4729,7 +4782,7 @@ fn printEntity(intf: *Intf, entitystr: [*c]u8) callconv(.c) c_int {
                 }
             }
             if (j == 0) {
-                c.lprintf(c.LOG_ERR, "Invalid entity: %s", entitystr);
+                log.print(c.LOG_ERR, "Invalid entity: %s", .{entitystr});
                 return -1;
             }
         } else {
@@ -4758,7 +4811,7 @@ fn printEntryByid(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     var rc: c_int = 0;
 
     if (argc < 1) {
-        c.lprintf(c.LOG_ERR, "No Sensor ID supplied");
+        log.print(c.LOG_ERR, "No Sensor ID supplied", .{});
         return -1;
     }
 
@@ -4769,7 +4822,7 @@ fn printEntryByid(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     while (i < @as(usize, @intCast(argc))) : (i += 1) {
         const sdr = findSdrByid(intf, @ptrCast(argv[i]));
         if (sdr == null) {
-            c.lprintf(c.LOG_ERR, "Unable to find sensor id '%s'", argv[i]);
+            log.print(c.LOG_ERR, "Unable to find sensor id '%s'", .{argv[i]});
         } else {
             if (printListentry(intf, sdr.?) < 0) rc = -1;
         }
@@ -4811,18 +4864,22 @@ fn sdrMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         } else if (eql(argv[1], "generic")) {
             rc = printSdr(intf, SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
         } else if (eql(argv[1], "help")) {
-            c.lprintf(
+            log.print(
                 c.LOG_NOTICE,
                 "usage: sdr %s [all|full|compact|event|mcloc|fru|generic]",
-                argv[0],
+                .{
+                    argv[0],
+                },
             );
             return 0;
         } else {
-            c.lprintf(c.LOG_ERR, "Invalid SDR %s command: %s", argv[0], argv[1]);
-            c.lprintf(
+            log.print(c.LOG_ERR, "Invalid SDR %s command: %s", .{ argv[0], argv[1] });
+            log.print(
                 c.LOG_NOTICE,
                 "usage: sdr %s [all|full|compact|event|mcloc|fru|generic]",
-                argv[0],
+                .{
+                    argv[0],
+                },
             );
             return -1;
         }
@@ -4838,17 +4895,17 @@ fn sdrMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         rc = printEntryByid(intf, argc - 1, &argv[1]);
     } else if (eql(argv[0], "dump")) {
         if (argc < 2) {
-            c.lprintf(c.LOG_ERR, "Not enough parameters given.");
-            c.lprintf(c.LOG_NOTICE, "usage: sdr dump <file>");
+            log.print(c.LOG_ERR, "Not enough parameters given.", .{});
+            log.print(c.LOG_NOTICE, "usage: sdr dump <file>", .{});
             return -1;
         }
         rc = dumpBin(intf, @ptrCast(argv[1]));
     } else if (eql(argv[0], "fill")) {
         if (argc <= 1) {
-            c.lprintf(c.LOG_ERR, "Not enough parameters given.");
-            c.lprintf(c.LOG_NOTICE, "usage: sdr fill sensors");
-            c.lprintf(c.LOG_NOTICE, "usage: sdr fill file <file>");
-            c.lprintf(c.LOG_NOTICE, "usage: sdr fill range <range>");
+            log.print(c.LOG_ERR, "Not enough parameters given.", .{});
+            log.print(c.LOG_NOTICE, "usage: sdr fill sensors", .{});
+            log.print(c.LOG_NOTICE, "usage: sdr fill file <file>", .{});
+            log.print(c.LOG_NOTICE, "usage: sdr fill range <range>", .{});
             return -1;
         } else if (eql(argv[1], "sensors")) {
             rc = sdrAddFromSensors(intf, 21);
@@ -4856,29 +4913,31 @@ fn sdrMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             rc = sdrAddFromSensors(intf, 0);
         } else if (eql(argv[1], "file")) {
             if (argc < 3) {
-                c.lprintf(c.LOG_ERR, "Not enough parameters given.");
-                c.lprintf(c.LOG_NOTICE, "usage: sdr fill file <file>");
+                log.print(c.LOG_ERR, "Not enough parameters given.", .{});
+                log.print(c.LOG_NOTICE, "usage: sdr fill file <file>", .{});
                 return -1;
             }
             rc = sdrAddFromFile(intf, @ptrCast(argv[2]));
         } else if (eql(argv[1], "range")) {
             if (argc < 3) {
-                c.lprintf(c.LOG_ERR, "Not enough parameters given.");
-                c.lprintf(c.LOG_NOTICE, "usage: sdr fill range <range>");
+                log.print(c.LOG_ERR, "Not enough parameters given.", .{});
+                log.print(c.LOG_NOTICE, "usage: sdr fill range <range>", .{});
                 return -1;
             }
             rc = sdrAddFromList(intf, @ptrCast(argv[2]));
         } else {
-            c.lprintf(c.LOG_ERR, "Invalid SDR %s command: %s", argv[0], argv[1]);
-            c.lprintf(
+            log.print(c.LOG_ERR, "Invalid SDR %s command: %s", .{ argv[0], argv[1] });
+            log.print(
                 c.LOG_NOTICE,
                 "usage: sdr %s <sensors|nosat|file|range> [options]",
-                argv[0],
+                .{
+                    argv[0],
+                },
             );
             return -1;
         }
     } else {
-        c.lprintf(c.LOG_ERR, "Invalid SDR command: %s", argv[0]);
+        log.print(c.LOG_ERR, "Invalid SDR command: %s", .{argv[0]});
         rc = -1;
     }
 
@@ -4887,37 +4946,37 @@ fn sdrMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
 
 /// `printf_sdr_usage()`.
 fn printfSdrUsage() callconv(.c) void {
-    c.lprintf(c.LOG_NOTICE, "usage: sdr <command> [options]");
-    c.lprintf(c.LOG_NOTICE, "               list | elist [option]");
-    c.lprintf(c.LOG_NOTICE, "                     all           All SDR Records");
-    c.lprintf(c.LOG_NOTICE, "                     full          Full Sensor Record");
-    c.lprintf(c.LOG_NOTICE, "                     compact       Compact Sensor Record");
-    c.lprintf(c.LOG_NOTICE, "                     event         Event-Only Sensor Record");
-    c.lprintf(c.LOG_NOTICE, "                     mcloc         Management Controller Locator Record");
-    c.lprintf(c.LOG_NOTICE, "                     fru           FRU Locator Record");
-    c.lprintf(c.LOG_NOTICE, "                     generic       Generic Device Locator Record\n");
-    c.lprintf(c.LOG_NOTICE, "               type [option]");
-    c.lprintf(c.LOG_NOTICE, "                     <Sensor_Type> Retrieve the state of specified sensor.");
-    c.lprintf(c.LOG_NOTICE, "                                   Sensor_Type can be specified either as");
-    c.lprintf(c.LOG_NOTICE, "                                   a string or a hex value.");
-    c.lprintf(c.LOG_NOTICE, "                     list          Get a list of available sensor types\n");
-    c.lprintf(c.LOG_NOTICE, "               get <Sensor_ID>");
-    c.lprintf(c.LOG_NOTICE, "                     Retrieve state of the first sensor matched by Sensor_ID\n");
-    c.lprintf(c.LOG_NOTICE, "               info");
-    c.lprintf(c.LOG_NOTICE, "                     Display information about the repository itself\n");
-    c.lprintf(c.LOG_NOTICE, "               entity <Entity_ID>[.<Instance_ID>]");
-    c.lprintf(c.LOG_NOTICE, "                     Display all sensors associated with an entity\n");
-    c.lprintf(c.LOG_NOTICE, "               dump <file>");
-    c.lprintf(c.LOG_NOTICE, "                     Dump raw SDR data to a file\n");
-    c.lprintf(c.LOG_NOTICE, "               fill <option>");
-    c.lprintf(c.LOG_NOTICE, "                     sensors       Creates the SDR repository for the current");
-    c.lprintf(c.LOG_NOTICE, "                                   configuration");
-    c.lprintf(c.LOG_NOTICE, "                     nosat         Creates the SDR repository for the current");
-    c.lprintf(c.LOG_NOTICE, "                                   configuration, without satellite scan");
-    c.lprintf(c.LOG_NOTICE, "                     file <file>   Load SDR repository from a file");
-    c.lprintf(c.LOG_NOTICE, "                     range <range> Load SDR repository from a provided list");
-    c.lprintf(c.LOG_NOTICE, "                                   or range. Use ',' for list or '-' for");
-    c.lprintf(c.LOG_NOTICE, "                                   range, eg. 0x28,0x32,0x40-0x44");
+    log.print(c.LOG_NOTICE, "usage: sdr <command> [options]", .{});
+    log.print(c.LOG_NOTICE, "               list | elist [option]", .{});
+    log.print(c.LOG_NOTICE, "                     all           All SDR Records", .{});
+    log.print(c.LOG_NOTICE, "                     full          Full Sensor Record", .{});
+    log.print(c.LOG_NOTICE, "                     compact       Compact Sensor Record", .{});
+    log.print(c.LOG_NOTICE, "                     event         Event-Only Sensor Record", .{});
+    log.print(c.LOG_NOTICE, "                     mcloc         Management Controller Locator Record", .{});
+    log.print(c.LOG_NOTICE, "                     fru           FRU Locator Record", .{});
+    log.print(c.LOG_NOTICE, "                     generic       Generic Device Locator Record\n", .{});
+    log.print(c.LOG_NOTICE, "               type [option]", .{});
+    log.print(c.LOG_NOTICE, "                     <Sensor_Type> Retrieve the state of specified sensor.", .{});
+    log.print(c.LOG_NOTICE, "                                   Sensor_Type can be specified either as", .{});
+    log.print(c.LOG_NOTICE, "                                   a string or a hex value.", .{});
+    log.print(c.LOG_NOTICE, "                     list          Get a list of available sensor types\n", .{});
+    log.print(c.LOG_NOTICE, "               get <Sensor_ID>", .{});
+    log.print(c.LOG_NOTICE, "                     Retrieve state of the first sensor matched by Sensor_ID\n", .{});
+    log.print(c.LOG_NOTICE, "               info", .{});
+    log.print(c.LOG_NOTICE, "                     Display information about the repository itself\n", .{});
+    log.print(c.LOG_NOTICE, "               entity <Entity_ID>[.<Instance_ID>]", .{});
+    log.print(c.LOG_NOTICE, "                     Display all sensors associated with an entity\n", .{});
+    log.print(c.LOG_NOTICE, "               dump <file>", .{});
+    log.print(c.LOG_NOTICE, "                     Dump raw SDR data to a file\n", .{});
+    log.print(c.LOG_NOTICE, "               fill <option>", .{});
+    log.print(c.LOG_NOTICE, "                     sensors       Creates the SDR repository for the current", .{});
+    log.print(c.LOG_NOTICE, "                                   configuration", .{});
+    log.print(c.LOG_NOTICE, "                     nosat         Creates the SDR repository for the current", .{});
+    log.print(c.LOG_NOTICE, "                                   configuration, without satellite scan", .{});
+    log.print(c.LOG_NOTICE, "                     file <file>   Load SDR repository from a file", .{});
+    log.print(c.LOG_NOTICE, "                     range <range> Load SDR repository from a provided list", .{});
+    log.print(c.LOG_NOTICE, "                                   or range. Use ',' for list or '-' for", .{});
+    log.print(c.LOG_NOTICE, "                                   range, eg. 0x28,0x32,0x40-0x44", .{});
 }
 
 /// `ipmi_sdr_list_cache()`.
@@ -4927,7 +4986,7 @@ fn listCache(intf: *Intf) callconv(.c) c_int {
     while (getNextHeader(intf, sdr_list_itr.?)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 break;
             },
         ));
@@ -5009,18 +5068,18 @@ fn sdrAddRecord(intf: *Intf, sdrr: *SdrRecordList) callconv(.c) c_int {
 
     // Actually no SDR to program.
     if (len < 1 or sdrr.raw == null) {
-        c.lprintf(c.LOG_ERR, "ipmitool: bad record , skipped");
+        log.print(c.LOG_ERR, "ipmitool: bad record , skipped", .{});
         return 0;
     }
 
     if (getReservation(intf, 0, &reserve_id) != 0) {
-        c.lprintf(c.LOG_ERR, "ipmitool: reservation failed");
+        log.print(c.LOG_ERR, "ipmitool: reservation failed", .{});
         return -1;
     }
 
     const sdr_rq: *SdrAddRq = @ptrCast(@alignCast(
         c.malloc(@sizeOf(SdrAddRq) + @as(usize, @intCast(sdr_max_write_len))) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             return -1;
         },
     ));
@@ -5044,7 +5103,7 @@ fn sdrAddRecord(intf: *Intf, sdrr: *SdrRecordList) callconv(.c) c_int {
     req.msg.data_len = 5 + @sizeOf(SdrAddRq) - 1;
 
     if (partialSend(intf, &req, &id) != 0) {
-        c.lprintf(c.LOG_ERR, "ipmitool: partial send error");
+        log.print(c.LOG_ERR, "ipmitool: partial send error", .{});
         c.free(sdr_rq);
         return -1;
     }
@@ -5069,7 +5128,7 @@ fn sdrAddRecord(intf: *Intf, sdrr: *SdrRecordList) callconv(.c) c_int {
 
         rc = partialSend(intf, &req, &id);
         if (rc != 0) {
-            c.lprintf(c.LOG_ERR, "ipmitool: partial add failed");
+            log.print(c.LOG_ERR, "ipmitool: partial add failed", .{});
             break;
         }
 
@@ -5103,11 +5162,11 @@ fn sdrRepoClear(intf: *Intf) c_int {
     var attempt: c_int = 0;
     while (attempt < 5) : (attempt += 1) {
         const rsp = sendrecv(intf, &req) orelse {
-            c.lprintf(c.LOG_ERR, "Unable to clear SDRR");
+            log.print(c.LOG_ERR, "Unable to clear SDRR", .{});
             return -1;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(c.LOG_ERR, "Unable to clear SDRR: %s", ccString(rsp.ccode));
+            log.print(c.LOG_ERR, "Unable to clear SDRR: %s", .{ccString(rsp.ccode)});
             return -1;
         }
         if ((rsp.data[0] & 1) == 1) {
@@ -5131,7 +5190,7 @@ fn sdrrGetRecords(intf: *Intf, itr: *SdrIterator, queue: *SdrrQueue) c_int {
     while (getNextHeader(intf, itr)) |header| {
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 return -1;
             },
         ));
@@ -5178,10 +5237,12 @@ fn sdrCopyToSdrr(intf: *Intf, use_builtin: c_int, from_addr: c_int, to_addr: c_i
         const add_rc = sdrAddRecord(intf, entry);
         if (add_rc < 0) {
             rc = -1;
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "Cannot add SDR ID 0x%04x to repository...",
-                @as(c_uint, entry.id),
+                .{
+                    @as(c_uint, entry.id),
+                },
             );
         }
         c.free(entry);
@@ -5196,7 +5257,7 @@ fn sdrAddFromSensors(intf: *Intf, maxslot: c_int) callconv(.c) c_int {
     const myaddr: c_int = @bitCast(intf.target_addr);
 
     if (sdrRepoClear(intf) != 0) {
-        c.lprintf(c.LOG_ERR, "Cannot erase SDRR. Give up.");
+        log.print(c.LOG_ERR, "Cannot erase SDRR. Give up.", .{});
         return -1;
     }
 
@@ -5253,7 +5314,7 @@ fn hexToDec(strchar: [*c]u8, p_dec_value: *u8) callconv(.c) c_int {
     if (rc == 0) {
         p_dec_value.* = ret_value;
     } else {
-        c.lprintf(c.LOG_ERR, "Must be Hex value of 4 characters (Ex.: 0x24)");
+        log.print(c.LOG_ERR, "Must be Hex value of 4 characters (Ex.: 0x24)", .{});
     }
 
     return rc;
@@ -5305,7 +5366,7 @@ fn parseRangeList(range_list: [*c]const u8, p_hex_list: [*c]u8) callconv(.c) c_i
                         p_hex_list[list_offset] = dec_value;
                         list_offset +%= 1;
                     } else {
-                        c.lprintf(c.LOG_ERR, "I2C address provided value must be even.");
+                        log.print(c.LOG_ERR, "I2C address provided value must be even.", .{});
                     }
                 }
             } else {
@@ -5330,7 +5391,7 @@ fn parseRangeList(range_list: [*c]const u8, p_hex_list: [*c]u8) callconv(.c) c_i
                         p_hex_list[list_offset] = end_value;
                         list_offset +%= 1;
                     } else {
-                        c.lprintf(c.LOG_ERR, "I2C address provided value must be even.");
+                        log.print(c.LOG_ERR, "I2C address provided value must be even.", .{});
                     }
                 }
             }
@@ -5358,7 +5419,7 @@ fn sdrAddFromList(intf: *Intf, range_list: [*c]const u8) callconv(.c) c_int {
 
     // Build the list from the string.
     if (parseRangeList(range_list, &list_value) != 0) {
-        c.lprintf(c.LOG_ERR, "Range - List invalid, cannot be parsed.");
+        log.print(c.LOG_ERR, "Range - List invalid, cannot be parsed.", .{});
         return -1;
     }
 
@@ -5374,7 +5435,7 @@ fn sdrAddFromList(intf: *Intf, range_list: [*c]const u8) callconv(.c) c_int {
 
     _ = c.printf("Clearing SDR Repository\n");
     if (sdrRepoClear(intf) != 0) {
-        c.lprintf(c.LOG_ERR, "Cannot erase SDRR. Give up.");
+        log.print(c.LOG_ERR, "Cannot erase SDRR. Give up.", .{});
         return -1;
     }
 
@@ -5425,20 +5486,20 @@ fn sdrReadRecords(filename: [*c]const u8, queue: *SdrrQueue) c_int {
         const header_bytes = c.read(fd, &bin_hdr, bin_hdr.len);
         if (header_bytes == 0) break;
         if (header_bytes != bin_hdr.len) {
-            c.lprintf(c.LOG_ERR, "SDR from '%s' has incomplete header", filename);
+            log.print(c.LOG_ERR, "SDR from '%s' has incomplete header", .{filename});
             rc = -1;
             break;
         }
 
-        c.lprintf(c.LOG_DEBUG, "binHdr[0] (id[MSB]) = 0x%02x", @as(c_uint, bin_hdr[0]));
-        c.lprintf(c.LOG_DEBUG, "binHdr[1] (id[LSB]) = 0x%02x", @as(c_uint, bin_hdr[1]));
-        c.lprintf(c.LOG_DEBUG, "binHdr[2] (version) = 0x%02x", @as(c_uint, bin_hdr[2]));
-        c.lprintf(c.LOG_DEBUG, "binHdr[3] (type) = 0x%02x", @as(c_uint, bin_hdr[3]));
-        c.lprintf(c.LOG_DEBUG, "binHdr[4] (length) = 0x%02x", @as(c_uint, bin_hdr[4]));
+        log.print(c.LOG_DEBUG, "binHdr[0] (id[MSB]) = 0x%02x", .{@as(c_uint, bin_hdr[0])});
+        log.print(c.LOG_DEBUG, "binHdr[1] (id[LSB]) = 0x%02x", .{@as(c_uint, bin_hdr[1])});
+        log.print(c.LOG_DEBUG, "binHdr[2] (version) = 0x%02x", .{@as(c_uint, bin_hdr[2])});
+        log.print(c.LOG_DEBUG, "binHdr[3] (type) = 0x%02x", .{@as(c_uint, bin_hdr[3])});
+        log.print(c.LOG_DEBUG, "binHdr[4] (length) = 0x%02x", .{@as(c_uint, bin_hdr[4])});
 
         const sdrr: *SdrRecordList = @ptrCast(@alignCast(
             c.malloc(@sizeOf(SdrRecordList)) orelse {
-                c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+                log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
                 rc = -1;
                 break;
             },
@@ -5450,21 +5511,21 @@ fn sdrReadRecords(filename: [*c]const u8, queue: *SdrrQueue) c_int {
         sdrr.length = bin_hdr[4];
 
         if (sdrr.length == 0) {
-            c.lprintf(c.LOG_ERR, "SDR from '%s' has zero-length record", filename);
+            log.print(c.LOG_ERR, "SDR from '%s' has zero-length record", .{filename});
             c.free(sdrr);
             rc = -1;
             break;
         }
 
         sdrr.raw = @ptrCast(c.malloc(sdrr.length) orelse {
-            c.lprintf(c.LOG_ERR, "ipmitool: malloc failure");
+            log.print(c.LOG_ERR, "ipmitool: malloc failure", .{});
             c.free(sdrr);
             rc = -1;
             break;
         });
 
         if (c.read(fd, sdrr.raw, sdrr.length) != sdrr.length) {
-            c.lprintf(c.LOG_ERR, "SDR from '%s' truncated", filename);
+            log.print(c.LOG_ERR, "SDR from '%s' truncated", .{filename});
             c.free(sdrr.raw);
             sdrr.raw = null;
             c.free(sdrr);
@@ -5495,7 +5556,7 @@ fn sdrAddFromFile(intf: *Intf, ifile: [*c]const u8) callconv(.c) c_int {
     if (rc < 0) return rc;
 
     if (sdrRepoClear(intf) != 0) {
-        c.lprintf(c.LOG_ERR, "Cannot erase SDRR. Giving up.");
+        log.print(c.LOG_ERR, "Cannot erase SDRR. Giving up.", .{});
         freeSdrrQueue(&sdrr_queue);
         return -1;
     }
@@ -5507,10 +5568,12 @@ fn sdrAddFromFile(intf: *Intf, ifile: [*c]const u8) callconv(.c) c_int {
         const add_rc = sdrAddRecord(intf, entry);
         if (add_rc < 0) {
             rc = -1;
-            c.lprintf(
+            log.print(
                 c.LOG_ERR,
                 "Cannot add SDR ID 0x%04x to repository...",
-                @as(c_uint, entry.id),
+                .{
+                    @as(c_uint, entry.id),
+                },
             );
         }
         c.free(entry.raw);
