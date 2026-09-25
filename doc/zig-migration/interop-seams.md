@@ -192,6 +192,16 @@ are in `tests/cases/57-lanp.cases`; run them with
 `zig build test-lanp` runs the focused Zig parameter and short-reply tests
 without depending on unrelated crypto vector fixtures.
 
+`-Dzig-modules=dcmi` replaces `lib/ipmi_dcmi.c` with
+`src/zig/cmd/dcmi.zig` and `src/zig/cmd/nm.zig`. It exports both top-level
+commands (`dcmi` and `nm`), their C-callable wire helpers, and their public
+value tables. `tests/cases/57-dcmi.cases` and `58-nm.cases` record C CLI output
+and exact request bytes, including multi-chunk strings, configuration, sensors,
+power, thermal policy and Node Manager operations. The Zig parsers check
+response lengths and bounded counts before decoding; malformed successful
+replies that the C code would read past are rejected rather than silently
+consuming stale transport-buffer data.
+
 Mechanics, all in `build.zig`:
 
 1. `zig_modules` maps each name to the `.c` it replaces and to its Zig

@@ -117,6 +117,11 @@ args: -I dummy dcmi thermalpolicy set 0x40 2 nonvolatile poweroff sel 40 300
 transcript: dcmi.tr
 covers: dcmi
 
+[dcmi_thermal_unknown_flags]
+args: -I dummy dcmi thermalpolicy set 0x40 2 invalid invalid invalid 40 300
+transcript: dcmi.tr
+covers: dcmi
+
 [dcmi_get_config]
 args: -I dummy dcmi get_conf_param
 transcript: dcmi.tr

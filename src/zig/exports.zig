@@ -112,6 +112,9 @@ comptime {
     if (selected("lanp6")) {
         @import("cmd/lanp6.zig").exportSymbols();
     }
+    if (selected("dcmi")) {
+        @import("cmd/dcmi.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

@@ -1,0 +1,18 @@
+#!golden 1
+#!case dcmi_thermal_unknown_flags
+#!section exit
+0
+#!section stdout
+
+Thermal policy 2 for 40h entity successfully set.
+
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x0b target_cmd=0x00 data=dc 40 02 00 28 2c 01
+< rule=thermal_set ccode=0x00 len=1 data=dc
+bye

@@ -1,0 +1,26 @@
+#!golden 1
+#!case nm_statistics_id_255
+#!section exit
+0
+#!section stdout
+    Power domain:                             platform
+    Policy/Global Admin state                 Policy Enabled
+    Policy/Global Operational state           suspended
+    Policy/Global Measurement state           suspended
+    Policy Activation state                   not triggered
+    Instantaneous reading:                         100 Watts
+    Minimum during sampling period:                 50 Watts
+    Maximum during sampling period:                200 Watts
+    Average reading over sample period:             90 Watts
+    IPMI timestamp:                           S+ 00:00:00
+    Sampling period:                          00000060 Seconds.
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0xc8 target_cmd=0x00 data=57 01 00 11 00 ff
+< rule=stats ccode=0x00 len=20 data=57 01 00 64 00 32 00 c8 00 5a 00 00 00 00 00 3c 00 00 00 10
+bye
