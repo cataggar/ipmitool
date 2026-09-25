@@ -196,6 +196,24 @@ args: -I dummy fru edit 0 field b 0 "Acme Team"
 transcript: fru_write.tr
 covers: fru
 
+[fru_edit_rebuild]
+desc: grow a board field into existing area padding and rebuild its checksum
+args: -I dummy fru edit 0 field b 0 "Acme Team Gold"
+transcript: fru_write.tr
+covers: fru
+
+[fru_edit_grow]
+desc: resize the board area and move later product and multirecord sections
+args: -I dummy fru edit 0 field b 0 "Acme Corporation Plus"
+transcript: fru_write.tr
+covers: fru
+
+[fru_edit_shrink]
+desc: shrink the board area and adjust later header offsets
+args: -I dummy fru edit 0 field b 0 "Acme"
+transcript: fru_write.tr
+covers: fru
+
 [fru_upg_ekey]
 desc: replace target multirecords from a full FRU image file
 args: -I dummy fru upgEkey 0 {work}/board.bin
