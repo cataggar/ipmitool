@@ -124,9 +124,12 @@ that were enabled. The golden transcript suite is built on top of this.
 
 `zig build -Dzig-modules=all` builds the installable binaries with every
 registered Zig replacement selected. This is not yet a pure-Zig release: the
-fully selected tools omit the C logging varargs shim, but mixed C/Zig builds
-still need it. Zig also imports translated C headers and the binaries link
-libc. The default build remains the C regression oracle.
+fully selected tools compile no project C translation units, including the
+logging varargs shim; mixed C/Zig builds still need the shim. The
+`test-no-log-varargs` step checks both production archives for C objects and
+the logger ABI, and the build rejects unported C sources in fully selected
+tools. Zig still imports translated C headers and the binaries link libc.
+The default build remains the C regression oracle.
 
 Both binaries also cross-build as static `ReleaseSafe` musl executables with
 the default shell, LAN+ and crypto features enabled when every Zig module is
