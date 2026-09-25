@@ -20,10 +20,9 @@
 //!   the `va_list` to `ipmitool_zig_lvprintf`/`ipmitool_zig_lvperror` below.
 //!   See doc/zig-migration/varargs-trampoline.md.
 //!
-//! Allocation: `logInit` takes an allocator explicitly, and the exported
-//! `log_init`/`log_halt` pass `std.heap.c_allocator` so the program name stays
-//! `malloc`ed exactly as C had it.  Ownership is unchanged: `log_init`
-//! allocates, `log_halt` frees, and no allocation crosses the C ABI boundary.
+//! Allocation: `logInit` takes an allocator explicitly. The exported
+//! `log_init`/`log_halt` use the Zig page allocator for the private program
+//! name; no allocation ownership crosses the C ABI boundary.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -79,10 +78,8 @@ const LogPriv = struct {
 /// removes that failure mode without changing any reachable behaviour.
 var logpriv: ?LogPriv = null;
 
-/// The allocator behind the exported entry points.  `c_allocator` is a thin
-/// wrapper over `malloc`/`free`, which is what `lib/log.c` used and what keeps
-/// `log_halt()` a plain `free()` of the same block.
-const default_allocator = std.heap.c_allocator;
+/// The private program name is freed by the matching exported `log_halt`.
+const default_allocator = std.heap.page_allocator;
 
 /// `static char logmsg[LOG_MSG_LENGTH]` inside `lprintf()`.
 var printf_msg: [msg_length]u8 = undefined;

@@ -35,10 +35,9 @@ const registry_file = "enterprise-numbers";
 /// `LOG_DEBUG + 4` in `oem_info_init_from_list`: six `-v` options.
 const oemlist_debug: c_int = log.Level.debug + 4;
 
-/// Allocator for the temporary entry list.  The registry strings and the array
-/// `ipmi_oem_info` points at are `malloc`ed directly instead, because
-/// `ipmi_oem_info_free` hands them to `free()`.
-const allocator = std.heap.c_allocator;
+/// Allocator for the temporary entry list. The registry strings and the array
+/// `ipmi_oem_info` points at still use `malloc`/`free` together.
+const allocator = std.heap.page_allocator;
 
 /// `ipmi_oem_info`: an array filled from IANA's enterprise number registry,
 /// or `ipmi_oem_info_dummy` when it could not be allocated.
