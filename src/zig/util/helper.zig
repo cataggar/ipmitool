@@ -8,12 +8,11 @@
 //!
 //! Three conventions follow from that:
 //!
-//! * **Formatting stays in libc.**  `snprintf`, `printf` and `fprintf` are
-//!   called through the bridge rather than reimplemented with `std.fmt`, so
-//!   `%2.2x`, `%-32s`, `%#x` and the stdout/stderr interleaving are produced by
-//!   the same code as before.  `std.fmt` would also have to reproduce glibc's
-//!   locale handling, which is not worth the risk for output nobody wants to
-//!   change.
+//! * **General formatting stays in libc.**  `printf` and `fprintf` are
+//!   called through the bridge so `%-32s`, `%#x` and stdout/stderr interleaving
+//!   remain unchanged.  Byte-to-hex formatting uses Zig's fixed ASCII digits;
+//!   unlike locale-sensitive formatting, `%2.2x` of a byte is always two
+//!   lowercase hexadecimal characters.
 //! * **Parsing stays in libc** for the same reason: `str2long()` and friends
 //!   accept exactly what `strtol()` accepts, including the `0x`/`0` prefixes,
 //!   leading whitespace and a lone `+`, and report overflow through `errno`.
@@ -93,39 +92,28 @@ pub fn buf2strExtended(
 ) callconv(.c) [*:0]const u8 {
     const str = &buf2str_storage;
     const data = buf orelse {
-        _ = c.snprintf(str, str.len, "<NULL>");
+        @memcpy(str[0..6], "<NULL>");
+        str[6] = 0;
         return @ptrCast(str);
     };
 
-    // `cur + left == str.len` throughout, mirroring the C pointer/counter pair.
+    const digits = "0123456789abcdef";
     var cur: usize = 0;
-    var left: c_int = str.len;
-    const sep_len: c_int = if (sep) |s| @intCast(std.mem.len(s)) else 0;
+    const sep_len: usize = if (sep) |s| std.mem.len(s) else 0;
 
     var i: c_int = 0;
     while (i < len) : (i += 1) {
-        // May return more than 2, depending on locale.
-        const sz = c.snprintf(
-            str[cur..].ptr,
-            @intCast(left),
-            "%2.2x",
-            @as(c_uint, data[@intCast(i)]),
-        );
-        if (sz >= left) {
-            // Buffer overflow, truncate.
-            break;
-        }
-        cur += @intCast(sz);
-        left -= sz;
+        if (str.len - cur <= 2) break;
+        const byte = data[@intCast(i)];
+        str[cur] = digits[byte >> 4];
+        str[cur + 1] = digits[byte & 0x0f];
+        cur += 2;
 
-        // Do not write a separator after the last byte.
         if (sep) |s| {
             if (i == len - 1) continue;
-            if (sep_len >= left) break;
-            // C passes `left - sz`, which only ever zero-fills past the copy.
-            _ = c.strncpy(str[cur..].ptr, s, @intCast(left - sz));
-            cur += @intCast(sep_len);
-            left -= sep_len;
+            if (sep_len >= str.len - cur) break;
+            @memcpy(str[cur..][0..sep_len], s[0..sep_len]);
+            cur += sep_len;
         }
     }
     str[cur] = 0;
@@ -1165,6 +1153,7 @@ test "buf2long and buf2short are little endian" {
 test "buf2str formats and separates" {
     const buf = [_]u8{ 0x00, 0x0f, 0xa5, 0xff };
     try std.testing.expectEqualStrings("000fa5ff", std.mem.span(buf2str(&buf, 4)));
+    try std.testing.expectEqualStrings("000fa5ff", std.mem.span(buf2strExtended(&buf, 4, "")));
     try std.testing.expectEqualStrings(
         "00 0f a5 ff",
         std.mem.span(buf2strExtended(&buf, 4, " ")),
@@ -1172,6 +1161,21 @@ test "buf2str formats and separates" {
     try std.testing.expectEqualStrings("", std.mem.span(buf2str(&buf, 0)));
     try std.testing.expectEqualStrings("<NULL>", std.mem.span(buf2str(null, 4)));
     try std.testing.expectEqualStrings("00:0f:a5:ff:00:0f", std.mem.span(mac2str(&(buf ** 2))));
+}
+
+test "buf2str matches libc hexadecimal formatting for every byte" {
+    for (0..256) |value| {
+        const byte = [_]u8{@intCast(value)};
+        var expected: [3]u8 = undefined;
+        try std.testing.expectEqual(
+            @as(c_int, 2),
+            c.snprintf(&expected, expected.len, "%2.2x", @as(c_uint, byte[0])),
+        );
+        try std.testing.expectEqualStrings(
+            std.mem.sliceTo(&expected, 0),
+            std.mem.span(buf2str(&byte, 1)),
+        );
+    }
 }
 
 test "buf2str truncates instead of overflowing" {
@@ -1185,6 +1189,14 @@ test "buf2str truncates instead of overflowing" {
     const sep = std.mem.span(buf2strExtended(&buf, buf.len, "::"));
     try std.testing.expectEqual(@as(usize, buf2str_max_output_size - 1), sep.len);
     try std.testing.expect(std.mem.startsWith(u8, sep, "ab::ab::"));
+
+    const empty_sep = std.mem.span(buf2strExtended(&buf, buf.len, ""));
+    try std.testing.expectEqual(@as(usize, buf2str_max_output_size - 1), empty_sep.len);
+    try std.testing.expect(std.mem.endsWith(u8, empty_sep, "abab"));
+
+    const partial_separator = std.mem.span(buf2strExtended(&buf, buf.len, "---"));
+    try std.testing.expectEqual(@as(usize, buf2str_max_output_size - 1), partial_separator.len);
+    try std.testing.expect(std.mem.endsWith(u8, partial_separator, "ab"));
 }
 
 test "ipmi_parse_hex decodes and reports the C error codes" {
