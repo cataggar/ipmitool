@@ -118,10 +118,25 @@ ipmi_sel_oem_match(uint8_t *evt, const struct ipmi_sel_oem_msg_rec *rec)
 	}
 }
 
+static void
+ipmi_sel_oem_free_table(struct ipmi_sel_oem_msg_rec *table, int nrecs)
+{
+	int i, j;
+
+	if (!table)
+		return;
+	for (i = 0; i < nrecs; i++) {
+		for (j = 0; j < 14; j++)
+			free(table[i].string[j]);
+		free(table[i].text);
+	}
+	free(table);
+}
+
 int ipmi_sel_oem_init(const char * filename)
 {
 	FILE * fp;
-	int i, j, k, n, byte;
+	int i, n, byte;
 	char buf[15][150];
 
 	if (!filename) {
@@ -136,6 +151,8 @@ int ipmi_sel_oem_init(const char * filename)
 	}
 
 	/* count number of records (lines) in input file */
+	ipmi_sel_oem_free_table(sel_oem_msg, sel_oem_nrecs);
+	sel_oem_msg = NULL;
 	sel_oem_nrecs = 0;
 	while (fscanf(fp, "%*[^\n]\n") == 0) {
 		sel_oem_nrecs++;
@@ -146,6 +163,10 @@ int ipmi_sel_oem_init(const char * filename)
 	rewind(fp);
 	sel_oem_msg = (struct ipmi_sel_oem_msg_rec *)calloc(sel_oem_nrecs,
 				 sizeof(struct ipmi_sel_oem_msg_rec));
+	if (sel_oem_nrecs && !sel_oem_msg) {
+		lprintf(LOG_ERR, "ipmitool: calloc failure");
+		goto error;
+	}
 
 	for (i=0; i < sel_oem_nrecs; i++) {
 		n=fscanf(fp, "\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\""
@@ -159,21 +180,7 @@ int ipmi_sel_oem_init(const char * filename)
 		if (n != 15) {
 			lprintf (LOG_ERR, "Encountered problems reading line %d of %s",
 				 i+1, filename);
-			fclose(fp);
-			fp = NULL;
-			sel_oem_nrecs = 0;
-			/* free all the memory allocated so far */
-			for (j=0; j<i ; j++) {
-				for (k=3; k<17; k++) {
-					if (sel_oem_msg[j].value[SEL_BYTE(k)] == -3) {
-						free(sel_oem_msg[j].string[SEL_BYTE(k)]);
-						sel_oem_msg[j].string[SEL_BYTE(k)] = NULL;
-					}
-				}
-			}
-			free(sel_oem_msg);
-			sel_oem_msg = NULL;
-			return -1;
+			goto error;
 		}
 
 		for (byte = 3; byte < 17; byte++) {
@@ -181,17 +188,32 @@ int ipmi_sel_oem_init(const char * filename)
 			     ipmi_sel_oem_readval(buf[SEL_BYTE(byte)])) == -3) {
 				sel_oem_msg[i].string[SEL_BYTE(byte)] =
 					(char *)malloc(strlen(buf[SEL_BYTE(byte)]) + 1);
+				if (!sel_oem_msg[i].string[SEL_BYTE(byte)]) {
+					lprintf(LOG_ERR, "ipmitool: malloc failure");
+					goto error;
+				}
 				strcpy(sel_oem_msg[i].string[SEL_BYTE(byte)],
 				       buf[SEL_BYTE(byte)]);
 			}
 		}
 		sel_oem_msg[i].text = (char *)malloc(strlen(buf[SEL_BYTE(17)]) + 1);
+		if (!sel_oem_msg[i].text) {
+			lprintf(LOG_ERR, "ipmitool: malloc failure");
+			goto error;
+		}
 		strcpy(sel_oem_msg[i].text, buf[SEL_BYTE(17)]);
 	}
 
 	fclose(fp);
 	fp = NULL;
 	return 0;
+
+error:
+	fclose(fp);
+	ipmi_sel_oem_free_table(sel_oem_msg, sel_oem_nrecs);
+	sel_oem_msg = NULL;
+	sel_oem_nrecs = 0;
+	return -1;
 }
 
 static void ipmi_sel_oem_message(struct sel_event_record * evt)
@@ -209,7 +231,7 @@ static void ipmi_sel_oem_message(struct sel_event_record * evt)
 				if (sel_oem_msg[i].value[SEL_BYTE(j)] == -3) {
 					printf (csv_output ? ",%s=0x%x" : " %s = 0x%x",
 						sel_oem_msg[i].string[SEL_BYTE(j)],
-						((uint8_t *)evt)[SEL_BYTE(j)]);
+						((uint8_t *)evt)[j - 1]);
 				}
 			}
 		}
@@ -340,10 +362,12 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 {
 	FILE * fp;
 	char buf[1024];
+	char event_line[sizeof(buf)];
 	char * ptr, * tok;
-	int i, j;
+	int i, j, line = 0;
+	bool invalid;
 	int rc = 0;
-	uint8_t rqdata[8];
+	uint8_t rqdata[7];
 	struct sel_event_record sel_event;
 	
 	if (!filename)
@@ -356,6 +380,7 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 	while (feof(fp) == 0) {
 		if (!fgets(buf, 1024, fp))
 			continue;
+		line++;
 
 		/* clip off optional comment tail indicated by # */
 		ptr = strchr(buf, '#');
@@ -365,31 +390,34 @@ ipmi_sel_add_entries_fromfile(struct ipmi_intf * intf, const char * filename)
 			ptr = buf + strlen(buf);
 
 		/* clip off trailing and leading whitespace */
-		ptr--;
-		while (isspace((int)*ptr) && ptr >= buf)
-			*ptr-- = '\0';
+		while (ptr > buf && isspace((unsigned char)ptr[-1]))
+			*--ptr = '\0';
 		ptr = buf;
 		while (isspace((int)*ptr))
 			ptr++;
 		if (strlen(ptr) == 0)
 			continue;
+		strcpy(event_line, ptr);
 
 		/* parse the event, 7 bytes with optional comment */
 		/* 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event */
 		i = 0;
+		invalid = false;
+		memset(rqdata, 0, sizeof(rqdata));
 		tok = strtok(ptr, " ");
 		while (tok) {
 			if (i == 7)
 				break;
 			j = i++;
 			if (str2uchar(tok, &rqdata[j]) != 0) {
+				invalid = true;
 				break;
 			}
 			tok = strtok(NULL, " ");
 		}
-		if (i < 7) {
-			lprintf(LOG_ERR, "Invalid Event: %s",
-			       buf2str(rqdata, sizeof(rqdata)));
+		if (invalid || i < 7) {
+			lprintf(LOG_ERR, "Invalid Event on line %d: %s",
+			       line, event_line);
 			continue;
 		}
 
@@ -644,7 +672,7 @@ get_supermicro_evt_desc(struct ipmi_intf *intf, struct sel_event_record *rec)
 						(data2 & 0xf) + 0x27, (data3 & 0x03) + 1);
 			} else if (chipset_type == 3) {
 				snprintf(desc, SIZE_OF_DESC, "@DIMM%c%d(P%dM%d)",
-						((data2 & 0xf) >> 4) > 4
+						((data2 & 0xff) >> 4) > 4
 						? '@' - 4 + ((data2 & 0xff) >> 4)
 						: '@' + ((data2 & 0xff) >> 4),
 						(data2 & 0xf) - 0x09, (data3 & 0x0f) + 1,
@@ -813,7 +841,7 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 											{
 						                        str = desc+strlen(desc);
 												*str++ = ',';
-												str = '\0';
+												*str = '\0';
 						              					count = 0;
 											}
 											switch(i) /* Which type of memory config is present.. */
@@ -1191,10 +1219,6 @@ char * get_dell_evt_desc(struct ipmi_intf * intf, struct sel_event_record * rec)
 			break;				
 		} 
 	}
-	else
-	{
-		sensor_type = rec->sel_type.standard_type.event_type;
-	}
 	return desc;
 }
 
@@ -1314,13 +1338,8 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 					lprintf(LOG_DEBUG, "oem sensor type %x %d using oem type supplied description",
 		                       rec->sel_type.standard_type.sensor_type , iana);
 				 break;
-				case IPMI_OEM_DELL:		/* OEM Bytes Decoding for DELLi */
-				 	if ( (OEM_CODE_IN_BYTE2 == (rec->sel_type.standard_type.event_data[0] & DATA_BYTE2_SPECIFIED_MASK)) ||
-					     (OEM_CODE_IN_BYTE3 == (rec->sel_type.standard_type.event_data[0] & DATA_BYTE3_SPECIFIED_MASK)) )
-				 	{
-						 sfx = ipmi_get_oem_desc(intf, rec);
-				 	}
-				 break;
+				case IPMI_OEM_DELL:		/* handled by the Dell block below */
+					break;
 				case IPMI_OEM_SUPERMICRO:
 				case IPMI_OEM_SUPERMICRO_47488:
 					sfx = ipmi_get_oem_desc(intf, rec);
@@ -1383,6 +1402,7 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 			*desc = (char *)malloc(strlen(evt->desc) + 48 + SIZE_OF_DESC);
 			if (NULL == *desc) {
 				lprintf(LOG_ERR, "ipmitool: malloc failure");
+				free(sfx);
 				return;
 			}
 			memset(*desc, 0, strlen(evt->desc)+ 48 + SIZE_OF_DESC);
@@ -1435,11 +1455,13 @@ ipmi_get_event_desc(struct ipmi_intf * intf, struct sel_event_record * rec, char
 		    if (NULL == *desc)
 			{
 		        lprintf(LOG_ERR, "ipmitool: malloc failure");
+			    free(sfx);
 			    return;
 		    }
 		memset(*desc, 0, 48 + SIZE_OF_DESC);
 		if (flag == 0x02) {
 			sprintf(*desc, "%s", sfx);
+			free(sfx);
 			return;
 		}
 		sprintf(*desc, "(%s)",sfx);		
@@ -1509,8 +1531,8 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 {
 	struct ipmi_rs * rsp;
 	struct ipmi_rq req;
-	uint16_t e, version;
-	uint32_t f;
+	uint16_t e, free_space, version;
+	uint32_t used, total;
 	int pctfull = 0;
 	uint32_t fs    = 0xffffffff;
 	uint32_t zeros = 0;
@@ -1544,17 +1566,18 @@ ipmi_sel_get_info(struct ipmi_intf * intf)
 
 	/* save the entry count and free space to determine percent full */
 	e = buf2short(rsp->data + 1);
-	f = buf2short(rsp->data + 3);
+	free_space = buf2short(rsp->data + 3);
 	printf("Entries          : %d\n", e);
-	printf("Free Space       : %d bytes %s\n", f ,(f==65535 ? "or more" : "" ));
+	printf("Free Space       : %d bytes %s\n", free_space,
+	       free_space == 0xffff ? "or more" : "");
 
-	if (e) {
-		e *= 16; /* each entry takes 16 bytes */
-		f += e;	/* this is supposed to give the total size ... */
-		pctfull = (int)(100 * ( (double)e / (double)f ));
+	used = (uint32_t)e * 16; /* each entry takes 16 bytes */
+	total = used + free_space;
+	if (used && free_space != 0xffff) {
+		pctfull = (int)(100 * ((double)used / (double)total));
 	}
 
-	if( f >= 65535 ) {
+	if (free_space == 0xffff) {
 		printf("Percent Used     : %s\n", "unknown" );
 	}
 	else {
@@ -1657,43 +1680,17 @@ ipmi_sel_get_std_entry(struct ipmi_intf * intf, uint16_t id,
 			id, val2str(rsp->ccode, completion_code_vals));
 		return 0;
 	}
+	if (rsp->data_len < 18) {
+		lprintf(LOG_ERR, "Get SEL Entry %x command failed: Invalid data length %d",
+			id, rsp->data_len);
+		return 0;
+	}
 
 	/* save next entry id */
 	next = (rsp->data[1] << 8) | rsp->data[0];
 
 	lprintf(LOG_DEBUG, "SEL Entry: %s", buf2str(rsp->data+2, rsp->data_len-2));
 	memset(evt, 0, sizeof(*evt));
-  
-	/*Clear SEL Structure*/
-	evt->record_id = 0;
-	evt->record_type = 0;
-	if (evt->record_type < 0xc0)
-	{
-		evt->sel_type.standard_type.timestamp = 0;
-		evt->sel_type.standard_type.gen_id = 0;
-		evt->sel_type.standard_type.evm_rev = 0;
-		evt->sel_type.standard_type.sensor_type = 0;
-		evt->sel_type.standard_type.sensor_num = 0;
-		evt->sel_type.standard_type.event_type = 0;
-		evt->sel_type.standard_type.event_dir = 0;
-		evt->sel_type.standard_type.event_data[0] = 0;
-		evt->sel_type.standard_type.event_data[1] = 0;
-		evt->sel_type.standard_type.event_data[2] = 0;
-	}
-	else if (evt->record_type < 0xe0)
-	{
-		evt->sel_type.oem_ts_type.timestamp = 0;
-		evt->sel_type.oem_ts_type.manf_id[0] = 0;
-		evt->sel_type.oem_ts_type.manf_id[1] = 0;
-		evt->sel_type.oem_ts_type.manf_id[2] = 0;
-		for(data_count=0; data_count < SEL_OEM_TS_DATA_LEN ; data_count++)
-			evt->sel_type.oem_ts_type.oem_defined[data_count] = 0;
-	}
-	else
-	{
-		for(data_count=0; data_count < SEL_OEM_NOTS_DATA_LEN ; data_count++)
-			evt->sel_type.oem_nots_type.oem_defined[data_count] = 0;
-	}
 
 	/* save response into SEL event structure */
 	evt->record_id = (rsp->data[3] << 8) | rsp->data[2];
@@ -2277,6 +2274,11 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		       val2str(rsp->ccode, completion_code_vals));
 		return -1;
 	}
+	if (rsp->data_len != 14) {
+		lprintf(LOG_ERR, "Get SEL Info command failed: Invalid data length %d",
+			rsp->data_len);
+		return -1;
+	}
 	if (verbose > 2)
 		printbuf(rsp->data, rsp->data_len, "sel_info");
 
@@ -2299,6 +2301,11 @@ __ipmi_sel_savelist_entries(struct ipmi_intf * intf, int count, const char * sav
 		if (rsp->ccode) {
 			lprintf(LOG_ERR, "Get SEL Info command failed: %s",
 				val2str(rsp->ccode, completion_code_vals));
+			return -1;
+		}
+		if (rsp->data_len != 14) {
+			lprintf(LOG_ERR, "Get SEL Info command failed: Invalid data length %d",
+				rsp->data_len);
 			return -1;
 		}
 		entries = buf2short(rsp->data + 1);
@@ -2376,6 +2383,13 @@ ipmi_sel_save_entries(struct ipmi_intf * intf, int count, const char * savefile)
 	return __ipmi_sel_savelist_entries(intf, count, savefile, 0);
 }
 
+static char *
+ipmi_sel_interpret_after(char *cursor, char delimiter)
+{
+	char *found = strchr(cursor, delimiter);
+	return found ? found + 1 : NULL;
+}
+
 /*
  * ipmi_sel_interpret
  *
@@ -2422,11 +2436,14 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 				status = (-1);
 				break;
 			}
-			if (strlen(buffer) > 255) {
+			if (strlen(buffer) == 255 && buffer[254] != '\n'
+					&& fgetc(fp) != EOF) {
 				lprintf(LOG_ERR, "ipmitool: invalid entry found in file.");
-				continue;
+				status = -1;
+				break;
 			}
 			cursor = buffer;
+			memset(&evt, 0, sizeof(evt));
 			/* assume normal "System" event */
 			evt.record_type = 2;
 			errno = 0;
@@ -2438,23 +2455,26 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			}	
 			evt.sel_type.standard_type.evm_rev = 4;
 
-			/* FIXME: convert*/
-			/* evt.sel_type.standard_type.timestamp; */
+			/* PPS timestamp timezone conversion is tracked in issue #23;
+			 * leave the initialized pre-init timestamp until then. */
 
 			/* skip timestamp */
-			cursor = index((const char *)cursor, ';');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, ';');
+			if (!cursor)
+				goto invalid_entry;
 
 			/* FIXME: parse originator */
 			evt.sel_type.standard_type.gen_id = 0x0020;
 
 			/* skip  originator info */
-			cursor = index((const char *)cursor, ';');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, ';');
+			if (!cursor)
+				goto invalid_entry;
 
 			/* Get sensor type */
-			cursor = index((const char *)cursor, '(');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, '(');
+			if (!cursor)
+				goto invalid_entry;
 
 			errno = 0;
 			evt.sel_type.standard_type.sensor_type =
@@ -2464,8 +2484,9 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 				status = (-1);
 				break;
 			}	
-			cursor = index((const char *)cursor, ',');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, ',');
+			if (!cursor)
+				goto invalid_entry;
 
 			errno = 0;
 			evt.sel_type.standard_type.sensor_num =
@@ -2477,8 +2498,9 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			}	
 
 			/* skip  to event type  info */
-			cursor = index((const char *)cursor, ':');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, ':');
+			if (!cursor)
+				goto invalid_entry;
 
 			errno = 0;
 			evt.sel_type.standard_type.event_type=
@@ -2490,22 +2512,29 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 			}	
 
 			/* skip  to event dir  info */
-			cursor = index((const char *)cursor, '(');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, '(');
+			if (!cursor)
+				goto invalid_entry;
+			if (!*cursor)
+				goto invalid_entry;
 			if (*cursor == 'a') {
 				evt.sel_type.standard_type.event_dir = 0;
 			} else {
 				evt.sel_type.standard_type.event_dir = 1;
 			}
 			/* skip  to data info */
-			cursor = index((const char *)cursor, ' ');
-			cursor++;
+			cursor = ipmi_sel_interpret_after(cursor, ' ');
+			if (!cursor)
+				goto invalid_entry;
 
 			if (evt.sel_type.standard_type.sensor_type == 0xF0) {
+				long cause;
 				/* got to FRU id */
-				while (!isdigit(*cursor)) {
+				while (*cursor && !isdigit((unsigned char)*cursor)) {
 					cursor++;
 				}
+				if (!*cursor)
+					goto invalid_entry;
 				/* store FRUid */
 				errno = 0;
 				evt.sel_type.standard_type.event_data[2] =
@@ -2517,8 +2546,9 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 				}	
 
 				/* Get to previous state */
-				cursor = index((const char *)cursor, 'M');
-				cursor++;
+				cursor = ipmi_sel_interpret_after(cursor, 'M');
+				if (!cursor)
+					goto invalid_entry;
 
 				/* Set previous state */
 				errno = 0;
@@ -2531,8 +2561,9 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 				}	
 
 				/* Get to current state */
-				cursor = index((const char *)cursor, 'M');
-				cursor++;
+				cursor = ipmi_sel_interpret_after(cursor, 'M');
+				if (!cursor)
+					goto invalid_entry;
 
 				/* Set current state */
 				errno = 0;
@@ -2545,16 +2576,18 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 				}	
 
 				/* skip  to cause */
-				cursor = index((const char *)cursor, '=');
-				cursor++;
+				cursor = ipmi_sel_interpret_after(cursor, '=');
+				if (!cursor)
+					goto invalid_entry;
 				errno = 0;
-				evt.sel_type.standard_type.event_data[1] |=
-					(strtol(cursor, (char **)NULL, 16)) << 4;
+				cause = strtol(cursor, (char **)NULL, 16);
 				if (errno != 0) {
 					lprintf(LOG_ERR, "Invalid Event Data#1.");
 					status = (-1);
 					break;
 				}	
+				evt.sel_type.standard_type.event_data[1] |=
+					((uint8_t)cause) << 4;
 			} else if (*cursor == '0') {
 				errno = 0;
 				evt.sel_type.standard_type.event_data[0] =
@@ -2564,8 +2597,9 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 					status = (-1);
 					break;
 				}	
-				cursor = index((const char *)cursor, ' ');
-				cursor++;
+				cursor = ipmi_sel_interpret_after(cursor, ' ');
+				if (!cursor)
+					goto invalid_entry;
 
 				errno = 0;
 				evt.sel_type.standard_type.event_data[1] =
@@ -2576,8 +2610,9 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 					break;
 				}	
 
-				cursor = index((const char *)cursor, ' ');
-				cursor++;
+				cursor = ipmi_sel_interpret_after(cursor, ' ');
+				if (!cursor)
+					goto invalid_entry;
 
 				errno = 0;
 				evt.sel_type.standard_type.event_data[2] =
@@ -2597,6 +2632,11 @@ ipmi_sel_interpret(struct ipmi_intf *intf, unsigned long iana,
 				ipmi_sel_print_std_entry(intf, &evt);
 			}
 			cursor = NULL;
+			continue;
+invalid_entry:
+			lprintf(LOG_ERR, "Invalid SEL entry: missing field delimiter.");
+			status = -1;
+			break;
 		} while (status == 0); /* until file is completely read */
 		cursor = NULL;
 		free(buffer);
@@ -2679,6 +2719,11 @@ ipmi_sel_reserve(struct ipmi_intf * intf)
 	if (rsp->ccode) {
 		printf("Unable to reserve SEL: %s",
 		       val2str(rsp->ccode, completion_code_vals));
+		return 0;
+	}
+	if (rsp->data_len < 2) {
+		lprintf(LOG_WARN, "Unable to reserve SEL: Invalid data length %d",
+			rsp->data_len);
 		return 0;
 	}
 
@@ -2905,7 +2950,7 @@ ipmi_sel_delete(struct ipmi_intf * intf, int argc, char ** argv)
 static int
 ipmi_sel_show_entry(struct ipmi_intf * intf, int argc, char ** argv)
 {
-	struct entity_id entity;
+	struct entity_id entity = { 0 };
 	struct sdr_record_list *entry;
 	struct sdr_record_list *list;
 	struct sdr_record_list *sdr;

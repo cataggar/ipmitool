@@ -86,10 +86,17 @@ text: ev.txt sel/add_comments.txt
 covers: sel
 
 [sl_add_badtok]
-desc: sel add: an unparseable seventh byte, which is sent as zero
+desc: sel add: reject an unparseable seventh byte without sending it
 args: -I dummy sel add {work}/ev.txt
 transcript: sel_file.tr
 text: ev.txt sel/add_badtok.txt
+covers: sel
+
+[sl_add_invalid]
+desc: sel add: per-line diagnostics for short and invalid tokens
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_invalid.txt
 covers: sel
 
 [sl_add_extra]

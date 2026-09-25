@@ -1,0 +1,8 @@
+# A full 64 KiB SEL: 4096 entries, zero real free bytes (not a sentinel).
+default_ccode 0xc1
+
+respond get_sel_info
+  netfn 0x0a
+  cmd 0x40
+  data 51 00 10 00 00 00 00 00 00 00 00 00 00 00
+end

@@ -200,12 +200,8 @@ a063 | 06/14/26 | 23:50:37 UTC | Unknown #0x30 |  | Asserted
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 0f 00 00 ff
 < rule=get_sel_000f ccode=0x00 len=18 data=10 00 42 a0 02 4d 3e 2f 6a 20 00 04 c1 25 6f 21 5a 35
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -232,12 +228,8 @@ a063 | 06/14/26 | 23:50:37 UTC | Unknown #0x30 |  | Asserted
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 11 00 00 ff
 < rule=get_sel_0011 ccode=0x00 len=18 data=12 00 51 a0 02 4d 3e 2f 6a 20 00 04 c2 29 6f a2 5a 35
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -264,12 +256,8 @@ a063 | 06/14/26 | 23:50:37 UTC | Unknown #0x30 |  | Asserted
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 13 00 00 ff
 < rule=get_sel_0013 ccode=0x00 len=18 data=14 00 53 a0 02 4d 3e 2f 6a 20 00 04 c2 29 6f 82 5a 35
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
@@ -296,12 +284,8 @@ a063 | 06/14/26 | 23:50:37 UTC | Unknown #0x30 |  | Asserted
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 15 00 00 ff
 < rule=get_sel_0015 ccode=0x00 len=18 data=16 00 62 a0 02 4d 3e 2f 6a 20 00 04 c2 30 6f 80 5a b5
-> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
-< rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
 < rule=get_device_id ccode=0x00 len=15 data=20 81 02 03 02 bf a2 02 00 01 00 00 00 00 00
 > netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=

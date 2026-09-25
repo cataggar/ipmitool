@@ -33,9 +33,15 @@ transcript: sel_bytes.tr
 covers: sel
 
 [sl_info_wrap]
-desc: 16-bit overflow of the entries*16 percent-full maths
+desc: 4096 entries require 32-bit percent-full arithmetic
 args: -I dummy sel info
 transcript: sel_info_wrap.tr
+covers: sel
+
+[sl_info_full]
+desc: 64 KiB used and zero actual free bytes is 100 percent full
+args: -I dummy sel info
+transcript: sel_info_full.tr
 covers: sel
 
 [sl_info_alloc]

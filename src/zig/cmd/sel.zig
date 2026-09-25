@@ -34,31 +34,10 @@
 //!   The SDR records themselves are only read at byte offsets taken from
 //!   `abi_layout.h`.
 //!
-//! * **Upstream defects are reproduced deliberately** - see issue #48:
-//!   - `ipmi_sel_get_std_entry()` never checks `rsp->data_len`, so a BMC that
-//!     returns a short Get SEL Entry response has the remaining fields read
-//!     out of the stale tail of the response buffer.  `tests/transcripts/
-//!     sel_truncated.tr` and the `sl_short_*` cases pin that behaviour.
-//!   - `ipmi_sel_get_info()` stores the entry count in a `uint16_t` and then
-//!     does `e *= 16`, which wraps modulo 65536 before the percent-full
-//!     division.
-//!   - `get_dell_evt_desc()` writes `str = '\0'` where it meant `*str = '\0'`,
-//!     assigning NULL to a `char *` right after `*str++ = ','` overwrote the
-//!     terminator.  The string still ends because `desc` was zeroed, one byte
-//!     later than intended.
-//!   - `ipmi_sel_add_entries_fromfile()` walks back over trailing whitespace
-//!     with `while (isspace(*ptr) && ptr >= buf)`, dereferencing before the
-//!     bound is tested.
-//!   - `ipmi_sel_interpret()` leaves `struct sel_event_record evt` entirely
-//!     uninitialised and never fills in the timestamp, so `sel interpret`
-//!     prints stack garbage as the event time.
-//!   - `ipmi_get_event_desc()` leaks `sfx` on the `flag == 0x02` path.
-//!   - `ipmi_sel_show_entry()` leaves `entity.logical` uninitialised.
-//!     `ipmi_sdr_find_sdr_byentity()` reads only `->id` and `->instance`
-//!     (`lib/ipmi_sdr.c:3591`), so zero-initialising here is unobservable.
-//!   - `ipmi_sel_get_std_entry()` memsets `evt` and then branches on
-//!     `evt->record_type`, which is always 0 at that point: two of the three
-//!     clearing arms are dead.
+//! * **SEL fixes from issue #48 are shared with the C implementation.**
+//!   Short replies and malformed file records are rejected before decoding.
+//!   PPS timestamps are initialized to zero (pre-init time) until the
+//!   timezone semantics are addressed in issue #23.
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sel` is selected.
@@ -288,12 +267,6 @@ fn setErrno(v: c_int) void {
     c.__errno_location().* = v;
 }
 
-/// C pointer arithmetic that stays well defined when the pointer is NULL,
-/// which `ipmi_sel_interpret()` relies on after a failed `index()`.
-fn advance(p: [*c]u8, n: usize) [*c]u8 {
-    return @ptrFromInt(@intFromPtr(p) + n);
-}
-
 // ---------------------------------------------------------------------------
 // OEM message translation file
 // ---------------------------------------------------------------------------
@@ -330,6 +303,18 @@ fn oemMatch(evt: [*]const u8, rec: *const OemMsgRec) c_int {
     }
 }
 
+fn oemFreeTable(table: ?[*]OemMsgRec, nrecs: c_int) void {
+    const records = table orelse return;
+    var i: usize = 0;
+    while (i < @as(usize, @intCast(nrecs))) : (i += 1) {
+        for (records[i].string) |field| {
+            c.free(field);
+        }
+        c.free(records[i].text);
+    }
+    c.free(records);
+}
+
 /// `ipmi_sel_oem_init()`, reached from `ipmitool -O <file>` and from
 /// `ipmi_oem_setup()`.
 fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
@@ -347,6 +332,8 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
     }
 
     // count number of records (lines) in input file
+    oemFreeTable(sel_oem_msg, sel_oem_nrecs);
+    sel_oem_msg = null;
     sel_oem_nrecs = 0;
     while (c.fscanf(fp, "%*[^\n]\n") == 0) {
         sel_oem_nrecs += 1;
@@ -359,6 +346,12 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
         @intCast(sel_oem_nrecs),
         @sizeOf(OemMsgRec),
     )));
+    if (sel_oem_nrecs != 0 and sel_oem_msg == null) {
+        c.lprintf(log.Level.err, "ipmitool: calloc failure");
+        _ = c.fclose(fp);
+        sel_oem_nrecs = 0;
+        return -1;
+    }
 
     var i: c_int = 0;
     while (i < sel_oem_nrecs) : (i += 1) {
@@ -394,21 +387,9 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
             );
             _ = c.fclose(fp);
             fp = null;
-            sel_oem_nrecs = 0;
-            // free all the memory allocated so far
-            const table = sel_oem_msg.?;
-            var j: c_int = 0;
-            while (j < i) : (j += 1) {
-                var k: usize = 3;
-                while (k < 17) : (k += 1) {
-                    if (table[@intCast(j)].value[selByte(k)] == -3) {
-                        c.free(table[@intCast(j)].string[selByte(k)]);
-                        table[@intCast(j)].string[selByte(k)] = null;
-                    }
-                }
-            }
-            c.free(table);
+            oemFreeTable(sel_oem_msg, sel_oem_nrecs);
             sel_oem_msg = null;
+            sel_oem_nrecs = 0;
             return -1;
         }
 
@@ -420,10 +401,26 @@ fn selOemInit(filename: [*c]const u8) callconv(.c) c_int {
                 rec.string[selByte(byte)] = @ptrCast(c.malloc(
                     c.strlen(&buf[selByte(byte)]) + 1,
                 ));
+                if (rec.string[selByte(byte)] == null) {
+                    c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                    _ = c.fclose(fp);
+                    oemFreeTable(sel_oem_msg, sel_oem_nrecs);
+                    sel_oem_msg = null;
+                    sel_oem_nrecs = 0;
+                    return -1;
+                }
                 _ = c.strcpy(rec.string[selByte(byte)], &buf[selByte(byte)]);
             }
         }
         rec.text = @ptrCast(c.malloc(c.strlen(&buf[selByte(17)]) + 1));
+        if (rec.text == null) {
+            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            _ = c.fclose(fp);
+            oemFreeTable(sel_oem_msg, sel_oem_nrecs);
+            sel_oem_msg = null;
+            sel_oem_nrecs = 0;
+            return -1;
+        }
         _ = c.strcpy(rec.text, &buf[selByte(17)]);
     }
 
@@ -447,7 +444,7 @@ fn oemMessage(evt: *SelEventRecord) void {
                     _ = c.printf(
                         pick(csvOutput(), ",%s=0x%x", " %s = 0x%x"),
                         rec.string[selByte(j)],
-                        @as(c_int, bytes[selByte(j)]),
+                        @as(c_int, bytes[j - 1]),
                     );
                 }
             }
@@ -560,9 +557,11 @@ fn selAddEntry(intf: *Intf, rec: *SelEventRecord) c_int {
 /// `ipmi_sel_add_entries_fromfile()`.
 fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
     var buf: [1024]u8 = undefined;
-    var rqdata: [8]u8 = undefined;
+    var event_line: [1024]u8 = undefined;
+    var rqdata: [7]u8 = undefined;
     var sel_event: SelEventRecord = undefined;
     var rc: c_int = 0;
+    var line: c_int = 0;
 
     if (filename == null) {
         return -1;
@@ -577,6 +576,7 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
         if (c.fgets(&buf, 1024, fp) == null) {
             continue;
         }
+        line += 1;
 
         // clip off optional comment tail indicated by #
         var ptr = c.strchr(&buf, '#');
@@ -586,12 +586,10 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
             ptr = @as([*c]u8, &buf) + c.strlen(&buf);
         }
 
-        // clip off trailing and leading whitespace.  The bound test comes
-        // after the dereference upstream; reproduced.
-        ptr -= 1;
-        while (c.isspace(ptr[0]) != 0 and @intFromPtr(ptr) >= @intFromPtr(&buf)) {
-            ptr[0] = 0;
+        // clip off trailing and leading whitespace
+        while (@intFromPtr(ptr) > @intFromPtr(&buf) and c.isspace((ptr - 1)[0]) != 0) {
             ptr -= 1;
+            ptr[0] = 0;
         }
         ptr = &buf;
         while (c.isspace(ptr[0]) != 0) {
@@ -600,25 +598,30 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
         if (c.strlen(ptr) == 0) {
             continue;
         }
+        _ = c.strcpy(&event_line, ptr);
 
         // parse the event, 7 bytes with optional comment
         // 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event
         var i: usize = 0;
+        var invalid = false;
+        rqdata = @splat(0);
         var tok = c.strtok(ptr, " ");
         while (tok != null) {
             if (i == 7) break;
             const j = i;
             i += 1;
             if (c.str2uchar(tok, &rqdata[j]) != 0) {
+                invalid = true;
                 break;
             }
             tok = c.strtok(null, " ");
         }
-        if (i < 7) {
+        if (invalid or i < 7) {
             c.lprintf(
                 log.Level.err,
-                "Invalid Event: %s",
-                c.buf2str(&rqdata, rqdata.len),
+                "Invalid Event on line %d: %s",
+                line,
+                &event_line,
             );
             continue;
         }
@@ -865,7 +868,7 @@ fn getSupermicroEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8
                     desc,
                     size_of_desc,
                     "@DIMM%c%d(P%dM%d)",
-                    if (((data2 & 0xf) >> 4) > 4)
+                    if (((data2 & 0xff) >> 4) > 4)
                         @as(c_int, '@') - 4 + ((data2 & 0xff) >> 4)
                     else
                         @as(c_int, '@') + ((data2 & 0xff) >> 4),
@@ -1041,9 +1044,7 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
                                                 str = desc + c.strlen(desc);
                                                 str[0] = ',';
                                                 str += 1;
-                                                // Upstream writes `str = '\0'`,
-                                                // assigning NULL to the pointer.
-                                                str = null;
+                                                str[0] = 0;
                                                 count = 0;
                                             }
                                             // Which type of memory config is present
@@ -1394,9 +1395,6 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
             },
             else => {},
         }
-    } else {
-        // Upstream assigns `sensor_type = rec->...event_type` here; the value
-        // is never read again.
     }
     return desc;
 }
@@ -1518,14 +1516,7 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
                     @as(c_int, r.sel_type.standard_type.sensor_type),
                     iana,
                 ),
-                // OEM Bytes Decoding for DELL
-                c.IPMI_OEM_DELL => {
-                    if (c.OEM_CODE_IN_BYTE2 == (r.sel_type.standard_type.event_data[0] & c.DATA_BYTE2_SPECIFIED_MASK) or
-                        c.OEM_CODE_IN_BYTE3 == (r.sel_type.standard_type.event_data[0] & c.DATA_BYTE3_SPECIFIED_MASK))
-                    {
-                        sfx = getOemDesc(intf, rec);
-                    }
-                },
+                c.IPMI_OEM_DELL => {}, // handled by the Dell block below
                 c.IPMI_OEM_SUPERMICRO, c.IPMI_OEM_SUPERMICRO_47488 => {
                     sfx = getOemDesc(intf, rec);
                 },
@@ -1584,6 +1575,7 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
             desc.* = @ptrCast(c.malloc(c.strlen(evt.*.desc) + 48 + size_of_desc));
             if (desc.* == null) {
                 c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                c.free(sfx);
                 return;
             }
             _ = c.memset(desc.*, 0, c.strlen(evt.*.desc) + 48 + size_of_desc);
@@ -1625,12 +1617,13 @@ fn getEventDesc(intf: ?*Intf, rec: ?*SelEventRecord, desc: [*c][*c]u8) callconv(
             desc.* = @ptrCast(c.malloc(48 + size_of_desc));
             if (desc.* == null) {
                 c.lprintf(log.Level.err, "ipmitool: malloc failure");
+                c.free(sfx);
                 return;
             }
             _ = c.memset(desc.*, 0, 48 + size_of_desc);
             if (flag == 0x02) {
-                // Upstream returns without freeing `sfx`.
                 _ = c.sprintf(desc.*, "%s", sfx);
+                c.free(sfx);
                 return;
             }
             _ = c.sprintf(desc.*, "(%s)", sfx);
@@ -1767,20 +1760,19 @@ fn selGetInfo(intf: *Intf) c_int {
     );
 
     // save the entry count and free space to determine percent full
-    var e: u16 = c.buf2short(&rsp.data[1]);
-    var f: u32 = c.buf2short(&rsp.data[3]);
+    const e: u16 = c.buf2short(&rsp.data[1]);
+    const free_space: u16 = c.buf2short(&rsp.data[3]);
     _ = c.printf("Entries          : %d\n", @as(c_int, e));
-    _ = c.printf("Free Space       : %d bytes %s\n", f, pick(f == 65535, "or more", ""));
+    _ = c.printf("Free Space       : %d bytes %s\n", @as(c_int, free_space), pick(free_space == 0xffff, "or more", ""));
 
     var pctfull: c_int = 0;
-    if (e != 0) {
-        // `e` is uint16_t, so the multiplication wraps modulo 65536.
-        e = e *% 16;
-        f +%= e;
-        pctfull = @intFromFloat(100 * (@as(f64, @floatFromInt(e)) / @as(f64, @floatFromInt(f))));
+    const used: u32 = @as(u32, e) * 16;
+    const total: u32 = used + free_space;
+    if (used != 0 and free_space != 0xffff) {
+        pctfull = @intFromFloat(100 * (@as(f64, @floatFromInt(used)) / @as(f64, @floatFromInt(total))));
     }
 
-    if (f >= 65535) {
+    if (free_space == 0xffff) {
         _ = c.printf("Percent Used     : %s\n", "unknown");
     } else {
         _ = c.printf("Percent Used     : %d%%\n", pctfull);
@@ -1838,9 +1830,7 @@ fn selGetInfo(intf: *Intf) c_int {
     return 0;
 }
 
-/// `ipmi_sel_get_std_entry()`: fetch one record and unpack it.  Upstream never
-/// checks `rsp->data_len`, so a short response is read past its end; that is
-/// reproduced here.
+/// `ipmi_sel_get_std_entry()`: fetch one complete record and unpack it.
 fn getStdEntry(intf: ?*Intf, id: u16, evt: ?*SelEventRecord) callconv(.c) u16 {
     const in = intf.?;
     const e = evt.?;
@@ -1872,6 +1862,15 @@ fn getStdEntry(intf: ?*Intf, id: u16, evt: ?*SelEventRecord) callconv(.c) u16 {
         );
         return 0;
     }
+    if (rsp.data_len < 18) {
+        c.lprintf(
+            log.Level.err,
+            "Get SEL Entry %x command failed: Invalid data length %d",
+            @as(c_int, id),
+            rsp.data_len,
+        );
+        return 0;
+    }
 
     // save next entry id
     const next: u16 = (@as(u16, rsp.data[1]) << 8) | rsp.data[0];
@@ -1882,23 +1881,6 @@ fn getStdEntry(intf: ?*Intf, id: u16, evt: ?*SelEventRecord) callconv(.c) u16 {
         c.buf2str(&rsp.data[2], @as(c_int, rsp.data_len) - 2),
     );
     e.* = .{};
-
-    // Upstream re-clears the structure field by field after `memset()`, having
-    // just set `record_type` to zero, so only the first branch can be taken.
-    e.record_id = 0;
-    e.record_type = 0;
-    if (e.record_type < 0xc0) {
-        e.sel_type.standard_type.timestamp = 0;
-        e.sel_type.standard_type.gen_id = 0;
-        e.sel_type.standard_type.evm_rev = 0;
-        e.sel_type.standard_type.sensor_type = 0;
-        e.sel_type.standard_type.sensor_num = 0;
-        e.sel_type.standard_type.td.event_type = 0;
-        e.sel_type.standard_type.td.event_dir = 0;
-        e.sel_type.standard_type.event_data[0] = 0;
-        e.sel_type.standard_type.event_data[1] = 0;
-        e.sel_type.standard_type.event_data[2] = 0;
-    }
 
     // save response into SEL event structure
     e.record_id = (@as(u16, rsp.data[3]) << 8) | rsp.data[2];
@@ -2491,6 +2473,10 @@ fn savelistEntries(intf: *Intf, count_in: c_int, savefile: [*c]const u8, binary:
         c.lprintf(log.Level.err, "Get SEL Info command failed: %s", ccString(rsp.ccode));
         return -1;
     }
+    if (rsp.data_len != 14) {
+        c.lprintf(log.Level.err, "Get SEL Info command failed: Invalid data length %d", rsp.data_len);
+        return -1;
+    }
     if (verbose() > 2) {
         c.printbuf(&rsp.data, rsp.data_len, "sel_info");
     }
@@ -2509,6 +2495,10 @@ fn savelistEntries(intf: *Intf, count_in: c_int, savefile: [*c]const u8, binary:
         };
         if (rsp.ccode != 0) {
             c.lprintf(log.Level.err, "Get SEL Info command failed: %s", ccString(rsp.ccode));
+            return -1;
+        }
+        if (rsp.data_len != 14) {
+            c.lprintf(log.Level.err, "Get SEL Info command failed: Invalid data length %d", rsp.data_len);
             return -1;
         }
         const entries: u16 = c.buf2short(&rsp.data[1]);
@@ -2585,9 +2575,18 @@ fn saveEntries(intf: *Intf, count: c_int, savefile: [*c]const u8) c_int {
     return savelistEntries(intf, count, savefile, 0);
 }
 
-/// `ipmi_sel_interpret()`.  Upstream leaves `evt` uninitialised and never fills
-/// in the timestamp (its own `FIXME`), so the successful path prints stack
-/// garbage; that is reproduced here.
+fn interpretAfter(cursor: [*c]u8, delimiter: c_int, status: *c_int) [*c]u8 {
+    const found = c.index(cursor, delimiter);
+    if (found == null) {
+        c.lprintf(log.Level.err, "Invalid SEL entry: missing field delimiter.");
+        status.* = -1;
+        return null;
+    }
+    return found + 1;
+}
+
+/// `ipmi_sel_interpret()`.  PPS timestamps remain zero (pre-init time) until
+/// the timezone semantics of this format are settled.
 fn selInterpret(
     intf: *Intf,
     iana: c_ulong,
@@ -2623,14 +2622,13 @@ fn selInterpret(
                 status = -1;
                 break;
             }
-            // `fgets()` above caps the line at 255 characters, so this test can
-            // never fire.
-            if (c.strlen(buffer) > 255) {
+            if (c.strlen(buffer) == 255 and buffer[254] != '\n' and c.fgetc(fp) != c.EOF) {
                 c.lprintf(log.Level.err, "ipmitool: invalid entry found in file.");
-                if (status != 0) break;
-                continue;
+                status = -1;
+                break;
             }
             cursor = buffer;
+            evt = .{};
             // assume normal "System" event
             evt.record_type = 2;
             setErrno(0);
@@ -2642,20 +2640,23 @@ fn selInterpret(
             }
             evt.sel_type.standard_type.evm_rev = 4;
 
-            // FIXME: convert
-            // evt.sel_type.standard_type.timestamp;
+            // PPS timestamp timezone conversion is tracked in issue #23;
+            // retain the initialized pre-init timestamp until then.
 
             // skip timestamp
-            cursor = advance(c.index(cursor, ';'), 1);
+            cursor = interpretAfter(cursor, ';', &status);
+            if (cursor == null) break;
 
             // FIXME: parse originator
             evt.sel_type.standard_type.gen_id = 0x0020;
 
             // skip originator info
-            cursor = advance(c.index(cursor, ';'), 1);
+            cursor = interpretAfter(cursor, ';', &status);
+            if (cursor == null) break;
 
             // Get sensor type
-            cursor = advance(c.index(cursor, '('), 1);
+            cursor = interpretAfter(cursor, '(', &status);
+            if (cursor == null) break;
 
             setErrno(0);
             evt.sel_type.standard_type.sensor_type = narrow(u8, c.strtol(cursor, null, 16));
@@ -2664,7 +2665,8 @@ fn selInterpret(
                 status = -1;
                 break;
             }
-            cursor = advance(c.index(cursor, ','), 1);
+            cursor = interpretAfter(cursor, ',', &status);
+            if (cursor == null) break;
 
             setErrno(0);
             evt.sel_type.standard_type.sensor_num = narrow(u8, c.strtol(cursor, null, 10));
@@ -2675,7 +2677,8 @@ fn selInterpret(
             }
 
             // skip to event type info
-            cursor = advance(c.index(cursor, ':'), 1);
+            cursor = interpretAfter(cursor, ':', &status);
+            if (cursor == null) break;
 
             setErrno(0);
             evt.sel_type.standard_type.td.event_type = narrow(u7, c.strtol(cursor, null, 16));
@@ -2686,19 +2689,31 @@ fn selInterpret(
             }
 
             // skip to event dir info
-            cursor = advance(c.index(cursor, '('), 1);
+            cursor = interpretAfter(cursor, '(', &status);
+            if (cursor == null) break;
+            if (cursor[0] == 0) {
+                c.lprintf(log.Level.err, "Invalid SEL entry: missing field delimiter.");
+                status = -1;
+                break;
+            }
             if (cursor[0] == 'a') {
                 evt.sel_type.standard_type.td.event_dir = 0;
             } else {
                 evt.sel_type.standard_type.td.event_dir = 1;
             }
             // skip to data info
-            cursor = advance(c.index(cursor, ' '), 1);
+            cursor = interpretAfter(cursor, ' ', &status);
+            if (cursor == null) break;
 
             if (evt.sel_type.standard_type.sensor_type == 0xF0) {
                 // got to FRU id
-                while (c.isdigit(cursor[0]) == 0) {
+                while (cursor[0] != 0 and c.isdigit(cursor[0]) == 0) {
                     cursor += 1;
+                }
+                if (cursor[0] == 0) {
+                    c.lprintf(log.Level.err, "Invalid SEL entry: missing field delimiter.");
+                    status = -1;
+                    break;
                 }
                 // store FRUid
                 setErrno(0);
@@ -2710,7 +2725,8 @@ fn selInterpret(
                 }
 
                 // Get to previous state
-                cursor = advance(c.index(cursor, 'M'), 1);
+                cursor = interpretAfter(cursor, 'M', &status);
+                if (cursor == null) break;
 
                 // Set previous state
                 setErrno(0);
@@ -2722,7 +2738,8 @@ fn selInterpret(
                 }
 
                 // Get to current state
-                cursor = advance(c.index(cursor, 'M'), 1);
+                cursor = interpretAfter(cursor, 'M', &status);
+                if (cursor == null) break;
 
                 // Set current state
                 setErrno(0);
@@ -2735,15 +2752,17 @@ fn selInterpret(
                 }
 
                 // skip to cause
-                cursor = advance(c.index(cursor, '='), 1);
+                cursor = interpretAfter(cursor, '=', &status);
+                if (cursor == null) break;
                 setErrno(0);
-                evt.sel_type.standard_type.event_data[1] |=
-                    narrow(u8, c.strtol(cursor, null, 16) << 4);
+                const cause = c.strtol(cursor, null, 16);
                 if (errno() != 0) {
                     c.lprintf(log.Level.err, "Invalid Event Data#1.");
                     status = -1;
                     break;
                 }
+                evt.sel_type.standard_type.event_data[1] |=
+                    @truncate(@as(u16, narrow(u8, cause)) << 4);
             } else if (cursor[0] == '0') {
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[0] = narrow(u8, c.strtol(cursor, null, 16));
@@ -2752,7 +2771,8 @@ fn selInterpret(
                     status = -1;
                     break;
                 }
-                cursor = advance(c.index(cursor, ' '), 1);
+                cursor = interpretAfter(cursor, ' ', &status);
+                if (cursor == null) break;
 
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[1] = narrow(u8, c.strtol(cursor, null, 16));
@@ -2762,7 +2782,8 @@ fn selInterpret(
                     break;
                 }
 
-                cursor = advance(c.index(cursor, ' '), 1);
+                cursor = interpretAfter(cursor, ' ', &status);
+                if (cursor == null) break;
 
                 setErrno(0);
                 evt.sel_type.standard_type.event_data[2] = narrow(u8, c.strtol(cursor, null, 16));
@@ -2842,6 +2863,10 @@ fn selReserve(intf: *Intf) u16 {
     };
     if (rsp.ccode != 0) {
         _ = c.printf("Unable to reserve SEL: %s", ccString(rsp.ccode));
+        return 0;
+    }
+    if (rsp.data_len < 2) {
+        c.lprintf(log.Level.warn, "Unable to reserve SEL: Invalid data length %d", rsp.data_len);
         return 0;
     }
 
@@ -3030,8 +3055,7 @@ fn selDelete(intf: *Intf, argc_in: c_int, argv: [*c][*c]u8) c_int {
     return rc;
 }
 
-/// `ipmi_sel_show_entry()`.  Upstream leaves `entity.logical` uninitialised;
-/// `ipmi_sdr_find_sdr_byentity()` never reads it, so zero here is unobservable.
+/// `ipmi_sel_show_entry()`.
 fn selShowEntry(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     var entity: EntityId = .{};
     var evt: SelEventRecord = undefined;

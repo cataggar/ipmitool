@@ -4,14 +4,14 @@
 0
 #!section stdout
 nrecs=7
-5001 | OEM record e0 | 3132334435363777883a3b3c3d | Kernel fault Code = 0x31 Sub = 0x33 Flags = 0x77 End = 0x3b | Any E0 record
+5001 | OEM record e0 | 3132334435363777883a3b3c3d | Kernel fault Code = 0x33 Sub = 0x35 Flags = 0x3a End = 0x3d | Any E0 record
 5002 | OEM record e0 | 3132339935363777883a3b3c3d | Any E0 record
 5003 | 01/01/20 | 00:08:32 UTC | OEM record c0 | 332211 | 414243444546 | A timestamped OEM record
 5004 | 01/01/20 | 00:08:32 UTC | Temperature #0x30 | Lower Non-critical going high | Asserted
 4c05 | 04/05/06 | 01:49:05 UTC | OEM record d0 | 7c6b5a | 99aabbccddee | All seven match bytes fixed | Any D0 record
 4c06 | 04/05/06 | 01:53:21 UTC | OEM record d0 | 7c6b5a | 99aabbccddee | Any D0 record
 4c07 | 04/05/06 | 01:49:05 UTC | OEM record d0 | 7c6b5a | 99abbbccddee | Any D0 record
-5a08 | 04/05/06 | 01:49:05 UTC | OEM record d1 | 776655 | 8899a1b2c3d4 | Every field named B4 = 0x5a B5 = 0xd1 B6 = 0x11 B7 = 0x22 B8 = 0x33 B9 = 0x44 B10 = 0x77 B11 = 0x66 B12 = 0x55 B13 = 0x88 B14 = 0x99 B15 = 0xa1 B16 = 0xb2
+5a08 | 04/05/06 | 01:49:05 UTC | OEM record d1 | 776655 | 8899a1b2c3d4 | Every field named B4 = 0x11 B5 = 0x22 B6 = 0x33 B7 = 0x44 B8 = 0x77 B9 = 0x66 B10 = 0x55 B11 = 0x88 B12 = 0x99 B13 = 0xa1 B14 = 0xb2 B15 = 0xc3 B16 = 0xd4
 #!section stderr
 #!section requests
 > netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00

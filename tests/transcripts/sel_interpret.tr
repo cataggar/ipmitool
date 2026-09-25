@@ -1,10 +1,8 @@
 # An interface that answers nothing beyond the usual probes.
 # 
-# `sel interpret' does not talk to the BMC: it reparses a text log.  Only the
-# paths that fail before the record is printed are covered here, because
-# ipmi_sel_interpret() leaves its sel_event_record uninitialised and never fills
-# in the timestamp -- there is a FIXME in the source saying so -- so a
-# successfully parsed line prints whatever was on the stack.
+# `sel interpret' does not talk to the BMC: it reparses a text log. The
+# successfully parsed cases have a deterministic pre-init timestamp; PPS
+# timezone conversion is left for issue #23.
 
 default_ccode 0xc1
 
