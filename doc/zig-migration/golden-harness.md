@@ -97,6 +97,13 @@ port restores the terminal (including a resized window); on poll failure it
 deactivates and restores the terminal; and on normal exit it closes the UDP
 socket. All other output and wire traffic must match the C oracle.
 
+The driver waits for each stdin read (acknowledged through the fixture's event
+pipe) before sending the next escape fragment. `session_ro` delays that read to
+exercise the PTY coalescing race. For keepalive cases, a fixture-only poll
+control pipe advances fake time on explicit ticks: two keepalives precede the
+keystroke and three follow it, while frozen polls deliver input. Neither the
+read acknowledgements nor the control ticks appear in oracle snapshots.
+
 To regenerate the oracle **from C**, review the resulting diff before
 committing:
 

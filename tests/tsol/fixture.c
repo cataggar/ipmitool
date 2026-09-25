@@ -26,6 +26,7 @@ int verbose;
 const struct valstr completion_code_vals[] = { { 0, NULL } };
 
 static int event_fd;
+static long fake_time = 100000;
 
 static void event(const char *fmt, ...)
 {
@@ -60,10 +61,8 @@ const char *val2str(uint32_t value, const struct valstr *vs)
 
 int gettimeofday(struct timeval *tv, void *tz)
 {
-	static long fake_time = 100000;
 	if (getenv("TSOL_FAST_CLOCK")) {
 		tv->tv_sec = fake_time;
-		fake_time += 31;
 		tv->tv_usec = 0;
 		return 0;
 	}
@@ -72,14 +71,41 @@ int gettimeofday(struct timeval *tv, void *tz)
 
 int poll(struct pollfd *fds, nfds_t count, int timeout)
 {
+	const char *tick_fd = getenv("TSOL_TICK_FD");
 	struct timespec delay;
 	if (getenv("TSOL_POLL_FAIL")) {
 		errno = EIO;
 		return -1;
 	}
+	if (tick_fd) {
+		char tick;
+		ssize_t n;
+		do {
+			n = syscall(SYS_read, atoi(tick_fd), &tick, 1);
+		} while (n < 0 && errno == EINTR);
+		if (n != 1 || (tick != 't' && tick != 'f')) {
+			errno = EIO;
+			return -1;
+		}
+		/* Only explicit ticks move time; input polls leave keepalive frozen. */
+		if (tick == 't')
+			fake_time += 31;
+	}
 	delay.tv_sec = 0;
 	delay.tv_nsec = (timeout > 100 ? 100 : timeout) * 1000000L;
 	return syscall(SYS_ppoll, fds, count, &delay, NULL, 0);
+}
+
+ssize_t read(int fd, void *buffer, size_t length)
+{
+	ssize_t n;
+	if (fd == STDIN_FILENO && getenv("TSOL_DELAY_STDIN"))
+		usleep(350000);
+	n = syscall(SYS_read, fd, buffer, length);
+	if (fd == STDIN_FILENO && n > 0)
+		/* Reuse the event pipe so snapshots need no extra control channel. */
+		event("stdin-read=%zd\n", n);
+	return n;
 }
 
 int kill(pid_t pid, int signal)
