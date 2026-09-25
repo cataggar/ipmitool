@@ -194,3 +194,10 @@ covers: ekanalyzer
 desc: insufficient files for print
 args: -I dummy ekanalyzer print
 covers: ekanalyzer
+
+[ekanalyzer_frushow_multiple]
+desc: two FRU images decoded in one invocation without carrying records between files
+args: -I dummy ekanalyzer frushow oc={work}/carrier.fru a1={work}/amc.fru
+blob: carrier.fru ekanalyzer/carrier.hex
+blob: amc.fru ekanalyzer/amc.hex
+covers: ekanalyzer
