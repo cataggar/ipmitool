@@ -11,8 +11,9 @@
 //! offset. `ipmiLocaltime2utc()` remains exported for C ABI compatibility but
 //! cannot convert a `time_t` that already identifies an absolute instant.
 //!
-//! Formatting goes through libc `strftime()`/`snprintf()` so the `%c`, `%x`,
+//! Calendar formatting goes through libc `strftime()` so the `%c`, `%x`,
 //! `%X` and `%Z` conversions keep producing exactly what they did before.
+//! The fixed "Unknown" timestamp uses Zig byte copies.
 //!
 //! Storage: `ipmiTimestampFmt()` and everything built on it return a pointer to
 //! a single module-level buffer that the next call overwrites, and the
@@ -74,9 +75,13 @@ pub fn ipmiStrftime(
     var when = stamp;
 
     if (stamp == time_unspecified) {
-        // C assigns the `int` result to a `size_t`; keep the conversion
-        // non-trapping so a negative result stays the same huge value.
-        return @bitCast(@as(isize, c.snprintf(s, max, "Unknown")));
+        const text = "Unknown";
+        if (max > 0) {
+            const count = @min(max - 1, text.len);
+            @memcpy(s[0..count], text[0..count]);
+            s[count] = 0;
+        }
+        return text.len;
     } else if (isSpecial(stamp)) {
         // Timestamp is relative to BMC start, no GMT offset.
         _ = c.gmtime_r(&when, &tm);
@@ -261,6 +266,16 @@ test "the unspecified timestamp ignores the format" {
         "Unspecified",
         std.mem.span(ipmiTimestampTime(0xFFFFFFFF)),
     );
+}
+
+test "Unknown timestamp matches snprintf at every truncation boundary" {
+    for (0..16) |max| {
+        var expected: [16]u8 = @splat(0xa5);
+        var actual: [16]u8 = @splat(0xa5);
+        const count = c.snprintf(&expected, max, "Unknown");
+        try std.testing.expectEqual(@as(usize, @intCast(count)), ipmiStrftime(&actual, max, "%Y", time_unspecified));
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
 }
 
 test "relative timestamps are formatted without a timezone offset" {

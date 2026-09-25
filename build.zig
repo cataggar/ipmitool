@@ -1089,6 +1089,13 @@ pub fn build(b: *std.Build) void {
     b.step("test-fdset-compile", "Cross-compile fd_set ABI parity tests")
         .dependOn(&fd_set_unit.step);
 
+    const time_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{ "the unspecified timestamp ignores the format", "Unknown timestamp matches snprintf" },
+    });
+    b.step("test-time-unit", "Run timestamp Unknown-format parity tests")
+        .dependOn(&b.addRunArtifact(time_unit).step);
+
     const shell_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"quoted shell words"},
