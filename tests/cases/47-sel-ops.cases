@@ -317,3 +317,104 @@ args: -I dummy sel time get
 transcript: sel_time.tr
 env: TZ=XYZ5
 covers: sel
+
+[sl_time_set_tz_day_before]
+desc: positive UTC offset crosses the previous day
+args: -I dummy sel time set "03/14/21 00:30:00"
+transcript: sel_time.tr
+env: TZ=XYZ-9
+covers: sel
+
+[sl_time_set_tz_day_after]
+desc: negative UTC offset crosses into the next UTC day
+args: -I dummy sel time set "03/14/21 23:30:00"
+transcript: sel_time.tr
+env: TZ=XYZ5
+covers: sel
+
+[sl_time_set_winter_dst]
+desc: local winter clock is five hours behind UTC
+args: -I dummy sel time set "01/15/21 15:09:26"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_summer_dst]
+desc: local summer clock is four hours behind UTC
+args: -I dummy sel time set "07/15/21 15:09:26"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_dst_spring_before]
+desc: local clock immediately before the spring DST gap
+args: -I dummy sel time set "03/14/21 01:59:59"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_dst_spring_after]
+desc: local clock immediately after the spring DST gap
+args: -I dummy sel time set "03/14/21 03:00:00"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_dst_fall_before]
+desc: local clock before the repeated autumn hour
+args: -I dummy sel time set "11/07/21 00:59:59"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_dst_fall_after]
+desc: local clock after the repeated autumn hour
+args: -I dummy sel time set "11/07/21 02:00:00"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_dst_utc]
+desc: -Z parses UTC without local DST rules
+args: -I dummy -Z sel time set "03/14/21 03:00:00"
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_set_now_tz]
+desc: now sends epoch seconds unchanged in a fixed offset zone
+args: -I dummy sel time set now
+transcript: sel_time.tr
+env: TZ=XYZ5
+fixed_time: 1530395348
+covers: sel
+
+[sl_time_set_now_utc]
+desc: -Z does not shift now even with a non-UTC host timezone
+args: -I dummy -Z sel time set now
+transcript: sel_time.tr
+env: TZ=XYZ5
+fixed_time: 1530395348
+covers: sel
+
+[sl_time_set_now_dst]
+desc: now during summer DST sends the same epoch seconds
+args: -I dummy sel time set now
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+fixed_time: 1530395348
+covers: sel
+
+[sl_time_get_dst_local]
+desc: sel time get renders a summer BMC instant with EDT
+args: -I dummy sel time get
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel
+
+[sl_time_get_dst_utc]
+desc: -Z displays UTC despite the local DST zone
+args: -I dummy -Z sel time get
+transcript: sel_time.tr
+env: TZ=EST5EDT,M3.2.0/2,M11.1.0/2
+covers: sel

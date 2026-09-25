@@ -2795,18 +2795,15 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 
 	/* See if user requested set to current client system time */
 	if (strcasecmp(time_string, "now") == 0) {
+		/* time_t is already epoch seconds, regardless of host timezone. */
 		t = time(NULL);
-		/*
-		 * Now we have local time in t, but BMC requires UTC
-		 */
-		t = ipmi_localtime2utc(t);
 	}
 	else {
 		bool error = true; /* Assume the string is invalid */
 		/* Now let's extract time_t from the supplied string */
 		if (strptime(time_string, time_format, &tm) != NULL) {
-			tm.tm_isdst = (-1); /* look up DST information */
-			t = mktime(&tm);
+			tm.tm_isdst = time_in_utc ? 0 : -1;
+			t = time_in_utc ? timegm(&tm) : mktime(&tm);
 			if (t >= 0) {
 				/* Surprisingly, the user hasn't mistaken ;) */
 				error = false;
@@ -2817,17 +2814,10 @@ ipmi_sel_set_time(struct ipmi_intf * intf, const char * time_string)
 			lprintf(LOG_ERR, "Specified time could not be parsed");
 			return -1;
 		}
-
-		/*
-		 * If `-c` wasn't specified then t we've just got is in local timesone
-		 */
-		if (!time_in_utc) {
-			t = ipmi_localtime2utc(t);
-		}
 	}
 
 	/*
-	 * At this point `t` is UTC. Convert it to LE and send.
+	 * At this point `t` is epoch seconds. Convert it to LE and send.
 	 */
 
 	req.msg.data = msg_data;

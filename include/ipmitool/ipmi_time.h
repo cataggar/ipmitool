@@ -86,5 +86,10 @@ char *ipmi_timestamp_numeric(uint32_t stamp); /* MM/DD/YYYY HH:MM:SS ZZZ */
 char *ipmi_timestamp_date(uint32_t stamp); /* MM/DD/YYYY ZZZ */
 char *ipmi_timestamp_time(uint32_t stamp); /* HH:MM:SS ZZZ */
 
-/* Subtract the UTC offset from local time_t */
+/*
+ * A time_t is already seconds since the epoch, independent of TZ. Retained
+ * for ABI compatibility; callers with local calendar fields must use mktime()
+ * (tm_isdst = -1), and callers with UTC fields must use timegm(). The -Z
+ * option selects UTC for parsing/display, not an adjustment to a time_t.
+ */
 time_t ipmi_localtime2utc(time_t local);

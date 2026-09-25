@@ -209,10 +209,16 @@ covers: fru
 | `transcript` | file in `tests/transcripts` (default `default.tr`)                         |
 | `covers`     | space separated top-level commands this case exercises (feeds the coverage check) |
 | `env`        | `NAME=VALUE`, repeatable, added to the fixed environment                   |
+| `fixed_time` | mock `time()` in the CLI process with this epoch second (for `now` cases)   |
 | `blob`       | `<dest> <fixture.hex>` - materialize a binary file in the scratch dir      |
 | `text`       | `<dest> <fixture.txt>` - materialize a text file in the scratch dir        |
 | `registry`   | `default` (plant the IANA PEN fixture) or `none` (test the lookup failure) |
 | `timeout_ms` | per-case wall-clock budget, default 10000                                  |
+
+For `fixed_time`, the harness compiles `tests/golden/fixed_time.c` into the
+case's scratch directory and preloads it **only in the ipmitool child**. This
+pins `sel time set now` without affecting the harness's timeouts or depending
+on the real host clock.
 
 `{work}` in `args` expands to the case's scratch directory, and is scrubbed back
 out of the captured output, so file-based commands are stable:
@@ -481,6 +487,30 @@ Normalized - and this is the complete list, three explicit substitutions:
 There is deliberately no regex for timestamps, PIDs or hostnames: every
 timestamp in the output comes from a fixture, and anything that would print a
 PID or a hostname is either not exercised or would be a genuine finding.
+
+### SEL clock and timezone cases
+
+SEL time values on the wire are seconds since the epoch. IPMI 1.5 allows a
+BMC-local clock; IPMI 2.0 defines a separate optional SEL Time UTC Offset for
+translating that clock. Until an offset is available, this implementation
+assumes the BMC clock is UTC (as the existing SEL transcript does). The
+host's timezone must **not** be used as a substitute for the BMC's offset.
+
+`sel time set now` sends `time(NULL)` unchanged regardless of `-Z` or the host
+timezone. For an explicit date, the default interprets the user's calendar
+fields in the host's local timezone, using its DST rules; `-Z` interprets
+those fields as UTC. Both paths send the resulting epoch seconds unchanged.
+`sel time get` and other absolute timestamps display in the host's local
+timezone by default, or in UTC with `-Z`. Relative `S+` stamps count from
+BMC startup and never receive a host timezone offset. The legacy
+`ipmi_localtime2utc(time_t)` symbol is an identity operation: a `time_t`
+cannot contain unconverted "local time."
+
+Timezone cases use explicit POSIX `TZ` strings (`EST5EDT,M3.2.0/2,M11.1.0/2`
+for US DST and `XYZ5` for a fixed offset), so summer, winter and transition
+expectations never depend on the host's zone database. The SEL time cases
+check the request bytes as well as the displayed text; changes to snapshots
+are reviewed as wire-format changes, not just cosmetic output differences.
 
 ## Command coverage check
 

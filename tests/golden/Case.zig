@@ -19,6 +19,7 @@
 //!     blob:        <dest> <fixture.hex>, writes a hex fixture into the work dir
 //!     text:        <dest> <fixture.txt>, copies a text fixture into the work dir
 //!     registry:    default | none  (IANA PEN registry visible to the binary)
+//!     fixed_time:  epoch seconds returned by time() in the child process
 //!     timeout_ms:  per-case wall clock budget (default 10000)
 //!
 //! `{work}` anywhere in `args` expands to the case's work directory, which is
@@ -39,6 +40,7 @@ covers: []const []const u8 = &.{},
 env: []const Env = &.{},
 blobs: []const Blob = &.{},
 registry: Registry = .default,
+fixed_time: ?i64 = null,
 timeout_ms: u32 = 10_000,
 source: []const u8 = "",
 
@@ -193,6 +195,11 @@ fn parseInto(
         } else if (std.mem.eql(u8, key, "timeout_ms")) {
             c.timeout_ms = std.fmt.parseUnsigned(u32, value, 10) catch {
                 try diag.print(gpa, "{s}:{d}: timeout_ms: not a number", .{ path, line_no });
+                return error.BadCaseFile;
+            };
+        } else if (std.mem.eql(u8, key, "fixed_time")) {
+            c.fixed_time = std.fmt.parseInt(i64, value, 10) catch {
+                try diag.print(gpa, "{s}:{d}: fixed_time: not an epoch second", .{ path, line_no });
                 return error.BadCaseFile;
             };
         } else {

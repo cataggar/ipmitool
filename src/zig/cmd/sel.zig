@@ -2917,15 +2917,14 @@ fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
 
     // See if user requested set to current client system time
     if (c.strcasecmp(time_string, "now") == 0) {
+        // time_t is already epoch seconds, regardless of host timezone.
         t = c.time(null);
-        // Now we have local time in t, but BMC requires UTC
-        t = c.ipmi_localtime2utc(t);
     } else {
         var err = true; // Assume the string is invalid
         // Now let's extract time_t from the supplied string
         if (c.strptime(time_string, time_format, &tm) != null) {
-            tm.tm_isdst = -1; // look up DST information
-            t = c.mktime(&tm);
+            tm.tm_isdst = if (c.time_in_utc) 0 else -1;
+            t = if (c.time_in_utc) c.timegm(&tm) else c.mktime(&tm);
             if (t >= 0) {
                 // Surprisingly, the user hasn't mistaken ;)
                 err = false;
@@ -2936,14 +2935,9 @@ fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
             c.lprintf(log.Level.err, "Specified time could not be parsed");
             return -1;
         }
-
-        // If `-c` wasn't specified then t we've just got is in local timezone
-        if (!c.time_in_utc) {
-            t = c.ipmi_localtime2utc(t);
-        }
     }
 
-    // At this point `t` is UTC.  Convert it to LE and send.
+    // At this point `t` is epoch seconds. Convert it to LE and send.
     req.msg.data = &msg_data;
     c.htoipmi32(@truncate(@as(u64, @bitCast(t))), req.msg.data);
     req.msg.data_len = msg_data.len;

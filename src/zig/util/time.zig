@@ -4,24 +4,12 @@
 //! Selected with `zig build -Dzig-modules=time`, which drops `lib/ipmi_time.c`
 //! from the compile and links this module instead.
 //!
-//! # Upstream bugs preserved on purpose
-//!
-//! This is a straight port, not a fix.  Upstream carries known timezone and DST
-//! defects here (branch `bugfix/43-Fix-timezone-and-DST-in-SEL`); changing the
-//! behaviour in the same commit that changes the language would make any
-//! differential regression indistinguishable from an intentional fix, so all
-//! three are reproduced exactly and pinned by tests below:
-//!
-//!  1. `ipmiAsctimeR()` formats the relative "S+" form for special timestamps
-//!     and then unconditionally overwrites the buffer with `"%c %Z"`, so the
-//!     first result is always discarded.
-//!  2. `ipmiStrftime()` assigns `daylight = -1` on the UTC path.  `daylight` is
-//!     an output of `tzset()`, not an input, so this corrupts a libc global and
-//!     never reaches `strftime()`.
-//!  3. `ipmiLocaltime2utc()` splits `local` with `gmtime_r()` and reassembles it
-//!     with `mktime()`, which reinterprets the fields as local time.  With
-//!     `tm_isdst = -1` the result depends on whether the *reassembled* date is
-//!     in DST, which is not necessarily the same answer as for the input.
+//! Absolute timestamps are epoch seconds, independent of the host's timezone.
+//! The -Z option selects UTC for parsing and display; otherwise calendar input
+//! is interpreted in the host timezone, and absolute output is displayed there.
+//! Relative S+ timestamps count from BMC startup and never take a timezone
+//! offset. `ipmiLocaltime2utc()` remains exported for C ABI compatibility but
+//! cannot convert a `time_t` that already identifies an absolute instant.
 //!
 //! Formatting goes through libc `strftime()`/`snprintf()` so the `%c`, `%x`,
 //! `%X` and `%Z` conversions keep producing exactly what they did before.
@@ -66,15 +54,9 @@ pub fn isValid(ts: c.time_t) bool {
     return ts != time_unspecified;
 }
 
-/// `ipmi_localtime2utc()`: subtract the UTC offset from a local `time_t`.
-///
-/// Bug 3 above is preserved verbatim: `gmtime_r()` then `mktime()`.
+/// `ipmi_localtime2utc()`: retain the legacy ABI; a `time_t` is already UTC.
 pub fn ipmiLocaltime2utc(local: c.time_t) callconv(.c) c.time_t {
-    var tm: c.struct_tm = undefined;
-    var stamp = local;
-    _ = c.gmtime_r(&stamp, &tm);
-    tm.tm_isdst = -1;
-    return c.mktime(&tm);
+    return local;
 }
 
 /// `ipmi_strftime()`: `strftime()` honouring the `-Z` option.
@@ -95,19 +77,15 @@ pub fn ipmiStrftime(
         // C assigns the `int` result to a `size_t`; keep the conversion
         // non-trapping so a negative result stays the same huge value.
         return @bitCast(@as(isize, c.snprintf(s, max, "Unknown")));
-    } else if (stamp <= time_init_done) {
+    } else if (isSpecial(stamp)) {
         // Timestamp is relative to BMC start, no GMT offset.
         _ = c.gmtime_r(&when, &tm);
         return c.strftime(s, max, format, &tm);
     }
 
-    if (time_in_utc or isSpecial(stamp)) {
-        // The user wants the time reported in UTC, or the stamp is a number of
-        // seconds since system power on; either way, no timezone offset.
+    if (time_in_utc) {
+        // The user wants the time reported in UTC.
         _ = c.gmtime_r(&when, &tm);
-        // Bug 2: `daylight` is an output of tzset(), writing it does nothing
-        // useful.  Kept so the C and Zig builds touch the same globals.
-        c.daylight = -1;
     } else {
         // The user wants the time reported in the local time zone.
         _ = c.localtime_r(&when, &tm);
@@ -117,9 +95,7 @@ pub fn ipmiStrftime(
 
 /// `ipmi_asctime_r()`: `"Wed Jun 30 21:49:08 1993 CEST"`, without the newline.
 ///
-/// Returns `outbuf`.  Bug 1 above is preserved: the `S+` branches compute a
-/// relative timestamp that the trailing `"%c %Z"` call immediately overwrites,
-/// so special timestamps are rendered as an absolute date near the epoch.
+/// Returns `outbuf`; special timestamps keep their relative `S+` form.
 pub fn ipmiAsctimeR(stamp: c.time_t, outbuf: [*]u8) callconv(.c) [*c]u8 {
     if (isSpecial(stamp)) {
         if (stamp < seconds_a_day) {
@@ -129,6 +105,7 @@ pub fn ipmiAsctimeR(stamp: c.time_t, outbuf: [*]u8) callconv(.c) [*c]u8 {
             // normally, but we support it anyway.
             _ = ipmiStrftime(outbuf, asctime_sz, "S+%yy %jd %H:%M:%S", stamp);
         }
+        return outbuf;
     }
 
     _ = ipmiStrftime(outbuf, asctime_sz, "%c %Z", stamp);
@@ -237,8 +214,7 @@ comptime {
 // Tests
 //
 // Everything here goes through libc only, so it runs in the ABI test binary.
-// `TZ` is forced to UTC where the expected output would otherwise depend on the
-// machine, and the tests that pin the upstream bugs say so explicitly.
+// `TZ` is set explicitly for every timezone-sensitive expectation.
 // ---------------------------------------------------------------------------
 
 /// Point libc at a fixed timezone for the duration of a test.
@@ -288,7 +264,7 @@ test "the unspecified timestamp ignores the format" {
 }
 
 test "relative timestamps are formatted without a timezone offset" {
-    setTimezone("EST5EDT");
+    setTimezone("EST5EDT,M3.2.0/2,M11.1.0/2");
     defer setTimezone("UTC");
 
     // Below IPMI_TIME_INIT_DONE the stamp counts seconds since BMC start and
@@ -309,6 +285,10 @@ test "relative timestamps are formatted without a timezone offset" {
         "S+ 70/001",
         std.mem.span(ipmiTimestampDate(3661)),
     );
+
+    // Exactly IPMI_TIME_INIT_DONE is an absolute timestamp, not S+.
+    _ = ipmiStrftime(&buf, buf.len, "%Y-%m-%d %H:%M:%S", time_init_done);
+    try std.testing.expectEqualStrings("1987-01-05 13:48:32", buf[0..19]);
 }
 
 test "a long relative timestamp switches to the years/days form" {
@@ -324,7 +304,7 @@ test "a long relative timestamp switches to the years/days form" {
 }
 
 test "absolute timestamps honour the -Z option" {
-    setTimezone("EST5EDT");
+    setTimezone("EST5EDT,M3.2.0/2,M11.1.0/2");
     defer {
         setTimezone("UTC");
         time_in_utc = false;
@@ -343,49 +323,92 @@ test "absolute timestamps honour the -Z option" {
     try std.testing.expectEqualStrings("2018-06-30 21:49:08", buf[0..19]);
 }
 
-test "BUG: ipmi_asctime_r discards the relative form it just computed" {
-    setTimezone("UTC");
-
-    // Upstream computes "S+01:01:01" and then overwrites the whole buffer with
-    // the "%c %Z" rendering of the same stamp.  Preserved deliberately; see the
-    // module comment and the follow-up issue linked from the pull request.
-    var buf: DateBuf = .{0} ** asctime_sz;
-    _ = ipmiAsctimeR(3661, &buf);
-
-    const text = std.mem.sliceTo(&buf, 0);
-    try std.testing.expect(!std.mem.startsWith(u8, text, "S+"));
-    try std.testing.expect(std.mem.indexOf(u8, text, "1970") != null);
-}
-
-test "BUG: ipmi_strftime clobbers the libc daylight global" {
-    setTimezone("EST5EDT");
+test "ipmi_asctime_r preserves the relative form across day boundaries" {
+    setTimezone("EST5EDT,M3.2.0/2,M11.1.0/2");
     defer setTimezone("UTC");
 
-    // `daylight` is an output of tzset(); formatting a single UTC timestamp
-    // leaves it at -1 for the rest of the process.
+    var buf: DateBuf = .{0} ** asctime_sz;
+    _ = ipmiAsctimeR(0, &buf);
+    try std.testing.expectEqualStrings("S+00:00:00", std.mem.sliceTo(&buf, 0));
+    _ = ipmiAsctimeR(3661, &buf);
+    try std.testing.expectEqualStrings("S+01:01:01", std.mem.sliceTo(&buf, 0));
+    _ = ipmiAsctimeR(seconds_a_day - 1, &buf);
+    try std.testing.expectEqualStrings("S+23:59:59", std.mem.sliceTo(&buf, 0));
+    _ = ipmiAsctimeR(seconds_a_day, &buf);
+    try std.testing.expectEqualStrings("S+70y 002d 00:00:00", std.mem.sliceTo(&buf, 0));
+
+    _ = ipmiAsctimeR(time_init_done - 1, &buf);
+    try std.testing.expect(std.mem.startsWith(u8, std.mem.sliceTo(&buf, 0), "S+"));
+}
+
+test "UTC formatting leaves libc daylight and local DST unchanged" {
+    setTimezone("EST5EDT,M3.2.0/2,M11.1.0/2");
+    defer setTimezone("UTC");
+
+    const before = c.daylight;
     var buf: DateBuf = undefined;
     time_in_utc = true;
     defer time_in_utc = false;
     _ = ipmiStrftime(&buf, buf.len, "%Y", 1530395348);
+    try std.testing.expectEqual(before, c.daylight);
 
-    try std.testing.expectEqual(@as(c_int, -1), c.daylight);
+    time_in_utc = false;
+    _ = ipmiStrftime(&buf, buf.len, "%Y-%m-%d %H:%M:%S", 1530395348);
+    try std.testing.expectEqualStrings("2018-06-30 17:49:08", buf[0..19]);
 }
 
-test "BUG: ipmi_localtime2utc round trips through gmtime_r and mktime" {
-    setTimezone("UTC");
+test "a time_t from now or mktime is already an absolute instant" {
+    defer setTimezone("UTC");
+    const instants = [_]c.time_t{
+        1530395348, // Fixed clock sample standing in for time(NULL).
+        1610712000, // Winter.
+        1626350400, // Summer.
+        1615705199, // Before the spring DST jump.
+        1615705200, // After the spring DST jump.
+        1636264799, // Before the autumn DST change.
+        1636264800, // After the autumn DST change.
+    };
+    for ([_][*:0]const u8{ "UTC0", "XYZ5", "EST5EDT,M3.2.0/2,M11.1.0/2" }) |zone| {
+        setTimezone(zone);
+        for (instants) |instant| {
+            try std.testing.expectEqual(instant, ipmiLocaltime2utc(instant));
+        }
+    }
+}
 
-    // In UTC the round trip is the identity, which is the only case upstream
-    // gets right.
-    try std.testing.expectEqual(@as(c.time_t, 1530395348), ipmiLocaltime2utc(1530395348));
+test "absolute formatting handles fixed offsets and both DST transitions" {
+    defer {
+        setTimezone("UTC");
+        time_in_utc = false;
+    }
+    var buf: DateBuf = undefined;
+    const cases = [_]struct { stamp: c.time_t, local: []const u8 }{
+        .{ .stamp = 1610712000, .local = "2021-01-15 07:00:00" },
+        .{ .stamp = 1626350400, .local = "2021-07-15 08:00:00" },
+        .{ .stamp = 1615705199, .local = "2021-03-14 01:59:59" },
+        .{ .stamp = 1615705200, .local = "2021-03-14 03:00:00" },
+        .{ .stamp = 1636264799, .local = "2021-11-07 01:59:59" },
+        .{ .stamp = 1636264800, .local = "2021-11-07 01:00:00" },
+    };
 
-    // Away from UTC the offset is applied in the wrong direction, and with
-    // tm_isdst = -1 the answer depends on whether the *reassembled* date is in
-    // DST rather than the input date.  EST5EDT is UTC-5, DST in June, so the
-    // 21:49:08 UTC fields are re-read as 21:49:08 EDT, i.e. UTC+4h.
-    setTimezone("EST5EDT");
-    try std.testing.expectEqual(
-        @as(c.time_t, 1530395348 + 4 * 60 * 60),
-        ipmiLocaltime2utc(1530395348),
-    );
-    setTimezone("UTC");
+    setTimezone("EST5EDT,M3.2.0/2,M11.1.0/2");
+    for (cases) |case| {
+        time_in_utc = false;
+        _ = ipmiStrftime(&buf, buf.len, "%Y-%m-%d %H:%M:%S", case.stamp);
+        try std.testing.expectEqualStrings(case.local, buf[0..19]);
+    }
+
+    setTimezone("XYZ5");
+    for ([_]c.time_t{ 1610712000, 1626350400 }) |stamp| {
+        _ = ipmiStrftime(&buf, buf.len, "%Y-%m-%d %H:%M:%S", stamp);
+        const expected = if (stamp == 1610712000) "2021-01-15 07:00:00" else "2021-07-15 07:00:00";
+        try std.testing.expectEqualStrings(expected, buf[0..19]);
+        time_in_utc = true;
+        _ = ipmiStrftime(&buf, buf.len, "%Y-%m-%d %H:%M:%S", stamp);
+        try std.testing.expectEqualStrings(
+            if (stamp == 1610712000) "2021-01-15 12:00:00" else "2021-07-15 12:00:00",
+            buf[0..19],
+        );
+        time_in_utc = false;
+    }
 }
