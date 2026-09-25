@@ -1,0 +1,72 @@
+#!golden 1
+#!case hpm_upgrade_auto_rollback
+#!section exit
+0
+#!section stdout no-final-newline
+Validating firmware image integrity...OK
+Performing preparation stage...OK
+
+-------------------------------------------------------------------------------
+|ID  | Name        |                     Versions                        | %  |
+|    |             |      Active     |      Backup     |      File       |    |
+|----|-------------|-----------------|-----------------|-----------------|----|
+|   0|IPMC         |   1.02 34000000 |   1.01 22000000 |   1.00 00000000 |  0%|\x08\x08\x08\x08\x08100%|
+|    |Upload Time: 00:00             | Image Size:      16 bytes              |
+-------------------------------------------------------------------------------
+   \x20
+#!section stderr
+
+PICMG HPM.1 Upgrade Agent 1.0.9:\x20
+
+
+Performing upgrade stage:
+(*) Component requires Payload Cold Reset
+Performing activation stage:\x20
+    Self test failed:
+    Result1 = 0
+    Result2 = 2
+    Getting rollback status...
+Rollback occurred on component mask: 0x01
+
+Firmware upgrade procedure successful
+
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=picmg_discover ccode=0x00 len=2 data=00 23
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=caps ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=general ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 02
+< rule=description ccode=0x00 len=13 data=00 49 50 4d 43 20 20 20 20 20 20 20 20
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 01
+< rule=current ccode=0x00 len=7 data=00 01 02 34 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 03
+< rule=rollback_version ccode=0x00 len=7 data=00 01 01 22 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 04
+< rule=deferred ccode=0x00 len=7 data=00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=device ccode=0x00 len=15 data=20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+> netfn=0x2c lun=0x00 cmd=0x2e target_cmd=0x00 data=00
+< rule=caps ccode=0x00 len=8 data=00 00 17 05 05 05 05 01
+> netfn=0x2c lun=0x00 cmd=0x2f target_cmd=0x00 data=00 00 00
+< rule=general ccode=0x00 len=2 data=00 1e
+> netfn=0x2c lun=0x00 cmd=0x31 target_cmd=0x00 data=00 01 01
+< rule=initiate ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x31 target_cmd=0x00 data=00 01 02
+< rule=initiate ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x32 target_cmd=0x00 data=00 00 de ad be ef de ad be ef de ad be ef de ad be ef
+< rule=block ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x33 target_cmd=0x00 data=00 00 10 00 00 00
+< rule=finish ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x35 target_cmd=0x00 data=00
+< rule=activate ccode=0x00 len=1 data=00
+> netfn=0x2c lun=0x00 cmd=0x36 target_cmd=0x00 data=00
+< rule=failing_selftest ccode=0x00 len=3 data=00 00 02
+> netfn=0x2c lun=0x00 cmd=0x37 target_cmd=0x00 data=00
+< rule=rollback ccode=0x00 len=2 data=00 01
+bye

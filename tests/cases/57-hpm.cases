@@ -153,6 +153,13 @@ transcript: hpm_flow.tr
 blob: fw.img hpm/image_unattended.hex
 covers: hpm
 
+[hpm_upgrade_auto_rollback]
+desc: Failed post-activation selftest triggers automatic rollback status query
+args: -I dummy hpm upgrade {work}/fw.img activate
+transcript: hpm_autorollback.tr
+blob: fw.img hpm/image_unattended.hex
+covers: hpm
+
 [hpm_compare_16]
 desc: Compare action uploads blocks but skips prepare/backup
 args: -I dummy hpm compare {work}/fw.img
