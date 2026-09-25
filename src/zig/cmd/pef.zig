@@ -971,3 +971,28 @@ test "PEF malformed trigger text stays within the caller's 128-byte buffer" {
     try std.testing.expectEqual(@as(u32, 0xaabbccdd), output.canary);
     try std.testing.expectEqual(@as(u8, 0), output.bytes[127]);
 }
+
+test "PEF list and any descriptions distinguish exact values from masks" {
+    try std.testing.expectEqualStrings("Temperature", std.mem.span(description(sensors, 1)));
+    try std.testing.expectEqualStrings("None", std.mem.span(description(sensors, 0xfe)));
+    try std.testing.expectEqualStrings("Non-recoverable", std.mem.span(description(severities, 0x28)));
+}
+
+test "PEF action descriptions combine only matching bits" {
+    try std.testing.expectEqualStrings("Alert,Diagnostic-interrupt", std.mem.span(description(actions, 0x21)));
+    try std.testing.expectEqualStrings("None", std.mem.span(description(actions, 0)));
+}
+
+test "PEF trigger descriptions handle sentinel and boundary values" {
+    var buf: [128]u8 = @splat(0);
+    formatTrigger(0xff, 0, &buf);
+    try std.testing.expectEqualStrings("Any", std.mem.sliceTo(&buf, 0));
+    formatTrigger(0, 0, &buf);
+    try std.testing.expectEqualStrings("Unspecified", std.mem.sliceTo(&buf, 0));
+    formatTrigger(0x6f, 0, &buf);
+    try std.testing.expectEqualStrings("Sensor-specific", std.mem.sliceTo(&buf, 0));
+    formatTrigger(0x70, 0, &buf);
+    try std.testing.expectEqualStrings("OEM", std.mem.sliceTo(&buf, 0));
+    formatTrigger(1, 1, &buf);
+    try std.testing.expectEqualStrings("(0x01/0x0001),<LNC", std.mem.sliceTo(&buf, 0));
+}
