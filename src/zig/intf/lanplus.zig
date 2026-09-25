@@ -87,6 +87,7 @@ const abi = @import("../abi.zig");
 const cassert = @import("../util/cassert.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("intf.zig");
+const fd_set = @import("../util/fd_set.zig");
 const log = @import("../util/log.zig");
 
 const Intf = intf_mod.Intf;
@@ -532,27 +533,6 @@ fn reqClearEntries() void {
 }
 
 // ---------------------------------------------------------------------------
-// fd_set, which is macros in C
-// ---------------------------------------------------------------------------
-
-const fd_mask_bits = @bitSizeOf(c.__fd_mask);
-
-fn fdZero(set: *c.fd_set) void {
-    @memset(&set.__fds_bits, 0);
-}
-
-fn fdSet(fd: c_int, set: *c.fd_set) void {
-    const bit: usize = @intCast(fd);
-    set.__fds_bits[bit / fd_mask_bits] |= @as(c.__fd_mask, 1) << @intCast(bit % fd_mask_bits);
-}
-
-fn fdIsSet(fd: c_int, set: *const c.fd_set) bool {
-    const bit: usize = @intCast(fd);
-    const mask = @as(c.__fd_mask, 1) << @intCast(bit % fd_mask_bits);
-    return (set.__fds_bits[bit / fd_mask_bits] & mask) != 0;
-}
-
-// ---------------------------------------------------------------------------
 // Packet I/O
 // ---------------------------------------------------------------------------
 
@@ -569,23 +549,24 @@ var recv_rsp: ipmi.Response = std.mem.zeroes(ipmi.Response);
 
 fn recvPacket(intf: *Intf) ?*ipmi.Response {
     const session = intf.session.?;
+    if (!fd_set.valid(intf.fd)) return null;
 
     var read_set: c.fd_set = undefined;
     var err_set: c.fd_set = undefined;
     var tmout: c.struct_timeval = undefined;
     var ret: c_int = 0;
 
-    fdZero(&read_set);
-    fdSet(intf.fd, &read_set);
+    fd_set.zero(&read_set);
+    fd_set.set(intf.fd, &read_set);
 
-    fdZero(&err_set);
-    fdSet(intf.fd, &err_set);
+    fd_set.zero(&err_set);
+    fd_set.set(intf.fd, &err_set);
 
     tmout.tv_sec = @intCast(session.timeout);
     tmout.tv_usec = 0;
 
     ret = c.select(intf.fd + 1, &read_set, null, &err_set, &tmout);
-    if (ret < 0 or fdIsSet(intf.fd, &err_set) or !fdIsSet(intf.fd, &read_set)) return null;
+    if (ret < 0 or fd_set.isSet(intf.fd, &err_set) or !fd_set.isSet(intf.fd, &read_set)) return null;
 
     // The first read may return ECONNREFUSED because the RMCP ping packet --
     // sent to UDP port 623 -- is processed by both the BMC and the OS, and the
@@ -593,17 +574,17 @@ fn recvPacket(intf: *Intf) ?*ipmi.Response {
     ret = @intCast(c.recv(intf.fd, &recv_rsp.data, ipmi.buf_size, 0));
 
     if (ret < 0) {
-        fdZero(&read_set);
-        fdSet(intf.fd, &read_set);
+        fd_set.zero(&read_set);
+        fd_set.set(intf.fd, &read_set);
 
-        fdZero(&err_set);
-        fdSet(intf.fd, &err_set);
+        fd_set.zero(&err_set);
+        fd_set.set(intf.fd, &err_set);
 
         tmout.tv_sec = @intCast(session.timeout);
         tmout.tv_usec = 0;
 
         ret = c.select(intf.fd + 1, &read_set, null, &err_set, &tmout);
-        if (ret < 0 or fdIsSet(intf.fd, &err_set) or !fdIsSet(intf.fd, &read_set)) return null;
+        if (ret < 0 or fd_set.isSet(intf.fd, &err_set) or !fd_set.isSet(intf.fd, &read_set)) return null;
 
         ret = @intCast(c.recv(intf.fd, &recv_rsp.data, ipmi.buf_size, 0));
         if (ret < 0) return null;

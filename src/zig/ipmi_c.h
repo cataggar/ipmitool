@@ -6,8 +6,8 @@
  * ipmitool that is still written in C.  It carries no declarations of its own;
  * it only decides which of `include/ipmitool/*.h` the bridge exposes.
  *
- * This is one of exactly two C files owned by the Zig tree (the other is
- * `abi_layout.h`).  Both disappear together with the last C translation unit.
+ * Small C shims remain where Zig cannot yet implement the C calling
+ * convention.
  *
  * To expose another header, add an `#include` below and rebuild; see
  * doc/zig-migration/interop-seams.md.

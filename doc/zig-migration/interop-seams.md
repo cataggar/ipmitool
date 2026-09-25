@@ -237,6 +237,15 @@ type, mode, link count, inode or owner metadata fail closed. Only `ENOENT`
 allows creation of a new file. glibc still uses `lstat`/`fstat`; no C shim was
 added for this path.
 
+The ISOL, LAN, LAN+ and OpenIPMI ports share a Zig-only `fd_set` helper. It
+accepts a translated libc type only when its size, alignment and single
+long-word-array layout match `FD_SETSIZE`; no private glibc field name or
+production C shim is needed. `zig build test-fdset` checks the word and
+capacity boundaries against libc's `FD_*` macros in a test-only C oracle;
+`test-fdset-compile` checks those ABI assertions on cross targets. OpenIPMI
+also passes `ioctl` requests in the request type declared by the target libc,
+preserving the 32-bit request bits on musl.
+
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator

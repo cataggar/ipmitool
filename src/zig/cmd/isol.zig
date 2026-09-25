@@ -17,6 +17,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
+const fd_set = @import("../util/fd_set.zig");
 const log = @import("../util/log.zig");
 
 const Request = ipmi.Request;
@@ -336,18 +337,6 @@ fn processUserInput(intf: *Intf, input: []const u8) c_int {
     return result;
 }
 
-fn fdSet(fds: *c.fd_set, fd: usize) void {
-    const bits = &fds.__fds_bits;
-    const Word = @TypeOf(bits[0]);
-    bits[fd / @bitSizeOf(Word)] |= @as(Word, 1) << @intCast(fd % @bitSizeOf(Word));
-}
-
-fn fdIsSet(fds: *const c.fd_set, fd: usize) bool {
-    const bits = &fds.__fds_bits;
-    const Word = @TypeOf(bits[0]);
-    return (bits[fd / @bitSizeOf(Word)] & (@as(Word, 1) << @intCast(fd % @bitSizeOf(Word)))) != 0;
-}
-
 fn redPill(intf: *Intf) Error!void {
     const buffer = std.heap.c_allocator.alloc(u8, 255) catch {
         c.lprintf(log.Level.err, "ipmitool: malloc failure");
@@ -356,18 +345,17 @@ fn redPill(intf: *Intf) Error!void {
     defer std.heap.c_allocator.free(buffer);
     enterRawMode();
     defer leaveRawMode();
-    if (intf.fd < 0 or intf.fd >= @as(c_int, @intCast(@sizeOf(c.fd_set) * 8))) {
+    if (!fd_set.valid(intf.fd)) {
         c.lprintf(log.Level.err, "Error: invalid ISOL socket descriptor");
         return error.InvalidDescriptor;
     }
-    const fd: usize = @intCast(intf.fd);
     var should_exit = false;
     var bmc_closed = false;
     var timedout: u8 = 0;
     while (!should_exit) {
         var fds = std.mem.zeroes(c.fd_set);
-        fdSet(&fds, 0);
-        fdSet(&fds, fd);
+        fd_set.set(0, &fds);
+        fd_set.set(intf.fd, &fds);
         var tv = c.struct_timeval{ .tv_sec = 0, .tv_usec = 500000 };
         const result = c.select(intf.fd + 1, &fds, null, null, &tv);
         if (result < 0) {
@@ -387,7 +375,7 @@ fn redPill(intf: *Intf) Error!void {
             continue;
         }
         timedout = 0;
-        if (fdIsSet(&fds, 0)) {
+        if (fd_set.isSet(0, &fds)) {
             @memset(buffer, 0);
             const n = c.read(c.fileno(c.stdin), buffer.ptr, buffer.len);
             if (n > 0) {
@@ -399,7 +387,7 @@ fn redPill(intf: *Intf) Error!void {
             } else {
                 should_exit = true;
             }
-        } else if (fdIsSet(&fds, fd)) {
+        } else if (fd_set.isSet(intf.fd, &fds)) {
             const receive = intf.recv_sol orelse {
                 c.lprintf(log.Level.err, "Error: ISOL transport has no receive callback");
                 return error.NoTransport;
