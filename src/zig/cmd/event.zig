@@ -30,16 +30,9 @@
 //!   `str2uchar` are called through the `ipmi_c` bridge; `%-9s` padding, the
 //!   `(null)` a NULL `%s` prints and `strtok`'s in-place chopping are all
 //!   observable in the golden snapshots.
-//! * **Three upstream defects are reproduced deliberately.**  See issue #35:
-//!   - `ipmi_event_fromfile()` walks backwards over trailing whitespace with
-//!     `while (isspace(*ptr) && ptr >= buf)`, which dereferences `ptr` before
-//!     the bound is tested, so a line whose first character is `#` reads
-//!     `buf[-1]`.
-//!   - The same loop's `rc` is left at `-1` after a bad token but the outer
-//!     `while (feof(fp) == 0)` keeps going, so a later good line overwrites
-//!     the failure and `event file` exits 0.
-//!   - `ipmi_event_fromsensor()` reports "Invalid Event" from a branch that
-//!     the preceding `if`/`else if` pair makes unreachable.
+//! * **File errors are sticky.**  As in C, a bad token rejects only its line:
+//!   subsequent valid lines are still sent, but the command returns failure
+//!   even if those sends succeed. A failed send still stops the file.
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `event` is selected.
 //!
@@ -520,14 +513,8 @@ fn eventFromSensor(
                 (emsg.td.event_dir == EVENT_DIR_DEASSERT and hilo == 0))
             {
                 emsg.event_data[0] = @truncate(c.str2val(st, @ptrCast(&ipmi_event_thresh_hi)) & 0xf);
-            } else if ((emsg.td.event_dir == EVENT_DIR_ASSERT and hilo == 0) or
-                (emsg.td.event_dir == EVENT_DIR_DEASSERT and hilo == 1))
-            {
-                emsg.event_data[0] = @truncate(c.str2val(st, @ptrCast(&ipmi_event_thresh_lo)) & 0xf);
             } else {
-                // Unreachable: the two arms above cover every (dir, hilo) pair.
-                c.lprintf(log.Level.err, "Invalid Event");
-                return -1;
+                emsg.event_data[0] = @truncate(c.str2val(st, @ptrCast(&ipmi_event_thresh_lo)) & 0xf);
             }
 
             const thr: *Response = @ptrCast(c.ipmi_sdr_get_sensor_thresholds(
@@ -673,20 +660,13 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
         var ptr: [*c]u8 = c.strchr(&buf, '#');
         if (ptr != null) {
             ptr[0] = 0;
-        } else {
-            ptr = &buf;
-            ptr += c.strlen(&buf);
         }
 
         // clip off trailing and leading whitespace
-        //
-        // Reproduced verbatim, including the out-of-bounds read: C tests
-        // `isspace(*ptr)` before `ptr >= buf`, so a line beginning with `#`
-        // inspects `buf[-1]`.  See issue #35.
-        ptr -= 1;
-        while (c.isspace(ptr[0]) != 0 and @intFromPtr(ptr) >= @intFromPtr(&buf)) {
-            ptr[0] = 0;
-            ptr -= 1;
+        var end = c.strlen(&buf);
+        while (end > 0 and c.isspace(buf[end - 1]) != 0) {
+            end -= 1;
+            buf[end] = 0;
         }
         ptr = &buf;
         while (c.isspace(ptr[0]) != 0) ptr += 1;
@@ -714,9 +694,12 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
             continue;
         }
 
-        // Now actually send it, failures will be logged by the sender
-        rc = sendPlatformEvent(intf, @ptrCast(&rqdata));
-        if (c.IPMI_CC_OK != rc) break;
+        // Keep sending after bad tokens, but do not clear their failure status.
+        const send_rc = sendPlatformEvent(intf, @ptrCast(&rqdata));
+        if (c.IPMI_CC_OK != send_rc) {
+            rc = send_rc;
+            break;
+        }
     }
 
     _ = c.fclose(fp);
