@@ -67,6 +67,12 @@ args: -I dummy firewall info lun 0 netfn 4 command 6
 transcript: firewall_rich.tr
 covers: firewall
 
+[fw_log_unsupported_hex]
+desc: C-oracle unsupported command diagnostic zero-pads command and NetFn hex
+args: -I dummy firewall info lun 0 netfn 4 command 14
+transcript: firewall_rich.tr
+covers: firewall
+
 [fw_info_odd_netfn]
 desc: odd NetFn shares its discovery bit with its preceding even NetFn
 args: -I dummy firewall info lun 0 netfn 5
