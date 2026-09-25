@@ -1,0 +1,32 @@
+default_ccode 0xc1
+respond netfn_support
+  netfn 0x06
+  cmd 0x09
+  data 01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond command_support
+  netfn 0x06
+  cmd 0x0a
+  data ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+end
+respond command_config
+  netfn 0x06
+  cmd 0x0c
+  data ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+end
+respond command_enabled
+  netfn 0x06
+  cmd 0x61
+  data 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+end
+respond set_low
+  netfn 0x06
+  cmd 0x60
+  match 0e 04 00
+end
+respond set_high_denied
+  netfn 0x06
+  cmd 0x60
+  match 0e 44 00
+  ccode 0xd5
+end

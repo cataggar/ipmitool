@@ -31,6 +31,24 @@ args: -I dummy firewall info channel 7 lun 2 netfn 6
 transcript: firewall_multi.tr
 covers: firewall
 
+[fw_info_multi_discover]
+desc: all-LUN discovery traverses the second supported LUN
+args: -I dummy firewall info channel 7
+transcript: firewall_multi.tr
+covers: firewall
+
+[fw_info_high_command]
+desc: high-half command support flags and subfunction fetches
+args: -I dummy firewall info lun 0 netfn 4 command 131
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_info_none]
+desc: platform supports firewall but has no supported LUNs
+args: -I dummy firewall info
+transcript: firewall_none.tr
+covers: firewall
+
 [fw_info_unsupported_lun]
 desc: unsupported LUN reports no commands
 args: -I dummy firewall info lun 1 netfn 4
@@ -79,6 +97,18 @@ args: -I dummy firewall info lun 0 netfn 4 command 5
 transcript: firewall_short_subfn.tr
 covers: firewall
 
+[fw_info_short_mask]
+desc: short command mask response retains the dummy buffer tail
+args: -I dummy firewall info lun 0 netfn 4
+transcript: firewall_short_mask.tr
+covers: firewall
+
+[fw_info_op1_denied]
+desc: high command mask denial still fetches other mask kinds
+args: -I dummy firewall info lun 0 netfn 4
+transcript: firewall_op1_denied.tr
+covers: firewall
+
 [fw_enable_pair]
 desc: enable all configurable commands without changing nonconfigurable bits
 args: -I dummy firewall enable lun 0 netfn 4
@@ -94,6 +124,12 @@ covers: firewall
 [fw_disable_pair_force]
 desc: force bypasses the self-lockout protection
 args: -I dummy firewall disable lun 0 netfn 4 force
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_enable_pair_force]
+desc: force changes byte 12 when enabling configurable command 0x60
+args: -I dummy firewall enable lun 0 netfn 4 force
 transcript: firewall_rich.tr
 covers: firewall
 
@@ -125,6 +161,18 @@ covers: firewall
 desc: denied command-set operations still attempt both halves
 args: -I dummy firewall enable lun 0 netfn 4
 transcript: firewall_set_denied.tr
+covers: firewall
+
+[fw_set_op1_denied]
+desc: denied second command-set half preserves first write
+args: -I dummy firewall enable lun 0 netfn 4
+transcript: firewall_set_op1_denied.tr
+covers: firewall
+
+[fw_set_subfn_denied]
+desc: subfunction set denial returns failure after short discovery
+args: -I dummy firewall enable lun 0 netfn 4 command 5 subfn 2
+transcript: firewall_short_subfn.tr
 covers: firewall
 
 [fw_enable_help]
@@ -195,6 +243,18 @@ covers: firewall
 [fw_missing_command]
 desc: setting subfunction requires command
 args: -I dummy firewall enable lun 0 netfn 4 subfn 2
+covers: firewall
+
+[fw_negative_command]
+desc: a negative command is treated as omitted by the C parser
+args: -I dummy firewall info lun 0 netfn 4 command -2
+transcript: firewall_rich.tr
+covers: firewall
+
+[fw_enable_no_pair]
+desc: enable with no NetFn reads discovery but writes nothing
+args: -I dummy firewall enable lun 0
+transcript: firewall_rich.tr
 covers: firewall
 
 [fw_reset_bad_channel]

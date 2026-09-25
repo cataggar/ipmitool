@@ -1,0 +1,28 @@
+#!golden 1
+#!case fw_info_short_mask
+#!section exit
+0
+#!section stdout
+Commands on LUN 0x00, NetFn 0x04
+support:      21fbffff ffffffff ffffffff ffffffff 08000000 00000000 00000000 00000000\x20
+configurable: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000\x20
+enabled:      00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000\x20
+#!section stderr
+Get Configurable Command (LUN=0, NetFn=4, op=0) command failed: Invalid command
+Get Command Enables (LUN=0, NetFn=4, op=0) command failed: Invalid command
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=0e
+< rule=netfn_support ccode=0x00 len=17 data=01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 04 00
+< rule=short_support_low ccode=0x00 len=1 data=de
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 44 00
+< rule=support_high ccode=0x00 len=16 data=f7 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 04 00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 04 00
+< rule=default ccode=0xc1 len=0 data=
+bye

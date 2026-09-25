@@ -85,6 +85,9 @@ comptime {
     if (selected("picmg")) {
         @import("cmd/picmg.zig").exportSymbols();
     }
+    if (selected("firewall")) {
+        @import("cmd/firewall.zig").exportSymbols();
+    }
     if (selected("sensor")) {
         @import("cmd/sensor.zig").exportSymbols();
     }

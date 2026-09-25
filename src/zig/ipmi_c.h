@@ -60,6 +60,7 @@
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_constants.h>
 #include <ipmitool/ipmi_event.h>
+#include <ipmitool/ipmi_firewall.h>
 #include <ipmitool/ipmi_channel.h>
 #include <ipmitool/ipmi_cfgp.h>
 #include <ipmitool/ipmi_session.h>
@@ -176,6 +177,7 @@
  * on glibc's internal feature macros.
  */
 void ipmi_raw_help(void);
+void printf_firewall_info_usage(void);
 int ipmi_spd_print(uint8_t *spd_data, int len);
 /* Exported by lib/ipmi_fru.c; Kontron's FRU editor needs all three helpers. */
 int read_fru_area(struct ipmi_intf *intf, struct fru_info *fru, uint8_t id,

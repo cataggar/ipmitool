@@ -447,6 +447,13 @@ does not end in a newline is marked `#!section stdout no-final-newline`.
 `--update`/`--accept` rewrites snapshots. Always read the resulting diff before
 committing: an unreviewed snapshot update is how a real regression gets blessed.
 
+The firewall depth cases are in `tests/cases/49-firewall.cases`. Their model BMC
+uses different low/high command masks and channel/LUN discovery bitmaps, and
+the request log verifies reads, masked writes, force, short/denied responses,
+and validation failures. `fw_reset_all` intentionally records the full
+4-LUN × 32-NetFn-pair × 256-command reset sweep: reset sends writes even to
+unsupported pairs, and the large snapshot guards that wire behavior.
+
 ## Differential mode
 
 ```sh

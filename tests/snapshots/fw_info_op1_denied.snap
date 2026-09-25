@@ -1,0 +1,33 @@
+#!golden 1
+#!case fw_info_op1_denied
+#!section exit
+0
+#!section stdout
+Commands on LUN 0x00, NetFn 0x04
+support:      21000000 00000000 00000000 01000000 ffffffff ffffffff ffffffff ffffffff\x20
+configurable: 21000000 00000000 00000000 01000000 00000000 00000000 00000000 00000000\x20
+enabled:      20000000 00000000 00000000 01000000 00000000 00000000 00000000 00000000\x20
+#!section stderr
+Get Command Support (LUN=0, NetFn=4, op=1) command failed: Command not supported in present state
+Get Configurable Command (LUN=0, NetFn=4, op=1) command failed: Command not supported in present state
+Get Command Enables (LUN=0, NetFn=4, op=1) command failed: Command not supported in present state
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x09 target_cmd=0x00 data=0e
+< rule=netfn_support ccode=0x00 len=17 data=01 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 04 00
+< rule=support_low ccode=0x00 len=16 data=de ff ff ff ff ff ff ff ff ff ff ff fe ff ff ff
+> netfn=0x06 lun=0x00 cmd=0x0a target_cmd=0x00 data=0e 44 00
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 04 00
+< rule=config_low ccode=0x00 len=16 data=21 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x0c target_cmd=0x00 data=0e 44 00
+< rule=default ccode=0xd5 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 04 00
+< rule=enabled_low ccode=0x00 len=16 data=20 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00
+> netfn=0x06 lun=0x00 cmd=0x61 target_cmd=0x00 data=0e 44 00
+< rule=default ccode=0xd5 len=0 data=
+bye
