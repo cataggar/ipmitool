@@ -22,8 +22,6 @@ const helper = @import("helper.zig");
 const log = @import("log.zig");
 const strings = @import("strings.zig");
 
-extern "c" fn ferror(stream: *std.c.FILE) c_int;
-
 const tables = strings.tables;
 const ValStr = helper.ValStr;
 
@@ -59,17 +57,16 @@ const dummy: [*]const ValStr = &tables.ipmi_oem_info_dummy;
 ///
 /// Returns the number of entries read, or -1 when the registry cannot be read.
 fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
-    const file = openRegistry() orelse {
-        log.perror(log.Level.err, "IANA PEN registry open failed", .{});
+    const file = openRegistry() catch |err| {
+        logRegistryError("IANA PEN registry open failed", err);
         return -1;
     };
-    defer _ = std.c.fclose(file);
+    defer file.close(std.Options.debug_io);
 
     var text: std.ArrayList(u8) = .empty;
     defer text.deinit(allocator);
     readAll(file, &text) catch |err| {
-        if (err == error.OutOfMemory) std.c._errno().* = c.ENOMEM;
-        log.perror(log.Level.err, "IANA PEN registry read failed", .{});
+        logRegistryError("IANA PEN registry read failed", err);
         return -1;
     };
 
@@ -103,18 +100,46 @@ fn loadRegistry(entries: *std.ArrayList(ValStr)) c_int {
 }
 
 /// The per-user registry under `$HOME` wins over the system one, and a missing
-/// `$HOME` just skips it.  `fopen` is used rather than a Zig file API so that
-/// `lperror`'s `strerror(errno)` says the same thing it did in C.
-fn openRegistry() ?*std.c.FILE {
+/// `$HOME` just skips it.
+fn openRegistry() std.Io.File.OpenError!std.Io.File {
+    const io = std.Options.debug_io;
     if (std.c.getenv("HOME")) |home| {
         var buf: [std.fs.max_path_bytes + 1]u8 = undefined;
         const path = joinTruncating(buf[0..std.fs.max_path_bytes], &.{
             std.mem.span(@as([*:0]const u8, home)),
             c.PATH_SEPARATOR ++ c.IANAUSERDIR ++ c.PATH_SEPARATOR ++ registry_file,
         });
-        if (std.c.fopen(path, "r")) |file| return file;
+        if (std.Io.Dir.cwd().openFile(io, path, .{})) |file| return file else |_| {}
     }
-    return std.c.fopen(c.IANADIR ++ c.PATH_SEPARATOR ++ registry_file, "r");
+    return std.Io.Dir.cwd().openFile(io, c.IANADIR ++ c.PATH_SEPARATOR ++ registry_file, .{});
+}
+
+fn logRegistryError(context: [*:0]const u8, err: anyerror) void {
+    const errno: ?c_int = switch (err) {
+        error.FileNotFound => c.ENOENT,
+        error.AccessDenied, error.PermissionDenied => c.EACCES,
+        error.NotDir => c.ENOTDIR,
+        error.IsDir => c.EISDIR,
+        error.SymLinkLoop => c.ELOOP,
+        error.ProcessFdQuotaExceeded => c.EMFILE,
+        error.SystemFdQuotaExceeded => c.ENFILE,
+        error.SystemResources, error.OutOfMemory => c.ENOMEM,
+        error.FileTooBig => c.EFBIG,
+        error.ReadOnlyFileSystem => c.EROFS,
+        error.NoDevice => c.ENODEV,
+        error.InputOutput => c.EIO,
+        error.NoSpaceLeft => c.ENOSPC,
+        error.WouldBlock, error.PipeBusy => c.EAGAIN,
+        error.ConnectionResetByPeer => c.ECONNRESET,
+        error.SocketUnconnected => c.ENOTCONN,
+        else => null,
+    };
+    if (errno) |code| {
+        std.c._errno().* = code;
+        log.perror(log.Level.err, context, .{});
+    } else {
+        log.print(log.Level.err, "%s: %s", .{ context, @errorName(err).ptr });
+    }
 }
 
 /// `snprintf(buf, buf.len, "%s%s", ...)`: concatenate, truncate, NUL terminate.
@@ -131,15 +156,14 @@ fn joinTruncating(buf: []u8, parts: []const []const u8) [:0]const u8 {
     return buf[0..len :0];
 }
 
-fn readAll(file: *std.c.FILE, out: *std.ArrayList(u8)) error{ OutOfMemory, ReadFailed }!void {
+fn readAll(file: std.Io.File, out: *std.ArrayList(u8)) (std.Io.File.Reader.Error || error{OutOfMemory})!void {
+    var read_buffer: [4096]u8 = undefined;
+    var reader = file.readerStreaming(std.Options.debug_io, &read_buffer);
     var chunk: [64 * 1024]u8 = undefined;
     while (true) {
-        const read = std.c.fread(&chunk, 1, chunk.len, file);
-        if (read == 0) {
-            if (ferror(file) != 0) return error.ReadFailed;
-            return;
-        }
-        try out.appendSlice(allocator, chunk[0..read]);
+        const count = reader.interface.readSliceShort(&chunk) catch return reader.err orelse error.InputOutput;
+        if (count == 0) return;
+        try out.appendSlice(allocator, chunk[0..count]);
     }
 }
 

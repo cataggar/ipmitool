@@ -254,9 +254,12 @@ translated C headers and libc still remain. The default C build continues to
 serve as the golden oracle until the Phase 7 cutover.
 
 The selected IANA registry keeps its C ABI pointer, but its value array and
-registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. The C
-oracle retains its original `malloc`/`free` behavior; registry file I/O and
-error reporting still call libc.
+registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. Registry
+files are opened and streamed with Zig I/O, including non-seekable files; the
+user registry still takes precedence over the system registry. Common open
+and read errors retain their `errno`/`perror` diagnostics, while other Zig
+open errors report their name explicitly. `HOME` lookup and error reporting
+still call libc. The C oracle retains its original `malloc`/`free` and stdio.
 
 The selected `helper.zig` scans six width-two MAC fields in Zig and formats
 the `Unknown (0x...)` fallback with `std.fmt`. Unit tests keep libc
