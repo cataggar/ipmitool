@@ -52,6 +52,15 @@
 extern int verbose;
 extern int csv_output;
 
+static void
+wipe_password(void *data, size_t len)
+{
+	volatile unsigned char *bytes = data;
+	while (len--) {
+		*bytes++ = 0;
+	}
+}
+
 
 /* _ipmi_get_user_access - Get User Access for given channel. Results are stored
  * into passed struct.
@@ -218,6 +227,7 @@ _ipmi_set_user_password(struct ipmi_intf *intf, uint8_t user_id,
 	req.msg.data = data;
 	req.msg.data_len = data_len;
 	rsp = intf->sendrecv(intf, &req);
+	wipe_password(data, data_len);
 	free(data);
 	data = NULL;
 	if (!rsp) {
@@ -604,7 +614,7 @@ ipmi_user_mod(struct ipmi_intf *intf, int argc, char **argv)
 	/* Disable / Enable */
 	uint8_t user_id;
 	uint8_t operation;
-	uint8_t ccode;
+	int ccode;
 
 	if (argc != 2) {
 		print_user_usage();
@@ -634,12 +644,14 @@ int
 ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 {
 	char *password = NULL;
+	char saved_password[USER_PW_MAX_LEN + 1] = {0};
 	int ccode = 0;
+	int result = -1;
 	uint8_t password_type = USER_PW_IPMI15_LEN;
 	size_t password_len;
 	uint8_t user_id = 0;
 	if (is_ipmi_user_id(argv[2], &user_id)) {
-		return (-1);
+		goto out;
 	}
 
 	if (argc == 3) {
@@ -649,26 +661,35 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 		password = ask_password(user_id);
 		if (!password) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
-			return (-1);
+			goto out;
 		}
+		password_len = strnlen(password, USER_PW_MAX_LEN + 1);
+		if (password_len > USER_PW_MAX_LEN) {
+			lprintf(LOG_ERR, "Password is too long (> %d bytes)",
+			        USER_PW_MAX_LEN);
+			goto out;
+		}
+		memcpy(saved_password, password, password_len + 1);
 		tmp = ask_password(user_id);
-		tmplen = strnlen(tmp, USER_PW_MAX_LEN + 1);
 		if (!tmp) {
 			lprintf(LOG_ERR, "ipmitool: malloc failure");
-			return (-1);
+			goto out;
 		}
-		if (strncmp(password, tmp, tmplen)) {
+		tmplen = strnlen(tmp, USER_PW_MAX_LEN + 1);
+		if (tmplen != password_len
+		    || memcmp(saved_password, tmp, password_len)) {
 			lprintf(LOG_ERR, "Passwords do not match or are "
 			                 "longer than %d", USER_PW_MAX_LEN);
-			return (-1);
+			goto out;
 		}
+		password = saved_password;
 	} else {
 		password = argv[3];
 	}
 
 	if (!password) {
 		lprintf(LOG_ERR, "Unable to parse password argument.");
-		return (-1);
+		goto out;
 	}
 
 	password_len = strnlen(password, USER_PW_MAX_LEN + 1);
@@ -680,7 +701,7 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 		{
 			lprintf(LOG_ERR, "Invalid password length '%s'",
 			        argv[4]);
-			return (-1);
+			goto out;
 		}
 	} else if (password_len > USER_PW_IPMI15_LEN) {
 		password_type = USER_PW_IPMI20_LEN;
@@ -689,7 +710,7 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 	if (password_len > password_type) {
 		lprintf(LOG_ERR, "Password is too long (> %d bytes)",
 		        password_type);
-		return (-1);
+		goto out;
 	}
 
 	ccode = _ipmi_set_user_password(intf, user_id,
@@ -698,12 +719,14 @@ ipmi_user_password(struct ipmi_intf *intf, int argc, char **argv)
 	if (eval_ccode(ccode) != 0) {
 		lprintf(LOG_ERR, "Set User Password command failed (user %d)",
 		        user_id);
-		return (-1);
 	} else {
 		printf("Set User Password command successful (user %d)\n",
 		       user_id);
-		return 0;
+		result = 0;
 	}
+out:
+	wipe_password(saved_password, sizeof(saved_password));
+	return result;
 }
 
 int

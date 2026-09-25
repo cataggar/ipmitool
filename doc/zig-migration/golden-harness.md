@@ -455,6 +455,8 @@ Controlled - each case runs with exactly this environment, nothing inherited:
 
 stdin is `/dev/null`, so commands that prompt (for example `hpm check` asking
 "Continue (Y/N)") get EOF deterministically instead of hanging.
+`zig build test-user` separately tests the C and Zig user password prompts with
+a shared static-buffer getpass stub and an in-process IPMI response stub.
 
 Two further sources of nondeterminism are removed by construction rather than by
 scrubbing:
