@@ -1,0 +1,18 @@
+default_ccode 0xc1
+respond event
+  netfn 0x04
+  cmd 0x15
+  data 00 e1 0b 5e 34 12 78 56 bc 9a
+end
+respond control
+  netfn 0x04
+  cmd 0x13
+  match 01
+  data 11 0b
+end
+respond actions
+  netfn 0x04
+  cmd 0x13
+  match 02
+  data 11 25
+end

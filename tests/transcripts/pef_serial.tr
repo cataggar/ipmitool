@@ -1,0 +1,74 @@
+default_ccode 0xc1
+respond size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  data 11 02
+end
+respond policy1
+  netfn 0x04
+  cmd 0x13
+  match 09 01
+  data 11 01 19 21 00
+end
+respond policy2
+  netfn 0x04
+  cmd 0x13
+  match 09 02
+  data 11 02 1a 22 00
+end
+respond channel
+  netfn 0x06
+  cmd 0x42
+  match 02
+  data 02 05 01 84 f2 1b 00 00 00
+end
+respond count
+  netfn 0x0c
+  cmd 0x11
+  match 02 10
+  data 11 02
+end
+respond dest1
+  netfn 0x0c
+  cmd 0x11
+  match 02 11 01
+  data 11 01 00 05 12 00
+end
+respond dest2
+  netfn 0x0c
+  cmd 0x11
+  match 02 11 02
+  data 11 02 01 06 01 00
+end
+respond dial_count
+  netfn 0x0c
+  cmd 0x11
+  match 00 14
+  data 11 01
+end
+respond dial_block
+  netfn 0x0c
+  cmd 0x11
+  match 02 15
+  data 11 19 01 31 32 33 34 35 36 00 00 00 00 00 00 00 00 00 00
+end
+respond tap_count
+  netfn 0x0c
+  cmd 0x11
+  match 00 18
+  data 11 01
+end
+respond tap_account
+  netfn 0x0c
+  cmd 0x11
+  match 02 19
+  times 1
+  data 11 01 11
+end
+respond tap_settings
+  netfn 0x0c
+  cmd 0x11
+  match 02 19 01
+  data 11 01 02 00 00 00 00 00 00 00 00 00 00 00
+end

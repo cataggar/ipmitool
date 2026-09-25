@@ -82,6 +82,7 @@ test {
     _ = @import("cmd/ime.zig");
     _ = @import("cmd/gendev.zig");
     _ = @import("frontend/ipmishell.zig");
+    _ = @import("cmd/pef.zig");
     std.testing.refAllDecls(@This());
     std.testing.refAllDecls(core);
     std.testing.refAllDecls(crypto);

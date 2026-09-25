@@ -1,0 +1,20 @@
+#!golden 1
+#!case pef_info_denied
+#!section exit
+1
+#!section stdout
+#!section stderr
+IPMI command failed: Insufficient privilege level
+Failed to get size of PEF Policy Table.
+IPMI command failed: Insufficient privilege level
+Failed to get PEF Capabilities.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=08 00 00
+< rule=policy_size ccode=0xd4 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x10 target_cmd=0x00 data=
+< rule=capabilities ccode=0xd4 len=0 data=
+bye

@@ -1,0 +1,24 @@
+default_ccode 0xc1
+respond capabilities
+  netfn 0x04
+  cmd 0x10
+  data 51 3f 01
+end
+respond size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  data 11 01
+end
+respond short_filter
+  netfn 0x04
+  cmd 0x13
+  match 06
+  data 11 01 80 01
+end
+respond short_policy
+  netfn 0x04
+  cmd 0x13
+  match 09
+  data 11 01 98 11
+end

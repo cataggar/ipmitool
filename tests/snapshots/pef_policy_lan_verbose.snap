@@ -1,0 +1,221 @@
+#!golden 1
+#!case pef_policy_lan_verbose
+#!section exit
+0
+#!section stdout
+Alert policy table entry : 1
+Policy set               : 9
+State                    : enabled
+Policy entry rule        : Match-always
+Event-specific           : true
+Channel number           : 1
+Channel medium           : 802.3 LAN
+Alert destination type   : PET
+PET Community            : public
+ACK timeout/retry (secs) : 5
+Retries                  : 3
+IP address               : 192.0.2.1
+MAC address              : 00:11:22:33:44:55
+
+Alert policy table entry : 2
+Policy set               : 2
+State                    : disabled
+Policy entry rule        : Try-next-destination
+Channel number           : 3
+Channel medium           : IPMB (I2C)
+Destination ID           : 1
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 6
+msg.cmd: 42
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: 7
+msg.cmd: 42
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 2
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 20
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 4
+msg.netfn: c
+msg.cmd: 2
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 14
+msg.netfn: d
+msg.cmd: 2
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 5
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 6
+msg.cmd: 42
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 9
+msg.netfn: 7
+msg.cmd: 42
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=08 00 00
+< rule=size ccode=0x00 len=2 data=11 82
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=09 01 00
+< rule=entry1 ccode=0x00 len=5 data=11 01 98 11 80
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=01
+< rule=channel_lan ccode=0x00 len=9 data=81 84 01 84 f2 1b 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 11 00 00
+< rule=dest_count ccode=0x00 len=2 data=11 02
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 12 01 00
+< rule=dest_type ccode=0x00 len=5 data=11 01 00 05 83
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 10 00 00
+< rule=community ccode=0x00 len=20 data=11 70 75 62 6c 69 63 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x0c lun=0x00 cmd=0x02 target_cmd=0x00 data=01 13 01 00
+< rule=dest_addr ccode=0x00 len=14 data=11 01 00 00 c0 00 02 01 00 11 22 33 44 55
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=09 02 00
+< rule=entry2 ccode=0x00 len=5 data=11 02 24 31 00
+> netfn=0x06 lun=0x00 cmd=0x42 target_cmd=0x00 data=03
+< rule=channel_other ccode=0x00 len=9 data=03 01 01 00 f2 1b 00 00 00
+bye

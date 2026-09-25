@@ -327,6 +327,11 @@ const zig_modules = [_]ZigModule{
         .implementation = "src/zig/cmd/ekanalyzer.zig",
     },
     .{
+        .name = "pef",
+        .replaces = "lib/ipmi_pef.c",
+        .implementation = "src/zig/cmd/pef.zig",
+    },
+    .{
         .name = "intf",
         .replaces = "src/plugins/ipmi_intf.c",
         .implementation = "src/zig/intf/registry.zig",
@@ -1080,6 +1085,12 @@ pub fn build(b: *std.Build) void {
     });
     b.step("test-lanp6-unit", "Run IPv6 LAN configuration parser and reply tests")
         .dependOn(&b.addRunArtifact(lanp6_unit).step);
+    const pef_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"PEF "},
+    });
+    b.step("test-pef-unit", "Run Zig PEF validation and formatting unit tests")
+        .dependOn(&b.addRunArtifact(pef_unit).step);
 
     const lanp_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/lanp_test.zig"),

@@ -1,0 +1,23 @@
+default_ccode 0xc1
+respond size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  data 11 02
+end
+respond capabilities
+  netfn 0x04
+  cmd 0x10
+  data 51 2b 02
+end
+respond guid_unsupported
+  netfn 0x04
+  cmd 0x13
+  match 0a
+  ccode 0x80
+end
+respond system_guid
+  netfn 0x06
+  cmd 0x37
+  data @mc/guid.hex
+end

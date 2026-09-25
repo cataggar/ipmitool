@@ -144,6 +144,9 @@ comptime {
     if (selected("ekanalyzer")) {
         @import("cmd/ekanalyzer.zig").exportSymbols();
     }
+    if (selected("pef")) {
+        @import("cmd/pef.zig").exportSymbols();
+    }
     if (selected("intf")) {
         @import("intf/registry.zig").exportSymbols();
     }

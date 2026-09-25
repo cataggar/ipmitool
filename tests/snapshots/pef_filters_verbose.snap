@@ -1,0 +1,137 @@
+#!golden 1
+#!case pef_filters_verbose
+#!section exit
+0
+#!section stdout
+PEF Filter Table entry   : 1
+Status                   : enabled, configurable
+Sensor type              : Temperature
+Sensor number            : 39
+Event severity           : Critical
+Event class              : Threshold
+Event trigger(s)         : (0x01/0x0003),<LNC,>LNC
+Action                   : Alert,Power-off,Reset,Power-cycle,OEM-defined,Diagnostic-interrupt
+Policy set               : 5
+
+PEF Filter Table entry   : 2
+Status                   : disabled, configurable
+
+PEF Filter Table entry   : 3
+Status                   : enabled, pre-configured
+Sensor type              : Any
+Sensor number            : Any
+Event severity           : Non-recoverable
+Event class              : OEM
+Event trigger(s)         : OEM
+Action                   : Alert
+Policy set               : 15
+
+#!section stderr
+Loading IANA PEN Registry...
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Running Get VSO Capabilities my_addr 0x20, transit 0, target 0x20
+>>> IPMI req
+msg.data_len: 1
+msg.netfn: 2c
+msg.cmd: 0
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: c1
+data_len: 0
+msg.netfn: 2d
+msg.cmd: 0
+msg.seq: 0
+msg.lun: 0
+<<<
+Invalid completion code received: Invalid command
+Discovered IPMB address 0x0
+>>> IPMI req
+msg.data_len: 0
+msg.netfn: 4
+msg.cmd: 10
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 3
+msg.netfn: 5
+msg.cmd: 10
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 22
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 22
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+>>> IPMI req
+msg.data_len: 3
+msg.netfn: 4
+msg.cmd: 13
+msg.target_cmd: 0
+msg.lun: 0
+>>>
+<<< IPMI rsp
+ccode: 0
+data_len: 22
+msg.netfn: 5
+msg.cmd: 13
+msg.seq: 0
+msg.lun: 0
+<<<
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x10 target_cmd=0x00 data=
+< rule=capabilities ccode=0x00 len=3 data=51 3f 03
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 01 00
+< rule=filter1 ccode=0x00 len=22 data=11 01 80 3f 05 19 39 01 01 27 01 03 00 00 00 00 00 00 00 00 00 00
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 02 00
+< rule=filter2 ccode=0x00 len=22 data=11 02 00 00 00 00 00 00 00 00 ff ff ff 00 00 00 00 00 00 00 00 00
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 03 00
+< rule=filter3 ccode=0x00 len=22 data=11 03 c0 01 0f 20 00 00 ff ff 70 01 00 00 00 00 00 00 00 00 00 00
+bye

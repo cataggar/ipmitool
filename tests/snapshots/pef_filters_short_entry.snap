@@ -1,0 +1,18 @@
+#!golden 1
+#!case pef_filters_short_entry
+#!section exit
+0
+#!section stdout
+#!section stderr
+Unexpected data length received.
+Failed to get PEF Event Filter Entry 1.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x10 target_cmd=0x00 data=
+< rule=capabilities ccode=0x00 len=3 data=51 3f 01
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 01 00
+< rule=short_filter ccode=0x00 len=4 data=11 01 80 01
+bye

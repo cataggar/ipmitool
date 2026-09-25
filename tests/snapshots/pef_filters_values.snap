@@ -1,0 +1,23 @@
+#!golden 1
+#!case pef_filters_values
+#!section exit
+0
+#!section stdout
+ 1 | enabled, configurable | Temperature | 39 | Critical | Threshold | (0x01/0x0003),<LNC,>LNC | Alert,Power-off,Reset,Power-cycle,OEM-defined,Diagnostic-interrupt | 5
+ 2 | disabled, configurable
+ 3 | enabled, pre-configured | Any | Any | Non-recoverable | OEM | OEM | Alert | 15
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x10 target_cmd=0x00 data=
+< rule=capabilities ccode=0x00 len=3 data=51 3f 03
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 01 00
+< rule=filter1 ccode=0x00 len=22 data=11 01 80 3f 05 19 39 01 01 27 01 03 00 00 00 00 00 00 00 00 00 00
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 02 00
+< rule=filter2 ccode=0x00 len=22 data=11 02 00 00 00 00 00 00 00 00 ff ff ff 00 00 00 00 00 00 00 00 00
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 03 00
+< rule=filter3 ccode=0x00 len=22 data=11 03 c0 01 0f 20 00 00 ff ff 70 01 00 00 00 00 00 00 00 00 00 00
+bye

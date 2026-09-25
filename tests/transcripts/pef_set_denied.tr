@@ -1,0 +1,24 @@
+default_ccode 0xc1
+respond filter_size
+  netfn 0x04
+  cmd 0x13
+  match 05
+  data 11 01
+end
+respond policy_size
+  netfn 0x04
+  cmd 0x13
+  match 08
+  data 11 01
+end
+respond entry
+  netfn 0x04
+  cmd 0x13
+  match 09
+  data 11 01 98 11 00
+end
+respond set
+  netfn 0x04
+  cmd 0x12
+  ccode 0xd4
+end

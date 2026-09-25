@@ -89,6 +89,7 @@
 #include <ipmitool/ipmi_oem.h>
 #include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_picmg.h>
+#include <ipmitool/ipmi_pef.h>
 #include <ipmitool/ipmi_quantaoem.h>
 #include <ipmitool/ipmi_raw.h>
 #include <ipmitool/ipmi_sel.h>
@@ -370,6 +371,22 @@ int ipmi_picmg_bused_resource(struct ipmi_intf *, enum picmg_bused_resource_mode
 int ipmi_picmg_fru_control(struct ipmi_intf *, char **);
 int ipmi_picmg_clk_get(struct ipmi_intf *, uint8_t, int8_t, int);
 int ipmi_picmg_clk_set(struct ipmi_intf *, int, char **);
+
+/* External symbols defined in lib/ipmi_pef.c without header declarations. */
+void ipmi_pef_print_int(const char *text, uint32_t val);
+int _ipmi_get_pef_capabilities(struct ipmi_intf *intf,
+			      struct pef_capabilities *cap);
+int _ipmi_get_pef_filter_entry_cfg(struct ipmi_intf *intf, uint8_t filter_id,
+				   struct pef_cfgparm_filter_table_data_1 *cfg);
+int _ipmi_get_pef_system_guid(struct ipmi_intf *intf,
+			      struct pef_cfgparm_system_guid *guid);
+void ipmi_pef_print_event_info(struct pef_cfgparm_filter_table_entry *entry,
+			       char *buf);
+void ipmi_pef2_help(void);
+void ipmi_pef2_filter_help(void);
+void ipmi_pef2_policy_help(void);
+int ipmi_pef2_filter(struct ipmi_intf *intf, int argc, char **argv);
+int ipmi_pef2_policy(struct ipmi_intf *intf, int argc, char **argv);
 
 /*
  * `src/plugins/ipmi_intf.c` defines these two without a prototype in
