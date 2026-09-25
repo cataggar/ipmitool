@@ -23,7 +23,8 @@ def foreground(binary, env):
     output = bytearray()
     try:
         deadline = time.monotonic() + 5
-        while b"Waiting for events..." not in output:
+        ready_message = b"Waiting for events...\n"
+        while ready_message not in output:
             if process.poll() is not None or time.monotonic() >= deadline:
                 raise AssertionError(f"listener stopped before readiness: {output!r}")
             ready, _, _ = select.select([process.stderr], [], [], 0.1)
@@ -35,7 +36,10 @@ def foreground(binary, env):
         assert process.returncode == 0
         assert b"SEL count is " in output
         assert b"SEL freespace is " in output
-        return process.returncode, stdout, bytes(output)
+        # Another poll can begin between readiness and SIGINT; compare the
+        # complete startup trace, not a scheduler-dependent later poll.
+        ready_end = output.index(ready_message) + len(ready_message)
+        return process.returncode, stdout, bytes(output[:ready_end])
     finally:
         if process.poll() is None:
             process.kill()
