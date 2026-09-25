@@ -103,11 +103,12 @@ Zig loggers. Native aarch64 tests and
 `zig build test-log-compile -Dtarget=x86_64-linux-gnu` cover both ABIs.
 
 `log_varargs.c` remains a production dependency whenever `log` is selected:
-31 Zig files still call the C-variadic ABI, including `cli/main.zig` (45
-direct calls) and `front/ipmievd.zig` (43); neither shell file calls it
-directly anymore. Other Zig command/transport modules and C callers still
-require the shim. It can be removed only after all Zig and C callers have
-migrated; an all-selected build today is **not** shim-free.
+30 Zig files still call the C-variadic ABI, including `front/ipmievd.zig`
+(43 direct calls). The shared-archive `cli/main.zig` now uses the typed path;
+neither shell file calls the variadic ABI directly anymore. Other Zig
+command/transport modules and C callers still require the shim. It can be
+removed only after all Zig and C callers have migrated; an all-selected build
+today is **not** shim-free.
 
 The `nm_discover_ccode_hex` and `vita_properties_log_hex` golden cases pin C
 stderr for named `%x` error codes and `%#x` discovery addresses, respectively.
