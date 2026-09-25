@@ -30,15 +30,9 @@
 //!   does.  The golden fixtures therefore use counters for which `days * 1440`
 //!   is itself exactly representable, so the fused and unfused results agree
 //!   and the snapshot is neither arch- nor compiler-dependent.
-//! * **Two upstream defects are reproduced deliberately**, because a port that
-//!   fixed them would change behaviour:
-//!   - `ipmi_chassis_get_bootparam()` reports an unparsable set selector as
-//!     "given to bootparam %u" using `msg_data[1]`, the selector slot it
-//!     failed to fill, rather than `msg_data[0]`, the parameter number.
-//!   - `chassis_set_bootmailbox()` ignores the return value of `args2buf()`,
-//!     so a bad byte in the middle of a mailbox write is reported and then
-//!     written as a zero.
-//!   Both are reported as issue #33.
+//! * **Mailbox byte arguments are validated before writing.** An invalid
+//!   byte in a later block fails without starting a partial mailbox write;
+//!   text mode still writes the input string and its terminator.
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `chassis` is
 //!   selected; see the note there.
@@ -666,13 +660,11 @@ fn chassisGetBootparam(
 
     if (argc != 0) {
         if (c.str2uchar(argv[0], &msg_data[1]) != 0) {
-            // Upstream reports msg_data[1], the selector it failed to parse,
-            // where it means msg_data[0], the parameter number.  Issue #33.
             c.lprintf(
                 log.Level.err,
                 "Invalid argument '%s' given to bootparam %u",
                 argv[0],
-                @as(c_uint, msg_data[1]),
+                @as(c_uint, msg_data[0]),
             );
             return -1;
         }
@@ -1232,6 +1224,17 @@ fn chassisSetBootmailbox(
                 CHASSIS_BOOT_MBOX_IANA_SZ),
         );
         return rc;
+    }
+
+    // Check all byte arguments before writing any mailbox block.
+    if (!use_text) {
+        for (0..@as(usize, @intCast(argc))) |i| {
+            var byte: u8 = 0;
+            if (c.str2uchar(argv[i], &byte) != 0) {
+                c.lprintf(log.Level.err, "Bad byte value: %s", argv[i]);
+                return rc;
+            }
+        }
     }
 
     // Indicate that we're touching the boot parameters.
