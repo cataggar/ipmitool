@@ -19,7 +19,7 @@ def generate(source: str) -> str:
         "//! JEDEC JEP106 (2003) and SPD decoding tables from `lib/dimm_spd.c`.",
         "//! Regenerate with `python3 tools/gen-spd-tables.py` after changing the C tables.",
         "",
-        'const c = @import("ipmi_c");',
+        'const ValStr = @import("../util/table_types.zig").ValStr;',
         "",
     ]
     names = []
@@ -28,7 +28,7 @@ def generate(source: str) -> str:
         if len(entries) != body.count("{") or not entries or entries[-1][1] != "NULL":
             raise ValueError(f"cannot transcribe {name} without losing a C entry")
         names.append(name)
-        out.append(f"pub const {name} = [_]c.struct_valstr{{")
+        out.append(f"pub const {name} = [_]ValStr{{")
         for value, text in entries:
             out.append(
                 f'    .{{ .val = {value}, .str = {text if text != "NULL" else "null"} }},'

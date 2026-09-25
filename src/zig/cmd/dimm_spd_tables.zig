@@ -32,9 +32,9 @@
 //! JEDEC JEP106 (2003) and SPD decoding tables from `lib/dimm_spd.c`.
 //! Regenerate with `python3 tools/gen-spd-tables.py` after changing the C tables.
 
-const c = @import("ipmi_c");
+const ValStr = @import("../util/table_types.zig").ValStr;
 
-pub const spd_memtype_vals = [_]c.struct_valstr{
+pub const spd_memtype_vals = [_]ValStr{
     .{ .val = 0x01, .str = "STD FPM DRAM" },
     .{ .val = 0x02, .str = "EDO" },
     .{ .val = 0x04, .str = "SDRAM" },
@@ -49,7 +49,7 @@ pub const spd_memtype_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr3_density_vals = [_]c.struct_valstr{
+pub const ddr3_density_vals = [_]ValStr{
     .{ .val = 0, .str = "256 Mb" },
     .{ .val = 1, .str = "512 Mb" },
     .{ .val = 2, .str = "1 Gb" },
@@ -60,7 +60,7 @@ pub const ddr3_density_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr3_banks_vals = [_]c.struct_valstr{
+pub const ddr3_banks_vals = [_]ValStr{
     .{ .val = 0, .str = "3 (8 Banks)" },
     .{ .val = 1, .str = "4 (16 Banks)" },
     .{ .val = 2, .str = "5 (32 Banks)" },
@@ -68,13 +68,13 @@ pub const ddr3_banks_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr3_ecc_vals = [_]c.struct_valstr{
+pub const ddr3_ecc_vals = [_]ValStr{
     .{ .val = 0, .str = "0 bits" },
     .{ .val = 1, .str = "8 bits" },
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr4_density_vals = [_]c.struct_valstr{
+pub const ddr4_density_vals = [_]ValStr{
     .{ .val = 0, .str = "256 Mb" },
     .{ .val = 1, .str = "512 Mb" },
     .{ .val = 2, .str = "1 Gb" },
@@ -86,26 +86,26 @@ pub const ddr4_density_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr4_banks_vals = [_]c.struct_valstr{
+pub const ddr4_banks_vals = [_]ValStr{
     .{ .val = 0, .str = "2 (4 Banks)" },
     .{ .val = 1, .str = "3 (8 Banks)" },
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr4_bank_groups = [_]c.struct_valstr{
+pub const ddr4_bank_groups = [_]ValStr{
     .{ .val = 0, .str = "0 (no Bank Groups)" },
     .{ .val = 1, .str = "1 (2 Bank Groups)" },
     .{ .val = 2, .str = "2 (4 Bank Groups)" },
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr4_package_type = [_]c.struct_valstr{
+pub const ddr4_package_type = [_]ValStr{
     .{ .val = 0, .str = "Monolithic DRAM Device" },
     .{ .val = 1, .str = "Non-Monolithic Device" },
     .{ .val = 0x00, .str = null },
 };
 
-pub const ddr4_technology_type = [_]c.struct_valstr{
+pub const ddr4_technology_type = [_]ValStr{
     .{ .val = 0, .str = "Extended module type, see byte 15" },
     .{ .val = 1, .str = "RDIMM" },
     .{ .val = 2, .str = "UDIMM" },
@@ -125,7 +125,7 @@ pub const ddr4_technology_type = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const spd_config_vals = [_]c.struct_valstr{
+pub const spd_config_vals = [_]ValStr{
     .{ .val = 0x00, .str = "None" },
     .{ .val = 0x01, .str = "Parity" },
     .{ .val = 0x02, .str = "ECC" },
@@ -133,7 +133,7 @@ pub const spd_config_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const spd_voltage_vals = [_]c.struct_valstr{
+pub const spd_voltage_vals = [_]ValStr{
     .{ .val = 0x00, .str = "5.0V TTL" },
     .{ .val = 0x01, .str = "LVTTL" },
     .{ .val = 0x02, .str = "HSTL 1.5V" },
@@ -143,7 +143,7 @@ pub const spd_voltage_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id1_vals = [_]c.struct_valstr{
+pub const jedec_id1_vals = [_]ValStr{
     .{ .val = 0x01, .str = "AMD" },
     .{ .val = 0x02, .str = "AMI" },
     .{ .val = 0x83, .str = "Fairchild" },
@@ -273,7 +273,7 @@ pub const jedec_id1_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id2_vals = [_]c.struct_valstr{
+pub const jedec_id2_vals = [_]ValStr{
     .{ .val = 0x01, .str = "Cirrus Logic" },
     .{ .val = 0x02, .str = "National Instruments" },
     .{ .val = 0x83, .str = "ILC Data Device" },
@@ -403,7 +403,7 @@ pub const jedec_id2_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id3_vals = [_]c.struct_valstr{
+pub const jedec_id3_vals = [_]ValStr{
     .{ .val = 0x01, .str = "Camintonn Corporation" },
     .{ .val = 0x02, .str = "ISOA Incorporated" },
     .{ .val = 0x83, .str = "Agate Semiconductor" },
@@ -533,7 +533,7 @@ pub const jedec_id3_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id4_vals = [_]c.struct_valstr{
+pub const jedec_id4_vals = [_]ValStr{
     .{ .val = 0x01, .str = "Solectron" },
     .{ .val = 0x02, .str = "Optosys Technologies" },
     .{ .val = 0x83, .str = "Buffalo (Formerly Melco)" },
@@ -663,7 +663,7 @@ pub const jedec_id4_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id5_vals = [_]c.struct_valstr{
+pub const jedec_id5_vals = [_]ValStr{
     .{ .val = 0x01, .str = "T-RAM Incorporated" },
     .{ .val = 0x02, .str = "Innovics Wireless" },
     .{ .val = 0x83, .str = "Teknovus" },
@@ -793,7 +793,7 @@ pub const jedec_id5_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id6_vals = [_]c.struct_valstr{
+pub const jedec_id6_vals = [_]ValStr{
     .{ .val = 0x01, .str = "Specular Networks" },
     .{ .val = 0x02, .str = "Patriot Memory (PDP Systems)" },
     .{ .val = 0x83, .str = "U-Chip Technology Corp." },
@@ -923,7 +923,7 @@ pub const jedec_id6_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id7_vals = [_]c.struct_valstr{
+pub const jedec_id7_vals = [_]ValStr{
     .{ .val = 0x01, .str = "MOVEKING" },
     .{ .val = 0x02, .str = "Mavrix Technology, Inc." },
     .{ .val = 0x83, .str = "CellGuide Ltd." },
@@ -1053,7 +1053,7 @@ pub const jedec_id7_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id8_vals = [_]c.struct_valstr{
+pub const jedec_id8_vals = [_]ValStr{
     .{ .val = 0x01, .str = "Siklu Communication Ltd." },
     .{ .val = 0x02, .str = "A Force Manufacturing Ltd." },
     .{ .val = 0x83, .str = "Strontium" },
@@ -1183,7 +1183,7 @@ pub const jedec_id8_vals = [_]c.struct_valstr{
     .{ .val = 0x00, .str = null },
 };
 
-pub const jedec_id9_vals = [_]c.struct_valstr{
+pub const jedec_id9_vals = [_]ValStr{
     .{ .val = 0x01, .str = "3D PLUS" },
     .{ .val = 0x02, .str = "Diehl Aerospace" },
     .{ .val = 0x83, .str = "Fairchild" },
