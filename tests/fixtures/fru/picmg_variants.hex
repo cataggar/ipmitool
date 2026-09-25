@@ -1,0 +1,99 @@
+@mark shelf
+c0 02
+@mark shelf_len
+00
+@mark shelf_sum
+00
+@mark shelf_hsum
+00
+@mark shelf_body
+5a 31 00 12 00 04 01 20 00 64 00 01
+@fill_size shelf_len shelf_body
+@fill_checksum shelf_sum shelf_body
+@fill_checksum shelf_hsum shelf
+
+@mark activation
+c0 02
+@mark activation_len
+00
+@mark activation_sum
+00
+@mark activation_hsum
+00
+@mark activation_body
+5a 31 00 17 00 64 00 02 01 20 0a 00
+@fill_size activation_len activation_body
+@fill_checksum activation_sum activation_body
+@fill_checksum activation_hsum activation
+
+@mark carrier
+c0 02
+@mark carrier_len
+00
+@mark carrier_sum
+00
+@mark carrier_hsum
+00
+@mark carrier_body
+5a 31 00 1a 00 21 02 00 04
+@fill_size carrier_len carrier_body
+@fill_checksum carrier_sum carrier_body
+@fill_checksum carrier_hsum carrier
+
+@mark clock_p2p
+c0 02
+@mark clock_p2p_len
+00
+@mark clock_p2p_sum
+00
+@mark clock_p2p_hsum
+00
+@mark clock_p2p_body
+5a 31 00 2c 00 01 41 01 02 03 01
+@fill_size clock_p2p_len clock_p2p_body
+@fill_checksum clock_p2p_sum clock_p2p_body
+@fill_checksum clock_p2p_hsum clock_p2p
+
+@mark clock_config
+c0 02
+@mark clock_config_len
+00
+@mark clock_config_sum
+00
+@mark clock_config_hsum
+00
+@mark clock_config_body
+5a 31 00 2d 00 41 01 02 01 01 01 01 03
+03 01 02 e8 03 00 00 64 00 00 00 d0 07 00 00
+@fill_size clock_config_len clock_config_body
+@fill_checksum clock_config_sum clock_config_body
+@fill_checksum clock_config_hsum clock_config
+
+@mark utca
+c0 02
+@mark utca_len
+00
+@mark utca_sum
+00
+@mark utca_hsum
+00
+@mark utca_body
+5a 31 00 20 00
+@fill_size utca_len utca_body
+@fill_checksum utca_sum utca_body
+@fill_checksum utca_hsum utca
+
+@mark unknown
+c0 82
+@mark unknown_len
+00
+@mark unknown_sum
+00
+@mark unknown_hsum
+00
+@mark unknown_body
+5a 31 00 99 00
+@fill_size unknown_len unknown_body
+@fill_checksum unknown_sum unknown_body
+@fill_checksum unknown_hsum unknown
+@pad 11 0x00

@@ -141,6 +141,12 @@ args: -I dummy -v fru print 0
 transcript: fru_picmg_current.tr
 covers: fru
 
+[fru_print_picmg_variants]
+desc: decode PICMG activation, carrier, shelf and clock records and unknown IDs
+args: -I dummy -v fru print 0
+transcript: fru_picmg_variants.tr
+covers: fru
+
 [fru_print_short_board]
 desc: area length read advertises two bytes but contains only one
 args: -I dummy fru print 0
