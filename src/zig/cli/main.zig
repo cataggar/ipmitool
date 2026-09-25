@@ -21,7 +21,7 @@ fn replace(slot: *?[*:0]u8, value: [*c]const u8, progname: [*:0]const u8) bool {
     freeSlot(slot);
     const copy = c.strdup(value);
     if (copy == null) {
-        c.lprintf(log.Level.err, "%s: malloc failure", progname);
+        log.print(log.Level.err, "%s: malloc failure", .{progname});
         return false;
     }
     slot.* = @ptrCast(copy);
@@ -30,19 +30,19 @@ fn replace(slot: *?[*:0]u8, value: [*c]const u8, progname: [*:0]const u8) bool {
 
 fn passwordFileRead(filename: [*c]u8) ?[*:0]u8 {
     const raw = c.malloc(21) orelse {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     };
     const pass: [*c]u8 = @ptrCast(raw);
     @memset(pass[0..21], 0);
     const fp = c.ipmi_open_file(filename, 0);
     if (fp == null) {
-        c.lprintf(log.Level.err, "Unable to open password file %s", filename);
+        log.print(log.Level.err, "Unable to open password file %s", .{filename});
         c.free(raw);
         return null;
     }
     if (c.fgets(pass, 21, fp) == null) {
-        c.lprintf(log.Level.err, "Unable to read password from file %s", filename);
+        log.print(log.Level.err, "Unable to read password from file %s", .{filename});
         c.free(raw);
         _ = c.fclose(fp);
         return null;
@@ -60,12 +60,12 @@ fn cmdPrint(cmdlist: ?[*]Cmd) callconv(.c) void {
     while (commands[i].func != null) : (i += 1) {
         const desc = commands[i].desc orelse continue;
         if (!header) {
-            c.lprintf(log.Level.notice, "Commands:");
+            log.print(log.Level.notice, "Commands:", .{});
             header = true;
         }
-        c.lprintf(log.Level.notice, "\t%-12s  %s", commands[i].name, desc);
+        log.print(log.Level.notice, "\t%-12s  %s", .{ commands[i].name, desc });
     }
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "", .{});
 }
 
 fn cmdRun(intf: *Intf, name: ?[*:0]u8, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {
@@ -74,7 +74,7 @@ fn cmdRun(intf: *Intf, name: ?[*:0]u8, argc: c_int, argv: ?[*:null]?[*:0]u8) cal
         if (commands[0].func == null or commands[0].name == null) return -1;
         if (c.strcmp(commands[0].name, "default") == 0)
             return commands[0].func.?(intf, 0, null);
-        c.lprintf(log.Level.err, "No command provided!");
+        log.print(log.Level.err, "No command provided!", .{});
         cmdPrint(commands);
         return -1;
     }
@@ -85,7 +85,7 @@ fn cmdRun(intf: *Intf, name: ?[*:0]u8, argc: c_int, argv: ?[*:null]?[*:0]u8) cal
     if (commands[i].func == null) {
         if (c.strcmp(commands[0].name, "default") == 0)
             return commands[0].func.?(intf, argc + 1, @ptrCast(argv.? - 1));
-        c.lprintf(log.Level.err, "Invalid command: %s", name);
+        log.print(log.Level.err, "Invalid command: %s", .{name});
         cmdPrint(commands);
         return -1;
     }
@@ -138,13 +138,13 @@ const extra_usage = [_][*:0]const u8{
 };
 
 fn optionUsage(progname: [*:0]const u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSupport) void {
-    c.lprintf(log.Level.notice, "%s version %s\n", progname, c.VERSION);
-    c.lprintf(log.Level.notice, "usage: %s [options...] <command>\n", progname);
-    for (common_usage) |line| c.lprintf(log.Level.notice, "%s", line);
+    log.print(log.Level.notice, "%s version %s\n", .{ progname, c.VERSION });
+    log.print(log.Level.notice, "usage: %s [options...] <command>\n", .{progname});
+    for (common_usage) |line| log.print(log.Level.notice, "%s", .{line});
     if (@hasDecl(c, "ENABLE_ALL_OPTIONS")) {
-        for (extra_usage) |line| c.lprintf(log.Level.notice, "%s", line);
+        for (extra_usage) |line| log.print(log.Level.notice, "%s", .{line});
     }
-    c.lprintf(log.Level.notice, "");
+    log.print(log.Level.notice, "", .{});
     c.ipmi_intf_print(@ptrCast(intflist));
     if (cmdlist != null) cmdPrint(cmdlist);
 }
@@ -238,7 +238,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
                             found = true;
                     }
                     if (!found) {
-                        c.lprintf(log.Level.err, "Interface %s not supported", intfname);
+                        log.print(log.Level.err, "Interface %s not supported", .{intfname});
                         return rc;
                     }
                 }
@@ -253,27 +253,27 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
             },
             'd' => {
                 if (c.str2int(arg, &devnum) != 0) {
-                    c.lprintf(log.Level.err, "Invalid parameter given or out of range for '-d'.");
+                    log.print(log.Level.err, "Invalid parameter given or out of range for '-d'.", .{});
                     return -1;
                 }
                 if (devnum < 0) {
-                    c.lprintf(log.Level.err, "Device number %i is out of range.", devnum);
+                    log.print(log.Level.err, "Device number %i is out of range.", .{devnum});
                     return -1;
                 }
             },
             'p' => {
                 if (c.str2int(arg, &port) != 0) {
-                    c.lprintf(log.Level.err, "Invalid parameter given or out of range for '-p'.");
+                    log.print(log.Level.err, "Invalid parameter given or out of range for '-p'.", .{});
                     return -1;
                 }
                 if (port < 0 or port > 65535) {
-                    c.lprintf(log.Level.err, "Port number %i is out of range.", port);
+                    log.print(log.Level.err, "Port number %i is out of range.", .{port});
                     return -1;
                 }
             },
             'C' => if (@hasDecl(c, "IPMI_INTF_LANPLUS")) {
                 if (c.str2uchar(arg, &u8tmp) != 0) {
-                    c.lprintf(log.Level.err, "Invalid parameter given or out of range [0-255] for '-C'.");
+                    log.print(log.Level.err, "Invalid parameter given or out of range [0-255] for '-C'.", .{});
                     return -1;
                 }
                 cipher_suite_id = u8tmp;
@@ -284,14 +284,14 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
             'v' => {
                 c.verbose += 1;
                 c.log_level_set(c.verbose);
-                if (c.verbose == 2) c.lprintf(log.Level.debug, "%s version %s\n", progname, c.VERSION);
+                if (c.verbose == 2) log.print(log.Level.debug, "%s version %s\n", .{ progname, c.VERSION });
             },
             'c' => c.csv_output = 1,
             'H' => if (!replace(&hostname, arg, progname)) return rc,
             'f' => {
                 freeSlot(&password);
                 password = passwordFileRead(arg);
-                if (password == null) c.lprintf(log.Level.err, "Unable to read password from file %s", arg);
+                if (password == null) log.print(log.Level.err, "Unable to read password from file %s", .{arg});
             },
             'a' => {
                 const entered = prompt("Password: ");
@@ -305,19 +305,19 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
                 if (c.getenv("IPMI_KGKEY")) |value| {
                     @memset(&kgkey, 0);
                     _ = c.strncpy(@ptrCast(&kgkey), value, kgkey.len - 1);
-                } else c.lprintf(log.Level.warning, "Unable to read kgkey from environment");
+                } else log.print(log.Level.warning, "Unable to read kgkey from environment", .{});
             },
             'y' => {
                 @memset(&kgkey, 0);
                 rc = c.ipmi_parse_hex(arg, @ptrCast(&kgkey), kgkey.len - 1);
                 if (rc == -1) {
-                    c.lprintf(log.Level.err, "Number of Kg key characters is not even");
+                    log.print(log.Level.err, "Number of Kg key characters is not even", .{});
                     return rc;
                 } else if (rc == -3) {
-                    c.lprintf(log.Level.err, "Kg key is not hexadecimal number");
+                    log.print(log.Level.err, "Kg key is not hexadecimal number", .{});
                     return rc;
                 } else if (rc > kgkey.len - 1) {
-                    c.lprintf(log.Level.err, "Kg key is too long");
+                    log.print(log.Level.err, "Kg key is too long", .{});
                     return rc;
                 }
             },
@@ -330,7 +330,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
             'U' => {
                 freeSlot(&username);
                 if (c.strlen(arg) > 16) {
-                    c.lprintf(log.Level.err, "Username is too long (> 16 bytes)");
+                    log.print(log.Level.err, "Username is too long (> 16 bytes)", .{});
                     return rc;
                 }
                 if (!replace(&username, arg, progname)) return rc;
@@ -343,15 +343,15 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
                     ai_family = wanted;
                 } else {
                     if (ai_family != wanted) {
-                        c.lprintf(log.Level.err, if (opt == '4')
+                        log.print(log.Level.err, if (opt == '4')
                             "Parameter is mutually exclusive with -6."
                         else
-                            "Parameter is mutually exclusive with -4.");
+                            "Parameter is mutually exclusive with -4.", .{});
                     } else {
-                        c.lprintf(log.Level.err, if (opt == '4')
+                        log.print(log.Level.err, if (opt == '4')
                             "Multiple -4 parameters given."
                         else
-                            "Multiple -6 parameters given.");
+                            "Multiple -6 parameters given.", .{});
                     }
                     return -1;
                 }
@@ -374,7 +374,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
             'E' => {
                 if (c.getenv("IPMITOOL_PASSWORD") orelse c.getenv("IPMI_PASSWORD")) |value| {
                     if (!replace(&password, value, progname)) return rc;
-                } else c.lprintf(log.Level.warning, "Unable to read password from environment");
+                } else log.print(log.Level.warning, "Unable to read password from environment", .{});
             },
             'L' => {
                 const n = c.strlen(arg);
@@ -383,7 +383,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
                     arg[n - 1] = 0;
                 }
                 privlvl = c.str2val(arg, c.ipmi_privlvl_vals);
-                if (privlvl == 0xff) c.lprintf(log.Level.warning, "Invalid privilege level %s", arg);
+                if (privlvl == 0xff) log.print(log.Level.warning, "Invalid privilege level %s", .{arg});
             },
             'A' => authtype = c.str2val(arg, c.ipmi_authtype_session_vals),
             't' => if (!parseByte(arg, &target_addr, 't')) return -1,
@@ -396,19 +396,19 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
             'O' => if (!replace(&seloem, arg, progname)) return rc,
             'z' => {
                 if (c.str2ushort(arg, &long_packet_size) != 0) {
-                    c.lprintf(log.Level.err, "Invalid parameter given or out of range for '-z'.");
+                    log.print(log.Level.err, "Invalid parameter given or out of range for '-z'.", .{});
                     return -1;
                 }
             },
             'R' => {
                 if (c.str2int(arg, &retry) != 0 or retry < 0) {
-                    c.lprintf(log.Level.err, "Invalid parameter given or out of range for '-R'.");
+                    log.print(log.Level.err, "Invalid parameter given or out of range for '-R'.", .{});
                     return -1;
                 }
             },
             'N' => {
                 if (c.str2uint(arg, &timeout) != 0) {
-                    c.lprintf(log.Level.err, "Invalid parameter given or out of range for '-N'.");
+                    log.print(log.Level.err, "Invalid parameter given or out of range for '-N'.", .{});
                     return -1;
                 }
             },
@@ -436,23 +436,23 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
     if (password) |pass| {
         if (intfname) |selected| {
             if (c.strcmp(selected, "lan") == 0 and c.strlen(pass) > 16) {
-                c.lprintf(log.Level.err, "%s: password is longer than 16 bytes.", selected);
+                log.print(log.Level.err, "%s: password is longer than 16 bytes.", .{selected});
                 return -1;
             } else if (c.strcmp(selected, "lanplus") == 0 and c.strlen(pass) > 20) {
-                c.lprintf(log.Level.err, "%s: password is longer than 20 bytes.", selected);
+                log.print(log.Level.err, "%s: password is longer than 20 bytes.", .{selected});
                 return -1;
             }
         }
     }
     const intf = @as(?*Intf, @ptrCast(c.ipmi_intf_load(@ptrCast(intfname)))) orelse {
-        c.lprintf(log.Level.err, "Error loading interface %s", intfname);
+        log.print(log.Level.err, "Error loading interface %s", .{intfname});
         return rc;
     };
     main_intf = intf;
     c.ipmi_oem_info_init();
     if (oemtype) |oem| {
         if (c.ipmi_oem_setup(@ptrCast(intf), oem) < 0) {
-            c.lprintf(log.Level.err, "OEM setup for \"%s\" failed", oem);
+            log.print(log.Level.err, "OEM setup for \"%s\" failed", .{oem});
             return rc;
         }
     }
@@ -488,9 +488,9 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
     if (arg_addr != 0) {
         addr = arg_addr;
     } else if (c.ipmi_oem_active(@ptrCast(intf), "i82571spt") == 0) {
-        c.lprintf(log.Level.debug, "Acquire IPMB address");
+        log.print(log.Level.debug, "Acquire IPMB address", .{});
         addr = acquireIpmbAddress(intf);
-        c.lprintf(log.Level.info, "Discovered IPMB address 0x%x", @as(c_uint, addr));
+        log.print(log.Level.info, "Discovered IPMB address 0x%x", .{@as(c_uint, addr)});
     }
     if (addr != 0 and addr != intf.my_addr) {
         if (intf.set_my_addr) |set_addr| _ = set_addr(intf, addr);
@@ -499,7 +499,7 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
     intf.target_addr = intf.my_addr;
     if (transit_addr > 0 or target_addr > 0) {
         if ((transit_addr != 0 or transit_channel != 0) and target_addr == 0) {
-            c.lprintf(log.Level.err, "Transit address/channel %#x/%#x ignored. Target address must be specified!", @as(c_uint, transit_addr), @as(c_uint, transit_channel));
+            log.print(log.Level.err, "Transit address/channel %#x/%#x ignored. Target address must be specified!", .{ @as(c_uint, transit_addr), @as(c_uint, transit_channel) });
             return rc;
         }
         intf.target_addr = target_addr;
@@ -508,13 +508,13 @@ fn main(argc: c_int, argv: [*c][*c]u8, cmdlist: ?[*]Cmd, intflist: ?[*]IntfSuppo
         intf.transit_channel = transit_channel;
         c.ipmi_intf_session_set_privlvl(@ptrCast(intf), c.IPMI_SESSION_PRIV_ADMIN);
         intf.target_ipmb_addr = acquireIpmbAddress(intf);
-        c.lprintf(log.Level.debug, "Specified addressing     Target  %#x:%#x Transit %#x:%#x", intf.target_addr, @as(c_uint, intf.target_channel), intf.transit_addr, @as(c_uint, intf.transit_channel));
+        log.print(log.Level.debug, "Specified addressing     Target  %#x:%#x Transit %#x:%#x", .{ intf.target_addr, @as(c_uint, intf.target_channel), intf.transit_addr, @as(c_uint, intf.transit_channel) });
         if (intf.target_ipmb_addr != 0) {
-            c.lprintf(log.Level.info, "Discovered Target IPMB-0 address %#x", @as(c_uint, intf.target_ipmb_addr));
+            log.print(log.Level.info, "Discovered Target IPMB-0 address %#x", .{@as(c_uint, intf.target_ipmb_addr)});
         }
     }
     intf.target_lun = target_lun;
-    c.lprintf(log.Level.debug, "Interface address: my_addr %#x transit %#x:%#x target %#x:%#x ipmb_target %#x\n", intf.my_addr, intf.transit_addr, @as(c_uint, intf.transit_channel), intf.target_addr, @as(c_uint, intf.target_channel), @as(c_uint, intf.target_ipmb_addr));
+    log.print(log.Level.debug, "Interface address: my_addr %#x transit %#x:%#x target %#x:%#x ipmb_target %#x\n", .{ intf.my_addr, intf.transit_addr, @as(c_uint, intf.transit_channel), intf.target_addr, @as(c_uint, intf.target_channel), @as(c_uint, intf.target_ipmb_addr) });
 
     if (sdrcache) |value| _ = c.ipmi_sdr_list_cache_fromfile(value);
     if (seloem) |value| _ = c.ipmi_sel_oem_init(value);
@@ -549,7 +549,7 @@ fn prompt(message: [*:0]const u8) [*c]u8 {
 
 fn parseByte(arg: [*c]const u8, output: *u8, comptime flag: u8) bool {
     if (c.str2uchar(arg, output) == 0) return true;
-    c.lprintf(log.Level.err, "Invalid parameter given or out of range for '-" ++ .{flag} ++ "'.");
+    log.print(log.Level.err, "Invalid parameter given or out of range for '-" ++ .{flag} ++ "'.", .{});
     return false;
 }
 
