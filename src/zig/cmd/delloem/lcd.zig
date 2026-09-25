@@ -29,15 +29,15 @@ fn getConfig(intf: *Intf, modern: bool, output: *[13]u8) c_int {
     output.* = .{0} ** 13;
     const rc = common.getSys(intf, 0xc2, 0, if (modern) output[0..13] else output[0..4]);
     if (rc < 0) {
-        c.lprintf(log.Level.err, "Error getting LCD configuration");
+        log.print(log.Level.err, "Error getting LCD configuration", .{});
         return -1;
     }
     if (rc == 0xc1 or rc == 0xcb) {
-        c.lprintf(log.Level.err, "Error getting LCD configuration: Command not supported on this system.");
+        log.print(log.Level.err, "Error getting LCD configuration: Command not supported on this system.", .{});
         return if (modern) 0 else -1;
     }
     if (rc > 0) {
-        c.lprintf(log.Level.err, "Error getting LCD configuration: %s", common.cc(@intCast(rc)));
+        log.print(log.Level.err, "Error getting LCD configuration: %s", .{common.cc(@intCast(rc))});
         return -1;
     }
     if (modern) @memcpy(&common.lcd_mode, output);
@@ -52,9 +52,9 @@ pub fn platformModelName(intf: *Intf, lcdstring: [*c]u8, max_length: u8, field_t
         const rc = common.getSys(intf, field_type, @intCast(block), &data);
         if (rc != 0) {
             if (rc < 0) {
-                c.lprintf(log.Level.err, "Error getting platform model name");
+                log.print(log.Level.err, "Error getting platform model name", .{});
             } else {
-                c.lprintf(log.Level.err, "Error getting platform model name: %s", common.cc(@intCast(rc)));
+                log.print(log.Level.err, "Error getting platform model name: %s", .{common.cc(@intCast(rc))});
             }
             return if (rc == -2) -1 else rc;
         }
@@ -73,17 +73,17 @@ pub fn platformModelName(intf: *Intf, lcdstring: [*c]u8, max_length: u8, field_t
 fn caps(intf: *Intf, out: *[7]u8, is_info: bool) c_int {
     const rc = common.getSys(intf, 0xcf, 0, out);
     if (rc < 0) {
-        c.lprintf(log.Level.err, if (is_info) "Error getting LCD capabilities." else "Error getting LCD capabilities");
+        log.print(log.Level.err, if (is_info) "Error getting LCD capabilities." else "Error getting LCD capabilities", .{});
         return -1;
     }
     if (rc > 0) {
         if (is_info and (rc == 0xc1 or rc == 0xcb)) {
-            c.lprintf(log.Level.err, "Error getting LCD capabilities: Command not supported on this system.");
+            log.print(log.Level.err, "Error getting LCD capabilities: Command not supported on this system.", .{});
             // C continues with an uninitialized lcd_caps; zero is the defined fallback.
             out.* = .{0} ** 7;
             return 0;
         }
-        c.lprintf(log.Level.err, "Error getting LCD capabilities: %s", common.cc(@intCast(rc)));
+        log.print(log.Level.err, "Error getting LCD capabilities: %s", .{common.cc(@intCast(rc))});
         return -1;
     }
     return 0;
@@ -96,11 +96,11 @@ fn getText(intf: *Intf, max_length: u8, output: *[63]u8) c_int {
         var data: [18]u8 = undefined;
         const rc = common.getSys(intf, 0xc1, @intCast(block), &data);
         if (rc < 0) {
-            c.lprintf(log.Level.err, "Error getting text data");
+            log.print(log.Level.err, "Error getting text data", .{});
             return -1;
         }
         if (rc > 0) {
-            c.lprintf(log.Level.err, "Error getting text data: %s", common.cc(@intCast(rc)));
+            log.print(log.Level.err, "Error getting text data: %s", .{common.cc(@intCast(rc))});
             return -1;
         }
         if (block == 0) {
@@ -120,7 +120,7 @@ fn getText(intf: *Intf, max_length: u8, output: *[63]u8) c_int {
 fn setText(intf: *Intf, text: [*:0]const u8) c_int {
     const input = std.mem.span(text);
     if (input.len > 62) {
-        c.lprintf(log.Level.err, "Out of range Max limit is 62 characters");
+        log.print(log.Level.err, "Out of range Max limit is 62 characters", .{});
         return -1;
     }
     var offset: usize = 0;
@@ -136,10 +136,10 @@ fn setText(intf: *Intf, text: [*:0]const u8) c_int {
         offset += count;
         rc = common.setSys(intf, &data);
         if (rc < 0) {
-            c.lprintf(log.Level.err, "Error setting text data");
+            log.print(log.Level.err, "Error setting text data", .{});
             rc = -1;
         } else if (rc > 0) {
-            c.lprintf(log.Level.err, "Error setting text data: %s", common.cc(@intCast(rc)));
+            log.print(log.Level.err, "Error setting text data: %s", .{common.cc(@intCast(rc))});
             rc = -1;
         }
     }
@@ -150,7 +150,7 @@ fn setTextWithCaps(intf: *Intf, text: [*:0]const u8) c_int {
     var data: [7]u8 = undefined;
     if (caps(intf, &data, false) != 0) return -1;
     if (data[2] == 0) {
-        c.lprintf(log.Level.err, "LCD does not have any lines that can be set");
+        log.print(log.Level.err, "LCD does not have any lines that can be set", .{});
         return -1;
     }
     return setText(intf, text);
@@ -165,15 +165,15 @@ fn configure(intf: *Intf, modern: bool, mode: u32, qualifier: u16, display: u8, 
         const data = [2]u8{ 0xc2, @truncate(mode) };
         const rc = common.setSys(intf, &data);
         if (rc < 0) {
-            c.lprintf(log.Level.err, "Error setting LCD configuration");
+            log.print(log.Level.err, "Error setting LCD configuration", .{});
             return -1;
         }
         if (rc == 0xc1 or rc == 0xcb) {
-            c.lprintf(log.Level.err, "Error setting LCD configuration: Command not supported on this system.");
+            log.print(log.Level.err, "Error setting LCD configuration: Command not supported on this system.", .{});
             return 0;
         }
         if (rc > 0) {
-            c.lprintf(log.Level.err, "Error setting LCD configuration: %s", common.cc(@intCast(rc)));
+            log.print(log.Level.err, "Error setting LCD configuration: %s", .{common.cc(@intCast(rc))});
             return -1;
         }
         return 0;
@@ -194,15 +194,15 @@ fn configure(intf: *Intf, modern: bool, mode: u32, qualifier: u16, display: u8, 
     data[11] = if (display == 0xff) original[11] else display;
     const rc = common.setSys(intf, &data);
     if (rc < 0) {
-        c.lprintf(log.Level.err, "Error setting LCD configuration");
+        log.print(log.Level.err, "Error setting LCD configuration", .{});
         return -1;
     }
     if (rc == 0xc1 or rc == 0xcb) {
-        c.lprintf(log.Level.err, "Error setting LCD configuration: Command not supported on this system.");
+        log.print(log.Level.err, "Error setting LCD configuration: Command not supported on this system.", .{});
         return 0;
     }
     if (rc > 0) {
-        c.lprintf(log.Level.err, "Error setting LCD configuration: %s", common.cc(@intCast(rc)));
+        log.print(log.Level.err, "Error setting LCD configuration: %s", .{common.cc(@intCast(rc))});
         return -1;
     }
     return 0;
@@ -211,15 +211,15 @@ fn configure(intf: *Intf, modern: bool, mode: u32, qualifier: u16, display: u8, 
 fn statusValue(intf: *Intf, output: *[5]u8) c_int {
     const rc = common.getSys(intf, 0xe7, 0, output);
     if (rc < 0) {
-        c.lprintf(log.Level.err, "Error getting LCD Status");
+        log.print(log.Level.err, "Error getting LCD Status", .{});
         return -1;
     }
     if (rc == 0xc1 or rc == 0xcb) {
-        c.lprintf(log.Level.err, "Error getting LCD status: Command not supported on this system.");
+        log.print(log.Level.err, "Error getting LCD status: Command not supported on this system.", .{});
         return -1;
     }
     if (rc != 0) {
-        c.lprintf(log.Level.err, "Error getting LCD Status: %s", common.cc(@intCast(rc)));
+        log.print(log.Level.err, "Error getting LCD Status: %s", .{common.cc(@intCast(rc))});
         return -1;
     }
     return 0;
@@ -247,15 +247,15 @@ fn setStatus(intf: *Intf, is_kvm: bool, value: u8) c_int {
     if (statusValue(intf, &previous) != 0) return -1;
     const data = [5]u8{ 0xe7, if (is_kvm) value else previous[1], if (is_kvm) previous[2] else value, 0, 0 };
     const rsp = common.send(intf, 0x06, 0x58, &data) orelse {
-        c.lprintf(log.Level.err, "Error setting LCD status");
+        log.print(log.Level.err, "Error setting LCD status", .{});
         return -1;
     };
     if (rsp.ccode == 0xc1 or rsp.ccode == 0xcb) {
-        c.lprintf(log.Level.err, "Error getting LCD status: Command not supported on this system.");
+        log.print(log.Level.err, "Error getting LCD status: Command not supported on this system.", .{});
         return -1;
     }
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error setting LCD status: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error setting LCD status: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     return 0;
@@ -326,13 +326,13 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     const supported = common.getSys(intf, 0xe7, 0, &empty) == 0;
     common.validator(intf);
     if (!supported) {
-        c.lprintf(log.Level.err, "lcd is not supported on this system.");
+        log.print(log.Level.err, "lcd is not supported on this system.", .{});
         return -1;
     }
     if (common.eq(verb, "info")) return info(intf);
     if (common.eq(verb, "status")) return status(intf);
     if (!common.eq(verb, "set")) {
-        c.lprintf(log.Level.err, "Invalid DellOEM command: %s", verb.?);
+        log.print(log.Level.err, "Invalid DellOEM command: %s", .{verb.?});
         usage();
         return -1;
     }
@@ -349,7 +349,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         };
         var number: u8 = 0;
         if (c.str2uchar(line, &number) != 0) {
-            c.lprintf(log.Level.err, "Argument '%s' is either not a number or out of range.", line);
+            log.print(log.Level.err, "Argument '%s' is either not a number or out of range.", .{line});
             return -1;
         }
         i += 1;
@@ -368,7 +368,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         };
         const values = [_]u32{ 2, 1, 0, 4, 8, 16, 32, 64, 128, 256, 512 };
         const choice = matchChoice(value, &modes) orelse {
-            if (value != null and !common.eq(value, "help")) c.lprintf(log.Level.err, "Invalid DellOEM command: %s", value.?);
+            if (value != null and !common.eq(value, "help")) log.print(log.Level.err, "Invalid DellOEM command: %s", .{value.?});
             usage();
             return if (value == null) -1 else 0;
         };
@@ -384,7 +384,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     if (common.idrac_all != 0 and common.eq(option, "lcdqualifier")) {
         const choices = [_][]const u8{ "watt", "btuphr", "celsius", "fahrenheit" };
         const choice = matchChoice(value, &choices) orelse {
-            if (value != null and !common.eq(value, "help")) c.lprintf(log.Level.err, "Invalid DellOEM command: %s", value.?);
+            if (value != null and !common.eq(value, "help")) log.print(log.Level.err, "Invalid DellOEM command: %s", .{value.?});
             usage();
             return if (value == null) -1 else 0;
         };
@@ -392,7 +392,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     }
     if (common.idrac_all != 0 and common.eq(option, "errordisplay")) {
         const choice = matchChoice(value, &.{ "sel", "simple" }) orelse {
-            if (value != null and !common.eq(value, "help")) c.lprintf(log.Level.err, "Invalid DellOEM command: %s", value.?);
+            if (value != null and !common.eq(value, "help")) log.print(log.Level.err, "Invalid DellOEM command: %s", .{value.?});
             usage();
             return if (value == null) -1 else 0;
         };
@@ -421,11 +421,11 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         return -1;
     }
     if (value != null and !common.eq(value, "help") and (common.eq(option, "vkvm") or common.eq(option, "frontpanelaccess"))) {
-        c.lprintf(log.Level.err, "Invalid DellOEM command: %s", value.?);
+        log.print(log.Level.err, "Invalid DellOEM command: %s", .{value.?});
         usage();
         return 0;
     }
-    if (!common.eq(option, "help")) c.lprintf(log.Level.err, "Invalid DellOEM command: %s", option);
+    if (!common.eq(option, "help")) log.print(log.Level.err, "Invalid DellOEM command: %s", .{option});
     usage();
     return if (common.eq(option, "help") and common.idrac_flag == 0) 0 else -1;
 }

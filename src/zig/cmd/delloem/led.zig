@@ -15,18 +15,18 @@ pub fn usage() void {
 fn driveMap(intf: *Intf, bus: c_int, dev: c_int, func: c_int, bay: *u8, slot: *u8) c_int {
     const data = [8]u8{ 1, 7, 6, 0, 0, 0, @truncate(@as(c_uint, @bitCast(bus))), @truncate(@as(c_uint, @bitCast((dev << 3) + func))) };
     const rsp = common.send(intf, 0x30, 0xd5, &data) orelse {
-        c.lprintf(log.Level.err, "Error issuing getdrivemap command.");
+        log.print(log.Level.err, "Error issuing getdrivemap command.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error issuing getdrivemap command: %s", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error issuing getdrivemap command: %s", .{common.cc(rsp.ccode)});
         return -1;
     }
     const body = common.bytes(rsp, 9) orelse return common.short("getdrivemap");
     bay.* = body[7];
     slot.* = body[8];
     if (bay.* == 0xff or slot.* == 0xff) {
-        c.lprintf(log.Level.err, "Error could not get drive bay:slot mapping");
+        log.print(log.Level.err, "Error could not get drive bay:slot mapping", .{});
         return -1;
     }
     return 0;
@@ -40,11 +40,11 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     }
     const support = [10]u8{ 1, 0, 8, 0, 0, 0, 0, 0, 0, 0 };
     const rsp = common.send(intf, 0x30, 0xd5, &support) orelse {
-        c.lprintf(log.Level.err, "'setled' is not supported on this system.");
+        log.print(log.Level.err, "'setled' is not supported on this system.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "'setled' is not supported on this system.");
+        log.print(log.Level.err, "'setled' is not supported on this system.", .{});
         return -1;
     }
     var b: c_int = 0;
@@ -60,7 +60,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         return -1;
     }
     if (b < 0 or b > 255 or d < 0 or d > 31 or f < 0 or f > 7) {
-        c.lprintf(log.Level.err, "Drive PCI address is out of range");
+        log.print(log.Level.err, "Drive PCI address is out of range", .{});
         return -1;
     }
     var state: u16 = 0;
@@ -84,11 +84,11 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     data[9] = slot;
     common.put16(data[10..12], state);
     const set_rsp = common.send(intf, 0x30, 0xd5, &data) orelse {
-        c.lprintf(log.Level.err, "Error issuing setled command.");
+        log.print(log.Level.err, "Error issuing setled command.", .{});
         return -1;
     };
     if (set_rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error issuing setled command: %s", common.cc(set_rsp.ccode));
+        log.print(log.Level.err, "Error issuing setled command: %s", .{common.cc(set_rsp.ccode)});
         return -1;
     }
     return 0;

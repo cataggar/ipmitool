@@ -21,8 +21,18 @@ identifies the already-connected dummy socket as `open` for vFlash fixtures;
 no local IPMI device is opened. The C oracle initializes request fields and
 padding that were previously indeterminate, so its recorded request log is
 stable across processes and platforms.
-The `delloem_` filter runs 122 Dell command cases plus three registry/MC cases
-from the broader suite, 125 cases per binary.
+The `delloem_` filter runs 123 Dell command cases plus three registry/MC cases
+from the broader suite, 126 cases per binary. The
+`delloem_lan_invalid_bond_numeric` snapshot comes from the default C oracle:
+the malformed iDRAC NIC response prints both promoted `%d` arguments as
+`(6) (255)`. It checks stderr and request bytes without a new normalizer.
+
+All seven Dell command-family files use the shared `util/log.zig` typed
+`print` path for their original C `printf` formats and argument widths.
+When `log` is selected in the same `exports.zig` archive, they share the
+selected logger's state; otherwise the wrapper calls C `lprintf`. The few
+conditional formats choose only literal strings with the same argument
+signature in every arm. No direct `lperror` call was present.
 
 Successful responses preserve C's requests, stdout, stderr, and exit status.
 Nine adversarial cases have both `<case>.snap` (original C) and

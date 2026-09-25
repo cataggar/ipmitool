@@ -270,6 +270,11 @@ args: -I dummy delloem lan get
 transcript: delloem_12g.tr
 covers: delloem
 
+[delloem_lan_invalid_bond_numeric]
+args: -I dummy delloem lan get
+transcript: delloem_invalid_bond.tr
+covers: delloem
+
 [delloem_lan_active_12g]
 args: -I dummy delloem lan get active
 transcript: delloem_12g.tr

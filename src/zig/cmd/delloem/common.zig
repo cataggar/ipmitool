@@ -27,7 +27,7 @@ pub fn eq(a: ?[*:0]const u8, b: []const u8) bool {
 }
 
 pub fn notice(lines: []const []const u8) void {
-    for (lines) |line| c.lprintf(log.Level.notice, "%.*s", @as(c_int, @intCast(line.len)), line.ptr);
+    for (lines) |line| log.print(log.Level.notice, "%.*s", .{ @as(c_int, @intCast(line.len)), line.ptr });
 }
 
 pub fn cc(code: u8) [*c]const u8 {
@@ -35,7 +35,7 @@ pub fn cc(code: u8) [*c]const u8 {
 }
 
 pub fn short(name: [*:0]const u8) c_int {
-    c.lprintf(log.Level.err, "Short %s response", name);
+    log.print(log.Level.err, "Short %s response", .{name});
     return -1;
 }
 
@@ -98,7 +98,7 @@ pub fn validator(intf: *Intf) void {
 
 pub fn license(code: u8) bool {
     if (idrac_12_13 == 0 or code != 0x6f) return false;
-    c.lprintf(log.Level.err, "FM001 : A required license is missing or expired");
+    log.print(log.Level.err, "FM001 : A required license is missing or expired", .{});
     return true;
 }
 

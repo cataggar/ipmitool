@@ -87,11 +87,11 @@ fn idrac(intf: *Intf, nic: u8) void {
     virtual(intf, nic);
     if ((nic != 0xff and nic != 8) or use_virtual != 0) return;
     const rsp = common.send(intf, 0x0c, 0x02, &.{ 1, 5, 0, 0 }) orelse {
-        c.lprintf(log.Level.err, "Error in getting MAC Address");
+        log.print(log.Level.err, "Error in getting MAC Address", .{});
         return;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error in getting MAC Address (%s)", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error in getting MAC Address (%s)", .{common.cc(rsp.ccode)});
         return;
     }
     const data = common.bytes(rsp, 7) orelse {
@@ -108,11 +108,11 @@ fn idrac(intf: *Intf, nic: u8) void {
 fn legacy(intf: *Intf, nic: u8) c_int {
     resetEmbedded();
     const rsp = common.send(intf, 0x06, 0x59, &.{ 0, 0xcb, 0, 0 }) orelse {
-        c.lprintf(log.Level.err, "Error in getting MAC Address");
+        log.print(log.Level.err, "Error in getting MAC Address", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error in getting MAC Address (%s)", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error in getting MAC Address (%s)", .{common.cc(rsp.ccode)});
         return -1;
     }
     const header = common.bytes(rsp, 2) orelse return common.short("MAC Address");
@@ -138,11 +138,11 @@ fn legacy(intf: *Intf, nic: u8) c_int {
 fn modern(intf: *Intf, nic: u8) c_int {
     resetEmbedded();
     const header_rsp = common.send(intf, 0x06, 0x59, &.{ 0, 0xda, 0, 0, 0, 0 }) orelse {
-        c.lprintf(log.Level.err, "Error in getting MAC Address");
+        log.print(log.Level.err, "Error in getting MAC Address", .{});
         return -1;
     };
     if (header_rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error in getting MAC Address (%s)", common.cc(header_rsp.ccode));
+        log.print(log.Level.err, "Error in getting MAC Address (%s)", .{common.cc(header_rsp.ccode)});
         return -1;
     }
     const header = common.bytes(header_rsp, 2) orelse return common.short("MAC Address");
@@ -154,11 +154,11 @@ fn modern(intf: *Intf, nic: u8) c_int {
         for (0..blocks) |i| {
             const data = [6]u8{ 0, 0xda, 0, 0, @intCast(i * 8), 8 };
             const rsp = common.send(intf, 0x06, 0x59, &data) orelse {
-                c.lprintf(log.Level.err, "Error in getting MAC Address");
+                log.print(log.Level.err, "Error in getting MAC Address", .{});
                 return -1;
             };
             if (rsp.ccode != 0) {
-                c.lprintf(log.Level.err, "Error in getting MAC Address (%s)", common.cc(rsp.ccode));
+                log.print(log.Level.err, "Error in getting MAC Address (%s)", .{common.cc(rsp.ccode)});
                 return -1;
             }
             const body = common.bytes(rsp, 9) orelse return common.short("MAC Address");
@@ -190,7 +190,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         };
         var value: c_int = 0;
         if (c.str2int(str, &value) != 0 or value < 0 or value > 8) {
-            c.lprintf(log.Level.err, "Invalid NIC number. The NIC number should be between 0-8");
+            log.print(log.Level.err, "Invalid NIC number. The NIC number should be between 0-8", .{});
             return -1;
         }
         nic = @intCast(value);
@@ -202,7 +202,7 @@ pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
         0x08 => legacy(intf, nic),
         0x0a, 0x0b, 0x0d, 0x0e, 0x10, 0x11, 0x20, 0x21 => modern(intf, nic),
         else => blk: {
-            c.lprintf(log.Level.err, "Error in getting MAC Address : Not supported platform");
+            log.print(log.Level.err, "Error in getting MAC Address : Not supported platform", .{});
             break :blk -1;
         },
     };

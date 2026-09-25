@@ -23,27 +23,27 @@ fn yesNo(value: bool) [*:0]const u8 {
 
 fn card(intf: *Intf) c_int {
     const rsp = common.send(intf, 0x30, 0xa4, &.{ 0, 0 }) orelse {
-        c.lprintf(log.Level.err, "Error in getting SD Card Extended Information");
+        log.print(log.Level.err, "Error in getting SD Card Extended Information", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "Error in getting SD Card Extended Information (%s)", common.cc(rsp.ccode));
+        log.print(log.Level.err, "Error in getting SD Card Extended Information (%s)", .{common.cc(rsp.ccode)});
         return -1;
     }
     const code = common.bytes(rsp, 1) orelse return common.short("SD Card Extended Information");
     if (common.idrac_12_13 != 0 and code[0] == 0x33) {
-        c.lprintf(log.Level.err, "FM001 : A required license is missing or expired");
+        log.print(log.Level.err, "FM001 : A required license is missing or expired", .{});
         return -1;
     }
     if (code[0] != 0) {
-        c.lprintf(log.Level.err, "Error in getting SD Card Extended Information (%s)", c.val2str(code[0], &codes));
+        log.print(log.Level.err, "Error in getting SD Card Extended Information (%s)", .{c.val2str(code[0], &codes)});
         return -1;
     }
     const data = common.bytes(rsp, 12) orelse return common.short("SD Card Extended Information");
     const flags = data[1];
     if (flags & 4 == 0) {
-        c.lprintf(log.Level.err, "vFlash SD card is unavailable, please insert the card of");
-        c.lprintf(log.Level.err, "size 256MB or greater");
+        log.print(log.Level.err, "vFlash SD card is unavailable, please insert the card of", .{});
+        log.print(log.Level.err, "size 256MB or greater", .{});
         return -1;
     }
     const health: [*:0]const u8 = switch (flags & 3) {
@@ -68,8 +68,8 @@ fn card(intf: *Intf) c_int {
 pub fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) c_int {
     const name = std.mem.sliceTo(&intf.name, 0);
     if (!std.mem.eql(u8, name, "open") and !std.mem.eql(u8, name, "wmi")) {
-        c.lprintf(log.Level.err, "vFlash support is enabled only for wmi and open interface.");
-        c.lprintf(log.Level.err, "Its not enabled for lan and lanplus interface.");
+        log.print(log.Level.err, "vFlash support is enabled only for wmi and open interface.", .{});
+        log.print(log.Level.err, "Its not enabled for lan and lanplus interface.", .{});
         return -1;
     }
     if (common.arg(argv, argc, 1) == null or common.eq(common.arg(argv, argc, 1), "help")) {
