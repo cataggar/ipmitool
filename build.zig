@@ -1069,6 +1069,10 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     abi_mod.addImport("ipmi_c", bridge_mod);
+    // This standalone unit root has no selected archive to own logger state.
+    const abi_options = b.addOptions();
+    abi_options.addOption([]const []const u8, "zig_modules", &.{});
+    abi_mod.addImport("build_options", abi_options.createModule());
     abi_mod.addCSourceFile(.{ .file = b.path("tests/fd_set_oracle.c"), .flags = &.{"-std=c11"} });
     addCryptoVectors(b, abi_mod);
     const abi_tests = b.addTest(.{ .root_module = abi_mod });

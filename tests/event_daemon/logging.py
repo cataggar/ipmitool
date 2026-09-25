@@ -50,7 +50,9 @@ def foreground(binary, env):
 
 
 def daemon(binary, label, verbose, env, bmc):
-    pidfile = ROOT / ".zig-cache" / f"p{os.getpid()}{label}{verbose}"
+    # Daemonization changes cwd; use an absolute path short enough for the
+    # 64-byte PID buffer even when this test runs in a nested worktree.
+    pidfile = ROOT / ".zig-cache" / f"{os.getpid():x}"
     syslog = WORK / f"log-{label}-{verbose}"
     assert len(str(pidfile)) < 64
     assert not pidfile.exists()

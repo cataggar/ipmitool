@@ -1038,3 +1038,17 @@ test "daemon option parsing validates timeout and PID path length" {
     try std.testing.expectEqual(@as(?bool, true), options(&intf, &.{"daemon=yes"}));
     try std.testing.expectEqualStrings("/run/ipmievd.pid7", std.mem.span(pidPath()));
 }
+
+test "daemon frontend logging uses the selected logger state" {
+    c.log_halt();
+    defer c.log_halt();
+    c.log_init("evd-log-test", 0, 0);
+
+    var count: c_int = -1;
+    frontend_log.print(c.LOG_DEBUG, "filtered%n", .{&count});
+    try std.testing.expectEqual(@as(c_int, -1), count);
+
+    c.log_level_set(2);
+    frontend_log.print(c.LOG_DEBUG, "accepted%n", .{&count});
+    try std.testing.expectEqual(@as(c_int, 8), count);
+}
