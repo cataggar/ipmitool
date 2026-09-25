@@ -1,0 +1,19 @@
+#!golden 1
+#!case sunoem_getval_empty_response
+#!section exit
+1
+#!section stdout
+#!section stderr
+Sun OEM getval2 command failed.
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x24 target_cmd=0x00 data=
+< rule=version ccode=0x00 len=80 data=01 03 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 33 2e 32 2e 30 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> netfn=0x2e lun=0x00 cmd=0x2a target_cmd=0x00 data=01 2f 53 50 2f 74 65 73 74 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=getval_start ccode=0x00 len=1 data=01
+> netfn=0x2e lun=0x00 cmd=0x2a target_cmd=0x00 data=02 2f 53 50 2f 74 65 73 74 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=getval_short ccode=0x00 len=0 data=
+bye

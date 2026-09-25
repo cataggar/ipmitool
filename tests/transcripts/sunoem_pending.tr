@@ -1,0 +1,50 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+respond getval_start
+  netfn 0x2e
+  cmd 0x2a
+  match 01
+  data 01
+end
+respond getval_notready
+  netfn 0x2e
+  cmd 0x2a
+  match 02
+  times 1
+  data 04
+end
+respond getval_ready
+  netfn 0x2e
+  cmd 0x2a
+  match 02
+  data 03 6f 6b 00
+end
+respond setval_name
+  netfn 0x2e
+  cmd 0x2c
+  match 03 00
+  data 01 08
+end
+respond setval_value
+  netfn 0x2e
+  cmd 0x2c
+  match 03 01
+  data 01 08
+end
+respond setval_notready
+  netfn 0x2e
+  cmd 0x2c
+  match 04
+  times 1
+  data 04
+end
+respond setval_ready
+  netfn 0x2e
+  cmd 0x2c
+  match 04
+  data 03
+end

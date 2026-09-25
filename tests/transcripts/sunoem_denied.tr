@@ -1,0 +1,47 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  ccode 0xd4
+end
+respond nacname
+  netfn 0x2e
+  cmd 0x29
+  ccode 0xd4
+end
+respond getval
+  netfn 0x2e
+  cmd 0x2a
+  ccode 0xd4
+end
+respond setval
+  netfn 0x2e
+  cmd 0x2c
+  ccode 0xd4
+end
+respond tunnel
+  netfn 0x2e
+  cmd 0x44
+  ccode 0xd4
+end
+respond sshkey_del
+  netfn 0x2e
+  cmd 0x02
+  ccode 0xd4
+end
+respond sshkey_set
+  netfn 0x2e
+  cmd 0x01
+  ccode 0xd4
+end
+respond cli
+  netfn 0x2e
+  cmd 0x19
+  ccode 0xd4
+  data 02 01 00 00 00 00 00 00 44 65 6e 69 65 64 00
+end
+respond echo
+  netfn 0x2e
+  cmd 0x23
+  ccode 0xd4
+end

@@ -271,6 +271,7 @@ sunoem_led_get(struct ipmi_intf * intf,	struct sdr_record_generic_locator * dev,
 	rqdata[6] = 0;
 	rqdata_len = 7;
 
+	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SUNOEM;
 	req.msg.cmd = IPMI_SUNOEM_LED_GET;
 	req.msg.lun = dev->lun;
@@ -322,6 +323,7 @@ sunoem_led_set(struct ipmi_intf * intf, struct sdr_record_generic_locator * dev,
 	rqdata[8] = 0;
 	rqdata_len = 9;
 
+	memset(&req, 0, sizeof(req));
 	req.msg.netfn = IPMI_NETFN_SUNOEM;
 	req.msg.cmd = IPMI_SUNOEM_LED_SET;
 	req.msg.lun = dev->lun;
@@ -1124,6 +1126,10 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 		}
 		break;
 	}
+	if (rsp->data_len < SUNOEM_CLI_HEADER) {
+		lprintf(LOG_ERR, "Sun OEM cli command failed");
+		return (-1);
+	}
 	if (SunOemCliActingVersion == SUNOEM_CLI_SEQNUM_VERSION) {
 		/*
 		 * Bit 1 of seqnum is used as an alternating sequence number
@@ -1266,6 +1272,12 @@ ipmi_sunoem_cli(struct ipmi_intf * intf, int argc, char *argv[])
 				}
 				break;
 			} /* for (retries = 0; retries <= SUNOEM_CLI_MAX_RETRY; retries++) */
+
+			if (rsp->data_len < SUNOEM_CLI_HEADER) {
+				lprintf(LOG_ERR, "Communication error.");
+				error = 1;
+				goto cleanup;
+			}
 
 			if (SunOemCliActingVersion == SUNOEM_CLI_SEQNUM_VERSION) {
 				cli_req.seqnum ^= 0x1; /* Toggle sequence number after request is sent */
@@ -1624,7 +1636,7 @@ ipmi_sunoem_nacname(struct ipmi_intf * intf, int argc, char *argv[])
 	struct ipmi_rq req;
 	sunoem_nacname_t nacname_req;
 	sunoem_nacname_t *nacname_rsp;
-	char full_nac_name[LUAPI_MAX_OBJ_PATH_LEN];
+	char full_nac_name[LUAPI_MAX_OBJ_PATH_LEN + 1];
 
 	if (argc < 1) {
 		return (1);
@@ -1636,6 +1648,7 @@ ipmi_sunoem_nacname(struct ipmi_intf * intf, int argc, char *argv[])
 		return (-1);
 	}
 
+	memset(&nacname_req, 0, sizeof(nacname_req));
 	nacname_req.seq_num = 0;
 	strcpy(nacname_req.nac_name, argv[0]);
 
@@ -1656,8 +1669,19 @@ ipmi_sunoem_nacname(struct ipmi_intf * intf, int argc, char *argv[])
 			lprintf(LOG_ERR, "Sun OEM nacname command failed: %d", rsp->ccode);
 			return (-1);
 		}
+		if (rsp->data_len < 1) {
+			lprintf(LOG_ERR, "Sun OEM nacname command failed.");
+			return (-1);
+		}
 
 		nacname_rsp = (sunoem_nacname_t *) rsp->data;
+		if (strlen(full_nac_name) +
+				strnlen(nacname_rsp->nac_name, MAX_SUNOEM_NAC_SIZE) >
+				LUAPI_MAX_OBJ_PATH_LEN) {
+			lprintf(LOG_ERR,
+					"Sun OEM nacname command failed: invalid path length");
+			return (-1);
+		}
 		strncat(full_nac_name, nacname_rsp->nac_name, MAX_SUNOEM_NAC_SIZE);
 
 		/*
@@ -1849,6 +1873,10 @@ ipmi_sunoem_getval(struct ipmi_intf * intf, int argc, char *argv[])
 			lprintf(LOG_ERR, "Sun OEM getval2 command failed: %d", rsp->ccode);
 			return (-1);
 		}
+		if (rsp->data_len < 1) {
+			lprintf(LOG_ERR, "Sun OEM getval2 command failed.");
+			return (-1);
+		}
 
 		getval_rsp = (sunoem_getval_t *) rsp->data;
 
@@ -1925,10 +1953,11 @@ send_luapi_prop_name(struct ipmi_intf * intf, int len, char *prop_name,
 		 * If the return code is other than data received, the
 		 * request failed
 		 */
-		if (setval_rsp->status_code != SUNOEM_REQ_RECV) {
+		if (rsp->data_len < sizeof(*setval_rsp) ||
+				setval_rsp->status_code != SUNOEM_REQ_RECV) {
 			lprintf(LOG_ERR,
 					"Sun OEM setval prop name: invalid status code: %d",
-					setval_rsp->status_code);
+					rsp->data_len ? setval_rsp->status_code : 0);
 			return (-1);
 		}
 		/* Use the tid returned by ILOM */
@@ -2066,6 +2095,7 @@ ipmi_sunoem_setval(struct ipmi_intf * intf, int argc, char *argv[])
 	 */
 	for (i = 0; i < retries; i++) {
 		memset(&req, 0, sizeof(req));
+		memset(&setval_req, 0, sizeof(setval_req));
 		req.msg.netfn = IPMI_NETFN_SUNOEM;
 		req.msg.cmd = IPMI_SUNOEM_SETVAL;
 		setval_req.cmd_code = SUNOEM_GET_STATUS;
@@ -2195,6 +2225,11 @@ ipmi_sunoem_getfile(struct ipmi_intf * intf, int argc, char *argv[])
 			fclose(fp);
 			return (-1);
 		}
+		if (rsp->data_len < 9) {
+			lprintf(LOG_ERR, "Sun OEM getfile invalid data size: 0");
+			fclose(fp);
+			return (-1);
+		}
 
 		getfile_rsp = (getfile_rsp_t *) rsp->data;
 
@@ -2202,7 +2237,8 @@ ipmi_sunoem_getfile(struct ipmi_intf * intf, int argc, char *argv[])
 				sizeof(getfile_rsp->data_size));
 		data_size = ntohl(data_size);
 
-		if (data_size > MAX_FILE_DATA_SIZE) {
+		if (data_size > MAX_FILE_DATA_SIZE ||
+				data_size > (unsigned)(rsp->data_len - 9)) {
 			lprintf(LOG_ERR, "Sun OEM getfile invalid data size: %d",
 					data_size);
 			fclose(fp);
@@ -2305,6 +2341,10 @@ ipmi_sunoem_getbehavior(struct ipmi_intf * intf, int argc, char *argv[])
 
 	if (rsp->ccode) {
 		lprintf(LOG_ERR, "Sun OEM getbehavior command failed: %d", rsp->ccode);
+		return (-1);
+	}
+	if (rsp->data_len < 1) {
+		lprintf(LOG_ERR, "Sun OEM getbehavior command failed.");
 		return (-1);
 	}
 

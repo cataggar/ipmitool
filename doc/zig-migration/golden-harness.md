@@ -22,6 +22,7 @@ log is what catches it.
 * [Quick start](#quick-start)
 * [How the dummy interface is driven](#how-the-dummy-interface-is-driven)
 * [TSOL over a PTY and UDP](#tsol-over-a-pty-and-udp)
+* [Sun OEM ping and interactive CLI](#sun-oem-ping-and-interactive-cli)
 * [Layout](#layout)
 * [Adding a case](#adding-a-case)
 * [Writing a transcript](#writing-a-transcript)
@@ -165,6 +166,16 @@ zig cc -std=gnu11 -DHAVE_TERMIOS_H -Iinclude tests/tsol/fixture.c \
 python3 tests/tsol/run.py --oracle tests/tsol/.oracle-c --record
 rm tests/tsol/.oracle-c
 ```
+
+## Sun OEM ping and interactive CLI
+
+The Sun OEM `ping` success cases normalize only their elapsed-millisecond
+stdout fields (`time=` and `round-trip min/avg/max`); request payloads, packet
+counts, sequence numbers, other output and all failures remain byte-exact.
+For its interactive `cli` termios/^D path (the golden harness uses pipe-backed
+stdin), run `python3 tests/transport/sunoem_cli_pty.py C_BINARY ZIG_BINARY`.
+That comparison uses a real pseudo-terminal and a project-local dummy BMC
+socket, and checks the requests, stdout, stderr and exit code.
 
 ## How the dummy interface is driven
 

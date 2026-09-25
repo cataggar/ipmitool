@@ -31,6 +31,9 @@ comptime {
     if (selected("oem")) {
         _ = @import("cmd/oem.zig");
     }
+    if (selected("sunoem")) {
+        @import("cmd/sunoem.zig").exportSymbols();
+    }
     if (selected("strings")) {
         // Two files: the lookup tables, and the IANA PEN registry loader that
         // only `exports.zig` may pull in because it calls back into `log.c`.

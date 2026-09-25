@@ -1,0 +1,19 @@
+#!golden 1
+#!case sunoem_setval_56
+#!section exit
+0
+#!section stdout
+Sun OEM setval command successful.
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2e lun=0x00 cmd=0x2c target_cmd=0x00 data=03 00 00 00 2f 53 50 2f 74 65 73 74 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_name ccode=0x00 len=2 data=01 09
+> netfn=0x2e lun=0x00 cmd=0x2c target_cmd=0x00 data=03 01 09 01 31 32 33 34 35 36 37 38 39 30 31 32 33 34 35 36 37 38 39 30 31 32 33 34 35 36 37 38 39 30 31 32 33 34 35 36 37 38 39 30 31 32 33 34 35 36 37 38 39 30 31 32 33 34 35 36
+< rule=set_value ccode=0x00 len=2 data=01 09
+> netfn=0x2e lun=0x00 cmd=0x2c target_cmd=0x00 data=04 00 09 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+< rule=set_status ccode=0x00 len=2 data=03 09
+bye

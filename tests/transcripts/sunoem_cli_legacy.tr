@@ -1,0 +1,20 @@
+default_ccode 0xc1
+respond invalid_version
+  netfn 0x2e
+  cmd 0x19
+  match 02 00
+  data 02 01 00 00 00 00 00 00
+  data 49 6e 76 61 6c 69 64 20 76 65 72 73 69 6f 6e 00
+end
+respond legacy_open
+  netfn 0x2e
+  cmd 0x19
+  match 01 00
+  data 01 00 00 00 11 22 33 44 00
+end
+respond legacy_data
+  netfn 0x2e
+  cmd 0x19
+  match 01 03
+  data 01 01 00 00 11 22 33 44 4f 4b 00
+end

@@ -1,0 +1,457 @@
+# C-oracle snapshots for every Sun OEM public subcommand.  All transcripts use
+# the dummy BMC; the associated snapshots preserve wire, stdout, stderr, exit.
+[sunoem_usage]
+args: -I dummy sunoem
+covers: sunoem
+
+[sunoem_help]
+args: -I dummy sunoem help
+covers: sunoem
+
+[sunoem_unknown]
+args: -I dummy sunoem bogus
+covers: sunoem
+
+[sunoem_version]
+args: -I dummy sunoem version
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_version_denied]
+args: -I dummy sunoem version
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_version_trunc]
+args: -I dummy sunoem version
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_nacname]
+args: -I dummy sunoem nacname sys
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_nacname_denied]
+args: -I dummy sunoem nacname sys
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_nacname_trunc]
+args: -I dummy sunoem nacname sys
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_nacname_long]
+args: -I dummy sunoem nacname 12345678901234567
+covers: sunoem
+
+[sunoem_nacname_chunks]
+args: -I dummy sunoem nacname sys
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_nacname_256]
+args: -I dummy sunoem nacname sys
+transcript: sunoem_nac_max.tr
+covers: sunoem
+
+[sunoem_nacname_empty_response]
+args: -I dummy sunoem nacname sys
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_getval]
+args: -I dummy sunoem getval /SP/test
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_getval_old]
+args: -I dummy sunoem getval /SP
+transcript: sunoem_old.tr
+covers: sunoem
+
+[sunoem_getval_denied]
+args: -I dummy sunoem getval /SP/test
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_getval_trunc]
+args: -I dummy sunoem getval /SP/test
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_getval_not_found]
+args: -I dummy sunoem getval /SP/test
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_getval_empty_response]
+args: -I dummy sunoem getval /SP/test
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_getval_pending]
+args: -I dummy sunoem getval /SP/test
+transcript: sunoem_pending.tr
+covers: sunoem
+
+[sunoem_getval_long]
+args: -I dummy sunoem getval 12345678901234567890123456789012345678901234567890123456789012345678901234567890
+covers: sunoem
+
+[sunoem_setval]
+args: -I dummy sunoem setval /SP/test enabled
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_setval_denied]
+args: -I dummy sunoem setval /SP/test enabled
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_setval_trunc]
+args: -I dummy sunoem setval /SP/test enabled
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_setval_bad_timeout]
+args: -I dummy -- sunoem setval /SP/test enabled -1
+covers: sunoem
+
+[sunoem_setval_zero_timeout]
+args: -I dummy sunoem setval /SP/test enabled 0
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_setval_chunks]
+args: -I dummy sunoem setval /SP/test 123456789012345678901234567890123456789012345678901234567
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_setval_56]
+args: -I dummy sunoem setval /SP/test 12345678901234567890123456789012345678901234567890123456
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_setval_empty_response]
+args: -I dummy sunoem setval /SP/test enabled
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_setval_pending]
+args: -I dummy sunoem setval /SP/test enabled
+transcript: sunoem_pending.tr
+covers: sunoem
+
+[sunoem_getfile]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_getfile_denied]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_getfile_trunc]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_getfile_old]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_old.tr
+covers: sunoem
+
+[sunoem_getfile_blocks]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_getfile_max_block]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_file_max.tr
+covers: sunoem
+
+[sunoem_getfile_empty_response]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_getfile_bad_block]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_badfile.tr
+covers: sunoem
+
+[sunoem_getfile_oversize]
+args: -I dummy sunoem getfile DIAG_PASSED {work}/copy
+transcript: sunoem_badsize.tr
+covers: sunoem
+
+[sunoem_getfile_id16]
+args: -I dummy sunoem getfile 1234567890123456 {work}/copy
+transcript: sunoem_badfile.tr
+covers: sunoem
+
+[sunoem_getbehavior]
+args: -I dummy sunoem getbehavior SUPPORTS_SIGNED_PACKAGES
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_getbehavior_denied]
+args: -I dummy sunoem getbehavior SUPPORTS_SIGNED_PACKAGES
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_getbehavior_trunc]
+args: -I dummy sunoem getbehavior SUPPORTS_SIGNED_PACKAGES
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_getbehavior_old]
+args: -I dummy sunoem getbehavior SUPPORTS_SIGNED_PACKAGES
+transcript: sunoem_old.tr
+covers: sunoem
+
+[sunoem_getbehavior_long]
+args: -I dummy sunoem getbehavior 12345678901234567890123456789012
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_getbehavior_disabled]
+args: -I dummy sunoem getbehavior SUPPORTS_SIGNED_PACKAGES
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_getbehavior_empty_response]
+args: -I dummy sunoem getbehavior SUPPORTS_SIGNED_PACKAGES
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_sshkey_del]
+args: -I dummy sunoem sshkey del 255
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_sshkey_del_denied]
+args: -I dummy sunoem sshkey del 1
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_sshkey_set]
+args: -I dummy sunoem sshkey set 1 {work}/key.pub
+text: key.pub sunoem/key.txt
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_sshkey_set_denied]
+args: -I dummy sunoem sshkey set 1 {work}/key.pub
+text: key.pub sunoem/key.txt
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_sshkey_two_blocks]
+args: -I dummy sunoem sshkey set 1 {work}/key.pub
+blob: key.pub sunoem/key65.hex
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_sshkey_empty]
+args: -I dummy sunoem sshkey set 1 {work}/key.pub
+blob: key.pub sunoem/empty.hex
+covers: sunoem
+
+[sunoem_sshkey_missing]
+args: -I dummy sunoem sshkey set 1 {work}/missing.pub
+covers: sunoem
+
+[sunoem_sshkey_bad_uid]
+args: -I dummy sunoem sshkey del 256
+covers: sunoem
+
+[sunoem_cli]
+args: -I dummy sunoem cli show version
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_cli_force]
+args: -I dummy sunoem cli force show version
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_cli_legacy]
+args: -I dummy sunoem cli show version
+transcript: sunoem_cli_legacy.tr
+covers: sunoem
+
+[sunoem_cli_timeout_retry]
+args: -I dummy sunoem cli show version
+transcript: sunoem_cli_retry.tr
+covers: sunoem
+
+[sunoem_cli_long_arg]
+args: -I dummy sunoem cli 12345678901234567890123456789012345678901234567890123456789012345678901234567890
+transcript: sunoem_cli_chunks.tr
+covers: sunoem
+
+[sunoem_cli_wait]
+args: -I dummy sunoem cli @wait= show
+transcript: sunoem_cli_chunks.tr
+covers: sunoem
+
+[sunoem_cli_eof]
+args: -I dummy sunoem cli show
+transcript: sunoem_cli_chunks.tr
+covers: sunoem
+
+[sunoem_cli_short_poll]
+args: -I dummy sunoem cli show version
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_cli_denied]
+args: -I dummy sunoem cli show version
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_cli_trunc]
+args: -I dummy sunoem cli show version
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_cli_interactive]
+args: -I dummy sunoem cli
+transcript: sunoem_ok.tr
+covers: sunoem
+
+[sunoem_ping_zero]
+args: -I dummy sunoem ping 0
+covers: sunoem
+
+[sunoem_ping_denied]
+args: -I dummy sunoem ping 1
+transcript: sunoem_denied.tr
+covers: sunoem
+
+[sunoem_ping_trunc]
+args: -I dummy sunoem ping 1
+transcript: sunoem_trunc.tr
+covers: sunoem
+
+[sunoem_ping_success]
+args: -I dummy sunoem ping 1
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_ping_bad_sequence]
+args: -I dummy sunoem ping 1
+transcript: sunoem_short.tr
+covers: sunoem
+
+[sunoem_ping_quiet]
+args: -I dummy sunoem ping 1 q
+transcript: sunoem_extra.tr
+covers: sunoem
+
+[sunoem_ping_invalid]
+args: -I dummy sunoem ping invalid
+covers: sunoem
+
+[sunoem_ping_bad_option]
+args: -I dummy sunoem ping 1 z
+covers: sunoem
+
+[sunoem_led_get]
+args: -I dummy sunoem led get Missing
+covers: sunoem
+
+[sunoem_led_get_physical]
+args: -I dummy sunoem led get LED01
+transcript: sunoem_led.tr
+covers: sunoem
+
+[sunoem_led_get_denied]
+args: -I dummy sunoem led get LED01
+transcript: sunoem_led_denied.tr
+covers: sunoem
+
+[sunoem_led_get_short]
+args: -I dummy sunoem led get LED01
+transcript: sunoem_led_short.tr
+covers: sunoem
+
+[sunoem_led_unknown_type]
+args: -I dummy sunoem led get LED01 unknown
+transcript: sunoem_led.tr
+covers: sunoem
+
+[sunoem_led_get_csv]
+args: -c -I dummy sunoem led get all
+transcript: sunoem_led.tr
+covers: sunoem
+
+[sunoem_led_set]
+args: -I dummy sunoem led set Missing FAST
+covers: sunoem
+
+[sunoem_led_set_physical]
+args: -I dummy sunoem led set LED01 STEADY_ON LOCATE
+transcript: sunoem_led.tr
+covers: sunoem
+
+[sunoem_led_set_denied]
+args: -I dummy sunoem led set LED01 SLOW
+transcript: sunoem_led_denied.tr
+covers: sunoem
+
+[sunoem_led_set_surplus]
+args: -I dummy sunoem led set LED01 SLOW
+transcript: sunoem_led_short.tr
+covers: sunoem
+
+[sunoem_led_set_type_ignored]
+args: -I dummy sunoem led set LED01 SLOW ACT
+transcript: sunoem_led.tr
+covers: sunoem
+
+[sunoem_led_set_all]
+args: -I dummy sunoem led set all FAST
+transcript: sunoem_led.tr
+covers: sunoem
+
+[sunoem_led_group_get]
+args: -I dummy sunoem led get GROUP
+transcript: sunoem_led_group.tr
+covers: sunoem
+
+[sunoem_led_group_range]
+args: -I dummy sunoem led get GROUP
+transcript: sunoem_led_range.tr
+covers: sunoem
+
+[sunoem_led_all_skip_logical]
+args: -I dummy sunoem led get all
+transcript: sunoem_led_group.tr
+covers: sunoem
+
+[sunoem_led_group_set]
+args: -I dummy sunoem led set GROUP FAST
+transcript: sunoem_led_group.tr
+covers: sunoem
+
+[sunoem_led_bad_mode]
+args: -I dummy sunoem led set Missing wrong
+covers: sunoem
+
+[sunoem_sbled_get]
+args: -I dummy sunoem sbled get Missing
+covers: sunoem
+
+[sunoem_led_no_action]
+args: -I dummy sunoem led
+covers: sunoem
+
+[sunoem_missing_getfile]
+args: -I dummy sunoem getfile
+covers: sunoem

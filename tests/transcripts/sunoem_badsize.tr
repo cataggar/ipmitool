@@ -1,0 +1,12 @@
+default_ccode 0xc1
+respond version
+  netfn 0x2e
+  cmd 0x24
+  data @sunoem/version_ok.hex
+end
+respond oversized_block
+  netfn 0x2e
+  cmd 0x44
+  match 0b
+  data 00 00 00 00 00 00 04 01 01
+end
