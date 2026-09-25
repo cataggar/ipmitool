@@ -134,6 +134,12 @@ args: -I dummy lan set 1 vlan id off
 transcript: lanp_modify.tr
 covers: lan
 
+[lanp_log_vlan_invalid_readback]
+desc: preserve C diagnostic for the highest out-of-range BMC VLAN ID
+args: -I dummy lan set 1 vlan id off
+transcript: lanp_log_vlan_invalid.tr
+covers: lan
+
 [lanp_set_vlan_id]
 desc: pack VLAN ID and enable bit into a two-byte parameter
 args: -I dummy lan set 1 vlan id 291
@@ -143,6 +149,12 @@ covers: lan
 [lanp_set_auth]
 desc: retain other privileges when updating admin auth
 args: -I dummy lan set 1 auth admin md5
+transcript: lanp_modify.tr
+covers: lan
+
+[lanp_log_auth_debug]
+desc: preserve verbose padded hexadecimal authentication-level diagnostics
+args: -vv -I dummy lan set 1 auth admin md5
 transcript: lanp_modify.tr
 covers: lan
 

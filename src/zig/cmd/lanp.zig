@@ -94,11 +94,11 @@ const get_codes = [_]c.struct_valstr{
 fn get(intf: *Intf, ch: u8, p: Param, selector: u8) Err!Value {
     const payload = [_]u8{ ch, @intFromEnum(p), selector, 0 };
     const rsp = send(intf, c.IPMI_LAN_GET_CONFIG, &payload) orelse {
-        c.lprintf(log.Level.info, "Get LAN Parameter '%s' command failed", pName(p));
+        log.print(log.Level.info, "Get LAN Parameter '%s' command failed", .{pName(p)});
         return error.CommandFailed;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.info, "Get LAN Parameter '%s' command failed: %s", pName(p), ccode(rsp.ccode, false));
+        log.print(log.Level.info, "Get LAN Parameter '%s' command failed: %s", .{ pName(p), ccode(rsp.ccode, false) });
         if (rsp.ccode == 0x80 or rsp.ccode == 0xc9 or rsp.ccode == 0xcc)
             return .{ .bytes = null };
         return error.CommandFailed;
@@ -119,7 +119,7 @@ fn rawSet(intf: *Intf, ch: u8, p: Param, value: []const u8, wait: bool) Err!void
     bytes[1] = @intFromEnum(p);
     @memcpy(bytes[2..][0..value.len], value);
     const rsp = send(intf, c.IPMI_LAN_SET_CONFIG, bytes[0 .. value.len + 2]) orelse {
-        c.lprintf(log.Level.err, "Set LAN Parameter failed");
+        log.print(log.Level.err, "Set LAN Parameter failed", .{});
         return error.CommandFailed;
     };
     if (!wait) {
@@ -127,9 +127,9 @@ fn rawSet(intf: *Intf, ch: u8, p: Param, value: []const u8, wait: bool) Err!void
         return;
     }
     if (rsp.ccode != 0 and rsp.ccode != 0xff) {
-        c.lprintf(log.Level.debug, "Warning: Set LAN Parameter failed: %s", ccode(rsp.ccode, true));
+        log.print(log.Level.debug, "Warning: Set LAN Parameter failed: %s", .{ccode(rsp.ccode, true)});
         if (rsp.ccode != 0xcc) return error.CommandFailed;
-        c.lprintf(log.Level.debug, "Retrying...");
+        log.print(log.Level.debug, "Retrying...", .{});
         var tries: usize = 10;
         while (tries > 0) : (tries -= 1) {
             _ = c.sleep(c.IPMI_LANP_TIMEOUT);
@@ -137,7 +137,7 @@ fn rawSet(intf: *Intf, ch: u8, p: Param, value: []const u8, wait: bool) Err!void
             if (next.ccode == 0) break;
         } else return error.CommandFailed;
     }
-    c.lprintf(log.Level.debug, "Waiting for Set LAN Parameter to complete...");
+    log.print(log.Level.debug, "Waiting for Set LAN Parameter to complete...", .{});
     if (c.verbose > 1) c.printbuf(value.ptr, @intCast(value.len), "SET DATA");
     var tries: usize = 0;
     while (true) : (tries += 1) {
@@ -154,9 +154,9 @@ fn rawSet(intf: *Intf, ch: u8, p: Param, value: []const u8, wait: bool) Err!void
         if (tries == 10) {
             if (check.bytes) |actual| {
                 if (actual.len != value.len)
-                    c.lprintf(log.Level.warning, "Mismatched data lengths: %d != %d", @as(c_int, @intCast(actual.len)), @as(c_int, @intCast(value.len)))
+                    log.print(log.Level.warning, "Mismatched data lengths: %d != %d", .{ @as(c_int, @intCast(actual.len)), @as(c_int, @intCast(value.len)) })
                 else
-                    c.lprintf(log.Level.warning, "LAN Parameter Data does not match!  Write may have failed.");
+                    log.print(log.Level.warning, "LAN Parameter Data does not match!  Write may have failed.", .{});
             }
             return error.CommandFailed;
         }
@@ -177,7 +177,7 @@ fn set(intf: *Intf, ch: u8, p: Param, value: []const u8, wait: bool) c_int {
     lock(intf, ch);
     const result = rawSet(intf, ch, p, value, wait);
     rawSet(intf, ch, .progress, &.{2}, false) catch {
-        c.lprintf(log.Level.debug, "LAN Parameter Commit not supported");
+        log.print(log.Level.debug, "LAN Parameter Commit not supported", .{});
     };
     rawSet(intf, ch, .progress, &.{0}, false) catch {};
     result catch return -1;
@@ -225,11 +225,11 @@ fn privChar(value: u8) u8 {
 }
 fn printLan(intf: *Intf, ch: u8) c_int {
     if (ch < 1 or ch > max_channel) {
-        c.lprintf(log.Level.err, "Invalid Channel %d", @as(c_int, ch));
+        log.print(log.Level.err, "Invalid Channel %d", .{@as(c_int, ch)});
         return -1;
     }
     if (!lanChannel(intf, ch)) {
-        c.lprintf(log.Level.err, "Channel %d is not a LAN channel", @as(c_int, ch));
+        log.print(log.Level.err, "Channel %d is not a LAN channel", .{@as(c_int, ch)});
         return -1;
     }
     const progress = fetchPrint(intf, ch, .progress) catch return -1;
@@ -429,14 +429,14 @@ fn usage(comptime kind: enum { lan, set, access, arp, auth, bakgw, cipher, defgw
             "    retry <number>                 Set number of alert retries\n",
     };
     var it = std.mem.splitScalar(u8, text, '\n');
-    while (it.next()) |line| c.lprintf(log.Level.notice, "%.*s", @as(c_int, @intCast(line.len)), line.ptr);
+    while (it.next()) |line| log.print(log.Level.notice, "%.*s", .{ @as(c_int, @intCast(line.len)), line.ptr });
 }
 fn parseIP(s: [*:0]const u8, out: *[4]u8) bool {
     var octets: [4]c_uint = undefined;
     if (c.sscanf(s, "%u.%u.%u.%u", &octets[0], &octets[1], &octets[2], &octets[3]) != 4 or
         octets[0] > 255 or octets[1] > 255 or octets[2] > 255 or octets[3] > 255)
     {
-        c.lprintf(log.Level.err, "Invalid IP address: %s", s);
+        log.print(log.Level.err, "Invalid IP address: %s", .{s});
         return false;
     }
     for (out, octets) |*slot, n| slot.* = @intCast(n);
@@ -471,17 +471,17 @@ fn channelAccess(intf: *Intf, ch: u8, enable: bool, alert: bool) c_int {
     var a = std.mem.zeroes(c.struct_channel_access_t);
     a.channel = ch;
     if (c.eval_ccode(c._ipmi_get_channel_access(ci(intf), &a, 0)) != 0) {
-        c.lprintf(log.Level.err, "Unable to Get Channel Access(non-volatile) for channel %d", @as(c_int, ch));
+        log.print(log.Level.err, "Unable to Get Channel Access(non-volatile) for channel %d", .{@as(c_int, ch)});
         return -1;
     }
     if (alert) {
         a.alerting = if (enable) c.ALERTING_ENABLED else c.ALERTING_DISABLED;
         if (c.eval_ccode(c._ipmi_set_channel_access(ci(intf), a, 1, 0)) != 0) {
-            c.lprintf(log.Level.err, "Unable to Set Channel Access(non-volatile) for channel %d", @as(c_int, ch));
+            log.print(log.Level.err, "Unable to Set Channel Access(non-volatile) for channel %d", .{@as(c_int, ch)});
             return -1;
         }
         if (c.eval_ccode(c._ipmi_set_channel_access(ci(intf), a, 2, 0)) != 0) {
-            c.lprintf(log.Level.err, "Unable to Set Channel Access(volatile) for channel %d", @as(c_int, ch));
+            log.print(log.Level.err, "Unable to Set Channel Access(volatile) for channel %d", .{@as(c_int, ch)});
             return -1;
         }
         _ = c.printf("PEF alerts for channel %d %s.\n", @as(c_int, ch), if (enable) @as([*:0]const u8, "enabled") else "disabled");
@@ -489,19 +489,19 @@ fn channelAccess(intf: *Intf, ch: u8, enable: bool, alert: bool) c_int {
         a.access_mode = if (enable) 2 else 0;
         a.privilege_limit = 4;
         if (c.eval_ccode(c._ipmi_set_channel_access(ci(intf), a, 1, 1)) != 0) {
-            c.lprintf(log.Level.err, "Unable to Set Channel Access(non-volatile) for channel %d", @as(c_int, ch));
+            log.print(log.Level.err, "Unable to Set Channel Access(non-volatile) for channel %d", .{@as(c_int, ch)});
             return -1;
         }
         a = std.mem.zeroes(c.struct_channel_access_t);
         a.channel = ch;
         if (c.eval_ccode(c._ipmi_get_channel_access(ci(intf), &a, 1)) != 0) {
-            c.lprintf(log.Level.err, "Unable to Get Channel Access(volatile) for channel %d", @as(c_int, ch));
+            log.print(log.Level.err, "Unable to Get Channel Access(volatile) for channel %d", .{@as(c_int, ch)});
             return -1;
         }
         a.access_mode = if (enable) 2 else 0;
         a.privilege_limit = 4;
         if (c.eval_ccode(c._ipmi_set_channel_access(ci(intf), a, 2, 2)) != 0) {
-            c.lprintf(log.Level.err, "Unable to Set Channel Access(volatile) for channel %d", @as(c_int, ch));
+            log.print(log.Level.err, "Unable to Set Channel Access(volatile) for channel %d", .{@as(c_int, ch)});
             return -1;
         }
         if (!enable) intf.abort = 1;
@@ -512,7 +512,7 @@ fn channelAccess(intf: *Intf, ch: u8, enable: bool, alert: bool) c_int {
 fn vlanSet(intf: *Intf, ch: u8, value: [*:0]const u8) c_int {
     var b: [2]u8 = undefined;
     if (eql(value, "off")) {
-        c.lprintf(log.Level.debug, "Get current VLAN ID from BMC.");
+        log.print(log.Level.debug, "Get current VLAN ID from BMC.", .{});
         const current = get(intf, ch, .vlan, 0) catch Value{ .bytes = null };
         if (current.bytes) |v| {
             if (v.len >= 2) {
@@ -522,7 +522,7 @@ fn vlanSet(intf: *Intf, ch: u8, value: [*:0]const u8) c_int {
                     return 0;
                 }
                 if (id > 4094) {
-                    c.lprintf(log.Level.err, "Retrieved VLAN ID %i is out of range <1..4094>.", id);
+                    log.print(log.Level.err, "Retrieved VLAN ID %i is out of range <1..4094>.", .{@as(c_int, id)});
                     return -1;
                 }
                 b = .{ v[0], v[1] & 15 };
@@ -530,11 +530,11 @@ fn vlanSet(intf: *Intf, ch: u8, value: [*:0]const u8) c_int {
         } else b = .{ 0, 0 };
     } else {
         const id = valInt(value) orelse {
-            c.lprintf(log.Level.err, "Given VLAN ID '%s' is invalid.", value);
+            log.print(log.Level.err, "Given VLAN ID '%s' is invalid.", .{value});
             return -1;
         };
         if (id < 1 or id > 4094) {
-            c.lprintf(log.Level.notice, "VLAN ID must be between 1 and 4094.");
+            log.print(log.Level.notice, "VLAN ID must be between 1 and 4094.", .{});
             return -1;
         }
         b = .{ @truncate(@as(u32, @intCast(id))), @truncate((@as(u32, @intCast(id)) >> 8) | 0x80) };
@@ -546,18 +546,25 @@ fn authSet(intf: *Intf, ch: u8, level: [*:0]const u8, types: [*:0]const u8) c_in
     const b = required(current, 5) catch return -1;
     var data: [5]u8 = undefined;
     @memcpy(&data, b[0..5]);
-    c.lprintf(log.Level.debug, "%-24s: callback=0x%02x user=0x%02x operator=0x%02x admin=0x%02x oem=0x%02x", pName(.auth_enable), @as(c_int, data[0]), @as(c_int, data[1]), @as(c_int, data[2]), @as(c_int, data[3]), @as(c_int, data[4]));
+    log.print(log.Level.debug, "%-24s: callback=0x%02x user=0x%02x operator=0x%02x admin=0x%02x oem=0x%02x", .{
+        pName(.auth_enable),
+        @as(c_int, data[0]),
+        @as(c_int, data[1]),
+        @as(c_int, data[2]),
+        @as(c_int, data[3]),
+        @as(c_int, data[4]),
+    });
     var bits: u8 = 0;
     var it = std.mem.splitScalar(u8, std.mem.span(types), ',');
     while (it.next()) |v| {
         // C compares each remaining suffix, not just each token.
         const suffix = std.mem.span(types)[@intFromPtr(v.ptr) - @intFromPtr(types) ..];
-        if (std.ascii.eqlIgnoreCase(suffix, "none")) bits |= 1 else if (std.ascii.eqlIgnoreCase(suffix, "md2")) bits |= 2 else if (std.ascii.eqlIgnoreCase(suffix, "md5")) bits |= 4 else if (std.ascii.eqlIgnoreCase(suffix, "password") or std.ascii.eqlIgnoreCase(suffix, "key")) bits |= 16 else if (std.ascii.eqlIgnoreCase(suffix, "oem")) bits |= 32 else c.lprintf(log.Level.warning, "Invalid authentication type: %s", @as([*:0]const u8, @ptrCast(suffix.ptr)));
+        if (std.ascii.eqlIgnoreCase(suffix, "none")) bits |= 1 else if (std.ascii.eqlIgnoreCase(suffix, "md2")) bits |= 2 else if (std.ascii.eqlIgnoreCase(suffix, "md5")) bits |= 4 else if (std.ascii.eqlIgnoreCase(suffix, "password") or std.ascii.eqlIgnoreCase(suffix, "key")) bits |= 16 else if (std.ascii.eqlIgnoreCase(suffix, "oem")) bits |= 32 else log.print(log.Level.warning, "Invalid authentication type: %s", .{@as([*:0]const u8, @ptrCast(suffix.ptr))});
     }
     var levels = std.mem.splitScalar(u8, std.mem.span(level), ',');
     while (levels.next()) |v| {
         const suffix = std.mem.span(level)[@intFromPtr(v.ptr) - @intFromPtr(level) ..];
-        if (std.ascii.eqlIgnoreCase(suffix, "callback")) data[0] = bits else if (std.ascii.eqlIgnoreCase(suffix, "user")) data[1] = bits else if (std.ascii.eqlIgnoreCase(suffix, "operator")) data[2] = bits else if (std.ascii.eqlIgnoreCase(suffix, "admin")) data[3] = bits else c.lprintf(log.Level.warning, "Invalid authentication level: %s", @as([*:0]const u8, @ptrCast(suffix.ptr)));
+        if (std.ascii.eqlIgnoreCase(suffix, "callback")) data[0] = bits else if (std.ascii.eqlIgnoreCase(suffix, "user")) data[1] = bits else if (std.ascii.eqlIgnoreCase(suffix, "operator")) data[2] = bits else if (std.ascii.eqlIgnoreCase(suffix, "admin")) data[3] = bits else log.print(log.Level.warning, "Invalid authentication level: %s", .{@as([*:0]const u8, @ptrCast(suffix.ptr))});
     }
     if (c.verbose > 1) c.printbuf(&data, 5, "authtype data");
     return set(intf, ch, .auth_enable, &data, true);
@@ -566,10 +573,10 @@ fn cipherData(spec: [*:0]const u8, data: *[9]u8) bool {
     const s = std.mem.span(spec);
     packCipher(s, data) catch |err| {
         switch (err) {
-            error.InvalidLength => c.lprintf(log.Level.err, "Invalid privilege specification length: %d", @as(c_int, @intCast(s.len))),
+            error.InvalidLength => log.print(log.Level.err, "Invalid privilege specification length: %d", .{@as(c_int, @intCast(s.len))}),
             error.InvalidCharacter => for (s) |char| {
                 if (privNibble(char) == null) {
-                    c.lprintf(log.Level.err, "Invalid privilege specification char: %c", @as(c_int, char));
+                    log.print(log.Level.err, "Invalid privilege specification char: %c", .{@as(c_int, char)});
                     break;
                 }
             },
@@ -704,13 +711,13 @@ fn setDestination(intf: *Intf, ch: u8, dest: u8, option: [*:0]const u8, value: [
         }
     } else if (eqi(option, "time")) {
         data[2] = valU8(value) orelse {
-            c.lprintf(log.Level.err, "Invalid time: %s", value);
+            log.print(log.Level.err, "Invalid time: %s", .{value});
             return -1;
         };
         _ = c.printf("Setting LAN Alert %d timeout/retry to %d seconds\n", @as(c_int, dest), @as(c_int, data[2]));
     } else if (eqi(option, "retry")) {
         data[3] = (valU8(value) orelse {
-            c.lprintf(log.Level.err, "Invalid retry: %s", value);
+            log.print(log.Level.err, "Invalid retry: %s", .{value});
             return -1;
         }) & 7;
         _ = c.printf("Setting LAN Alert %d number of retries to %d\n", @as(c_int, dest), @as(c_int, data[3]));
@@ -746,21 +753,21 @@ fn alertLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
         return 0;
     }
     const ch: u8 = if (printing and argc < 2) findChannel(intf, 1) else parseChannel(arg(argv, 1)) orelse {
-        c.lprintf(log.Level.err, "Invalid channel: %s", arg(argv, 1));
+        log.print(log.Level.err, "Invalid channel: %s", .{arg(argv, 1)});
         return -1;
     };
     if (!lanChannel(intf, ch)) {
-        c.lprintf(log.Level.err, "Channel %d is not a LAN channel", @as(c_int, ch));
+        log.print(log.Level.err, "Channel %d is not a LAN channel", .{@as(c_int, ch)});
         return -1;
     }
     if (printing and argc < 3) return printAllDestinations(intf, ch);
     const destination_index: usize = if (printing) 2 else 2;
     const dest = parseChannel(arg(argv, destination_index)) orelse {
-        c.lprintf(log.Level.err, "Invalid alert: %s", arg(argv, destination_index));
+        log.print(log.Level.err, "Invalid alert: %s", .{arg(argv, destination_index)});
         return -1;
     };
     if (!validDestination(intf, ch, dest)) {
-        c.lprintf(log.Level.err, "Alert %d is not a valid destination", @as(c_int, dest));
+        log.print(log.Level.err, "Alert %d is not a valid destination", .{@as(c_int, dest)});
         return -1;
     }
     if (printing) return printDestination(intf, ch, dest);
@@ -768,15 +775,15 @@ fn alertLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
 }
 fn stats(intf: *Intf, ch: u8, clear: bool) c_int {
     if (!lanChannel(intf, ch)) {
-        c.lprintf(log.Level.err, "Channel %d is not a LAN channel", @as(c_int, ch));
+        log.print(log.Level.err, "Channel %d is not a LAN channel", .{@as(c_int, ch)});
         return -1;
     }
     const rsp = send(intf, c.IPMI_LAN_GET_STAT, &.{ ch, @intFromBool(clear) }) orelse {
-        c.lprintf(if (clear) log.Level.info else log.Level.err, "Get LAN Stats command failed");
+        log.print(if (clear) log.Level.info else log.Level.err, "Get LAN Stats command failed", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(if (clear) log.Level.info else log.Level.err, "Get LAN Stats command failed: %s", ccode(rsp.ccode, false));
+        log.print(if (clear) log.Level.info else log.Level.err, "Get LAN Stats command failed: %s", .{ccode(rsp.ccode, false)});
         return -1;
     }
     if (clear) return 0;
@@ -817,11 +824,11 @@ fn lanpMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             return -1;
         }
         const ch = if (count == 2) parseChannel(arg(argv, 1)) orelse {
-            c.lprintf(log.Level.err, "Invalid channel: %s", arg(argv, 1));
+            log.print(log.Level.err, "Invalid channel: %s", .{arg(argv, 1)});
             return -1;
         } else findChannel(intf, 1);
         if (!lanChannel(intf, ch)) {
-            c.lprintf(log.Level.err, "Invalid channel: %d", @as(c_int, ch));
+            log.print(log.Level.err, "Invalid channel: %d", .{@as(c_int, ch)});
             return -1;
         }
         return printLan(intf, ch);
@@ -834,11 +841,11 @@ fn lanpMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
             return -1;
         }
         const ch = if (count == 3) parseChannel(arg(argv, 2)) orelse {
-            c.lprintf(log.Level.err, "Invalid channel: %s", arg(argv, 2));
+            log.print(log.Level.err, "Invalid channel: %s", .{arg(argv, 2)});
             return -1;
         } else findChannel(intf, 1);
         if (!lanChannel(intf, ch)) {
-            c.lprintf(log.Level.err, "Invalid channel: %d", @as(c_int, ch));
+            log.print(log.Level.err, "Invalid channel: %d", .{@as(c_int, ch)});
             return -1;
         }
         if (eql(arg(argv, 1), "get")) return stats(intf, ch, false);
@@ -846,7 +853,7 @@ fn lanpMain(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         usage(.lan);
         return -1;
     }
-    c.lprintf(log.Level.notice, "Invalid LAN command: %s", cmd);
+    log.print(log.Level.notice, "Invalid LAN command: %s", .{cmd});
     return -1;
 }
 pub fn exportSymbols() void {
@@ -886,11 +893,11 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
         return 0;
     }
     const ch = parseChannel(arg(argv, 0)) orelse {
-        c.lprintf(log.Level.err, "Invalid channel: %s", arg(argv, 0));
+        log.print(log.Level.err, "Invalid channel: %s", .{arg(argv, 0)});
         return -1;
     };
     if (!lanChannel(intf, ch)) {
-        c.lprintf(log.Level.err, "Channel %d is not a LAN channel!", @as(c_int, ch));
+        log.print(log.Level.err, "Channel %d is not a LAN channel!", .{@as(c_int, ch)});
         usage(.set);
         return -1;
     }
@@ -901,7 +908,7 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
         access.user_id = 1;
         access.privilege_limit = 4;
         if (c.eval_ccode(c._ipmi_set_user_access(ci(intf), &access, 1)) != 0) {
-            c.lprintf(log.Level.err, "Set User Access for channel %d failed", @as(c_int, ch));
+            log.print(log.Level.err, "Set User Access for channel %d failed", .{@as(c_int, ch)});
             return -1;
         }
         _ = c.printf("Set User Access for channel %d was successful.", @as(c_int, ch));
@@ -937,7 +944,7 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
                 return -1;
             }
             const n = valU8(arg(argv, 3)) orelse {
-                c.lprintf(log.Level.err, "Given ARP interval '%s' is invalid.", arg(argv, 3));
+                log.print(log.Level.err, "Given ARP interval '%s' is invalid.", .{arg(argv, 3)});
                 return -1;
             };
             const v = get(intf, ch, .grat, 0) catch return -1;
@@ -946,7 +953,7 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
             var rc: c_int = 0;
             if (n != 0) {
                 if (n > 127) {
-                    c.lprintf(log.Level.err, "Given ARP interval '%u' is too big.", @as(c_uint, n));
+                    log.print(log.Level.err, "Given ARP interval '%u' is too big.", .{@as(c_uint, n)});
                     return -1;
                 }
                 interval = n * 2 - 1;
@@ -1006,7 +1013,7 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
     if (eql(sub, "password")) {
         const password: [*c]const u8 = if (argc > 2) argv[2] else null;
         if (c.eval_ccode(c._ipmi_set_user_password(ci(intf), 1, c.IPMI_PASSWORD_SET_PASSWORD, password, 0)) != 0) {
-            c.lprintf(log.Level.err, "Unable to Set LAN Password for user %d", @as(c_int, 1));
+            log.print(log.Level.err, "Unable to Set LAN Password for user %d", .{@as(c_int, 1)});
             return -1;
         }
         c.ipmi_intf_session_set_password(ci(intf), @constCast(password));
@@ -1083,11 +1090,11 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
         }
         if (eql(arg(argv, 2), "priority")) {
             const n = valInt(arg(argv, 3)) orelse {
-                c.lprintf(log.Level.err, "Given VLAN priority '%s' is invalid.", arg(argv, 3));
+                log.print(log.Level.err, "Given VLAN priority '%s' is invalid.", .{arg(argv, 3)});
                 return 0;
             };
             if (n < 0 or n > 7) {
-                c.lprintf(log.Level.notice, "VLAN priority must be between 0 and 7.");
+                log.print(log.Level.notice, "VLAN priority must be between 0 and 7.", .{});
                 return 0;
             }
             _ = set(intf, ch, .priority, &.{@intCast(n)}, true);
@@ -1098,12 +1105,12 @@ fn setLan(intf: *Intf, argc: usize, argv: [*c][*c]u8) c_int {
     }
     if (eql(sub, "alert")) {
         if (argc < 3) {
-            c.lprintf(log.Level.notice, "LAN set alert must be 'on' or 'off'");
+            log.print(log.Level.notice, "LAN set alert must be 'on' or 'off'", .{});
             return -1;
         }
         const on = eql(arg(argv, 2), "on") or eql(arg(argv, 2), "enable");
         if (!on and !eql(arg(argv, 2), "off") and !eql(arg(argv, 2), "disable")) {
-            c.lprintf(log.Level.notice, "LAN set alert must be 'on' or 'off'");
+            log.print(log.Level.notice, "LAN set alert must be 'on' or 'off'", .{});
             return 0;
         }
         _ = c.printf("%s PEF alerts for LAN channel %d\n", if (on) @as([*:0]const u8, "Enabling") else "Disabling", @as(c_int, ch));

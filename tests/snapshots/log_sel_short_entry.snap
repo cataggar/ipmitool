@@ -1,0 +1,16 @@
+#!golden 1
+#!case log_sel_short_entry
+#!section exit
+1
+#!section stdout
+#!section stderr
+Get SEL Entry 9a3f command failed: Invalid data length 7
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0a lun=0x00 cmd=0x43 target_cmd=0x00 data=00 00 3f 9a 00 ff
+< rule=get_sel_9a3f_short ccode=0x00 len=7 data=ff ff 3f 9a 02 4d 3e
+bye
+#!section files

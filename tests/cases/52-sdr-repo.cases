@@ -66,6 +66,12 @@ args: -I dummy sdr info
 transcript: sd_repo_badver.tr
 covers: sdr
 
+[sd_log_repo_numeric]
+desc: C oracle logs unsupported repository version in hex plus decimal free space and record count at debug verbosity
+args: -I dummy -vvv sdr list all
+transcript: sd_repo_badver.tr
+covers: sdr
+
 [sd_repo_empty]
 desc: zero-record repository triggers the rebuild-from-sensors path
 args: -I dummy sdr list all

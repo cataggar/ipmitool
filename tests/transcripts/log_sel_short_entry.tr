@@ -1,0 +1,17 @@
+# The Get SEL Entry reply has a valid next-ID prefix but only seven bytes
+# instead of 18. The C logger must render the requested 0x9a3f ID and
+# decimal response length in the same error.
+default_ccode 0xc1
+
+respond get_device_id
+  netfn 0x06
+  cmd 0x01
+  data 20 81 02 03 02 bf 57 01 00 01 00 00 00 00 00
+end
+
+respond get_sel_9a3f_short
+  netfn 0x0a
+  cmd 0x43
+  match 00 00 3f 9a
+  data ff ff 3f 9a 02 4d 3e
+end

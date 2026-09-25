@@ -21,6 +21,7 @@ log is what catches it.
 
 * [Quick start](#quick-start)
 * [How the dummy interface is driven](#how-the-dummy-interface-is-driven)
+* [IPv4 LAN parameter diagnostics](#ipv4-lan-parameter-diagnostics)
 * [TSOL over a PTY and UDP](#tsol-over-a-pty-and-udp)
 * [Sun OEM ping and interactive CLI](#sun-oem-ping-and-interactive-cli)
 * [Layout](#layout)
@@ -151,6 +152,16 @@ The report is written to stdout when the run passes and to stderr when it
 fails. That is deliberate: `zig build` discards a `Step.Run`'s stdout but
 surfaces its stderr as the failure diagnostic, so a failing case prints its diff
 under `zig build test` rather than just an exit code.
+
+## IPv4 LAN parameter diagnostics
+
+`lanp_log_auth_debug` pins the C oracle's verbose `%-24s` and five `%02x`
+authentication-level fields, plus the filtered Get LAN Parameter error text.
+`lanp_log_vlan_invalid_readback` pins the numeric `%i` diagnostic for a BMC
+that returns VLAN ID 4095; the C dispatcher still returns success. Both
+snapshots check stderr, exit status and requests. Run
+`zig build test-golden -Dzig-modules=lanp,log -- --filter lanp_` with the
+selected Zig logger, or select only `lanp` to check the C logger fallback.
 
 ## TSOL over a PTY and UDP
 
