@@ -628,7 +628,7 @@ pub fn build(b: *std.Build) void {
         "zig-modules",
         b.fmt(
             "Comma separated modules to build from Zig instead of C; " ++
-                "available: {s} [default=none]",
+                "available: all, {s} [default=none]",
             .{comptime zigModuleNames()},
         ),
     );
@@ -2322,7 +2322,7 @@ fn zigModuleNames() []const u8 {
     }
 }
 
-/// Parses `-Dzig-modules=a,b`, rejecting unknown names.
+/// Parses `-Dzig-modules=a,b` or `-Dzig-modules=all`, rejecting unknown names.
 fn parseZigModules(b: *std.Build, value: ?[]const u8) []const bool {
     const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
     @memset(selection, false);
@@ -2330,6 +2330,10 @@ fn parseZigModules(b: *std.Build, value: ?[]const u8) []const bool {
 
     var it = std.mem.tokenizeAny(u8, list, ", \t");
     outer: while (it.next()) |name| {
+        if (std.mem.eql(u8, name, "all")) {
+            @memset(selection, true);
+            continue :outer;
+        }
         for (zig_modules, 0..) |module, i| {
             if (std.mem.eql(u8, module.name, name)) {
                 selection[i] = true;
@@ -2339,7 +2343,7 @@ fn parseZigModules(b: *std.Build, value: ?[]const u8) []const bool {
         std.debug.print(
             \\error: unknown -Dzig-modules entry '{s}'.
             \\
-            \\  Valid module names are: {s}
+            \\  Valid module names are: all, {s}
             \\
             \\  Each name selects the Zig implementation of one C translation unit;
             \\  see doc/zig-migration/interop-seams.md for the list and for how to
