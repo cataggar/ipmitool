@@ -4,10 +4,10 @@
 //! matching `.c` files from the C compile, so the symbols a selected module
 //! `@export`s are the ones the remaining C links against.
 //!
-//! Each entry below is guarded by `-Dzig-modules=<name>`: when the name is not
-//! selected the `@import` is never analysed, nothing is exported, and the C
-//! translation unit stays in the build.  Adding a port is one line here plus one
-//! entry in the `zig_modules` table in `build.zig`.
+//! Each library entry below is guarded by `-Dzig-modules=<name>`: when the name
+//! is not selected the `@import` is never analysed and the C translation unit
+//! stays in the build. The `evd` frontend is a separate executable root; it is
+//! selected from `build.zig` and never imported into this shared library.
 
 const std = @import("std");
 

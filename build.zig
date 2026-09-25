@@ -92,8 +92,8 @@ const ipmievd_sources: CSourceSet = .{
 // Phase 2 of the migration (issue #7).  Every entry maps one `-Dzig-modules`
 // name to the C translation unit it replaces; selecting a name drops that `.c`
 // from the compile and links `src/zig/exports.zig` instead, which `@export`s
-// the same C symbols.  Adding a port means one entry here plus one guarded
-// `@import` in `src/zig/exports.zig`.
+// the same C symbols. The `evd` executable is the exception: its Zig file is
+// the executable root, not a member of the shared replacement archive.
 //
 // See doc/zig-migration/interop-seams.md.
 // ---------------------------------------------------------------------------
@@ -128,6 +128,11 @@ const zig_modules = [_]ZigModule{
         .name = "lanp6",
         .replaces = "lib/ipmi_lanp6.c",
         .implementation = "src/zig/cmd/lanp6.zig",
+    },
+    .{
+        .name = "evd",
+        .replaces = "src/ipmievd.c",
+        .implementation = "src/zig/front/ipmievd.zig",
     },
     .{
         .name = "oem",
@@ -831,6 +836,7 @@ pub fn build(b: *std.Build) void {
         .zig_lib = zig_lib,
         .zig_selection = zig_selection,
         .system_libs = libs,
+        .bridge_mod = bridge_mod,
     });
 
     // -- install layout ------------------------------------------------------
@@ -929,6 +935,34 @@ pub fn build(b: *std.Build) void {
     // Smoke tests, the Zig/C ABI parity assertions, and the golden CLI suite.
 
     const test_step = b.step("test", "Run the build smoke tests");
+
+    const evd_test_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/front/ipmievd.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+        .link_libc = true,
+    });
+    evd_test_mod.addImport("ipmi_c", bridge_mod);
+    addEvdImports(b, evd_test_mod, bridge_mod, target, optimize);
+    evd_test_mod.linkLibrary(core);
+    if (zig_lib) |lib| evd_test_mod.linkLibrary(lib);
+    for (libs) |lib| evd_test_mod.linkSystemLibrary(lib, .{});
+    const evd_tests = b.addRunArtifact(b.addTest(.{ .root_module = evd_test_mod }));
+    b.step("test-event-daemon", "Run hardware-independent ipmievd tests")
+        .dependOn(&evd_tests.step);
+    test_step.dependOn(&evd_tests.step);
+    if (replacedByZig("src/ipmievd.c", zig_selection) and
+        target.result.os.tag == .linux and
+        b.graph.host.result.os.tag == .linux and
+        target.result.cpu.arch == b.graph.host.result.cpu.arch)
+    {
+        const process_test = b.addSystemCommand(&.{ "python3", "-B" });
+        process_test.addFileArg(b.path("tests/event_daemon/process.py"));
+        process_test.addFileArg(ipmievd.getEmittedBin());
+        b.step("test-event-daemon-process", "Exercise signals and daemon PID lifecycle")
+            .dependOn(&process_test.step);
+        test_step.dependOn(&process_test.step);
+    }
 
     // Compiling `src/zig/root.zig` runs every `comptime` layout assertion in
     // the header ports, so this fails the build when a C header and its Zig
@@ -1855,16 +1889,41 @@ const ToolOptions = struct {
     zig_lib: ?*std.Build.Step.Compile,
     zig_selection: []const bool,
     system_libs: []const []const u8,
+    bridge_mod: ?*std.Build.Module = null,
 };
 
+fn addEvdImports(
+    b: *std.Build,
+    mod: *std.Build.Module,
+    bridge_mod: *std.Build.Module,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) void {
+    const headers = b.createModule(.{
+        .root_source_file = b.path("src/zig/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    headers.addImport("ipmi_c", bridge_mod);
+    mod.addImport("ipmi_zig", headers);
+}
+
 fn addTool(b: *std.Build, options: ToolOptions) *std.Build.Step.Compile {
+    const zig_evd = std.mem.eql(u8, options.name, "ipmievd") and
+        replacedByZig("src/ipmievd.c", options.zig_selection);
     const mod = b.createModule(.{
+        .root_source_file = if (zig_evd) b.path("src/zig/front/ipmievd.zig") else null,
         .target = options.target,
         .optimize = options.optimize,
         .link_libc = true,
         .sanitize_c = if (options.sanitize_c) .full else .off,
     });
     configure(b, mod, options.config_h, options.default_intf);
+    if (zig_evd) {
+        mod.addImport("ipmi_c", options.bridge_mod.?);
+        addEvdImports(b, mod, options.bridge_mod.?, options.target, options.optimize);
+    }
     addSources(b, mod, options.sources, options.flags, options.zig_selection);
     mod.linkLibrary(options.core);
     // Listed after the C archive so the linker resolves the symbols the
