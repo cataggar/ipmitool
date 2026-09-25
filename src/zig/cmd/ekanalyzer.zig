@@ -139,19 +139,19 @@ fn getFileType(arg: []const u8) ?u8 {
 }
 
 fn usage() void {
-    c.lprintf(log.Level.notice, "Ekeying analyzer tool version 1.00");
-    c.lprintf(log.Level.notice, "ekanalyzer Commands:");
-    c.lprintf(log.Level.notice, "      print    [carrier | power | all] <oc=filename1> <b1=filename2>...");
-    c.lprintf(log.Level.notice, "      frushow  <b2=filename>");
-    c.lprintf(log.Level.notice, "      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...");
+    log.print(log.Level.notice, "Ekeying analyzer tool version 1.00", .{});
+    log.print(log.Level.notice, "ekanalyzer Commands:", .{});
+    log.print(log.Level.notice, "      print    [carrier | power | all] <oc=filename1> <b1=filename2>...", .{});
+    log.print(log.Level.notice, "      frushow  <b2=filename>", .{});
+    log.print(log.Level.notice, "      summary  [match | unmatch | all] <oc=filename1> <b1=filename2>...", .{});
 }
 
 fn readFile(gpa: Allocator, name: [*:0]const u8, is_frushow: bool) ?[]const u8 {
     const fp = c.fopen(name, "rb") orelse {
         if (is_frushow) {
-            c.lprintf(log.Level.err, "File '%s' not found.", name);
+            log.print(log.Level.err, "File '%s' not found.", .{name});
         } else {
-            c.lprintf(log.Level.err, "File: '%s' is not found", name);
+            log.print(log.Level.err, "File: '%s' is not found", .{name});
         }
         return null;
     };
@@ -159,15 +159,15 @@ fn readFile(gpa: Allocator, name: [*:0]const u8, is_frushow: bool) ?[]const u8 {
     if (c.fseek(fp, 0, c.SEEK_END) != 0) return null;
     const length = c.ftell(fp);
     if (length < 0 or length > 16 * 1024 * 1024 or c.fseek(fp, 0, c.SEEK_SET) != 0) {
-        c.lprintf(log.Level.err, "Invalid FRU file size");
+        log.print(log.Level.err, "Invalid FRU file size", .{});
         return null;
     }
     const bytes = gpa.alloc(u8, @intCast(length)) catch {
-        c.lprintf(log.Level.err, "ipmitool: malloc failure");
+        log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     };
     if (bytes.len != 0 and c.fread(bytes.ptr, 1, bytes.len, fp) != bytes.len) {
-        c.lprintf(log.Level.err, "Invalid FRU file data!");
+        log.print(log.Level.err, "Invalid FRU file data!", .{});
         return null;
     }
     return bytes;
@@ -176,24 +176,24 @@ fn readFile(gpa: Allocator, name: [*:0]const u8, is_frushow: bool) ?[]const u8 {
 fn parseRecords(gpa: Allocator, file: *File) bool {
     const data = file.data;
     if (data.len <= 5) {
-        c.lprintf(log.Level.err, "Invalid Offset!");
+        log.print(log.Level.err, "Invalid Offset!", .{});
         return false;
     }
     if (data[5] == 0) {
-        c.lprintf(log.Level.err, "There is no multi record in the file '%s'", file.name);
+        log.print(log.Level.err, "There is no multi record in the file '%s'", .{file.name});
         return false;
     }
     var offset: usize = @as(usize, data[5]) * 8;
-    c.lprintf(log.Level.debug, "start multi offset = 0x%02x", @as(c_uint, @intCast(offset)));
+    log.print(log.Level.debug, "start multi offset = 0x%02x", .{@as(c_uint, @intCast(offset))});
     var records: std.ArrayList(Record) = .empty;
     while (true) {
         if (offset > data.len or data.len - offset < 5) {
-            c.lprintf(log.Level.err, "Invalid Header!");
+            log.print(log.Level.err, "Invalid Header!", .{});
             return false;
         }
         const len: usize = data[offset + 2];
         if (len == 0 or data.len - offset - 5 < len) {
-            c.lprintf(log.Level.err, "Invalid Record Data!");
+            log.print(log.Level.err, "Invalid Record Data!", .{});
             return false;
         }
         const item: Record = .{
@@ -213,7 +213,7 @@ fn parseRecords(gpa: Allocator, file: *File) bool {
             _ = c.printf("\n\n");
         }
         records.append(gpa, item) catch {
-            c.lprintf(log.Level.err, "ipmitool: malloc failure");
+            log.print(log.Level.err, "ipmitool: malloc failure", .{});
             return false;
         };
         offset += 5 + len;
@@ -225,7 +225,7 @@ fn parseRecords(gpa: Allocator, file: *File) bool {
 
 fn header(data: []const u8) bool {
     if (data.len < 8) {
-        c.lprintf(log.Level.err, "Failed to read FRU header!");
+        log.print(log.Level.err, "Failed to read FRU header!", .{});
         return false;
     }
     _ = c.printf("%s\nFRU Header Info\n%s\n", equal, equal);
@@ -241,7 +241,7 @@ fn header(data: []const u8) bool {
 
 fn field(area: []const u8, offset: *usize, title: [*:0]const u8, remaining: *usize) bool {
     if (offset.* >= area.len or remaining.* == 0) {
-        c.lprintf(log.Level.err, "Invalid Length!");
+        log.print(log.Level.err, "Invalid Length!", .{});
         return false;
     }
     const size_type = area[offset.*];
@@ -253,7 +253,7 @@ fn field(area: []const u8, offset: *usize, title: [*:0]const u8, remaining: *usi
         return true;
     }
     if (count > area.len - offset.* or count > remaining.*) {
-        c.lprintf(log.Level.err, "Invalid board type size!");
+        log.print(log.Level.err, "Invalid board type size!", .{});
         return false;
     }
     _ = c.printf("%s type: 0x%02x\n%s: ", title, @as(c_uint, size_type), title);
@@ -289,7 +289,7 @@ fn custom(area: []const u8, offset: *usize, remaining: *usize) void {
             return;
         }
         if (offset.* + 1 + length > area.len) {
-            c.lprintf(log.Level.err, "Invalid Additional Data!");
+            log.print(log.Level.err, "Invalid Additional Data!", .{});
             return;
         }
         var encoded: [64]u8 = undefined;
@@ -317,12 +317,12 @@ fn showArea(data: []const u8, block: u8, kind: enum { chassis, board, product })
     };
     _ = c.printf("%s\n%s\n%s\n", equal, title, equal);
     if (start >= data.len) {
-        c.lprintf(log.Level.err, if (kind == .product) "Invalid Data!" else "Invalid FRU Format Version!");
+        log.print(log.Level.err, if (kind == .product) "Invalid Data!" else "Invalid FRU Format Version!", .{});
         return false;
     }
     const byte_len: usize = if (start + 1 < data.len) @as(usize, data[start + 1]) * 8 else 0;
     if (byte_len < 3) {
-        c.lprintf(log.Level.err, "Invalid FRU Area Length!");
+        log.print(log.Level.err, "Invalid FRU Area Length!", .{});
         return false;
     }
     const area = data[start..][0..@min(byte_len, data.len - start)];
@@ -355,7 +355,7 @@ fn showArea(data: []const u8, block: u8, kind: enum { chassis, board, product })
             if (area.len < byte_len) {
                 const fields = [_][*:0]const u8{ "Board Product Name", "Board Serial Number", "Board Part Number", "FRU File ID" };
                 for (fields) |name| _ = field(area, &pos, name, &remaining);
-                if (pos >= area.len) c.lprintf(log.Level.err, "Invalid Length!");
+                if (pos >= area.len) log.print(log.Level.err, "Invalid Length!", .{});
                 return false;
             }
             if (!field(area, &pos, "Board Product Name", &remaining)) return false;
@@ -548,7 +548,7 @@ fn print(gpa: Allocator, files: []File, option: []const u8) c_int {
         return displayPower(gpa, files, true);
     }
     if (!std.mem.eql(u8, option, "default") and !std.mem.eql(u8, option, "carrier")) {
-        c.lprintf(log.Level.err, "Invalid option %s", @as([*:0]const u8, @ptrCast(option.ptr)));
+        log.print(log.Level.err, "Invalid option %s", .{@as([*:0]const u8, @ptrCast(option.ptr))});
         return -1;
     }
     var found = false;
@@ -769,7 +769,7 @@ fn compareAmc(gpa: Allocator, carrier: ?Record, a: Amc, b: Amc, kind_b: u8, kind
 
 fn summary(gpa: Allocator, files: []File, option: []const u8) c_int {
     if (std.mem.eql(u8, option, "carrier") or std.mem.eql(u8, option, "power")) {
-        c.lprintf(log.Level.err, "   ekanalyzer summary [match/ unmatch/ all] <xx=frufile> <xx=frufile> [xx=frufile]");
+        log.print(log.Level.err, "   ekanalyzer summary [match/ unmatch/ all] <xx=frufile> <xx=frufile> [xx=frufile]", .{});
         return -1;
     }
     var amc = false;
@@ -1169,12 +1169,12 @@ fn displayClockConfig(d: []const u8) void {
 
 fn main(_: ?*Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     if (argc == 0) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
         usage();
         return -1;
     }
     if (argc - 1 > 8) {
-        c.lprintf(log.Level.err, "Too too many parameters given.");
+        log.print(log.Level.err, "Too too many parameters given.", .{});
         return -1;
     }
     const command = std.mem.span(argv[0]);
@@ -1186,18 +1186,18 @@ fn main(_: ?*Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     const is_print = std.mem.eql(u8, command, "print");
     const is_summary = std.mem.eql(u8, command, "summary");
     if (!is_fru and !is_print and !is_summary) {
-        c.lprintf(log.Level.err, "Invalid ekanalyzer command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid ekanalyzer command: %s", .{argv[0]});
         usage();
         return -1;
     }
     if (is_fru and argc < 2) {
-        c.lprintf(log.Level.err, "Invalid ekanalyzer command: %s", argv[0]);
+        log.print(log.Level.err, "Invalid ekanalyzer command: %s", .{argv[0]});
         usage();
         return -1;
     }
     if (!is_fru and argc < 2) {
-        c.lprintf(log.Level.err, "Not enough parameters given.");
-        c.lprintf(log.Level.err, if (is_print) "   ekanalyzer print [carrier/power/all] <xx=frufile> <xx=frufile> [xx=frufile]" else "   ekanalyzer summary [match/ unmatch/ all] <xx=frufile> <xx=frufile> [xx=frufile]");
+        log.print(log.Level.err, "Not enough parameters given.", .{});
+        log.print(log.Level.err, if (is_print) "   ekanalyzer print [carrier/power/all] <xx=frufile> <xx=frufile> [xx=frufile]" else "   ekanalyzer summary [match/ unmatch/ all] <xx=frufile> <xx=frufile> [xx=frufile]", .{});
         return -1;
     }
     var option: []const u8 = "default";
@@ -1212,7 +1212,7 @@ fn main(_: ?*Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
             start = 2;
         } else if (candidate.len < 3 or candidate[2] != '=') {
             _ = c.printf("Invalid option '%s'\n", argv[1]);
-            c.lprintf(log.Level.err, if (is_print) "   ekanalyzer print [carrier/power/all] <xx=frufile> <xx=frufile> [xx=frufile]" else "   ekanalyzer summary [match/ unmatch/ all] <xx=frufile> <xx=frufile> [xx=frufile]");
+            log.print(log.Level.err, if (is_print) "   ekanalyzer print [carrier/power/all] <xx=frufile> <xx=frufile> [xx=frufile]" else "   ekanalyzer summary [match/ unmatch/ all] <xx=frufile> <xx=frufile> [xx=frufile]", .{});
             return -1;
         }
     }
@@ -1226,17 +1226,17 @@ fn main(_: ?*Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         const arg = std.mem.span(argv[i]);
         const kind = getFileType(arg) orelse {
             if (is_fru) {
-                c.lprintf(log.Level.err, "Invalid file type!");
-                c.lprintf(log.Level.err, "   ekanalyzer frushow <xx=frufile> ...");
+                log.print(log.Level.err, "Invalid file type!", .{});
+                log.print(log.Level.err, "   ekanalyzer frushow <xx=frufile> ...", .{});
             } else {
-                c.lprintf(log.Level.err, "Invalid file type: %c%c\n", @as(c_int, if (arg.len > 0) arg[0] else 0), @as(c_int, if (arg.len > 1) arg[1] else 0));
+                log.print(log.Level.err, "Invalid file type: %c%c\n", .{ @as(c_int, if (arg.len > 0) arg[0] else 0), @as(c_int, if (arg.len > 1) arg[1] else 0) });
                 usage();
             }
             return -1;
         };
         if (is_fru and kind == 10) {
-            c.lprintf(log.Level.err, "Invalid file type!");
-            c.lprintf(log.Level.err, "   ekanalyzer frushow <xx=frufile> ...");
+            log.print(log.Level.err, "Invalid file type!", .{});
+            log.print(log.Level.err, "   ekanalyzer frushow <xx=frufile> ...", .{});
             return -1;
         }
         files[count] = .{ .name = argv[i] + 3, .kind = kind, .data = &.{} };

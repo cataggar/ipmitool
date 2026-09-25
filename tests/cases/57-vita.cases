@@ -6,6 +6,12 @@ args: -I dummy vita properties
 transcript: vita_full.tr
 covers: vita
 
+[vita_properties_log_hex]
+desc: C-oracle VITA discovery diagnostic uses alternate-form hex and a zero transit address
+args: -v -I dummy vita properties
+transcript: vita_full.tr
+covers: vita
+
 [vita_full_addr_default]
 args: -I dummy vita addrinfo
 transcript: vita_full.tr

@@ -42,11 +42,11 @@ fn send(intf: *Intf, netfn: u6, cmd: u8, data: ?[]u8) ?*ipmi.Response {
 
 fn checkedSend(intf: *Intf, netfn: u6, cmd: u8, data: ?[]u8, name: [*:0]const u8) ?*ipmi.Response {
     const rsp = send(intf, netfn, cmd, data) orelse {
-        c.lprintf(log.Level.err, "%s command failed", name);
+        log.print(log.Level.err, "%s command failed", .{name});
         return null;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "%s command failed: %s", name, c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, "%s command failed: %s", .{ name, c.val2str(rsp.ccode, c.completion_code_vals) });
         return null;
     }
     return rsp;
@@ -55,9 +55,9 @@ fn checkedSend(intf: *Intf, netfn: u6, cmd: u8, data: ?[]u8, name: [*:0]const u8
 fn getStatus(intf: *Intf, status: *Status) c_int {
     status.* = .{};
     const rsp = checkedSend(intf, 0x30, 0xa6, null, "UpdatePrepare") orelse return error_result;
-    c.lprintf(log.Level.debug, "UpdatePrepare command succeed");
+    log.print(log.Level.debug, "UpdatePrepare command succeed", .{});
     if (rsp.data_len < status_size) {
-        c.lprintf(log.Level.err, "UpdatePrepare command failed: short response");
+        log.print(log.Level.err, "UpdatePrepare command failed: short response", .{});
         return error_result;
     }
     const b = rsp.data[0..status_size];
@@ -76,9 +76,9 @@ fn getStatus(intf: *Intf, status: *Status) c_int {
 fn getCapabilities(intf: *Intf, caps: *Caps) c_int {
     caps.* = .{};
     const rsp = checkedSend(intf, 0x30, 0xa7, null, "UpdatePrepare") orelse return error_result;
-    c.lprintf(log.Level.debug, "UpdatePrepare command succeed");
+    log.print(log.Level.debug, "UpdatePrepare command succeed", .{});
     if (rsp.data_len < caps_size) {
-        c.lprintf(log.Level.err, "UpdatePrepare command failed: short response");
+        log.print(log.Level.err, "UpdatePrepare command failed: short response", .{});
         return error_result;
     }
     caps.* = .{ .area_supported = rsp.data[0], .special_caps = rsp.data[1] };
@@ -96,12 +96,12 @@ fn valid(bit: bool) [*:0]const u8 {
 fn getInfo(intf: *Intf) c_int {
     const rsp = checkedSend(intf, 0x06, 0x01, null, "Get Device ID") orelse return error_result;
     if (rsp.data_len < @sizeOf(c.struct_ipm_devid_rsp)) {
-        c.lprintf(log.Level.err, "Get Device ID command failed: short response");
+        log.print(log.Level.err, "Get Device ID command failed: short response", .{});
         return error_result;
     }
     const b = rsp.data[0..@sizeOf(c.struct_ipm_devid_rsp)];
-    c.lprintf(log.Level.debug, "Device ID                 : %i", @as(c_int, b[0]));
-    c.lprintf(log.Level.debug, "Device Revision           : %i", @as(c_int, b[1] & 0x0f));
+    log.print(log.Level.debug, "Device ID                 : %i", .{@as(c_int, b[0])});
+    log.print(log.Level.debug, "Device Revision           : %i", .{@as(c_int, b[1] & 0x0f)});
 
     if (b[0] != 0 or (b[1] & 0x0f) != 0 or
         b[6] != 0x57 or b[7] != 0x01 or b[8] != 0x00 or
@@ -128,7 +128,7 @@ fn getInfo(intf: *Intf) c_int {
         @as(c_uint, b[13] & 0x0f),
     );
     _ = c.printf("SPS FW IPMI cmd version    : %x.%x\n", @as(c_uint, b[11] >> 4), @as(c_uint, b[11] & 0x0f));
-    c.lprintf(log.Level.debug, "Flags: %xh", @as(c_uint, b[14]));
+    log.print(log.Level.debug, "Flags: %xh", .{@as(c_uint, b[14])});
     _ = c.printf("Current Image Type         : %s\n", @as([*:0]const u8, switch (b[14] & 3) {
         0 => "Recovery",
         1 => "Operational Image 1",
@@ -162,14 +162,14 @@ fn getInfo(intf: *Intf) c_int {
 
 fn prepare(intf: *Intf) c_int {
     _ = checkedSend(intf, 0x30, 0xa0, null, "UpdatePrepare") orelse return error_result;
-    c.lprintf(log.Level.debug, "UpdatePrepare command succeed");
+    log.print(log.Level.debug, "UpdatePrepare command succeed", .{});
     return 0;
 }
 
 fn openArea(intf: *Intf) c_int {
     var data = [_]u8{ 1, 0 };
     _ = checkedSend(intf, 0x30, 0xa1, &data, "UpdateOpenArea") orelse return error_result;
-    c.lprintf(log.Level.debug, "UpdateOpenArea command succeed");
+    log.print(log.Level.debug, "UpdateOpenArea command succeed", .{});
     return 0;
 }
 
@@ -179,14 +179,14 @@ fn writeArea(intf: *Intf, sequence: u8, bytes: []const u8) c_int {
     data[0] = sequence;
     @memcpy(data[1..][0..bytes.len], bytes);
     const rsp = send(intf, 0x30, 0xa2, data[0 .. bytes.len + 1]) orelse {
-        c.lprintf(log.Level.err, "UpdateWriteArea command failed");
+        log.print(log.Level.err, "UpdateWriteArea command failed", .{});
         return error_result;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(log.Level.err, "UpdateWriteArea command failed: %s", c.val2str(rsp.ccode, c.completion_code_vals));
+        log.print(log.Level.err, "UpdateWriteArea command failed: %s", .{c.val2str(rsp.ccode, c.completion_code_vals)});
         return if (rsp.ccode == 0x80) restart_result else error_result;
     }
-    c.lprintf(log.Level.debug, "UpdateWriteArea command succeed");
+    log.print(log.Level.debug, "UpdateWriteArea command succeed", .{});
     return 0;
 }
 
@@ -196,14 +196,14 @@ fn closeArea(intf: *Intf, size: u32, checksum: u8) c_int {
         @truncate(size >> 24), checksum,             0,
     };
     _ = checkedSend(intf, 0x30, 0xa3, &data, "UpdateCloseArea") orelse return error_result;
-    c.lprintf(log.Level.debug, "UpdateCloseArea command succeed");
+    log.print(log.Level.debug, "UpdateCloseArea command succeed", .{});
     return 0;
 }
 
 fn registerUpdate(intf: *Intf, update_type: u8) c_int {
     var data = [_]u8{ update_type, 0 };
     _ = checkedSend(intf, 0x30, 0xa4, &data, "ImeUpdateRegisterUpdate") orelse return error_result;
-    c.lprintf(log.Level.debug, "ImeUpdateRegisterUpdate command succeed");
+    log.print(log.Level.debug, "ImeUpdateRegisterUpdate command succeed", .{});
     return 0;
 }
 
@@ -224,22 +224,22 @@ fn validImageSize(size: u64) bool {
 
 fn imageFromFile(filename: [*:0]u8) ?[]u8 {
     const file = c.fopen(filename, "rb") orelse {
-        c.lprintf(log.Level.notice, "Cannot open image file %s", filename);
+        log.print(log.Level.notice, "Cannot open image file %s", .{filename});
         return null;
     };
     defer _ = c.fclose(file);
     if (c.fseek(file, 0, c.SEEK_END) != 0) {
-        c.lprintf(log.Level.err, "Error seeking %s. %s\n", filename, c.strerror(std.c._errno().*));
+        log.print(log.Level.err, "Error seeking %s. %s\n", .{ filename, c.strerror(std.c._errno().*) });
         return null;
     }
     const end = c.ftell(file);
     if (end < 0) {
-        c.lprintf(log.Level.err, "Error seeking %s. %s\n", filename, c.strerror(std.c._errno().*));
+        log.print(log.Level.err, "Error seeking %s. %s\n", .{ filename, c.strerror(std.c._errno().*) });
         return null;
     }
     if (!validImageSize(@intCast(end))) {
         if (end == 0) return null;
-        c.lprintf(log.Level.err, "Image file %s exceeds maximum size", filename);
+        log.print(log.Level.err, "Image file %s exceeds maximum size", .{filename});
         return null;
     }
     const size: usize = @intCast(end);
@@ -257,7 +257,7 @@ fn upgrade(intf: *Intf, filename: [*:0]u8) c_int {
     const image = imageFromFile(filename) orelse return error_result;
     defer std.c.free(image.ptr);
     const checksum = crc8(image);
-    c.lprintf(log.Level.debug, "CRC8: %02xh\n", @as(c_uint, checksum));
+    log.print(log.Level.debug, "CRC8: %02xh\n", .{@as(c_uint, checksum)});
     const size: u32 = @intCast(image.len);
     var status: Status = .{};
     // A failed initial status must not proceed with a firmware update.
@@ -269,7 +269,7 @@ fn upgrade(intf: *Intf, filename: [*:0]u8) c_int {
         rc = openArea(intf);
         if (getStatus(intf, &status) != 0 and rc == 0) rc = error_result;
     } else if (rc == 0) {
-        c.lprintf(log.Level.@"error", "ME state error (%i), aborting", status.update_state);
+        log.print(log.Level.@"error", "ME state error (%i), aborting", .{status.update_state});
         rc = error_result;
     }
 
@@ -296,7 +296,7 @@ fn upgrade(intf: *Intf, filename: [*:0]u8) c_int {
         if (getStatus(intf, &status) != 0 and rc == 0) rc = error_result;
         _ = c.printf("\n");
     } else if (rc == 0) {
-        c.lprintf(log.Level.@"error", "ME state error (%i), aborting", status.update_state);
+        log.print(log.Level.@"error", "ME state error (%i), aborting", .{status.update_state});
         rc = error_result;
     }
 
@@ -304,7 +304,7 @@ fn upgrade(intf: *Intf, filename: [*:0]u8) c_int {
         rc = closeArea(intf, size, checksum);
         if (getStatus(intf, &status) != 0 and rc == 0) rc = error_result;
     } else if (rc == 0) {
-        c.lprintf(log.Level.@"error", "ME state error, aborting");
+        log.print(log.Level.@"error", "ME state error, aborting", .{});
         rc = error_result;
     }
 
@@ -313,7 +313,7 @@ fn upgrade(intf: *Intf, filename: [*:0]u8) c_int {
         rc = registerUpdate(intf, 1);
         if (getStatus(intf, &status) != 0 and rc == 0) rc = error_result;
     } else if (rc == 0) {
-        c.lprintf(log.Level.@"error", "ME state error, aborting");
+        log.print(log.Level.@"error", "ME state error, aborting", .{});
         rc = error_result;
     }
 
@@ -340,14 +340,14 @@ fn manualRollback(intf: *Intf) c_int {
 }
 
 fn usage() void {
-    c.lprintf(log.Level.notice, "help                    - This help menu");
-    c.lprintf(log.Level.notice, "info                    - Information about the present Intel ME");
-    c.lprintf(log.Level.notice, "update <file>           - Upgrade the ME firmware from received image <file>");
-    c.lprintf(log.Level.notice, "rollback                - Manual Rollback ME");
+    log.print(log.Level.notice, "help                    - This help menu", .{});
+    log.print(log.Level.notice, "info                    - Information about the present Intel ME", .{});
+    log.print(log.Level.notice, "update <file>           - Upgrade the ME firmware from received image <file>", .{});
+    log.print(log.Level.notice, "rollback                - Manual Rollback ME", .{});
 }
 
 fn imeMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
-    c.lprintf(log.Level.debug, "ipmi_ime_main()");
+    log.print(log.Level.debug, "ipmi_ime_main()", .{});
     if (argc <= 0 or std.mem.eql(u8, std.mem.span(argv[0]), "help")) {
         usage();
         return 0;
@@ -356,10 +356,10 @@ fn imeMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     if (std.mem.eql(u8, command, "info")) return getInfo(intf);
     if (std.mem.eql(u8, command, "update")) {
         if (argc != 2) {
-            c.lprintf(log.Level.@"error", "File must be provided with this option, see help\n");
+            log.print(log.Level.@"error", "File must be provided with this option, see help\n", .{});
             return error_result;
         }
-        c.lprintf(log.Level.notice, "Update using file: %s", argv[1]);
+        log.print(log.Level.notice, "Update using file: %s", .{argv[1]});
         return upgrade(intf, argv[1]);
     }
     if (std.mem.eql(u8, command, "rollback")) return manualRollback(intf);

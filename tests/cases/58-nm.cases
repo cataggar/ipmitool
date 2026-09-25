@@ -133,6 +133,12 @@ args: -I dummy nm discover
 transcript: nm_cc.tr
 covers: nm
 
+[nm_discover_ccode_hex]
+desc: C-oracle NM error diagnosis formats the named code in unprefixed hex
+args: -I dummy nm discover
+transcript: nm_log_hex.tr
+covers: nm
+
 [nm_power_overflow]
 args: -I dummy nm power min 50 max 65536
 covers: nm

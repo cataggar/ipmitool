@@ -1,0 +1,5 @@
+respond nm_error_hex
+  netfn 0x2e
+  cmd 0xca
+  ccode 0x8b
+end

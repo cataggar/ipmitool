@@ -6,6 +6,7 @@
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const log = @import("../util/log.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
@@ -69,7 +70,7 @@ fn data(rsp: *const Response, required: usize, operation: [*:0]const u8) ?[]cons
     if (rsp.data_len < 0 or @as(usize, @intCast(rsp.data_len)) < required or
         rsp.data_len > rsp.data.len)
     {
-        c.lprintf(err_level, "Short FWUM %s response.", operation);
+        log.print(err_level, "Short FWUM %s response.", .{operation});
         return null;
     }
     return rsp.data[0..@intCast(rsp.data_len)];
@@ -114,11 +115,11 @@ fn showProgress(task: [*:0]const u8, current: c_ulong, total: c_ulong) callconv(
 
 fn setupBuffers(path: [*:0]const u8, file_size: c_ulong) callconv(.c) c_int {
     if (file_size > image_limit) {
-        c.lprintf(err_level, "FWUM firmware file exceeds 512 KiB.");
+        log.print(err_level, "FWUM firmware file exceeds 512 KiB.", .{});
         return -1;
     }
     const file = c.fopen(path, "rb") orelse {
-        c.lprintf(err_level, "Failed to open '%s' for reading.", path);
+        log.print(err_level, "Failed to open '%s' for reading.", .{path});
         return -1;
     };
     defer _ = c.fclose(file);
@@ -176,11 +177,11 @@ fn fixTableVersion(info: *c.tKFWUM_InFirmwareInfo) callconv(.c) void {
 
 fn getDeviceInfo(intf: *Intf, output: u8, board: *c.tKFWUM_BoardInfo) callconv(.c) c_int {
     const rsp = send(intf, ipmi.NetFn.app, 0x01, &.{}) orelse {
-        c.lprintf(err_level, "Error in Get Device Id Command");
+        log.print(err_level, "Error in Get Device Id Command", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(err_level, "Get Device Id returned %x", @as(c_uint, rsp.ccode));
+        log.print(err_level, "Get Device Id returned %x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     const bytes = data(rsp, 11, "Get Device Id") orelse return -1;
@@ -191,7 +192,7 @@ fn getDeviceInfo(intf: *Intf, output: u8, board: *c.tKFWUM_BoardInfo) callconv(.
         if (board.iana == c.IPMI_OEM_KONTRON and
             board.boardId == c.KFWUM_BOARD_KONTRON_5002 and bytes.len < 12)
         {
-            c.lprintf(err_level, "Short FWUM Get Device Id response.");
+            log.print(err_level, "Short FWUM Get Device Id response.", .{});
             return -1;
         }
         _ = c.printf("\nIPMC Info\n=========\n");
@@ -208,11 +209,11 @@ fn getDeviceInfo(intf: *Intf, output: u8, board: *c.tKFWUM_BoardInfo) callconv(.
 
 fn getInfo(intf: *Intf, output: u8, banks: *u8) callconv(.c) c_int {
     const rsp = send(intf, ipmi.NetFn.firmware, 0, &.{}) orelse {
-        c.lprintf(err_level, "Error in FWUM Firmware Get Info Command.");
+        log.print(err_level, "Error in FWUM Firmware Get Info Command.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(err_level, "FWUM Firmware Get Info returned %x", @as(c_uint, rsp.ccode));
+        log.print(err_level, "FWUM Firmware Get Info returned %x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     const bytes = data(rsp, 6, "Get Info") orelse return -1;
@@ -258,12 +259,12 @@ fn getStatus(intf: *Intf) callconv(.c) c_int {
         if (result != 0) break;
         var index = [_]u8{@intCast(bank)};
         const rsp = send(intf, ipmi.NetFn.firmware, 7, &index) orelse {
-            c.lprintf(err_level, "Error in FWUM Firmware Get Status Command.");
+            log.print(err_level, "Error in FWUM Firmware Get Status Command.", .{});
             result = -1;
             break;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(err_level, "FWUM Firmware Get Status returned %x", @as(c_uint, rsp.ccode));
+            log.print(err_level, "FWUM Firmware Get Status returned %x", .{@as(c_uint, rsp.ccode)});
             result = -1;
             break;
         }
@@ -278,7 +279,7 @@ fn getStatus(intf: *Intf) callconv(.c) c_int {
         _ = c.printf("\nBank State %d               : %s\n", @as(c_int, @intCast(bank)), state);
         if (bytes[0] == 0) continue;
         if (bytes.len < 7) {
-            c.lprintf(err_level, "Short FWUM Get Status response.");
+            log.print(err_level, "Short FWUM Get Status response.", .{});
             result = -1;
             break;
         }
@@ -293,11 +294,11 @@ fn getStatus(intf: *Intf) callconv(.c) c_int {
 fn rollback(intf: *Intf) callconv(.c) c_int {
     var body = [_]u8{0};
     const rsp = send(intf, ipmi.NetFn.firmware, 0x0e, &body) orelse {
-        c.lprintf(err_level, "Error in FWUM Manual Rollback Command.");
+        log.print(err_level, "Error in FWUM Manual Rollback Command.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(err_level, "Error in FWUM Manual Rollback Command returned %x", @as(c_uint, rsp.ccode));
+        log.print(err_level, "Error in FWUM Manual Rollback Command returned %x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     _ = c.printf("FWUM Starting Manual Rollback \n");
@@ -311,11 +312,11 @@ fn startImage(intf: *Intf, length: c_ulong, padding: c_ushort) callconv(.c) c_in
     };
     const bytes = body[0..if (save_fw_nfo.downloadType == c.KFWUM_DOWNLOAD_TYPE_ADDRESS) 5 else 6];
     const rsp = send(intf, ipmi.NetFn.firmware, 0x0a, bytes) orelse {
-        c.lprintf(err_level, "Error in FWUM Firmware Start Firmware Image Download Command.");
+        log.print(err_level, "Error in FWUM Firmware Start Firmware Image Download Command.", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
-        c.lprintf(err_level, "FWUM Firmware Start Firmware Image Download returned %x", @as(c_uint, rsp.ccode));
+        log.print(err_level, "FWUM Firmware Start Firmware Image Download returned %x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     const bank = data(rsp, 1, "Start Firmware Image") orelse return -1;
@@ -340,14 +341,14 @@ fn saveImage(intf: *Intf, sequence: u8, address: c_ulong, buffer: [*c]u8, length
         } else body[0] = sequence;
         @memcpy(body[header..][0..length.*], buffer[0..length.*]);
         const rsp = send(intf, ipmi.NetFn.firmware, 0x0b, body[0 .. header + length.*]) orelse {
-            c.lprintf(err_level, "Error in FWUM Firmware Save Firmware Image Download Command.");
+            log.print(err_level, "Error in FWUM Firmware Save Firmware Image Download Command.", .{});
             if (intfName(intf, "lan")) {
                 no_response += 1;
                 if (no_response < 6 and length.* > 1) {
                     length.* -= 1;
                     continue;
                 }
-                c.lprintf(err_level, "Error, too many commands without response.");
+                log.print(err_level, "Error, too many commands without response.", .{});
                 length.* = 0;
                 return -1;
             }
@@ -385,12 +386,12 @@ fn saveImage(intf: *Intf, sequence: u8, address: c_ulong, buffer: [*c]u8, length
             },
             0xcf => retry = true,
             else => {
-                c.lprintf(err_level, "FWUM Firmware Save Firmware Image Download returned %x", @as(c_uint, rsp.ccode));
+                log.print(err_level, "FWUM Firmware Save Firmware Image Download returned %x", .{@as(c_uint, rsp.ccode)});
                 return -1;
             },
         }
     }
-    c.lprintf(err_level, "Error, too many FWUM Save Firmware Image retries.");
+    log.print(err_level, "Error, too many FWUM Save Firmware Image retries.", .{});
     return -1;
 }
 
@@ -402,12 +403,12 @@ fn finishImage(intf: *Intf, info: c.tKFWUM_InFirmwareInfo) callconv(.c) c_int {
         const rsp = send(intf, ipmi.NetFn.firmware, 0x0c, &body) orelse continue;
         if (rsp.ccode == 0xc0) continue;
         if (rsp.ccode != 0) {
-            c.lprintf(err_level, "FWUM Firmware Finish Firmware Image Download returned %x", @as(c_uint, rsp.ccode));
+            log.print(err_level, "FWUM Firmware Finish Firmware Image Download returned %x", .{@as(c_uint, rsp.ccode)});
             return -1;
         }
         return 0;
     }
-    c.lprintf(err_level, "Error, too many FWUM Finish Firmware Image retries.");
+    log.print(err_level, "Error, too many FWUM Finish Firmware Image retries.", .{});
     return -1;
 }
 
@@ -449,14 +450,14 @@ fn upload(intf: *Intf, buffer: [*c]u8, total: c_ulong) callconv(.c) c_int {
 fn startUpgrade(intf: *Intf) callconv(.c) c_int {
     var body = [_]u8{0};
     const rsp = send(intf, ipmi.NetFn.firmware, 9, &body) orelse {
-        c.lprintf(err_level, "Error in FWUM Firmware Start Firmware Upgrade Command");
+        log.print(err_level, "Error in FWUM Firmware Start Firmware Upgrade Command", .{});
         return -1;
     };
     if (rsp.ccode != 0) {
         if (rsp.ccode == 0xd5)
-            c.lprintf(err_level, "No firmware available for upgrade.  Download Firmware first.")
+            log.print(err_level, "No firmware available for upgrade.  Download Firmware first.", .{})
         else
-            c.lprintf(err_level, "FWUM Firmware Start Firmware Upgrade returned %x", @as(c_uint, rsp.ccode));
+            log.print(err_level, "FWUM Firmware Start Firmware Upgrade returned %x", .{@as(c_uint, rsp.ccode)});
         return -1;
     }
     return 0;
@@ -468,12 +469,12 @@ fn traceLog(intf: *Intf) callconv(.c) c_int {
     for (0..7) |chunk| {
         var index = [_]u8{@intCast(chunk)};
         const rsp = send(intf, ipmi.NetFn.firmware, 0x0f, &index) orelse {
-            c.lprintf(err_level, "Error in FWUM Firmware Get Trace Log Command");
+            log.print(err_level, "Error in FWUM Firmware Get Trace Log Command", .{});
             result = -1;
             break;
         };
         if (rsp.ccode != 0) {
-            c.lprintf(err_level, "FWUM Firmware Get Trace Log returned %x", @as(c_uint, rsp.ccode));
+            log.print(err_level, "FWUM Firmware Get Trace Log returned %x", .{@as(c_uint, rsp.ccode)});
             result = -1;
             break;
         }
@@ -502,14 +503,14 @@ fn traceLog(intf: *Intf) callconv(.c) c_int {
 fn compatible(board: c.tKFWUM_BoardInfo, info: c.tKFWUM_InFirmwareInfo) callconv(.c) c_int {
     var result: c_int = 0;
     if (board.iana != info.iana) {
-        c.lprintf(err_level, "Board IANA does not match firmware IANA.");
+        log.print(err_level, "Board IANA does not match firmware IANA.", .{});
         result = -1;
     }
     if (board.boardId != info.boardId) {
-        c.lprintf(err_level, "Board IANA does not match firmware IANA.");
+        log.print(err_level, "Board IANA does not match firmware IANA.", .{});
         result = -1;
     }
-    if (result != 0) c.lprintf(err_level, "Firmware invalid for target board. Download of upgrade aborted.");
+    if (result != 0) log.print(err_level, "Firmware invalid for target board. Download of upgrade aborted.", .{});
     return result;
 }
 
@@ -538,7 +539,7 @@ fn fwupgrade(intf: *Intf, path: [*:0]u8, action: c_int) callconv(.c) c_int {
 }
 
 fn printHelp() callconv(.c) void {
-    c.lprintf(c.LOG_NOTICE, "KFWUM Commands:  info status download upgrade rollback tracelog");
+    log.print(c.LOG_NOTICE, "KFWUM Commands:  info status download upgrade rollback tracelog", .{});
 }
 
 fn infoCommand(intf: *Intf) callconv(.c) c_int {
@@ -558,7 +559,7 @@ fn statusCommand(intf: *Intf) callconv(.c) c_int {
 fn main(intf: *Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {
     _ = c.printf("FWUM extension Version %d.%d\n", @as(c_int, 1), @as(c_int, 3));
     if (argc < 1 or argv == null) {
-        c.lprintf(err_level, "Not enough parameters given.");
+        log.print(err_level, "Not enough parameters given.", .{});
         printHelp();
         return -1;
     }
@@ -574,7 +575,7 @@ fn main(intf: *Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {
     if (std.mem.eql(u8, command, "tracelog")) return traceLog(intf);
     if (std.mem.eql(u8, command, "download")) {
         if (argc < 2 or args[1] == null or args[1].?[0] == 0) {
-            c.lprintf(err_level, "Path and file name must be specified.");
+            log.print(err_level, "Path and file name must be specified.", .{});
             return -1;
         }
         _ = c.printf("Firmware File Name         : %s\n", args[1].?);
@@ -587,7 +588,7 @@ fn main(intf: *Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {
         }
         return startUpgrade(intf);
     }
-    c.lprintf(err_level, "Invalid KFWUM command: %s", args[0].?);
+    log.print(err_level, "Invalid KFWUM command: %s", .{args[0].?});
     printHelp();
     return -1;
 }

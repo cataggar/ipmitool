@@ -69,18 +69,20 @@ tuple, then call libc `syslog` for daemon output or `fprintf` for stderr, using
 the **same Zig logger state** as the exported C ABI. This avoids the C
 `lprintf`/`lperror` trampoline for those callers; it is **not** pure Zig or
 libc-free logging. When `log` is not selected, they call the C logger instead,
-avoiding separate verbosity, daemon and lifecycle state. The dummy transport
-and the selected utility/crypto callers in `helper.zig`,
-`strings_registry.zig`, `lanplus_crypt.zig` and `lanplus_crypt_impl.zig` now use
-this path. `zig build test-log` compares its exact stderr against the C oracle,
+avoiding separate verbosity, daemon and lifecycle state. The dummy transport,
+selected utility/crypto callers in `helper.zig`, `strings_registry.zig`,
+`lanplus_crypt.zig` and `lanplus_crypt_impl.zig`, and commands in
+`cmd/{nm,ime,gendev,fwum,vita,ekanalyzer}.zig` now use this path. Their libc
+format strings and promoted printf argument types are retained. `zig build
+test-log` compares its exact stderr against the C oracle,
 including C ABI calls, severity filtering, helper and registry printf formats,
 truncation, errno suffixes, syslog routing and reinitialization.
 
 Native callers of `util/log.zig`'s typed functions must be in the selected
 `exports.zig` module graph to share `logpriv` with the ABI exports. Importing
 and calling them from a separate frontend executable root duplicates the
-state. Frontends instead use `src/zig/frontend/logging.zig`. With `log`
-selected, it queries the selected archive's level filter through the
+state. The selected shell frontends instead use `src/zig/frontend/logging.zig`.
+With `log` selected, it queries the selected archive's level filter through the
 nonvariadic `ipmitool_zig_log_enabled` C ABI, formats with libc `snprintf` into
 the original 1024-byte limit, then calls `ipmitool_zig_log_message` or
 `ipmitool_zig_log_error` in that **same archive**. The error entry point
@@ -101,11 +103,16 @@ Zig loggers. Native aarch64 tests and
 `zig build test-log-compile -Dtarget=x86_64-linux-gnu` cover both ABIs.
 
 `log_varargs.c` remains a production dependency whenever `log` is selected:
-other Zig command/transport modules and C callers still use the C-variadic
-ABI. Among frontends, `cli/main.zig` has 45 remaining direct calls and
-`front/ipmievd.zig` has 43; neither shell file calls it directly anymore. The
-shim can be removed only after all Zig and C callers have migrated; an
-all-selected build today is **not** shim-free.
+31 Zig files still call the C-variadic ABI, including `cli/main.zig` (45
+direct calls) and `front/ipmievd.zig` (43); neither shell file calls it
+directly anymore. Other Zig command/transport modules and C callers still
+require the shim. It can be removed only after all Zig and C callers have
+migrated; an all-selected build today is **not** shim-free.
+
+The `nm_discover_ccode_hex` and `vita_properties_log_hex` golden cases pin C
+stderr for named `%x` error codes and `%#x` discovery addresses, respectively.
+`zig build test-golden` runs the same fixtures with the default C implementation
+and the all-selected Zig implementation; neither test needs a separate oracle.
 
 `interop-seams.md` says the Zig tree contains "exactly two C files"
 (`ipmi_c.h`, `abi_layout.h`).  There is now a third, and there will be one more
