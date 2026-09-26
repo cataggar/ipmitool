@@ -1773,6 +1773,22 @@ fn solResponseAcksPacket(rsp: ?*ipmi.Response, payload: ?*ipmi.V2Payload) bool {
 // Send path
 // ---------------------------------------------------------------------------
 
+fn writeIpmiData(writer: *std.Io.Writer, data: []const u8) std.Io.Writer.Error!void {
+    try writer.writeAll(">>    data    : ");
+    for (data) |byte| try writer.print("0x{x:0>2} ", .{byte});
+    try writer.writeAll("\n\n");
+}
+
+fn emitIpmiData(data: []const u8) void {
+    if (c.fflush(c.stderr) != 0)
+        std.debug.panic("ipmi_lanplus_send_payload: libc stderr flush failed: {d}", .{std.c._errno().*});
+    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
+    writeIpmiData(&stderr.interface, data) catch |err|
+        std.debug.panic("ipmi_lanplus_send_payload: stderr write failed: {t}", .{stderr.err orelse err});
+    stderr.interface.flush() catch |err|
+        std.debug.panic("ipmi_lanplus_send_payload: stderr flush failed: {t}", .{stderr.err orelse err});
+}
+
 /// `ipmi_lanplus_send_payload()`.
 fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
     var rsp: ?*ipmi.Response = null;
@@ -1806,12 +1822,11 @@ fn sendPayload(intf: *Intf, payload: *ipmi.V2Payload) ?*ipmi.Response {
                 log.print(log.Level.debug, ">>    command : 0x%02x", .{@as(c_int, ipmi_request.msg.cmd)});
 
                 if (c.verbose > 1) {
-                    _ = c.fprintf(c.stderr, ">>    data    : ");
-                    var i: u16 = 0;
-                    while (i < ipmi_request.msg.data_len) : (i += 1) {
-                        _ = c.fprintf(c.stderr, "0x%02x ", @as(c_int, ipmi_request.msg.data.?[i]));
-                    }
-                    _ = c.fprintf(c.stderr, "\n\n");
+                    const data: []const u8 = if (ipmi_request.msg.data_len == 0)
+                        &.{}
+                    else
+                        ipmi_request.msg.data.?[0..ipmi_request.msg.data_len];
+                    emitIpmiData(data);
                 }
 
                 // Pre-session Get Channel Authentication Capabilities goes out
@@ -3138,6 +3153,41 @@ pub fn exportSymbols() void {
 
 const testing = std.testing;
 const crypto_test_stubs = @import("../crypto/test_stubs.zig");
+
+test "ipmi payload stderr matches C hex formatting and detects write failures" {
+    var bytes: [256]u8 = undefined;
+    for (&bytes, 0..) |*byte, index| byte.* = @intCast(index);
+
+    var expected: [1536]u8 = undefined;
+    const prefix = ">>    data    : ";
+    @memcpy(expected[0..prefix.len], prefix);
+    var len: usize = prefix.len;
+    for (bytes) |byte| {
+        var text: [8]u8 = undefined;
+        const count = c.snprintf(&text, text.len, "0x%02x ", @as(c_int, byte));
+        try testing.expectEqual(@as(c_int, 5), count);
+        @memcpy(expected[len..][0..5], text[0..5]);
+        len += 5;
+    }
+    @memcpy(expected[len..][0..2], "\n\n");
+    len += 2;
+
+    var storage: [1536]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writeIpmiData(&writer, &bytes);
+    try testing.expectEqualSlices(u8, expected[0..len], writer.buffered());
+
+    writer = std.Io.Writer.fixed(&storage);
+    try writeIpmiData(&writer, &.{});
+    try testing.expectEqualStrings(">>    data    : \n\n", writer.buffered());
+
+    var failing: std.Io.Writer = .failing;
+    try testing.expectError(error.WriteFailed, writeIpmiData(&failing, &bytes));
+
+    var short_writer = std.Io.Writer.fixed(storage[0 .. len - 1]);
+    try testing.expectError(error.WriteFailed, writeIpmiData(&short_writer, &bytes));
+    try testing.expectEqualSlices(u8, expected[0 .. len - 1], short_writer.buffered());
+}
 
 test "pong stdout matches C at all verbosity levels and field boundaries" {
     var pong = std.mem.zeroes(RmcpPong);
