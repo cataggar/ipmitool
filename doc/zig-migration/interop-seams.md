@@ -398,6 +398,23 @@ and exercises early and late writer failures. The `raw_` CLI goldens pin
 response and verbose ordering with `-Dzig-modules=raw`. Use the
 reduced-feature flags above if needed.
 
+Only the selected ISOL `info` printer uses a checked Zig stdout writer; the
+interactive SOL session and all other ISOL paths still use their original C
+stdio. It flushes libc stdout before writing so previously buffered C output
+stays ahead of the info response. CSV retains its final comma without a
+newline; human output retains all three labels and newlines. Privilege and
+bit-rate values are looked up as each field is written, since C's unknown
+value fallback uses one shared static buffer. Pre-flush, Zig write and final
+flush failures log at error severity and return an error (`-1` from the
+command) instead of reporting success. `zig build test-isol-info-stdout`
+compares both formats and representative strings against libc `snprintf`,
+tests the shared fallback, mixed C/Zig output ordering, and injected early,
+late, pre-flush and final-flush failures; it is also part of `zig build test`.
+The original C implementation and the `isol_info_*` CLI snapshots remain
+parity oracles. Run those with `zig build test-golden -Dzig-modules=isol --
+--filter isol_info_`; without local readline/OpenSSL headers, add
+`-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print
