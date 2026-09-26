@@ -412,6 +412,12 @@ closed. Only `ENOENT` allows creation of a new file. The event daemon uses
 `statx` to check whether its PID path exists (including a dangling symlink),
 then uses exclusive creation, so an unsupported `statx` cannot overwrite an
 existing PID file. glibc still uses `lstat`/`fstat`; no C shim was added.
+The selected event daemon retains `open(O_EXCL, 0644)` for PID ownership,
+but writes the decimal PID and newline with a checked Zig streaming writer
+instead of `fdopen`/`fprintf`/`fclose`. A write, flush or close failure removes
+the new file and reports the existing PID creation error; the daemon process
+fixture checks exact bytes, permissions and cleanup after both stop signals.
+The default C daemon remains the oracle.
 
 The ISOL, LAN, LAN+ and OpenIPMI ports share a Zig-only `fd_set` helper. It
 accepts a translated libc type only when its size, alignment and single

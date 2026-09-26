@@ -155,19 +155,22 @@ fn realPidExists(path: [*:0]const u8) bool {
 fn realPidWrite(path: [*:0]const u8) bool {
     const fd = c.open(path, c.O_WRONLY | c.O_CREAT | c.O_EXCL, @as(c.mode_t, 0o644));
     if (fd < 0) return false;
-    const fp = c.fdopen(fd, "w");
-    if (fp == null) {
-        _ = c.close(fd);
-        _ = c.unlink(path);
-        return false;
-    }
-    const written = c.fprintf(fp, "%d\n", c.getpid()) >= 0;
-    const closed = c.fclose(fp) == 0;
+    const file: std.Io.File = .{ .handle = @intCast(fd), .flags = .{ .nonblocking = false } };
+    var writer = file.writerStreaming(std.Options.debug_io, &.{});
+    const written = blk: {
+        writePid(&writer.interface, c.getpid()) catch break :blk false;
+        writer.interface.flush() catch break :blk false;
+        break :blk true;
+    };
+    const closed = c.close(fd) == 0;
     if (!written or !closed) {
         _ = c.unlink(path);
         return false;
     }
     return true;
+}
+fn writePid(writer: *std.Io.Writer, pid: c.pid_t) std.Io.Writer.Error!void {
+    try writer.print("{d}\n", .{pid});
 }
 fn realPidRemove(path: [*:0]const u8) void {
     _ = c.unlink(path);
@@ -1037,6 +1040,25 @@ test "daemon option parsing validates timeout and PID path length" {
     try std.testing.expectEqual(@as(?bool, null), options(&intf, &.{"pidfile=" ++ "x" ** 64}));
     try std.testing.expectEqual(@as(?bool, true), options(&intf, &.{"daemon=yes"}));
     try std.testing.expectEqualStrings("/run/ipmievd.pid7", std.mem.span(pidPath()));
+}
+
+test "PID writer matches C decimal output and propagates short writes" {
+    for ([_]c.pid_t{ -1, 0, 1, 12345, std.math.maxInt(c.pid_t) }) |pid| {
+        var buf: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&buf);
+        try writePid(&writer, pid);
+        var expected: [32]u8 = undefined;
+        const len = c.snprintf(&expected, expected.len, "%d\n", @as(c_int, pid));
+        try std.testing.expect(len >= 0 and len < expected.len);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(len)], writer.buffered());
+
+        var short: [32]u8 = undefined;
+        var late = std.Io.Writer.fixed(short[0 .. writer.buffered().len - 1]);
+        try std.testing.expectError(error.WriteFailed, writePid(&late, pid));
+        try std.testing.expectEqualSlices(u8, writer.buffered()[0 .. writer.buffered().len - 1], late.buffered());
+    }
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writePid(&failing, 12345));
 }
 
 test "daemon frontend logging uses the selected logger state" {
