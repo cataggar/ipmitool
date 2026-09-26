@@ -1294,6 +1294,57 @@ pub fn build(b: *std.Build) void {
     b.step("test-fdset-compile", "Cross-compile fd_set ABI parity tests")
         .dependOn(&fd_set_unit.step);
 
+    const open_verbose_step = b.step("test-open-verbose-stderr", "Compare original and Zig OpenIPMI stderr bytes and mixed C output order");
+    var open_c_exe: *std.Build.Step.Compile = undefined;
+    var open_zig_exe: *std.Build.Step.Compile = undefined;
+    inline for (.{ false, true }) |selected| {
+        const fixture_mod = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        configure(b, fixture_mod, config_h, default_intf);
+        fixture_mod.addCSourceFiles(.{
+            .files = if (selected)
+                &.{"tests/open_verbose_stderr.c"}
+            else
+                &.{ "tests/open_verbose_stderr.c", "src/plugins/open/open.c" },
+            .flags = &base_cflags,
+        });
+        if (selected) {
+            const options = b.addOptions();
+            options.addOption([]const []const u8, "zig_modules", &.{"open"});
+            options.addOption(bool, "have_crypto_sha256", openssl);
+            const exports_mod = b.createModule(.{
+                .root_source_file = b.path(zig_root ++ "/exports.zig"),
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+            });
+            exports_mod.addImport("ipmi_c", bridge_mod);
+            exports_mod.addImport("build_options", options.createModule());
+            fixture_mod.linkLibrary(b.addLibrary(.{
+                .name = "open-verbose-exports",
+                .linkage = .static,
+                .root_module = exports_mod,
+            }));
+        }
+        const exe = b.addExecutable(.{
+            .name = if (selected) "open-verbose-zig" else "open-verbose-c",
+            .root_module = fixture_mod,
+        });
+        if (selected) {
+            open_zig_exe = exe;
+        } else {
+            open_c_exe = exe;
+        }
+    }
+    const open_verbose_compare = b.addSystemCommand(&.{ "python3", "-B", "tests/open_verbose_stderr.py" });
+    open_verbose_compare.addArtifactArg(open_c_exe);
+    open_verbose_compare.addArtifactArg(open_zig_exe);
+    open_verbose_step.dependOn(&open_verbose_compare.step);
+    test_step.dependOn(open_verbose_step);
+
     const time_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{ "the unspecified timestamp ignores the format", "Unknown timestamp matches snprintf" },
