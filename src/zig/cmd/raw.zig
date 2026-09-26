@@ -9,8 +9,9 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **Formatting and parsing keep libc behavior.** `printf`, `printbuf` and
-//!   `sscanf` are called through `ipmi_c`; diagnostics use `util/log.zig`'s
+//! * **Formatting and parsing keep libc behavior.** The `raw` response hex
+//!   dump uses a checked Zig stdout writer; the `i2c` printer, `printbuf` and
+//!   `sscanf` still call through `ipmi_c`. Diagnostics use `util/log.zig`'s
 //!   typed logger, backed by libc `snprintf` when selected and C `lprintf`
 //!   otherwise. `%2.2x`, `%02Xh` and what exactly `sscanf("%u")` accepts
 //!   remain observable, as do the IPMI request bytes.
@@ -30,6 +31,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
@@ -394,6 +396,15 @@ fn rawHelp() callconv(.c) void {
     log.print(log.Level.notice, "(can also use raw hex values)", .{});
 }
 
+fn writeRawResponse(writer: *std.Io.Writer, rsp: *const Response) std.Io.Writer.Error!void {
+    var i: c_int = 0;
+    while (i < rsp.data_len) : (i += 1) {
+        if (@rem(i, 16) == 0 and i != 0) try writer.writeByte('\n');
+        try stdout_io.write(writer, " {x:0>2}", .{rsp.data[@intCast(i)]});
+    }
+    try writer.writeByte('\n');
+}
+
 /// `ipmi_raw_main()` - the `raw` command.
 fn rawMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     var req: Request = undefined;
@@ -490,15 +501,73 @@ fn rawMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
 
     log.print(log.Level.info, "RAW RSP (%d bytes)", .{rsp.data_len});
 
-    // Print the raw response buffer.
-    i = 0;
-    while (i < rsp.data_len) : (i += 1) {
-        if (@rem(i, 16) == 0 and i != 0) _ = c.printf("\n");
-        _ = c.printf(" %2.2x", @as(c_uint, rsp.data[@intCast(i)]));
-    }
-    _ = c.printf("\n");
+    stdout_io.trySyncC() catch {
+        log.print(log.Level.err, "RAW stdout C preflush failed (errno %d)", .{std.c._errno().*});
+        return -1;
+    };
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    writeRawResponse(&stdout.interface, rsp) catch |err| {
+        log.print(log.Level.err, "RAW stdout Zig write failed: %s", .{@errorName(stdout.err orelse err).ptr});
+        return -1;
+    };
+    stdout.interface.flush() catch |err| {
+        log.print(log.Level.err, "RAW stdout Zig final flush failed: %s", .{@errorName(stdout.err orelse err).ptr});
+        return -1;
+    };
 
     return 0;
+}
+
+test "raw stdout matches libc byte formatting across wraps" {
+    var rsp = std.mem.zeroes(Response);
+    for (&rsp.data, 0..) |*byte, index| byte.* = @truncate(index);
+    var actual: [4 * ipmi.buf_size]u8 = undefined;
+    var expected: [4 * ipmi.buf_size]u8 = undefined;
+
+    for ([_]c_int{ 0, 1, 15, 16, 17, 31, 32, 33, 256, ipmi.buf_size }) |len| {
+        rsp.data_len = len;
+        var writer = std.Io.Writer.fixed(&actual);
+        try writeRawResponse(&writer, &rsp);
+
+        var used: usize = 0;
+        for (rsp.data[0..@intCast(len)], 0..) |byte, index| {
+            if (index != 0 and index % 16 == 0) {
+                expected[used] = '\n';
+                used += 1;
+            }
+            const printed = c.snprintf(@ptrCast(&expected[used]), expected.len - used, " %2.2x", @as(c_uint, byte));
+            try std.testing.expectEqual(@as(c_int, 3), printed);
+            used += @intCast(printed);
+        }
+        expected[used] = '\n';
+        used += 1;
+        try std.testing.expectEqualSlices(u8, expected[0..used], writer.buffered());
+    }
+
+    rsp.data_len = 1;
+    rsp.data[0] = 0xff;
+    var writer = std.Io.Writer.fixed(&actual);
+    try writeRawResponse(&writer, &rsp);
+    try std.testing.expectEqualStrings(" ff\n", writer.buffered());
+}
+
+test "raw stdout propagates first and later writer failures" {
+    var rsp = std.mem.zeroes(Response);
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeRawResponse(&failing, &rsp));
+
+    rsp.data_len = 17;
+    try std.testing.expectError(error.WriteFailed, writeRawResponse(&failing, &rsp));
+
+    var first: [3]u8 = undefined;
+    var first_writer = std.Io.Writer.fixed(&first);
+    try std.testing.expectError(error.WriteFailed, writeRawResponse(&first_writer, &rsp));
+    try std.testing.expectEqualStrings(" 00", first_writer.buffered());
+
+    var wrapped: [49]u8 = undefined;
+    var wrapped_writer = std.Io.Writer.fixed(&wrapped);
+    try std.testing.expectError(error.WriteFailed, writeRawResponse(&wrapped_writer, &rsp));
+    try std.testing.expectEqual(@as(u8, '\n'), wrapped_writer.buffered()[48]);
 }
 
 // ---------------------------------------------------------------------------

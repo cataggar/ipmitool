@@ -86,6 +86,7 @@ test {
     _ = @import("cmd/hpmfwupg.zig");
     _ = @import("cmd/ime.zig");
     _ = @import("cmd/gendev.zig");
+    _ = @import("cmd/raw.zig");
     _ = @import("frontend/ipmishell.zig");
     _ = @import("cmd/pef.zig");
     _ = @import("cmd/delloem.zig");

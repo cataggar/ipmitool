@@ -384,6 +384,20 @@ C stdio path pending the signal-handler cutover.
 The shell echo/set stdout paths call its checked `trySyncC` variant and return
 `-1` with a log diagnostic on flush failure; CLI/helper keep `syncC`'s panic.
 
+The selected `raw` command's response hex dump uses the same checked Zig
+streaming writer. It checks `fflush(stdout)` before the first byte so libc
+output buffered by a caller stays ahead of the response, then checks writes
+and the final flush, returning `-1` with a diagnostic on failure. The
+lowercase, zero-padded two-digit bytes retain their leading space, wrap
+after every sixteen bytes, and always end in a newline, even for an empty
+response. `i2c` output, parsing, the C ABI and the original C oracle remain
+unchanged. `zig build test-raw-output` compares lengths 0 through 1024 at
+wrap boundaries against libc `%2.2x` formatting, runs the same C caller with
+buffered output before and after the original C and selected Zig commands,
+and exercises early and late writer failures. The `raw_` CLI goldens pin
+response and verbose ordering with `-Dzig-modules=raw`. Use the
+reduced-feature flags above if needed.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print
