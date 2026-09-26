@@ -338,6 +338,23 @@ The selected helper writes `printbuf`'s verbose hex dump through Zig stderr
 I/O instead of libc `fprintf`. Sixteen-byte line wraps and header/hex bytes
 remain golden-tested; a failed write terminates explicitly.
 
+The selected OpenIPMI transport writes its verbose request, conversion,
+encapsulation, received-message and decapsulation diagnostics through a Zig
+stderr writer. Before each diagnostic group it checks `fflush(stderr)` to
+preserve preceding buffered C logger and `printbuf` output; it also checks
+the Zig write and final flush before the next C output. These failures
+terminate explicitly rather than silently returning a successful response.
+The existing C `printbuf` and `buf2str` calls, ioctl protocol, and the
+original C transport are unchanged. In particular, `Got message:` still
+shares its line with `type`, and a signed negative channel retains the C
+`%x` promotion to unsigned 32-bit. `zig build test-open-verbose-stderr`
+byte-compares the original C and selected Zig ABI under fully buffered C
+stderr, with direct and bridged simulated ioctl replies at verbosity 2, 3,
+4 and 5, including interleaved logger and printbuf output. `test-fdset`
+also tests the OpenIPMI model and early/late writer failures. Without local
+readline/OpenSSL headers, run both with `-Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lanplus=false`.
+
 For `loglevel < 0`, the selected `print_valstr` and `print_valstr_2col` write
 through Zig's streaming stdout writer. They first check `fflush(stdout)` to
 drain any preceding libc `printf` output, then check both Zig writes and the

@@ -312,6 +312,66 @@ var rsp: ipmi.Response = std.mem.zeroes(ipmi.Response);
 /// counter shared by every call, never reset.
 var curr_seq: c_int = 0;
 
+const VerbosePayload = struct {
+    len: c_int,
+    hex: []const u8,
+};
+
+fn verbosePayload(data: ?[*]u8, len: c_int) ?VerbosePayload {
+    const bytes = data orelse return null;
+    if (len == 0) return null;
+    return .{ .len = len, .hex = std.mem.sliceTo(c.buf2str(bytes, len), 0) };
+}
+
+fn writeVerbosePayload(writer: *std.Io.Writer, payload: ?VerbosePayload) std.Io.Writer.Error!void {
+    if (payload) |p| {
+        try writer.print("  data_len  = {d}\n  data      = {s}\n", .{ p.len, p.hex });
+    }
+}
+
+fn writeVerboseMessage(
+    writer: *std.Io.Writer,
+    label: []const u8,
+    netfn: c_int,
+    cmd: c_int,
+    payload: ?VerbosePayload,
+) std.Io.Writer.Error!void {
+    try writer.print("{s}\n  netfn     = 0x{x}\n  cmd       = 0x{x}\n", .{
+        label, @as(c_uint, @bitCast(netfn)), @as(c_uint, @bitCast(cmd)),
+    });
+    try writeVerbosePayload(writer, payload);
+}
+
+fn writeVerboseReply(
+    writer: *std.Io.Writer,
+    recv: *const Recv,
+    channel: c_short,
+    payload: ?VerbosePayload,
+) std.Io.Writer.Error!void {
+    try writer.print(
+        "Got message:  type      = {d}\n  channel   = 0x{x}\n  msgid     = {d}\n  netfn     = 0x{x}\n  cmd       = 0x{x}\n",
+        .{
+            recv.recv_type,
+            @as(c_uint, @bitCast(@as(c_int, channel))),
+            recv.msgid,
+            recv.msg.netfn,
+            recv.msg.cmd,
+        },
+    );
+    try writeVerbosePayload(writer, payload);
+}
+
+fn emitVerbose(comptime write: anytype, args: anytype) void {
+    if (c.fflush(c.stderr) != 0) {
+        std.debug.panic("OpenIPMI: libc stderr flush failed (errno {d})", .{std.c._errno().*});
+    }
+    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
+    @call(.auto, write, .{&stderr.interface} ++ args) catch |err|
+        std.debug.panic("OpenIPMI: stderr write failed: {t}", .{stderr.err orelse err});
+    stderr.interface.flush() catch |err|
+        std.debug.panic("OpenIPMI: stderr flush failed: {t}", .{stderr.err orelse err});
+}
+
 /// `ipmi_openipmi_send_cmd()`.
 fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     var recv: Recv = std.mem.zeroes(Recv);
@@ -343,9 +403,12 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
     }
 
     if (c.verbose > 2) {
-        _ = c.fprintf(c.stderr, "OpenIPMI Request Message Header:\n");
-        _ = c.fprintf(c.stderr, "  netfn     = 0x%x\n", @as(c_int, req.msg.netfn_lun.netfn));
-        _ = c.fprintf(c.stderr, "  cmd       = 0x%x\n", @as(c_int, req.msg.cmd));
+        emitVerbose(writeVerboseMessage, .{
+            "OpenIPMI Request Message Header:",
+            @as(c_int, req.msg.netfn_lun.netfn),
+            @as(c_int, req.msg.cmd),
+            null,
+        });
         c.printbuf(req.msg.data, req.msg.data_len, "OpenIPMI Request Message Data");
     }
 
@@ -387,13 +450,12 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
             // `req`, the internal one is `_req`.
 
             if (c.verbose > 4) {
-                _ = c.fprintf(c.stderr, "Converting message:\n");
-                _ = c.fprintf(c.stderr, "  netfn     = 0x%x\n", @as(c_int, req.msg.netfn_lun.netfn));
-                _ = c.fprintf(c.stderr, "  cmd       = 0x%x\n", @as(c_int, req.msg.cmd));
-                if (req.msg.data != null and req.msg.data_len != 0) {
-                    _ = c.fprintf(c.stderr, "  data_len  = %d\n", @as(c_int, req.msg.data_len));
-                    _ = c.fprintf(c.stderr, "  data      = %s\n", c.buf2str(req.msg.data, req.msg.data_len));
-                }
+                emitVerbose(writeVerboseMessage, .{
+                    "Converting message:",
+                    @as(c_int, req.msg.netfn_lun.netfn),
+                    @as(c_int, req.msg.cmd),
+                    verbosePayload(req.msg.data, req.msg.data_len),
+                });
             }
 
             // Modify the target address to use the transit one instead.
@@ -436,13 +498,12 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
             index +%= 1;
 
             if (c.verbose > 4) {
-                _ = c.fprintf(c.stderr, "Encapsulated message:\n");
-                _ = c.fprintf(c.stderr, "  netfn     = 0x%x\n", @as(c_int, ipmi.NetFn.app));
-                _ = c.fprintf(c.stderr, "  cmd       = 0x%x\n", @as(c_int, 0x34));
-                if (data != null and data_len != 0) {
-                    _ = c.fprintf(c.stderr, "  data_len  = %d\n", data_len);
-                    _ = c.fprintf(c.stderr, "  data      = %s\n", c.buf2str(data, data_len));
-                }
+                emitVerbose(writeVerboseMessage, .{
+                    "Encapsulated message:",
+                    @as(c_int, ipmi.NetFn.app),
+                    @as(c_int, 0x34),
+                    verbosePayload(data, data_len),
+                });
             }
         }
         _req.addr = @ptrCast(&ipmb_addr);
@@ -548,16 +609,9 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
 
     if (c.verbose > 4) {
         // No trailing newline on the first line; see note 11.
-        _ = c.fprintf(c.stderr, "Got message:");
-        _ = c.fprintf(c.stderr, "  type      = %d\n", recv.recv_type);
-        _ = c.fprintf(c.stderr, "  channel   = 0x%x\n", @as(c_int, addr.channel));
-        _ = c.fprintf(c.stderr, "  msgid     = %ld\n", recv.msgid);
-        _ = c.fprintf(c.stderr, "  netfn     = 0x%x\n", @as(c_int, recv.msg.netfn));
-        _ = c.fprintf(c.stderr, "  cmd       = 0x%x\n", @as(c_int, recv.msg.cmd));
-        if (recv.msg.data != null and recv.msg.data_len != 0) {
-            _ = c.fprintf(c.stderr, "  data_len  = %d\n", @as(c_int, recv.msg.data_len));
-            _ = c.fprintf(c.stderr, "  data      = %s\n", c.buf2str(recv.msg.data, recv.msg.data_len));
-        }
+        emitVerbose(writeVerboseReply, .{
+            &recv, addr.channel, verbosePayload(recv.msg.data, recv.msg.data_len),
+        });
     }
 
     if (intf.transit_addr != 0 and intf.transit_addr != intf.my_addr) {
@@ -582,15 +636,13 @@ fn sendrecv(intf: *Intf, req: *ipmi.Request) callconv(.c) ?*ipmi.Response {
                 recv.msg.data.?[7..][0..move_len],
             );
             recv.msg.data_len -%= 8;
-
             if (c.verbose > 4) {
-                _ = c.fprintf(c.stderr, "Decapsulated  message:\n");
-                _ = c.fprintf(c.stderr, "  netfn     = 0x%x\n", @as(c_int, recv.msg.netfn));
-                _ = c.fprintf(c.stderr, "  cmd       = 0x%x\n", @as(c_int, recv.msg.cmd));
-                if (recv.msg.data != null and recv.msg.data_len != 0) {
-                    _ = c.fprintf(c.stderr, "  data_len  = %d\n", @as(c_int, recv.msg.data_len));
-                    _ = c.fprintf(c.stderr, "  data      = %s\n", c.buf2str(recv.msg.data, recv.msg.data_len));
-                }
+                emitVerbose(writeVerboseMessage, .{
+                    "Decapsulated  message:",
+                    @as(c_int, recv.msg.netfn),
+                    @as(c_int, recv.msg.cmd),
+                    verbosePayload(recv.msg.data, recv.msg.data_len),
+                });
             }
         }
     }
@@ -1707,6 +1759,45 @@ const Stderr = struct {
         return if (n > 0) buf[0..@intCast(n)] else buf[0..0];
     }
 };
+
+test "verbose stderr format preserves signed channel bits and propagates writer failures" {
+    var recv = std.mem.zeroes(Recv);
+    recv.recv_type = 7;
+    recv.msgid = 123;
+    recv.msg.netfn = 0x2d;
+    recv.msg.cmd = 0x94;
+
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writeVerboseMessage(&writer, "Converting message:", 0x2c, 0x94, .{
+        .len = 2,
+        .hex = "00ff",
+    });
+    try writeVerboseReply(&writer, &recv, -42, .{ .len = 1, .hex = "5b" });
+    try std.testing.expectEqualStrings(
+        "Converting message:\n" ++
+            "  netfn     = 0x2c\n  cmd       = 0x94\n" ++
+            "  data_len  = 2\n  data      = 00ff\n" ++
+            "Got message:  type      = 7\n" ++
+            "  channel   = 0xffffffd6\n  msgid     = 123\n" ++
+            "  netfn     = 0x2d\n  cmd       = 0x94\n" ++
+            "  data_len  = 1\n  data      = 5b\n",
+        writer.buffered(),
+    );
+
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeVerboseMessage(&failing, "Request:", 1, 2, null));
+    try std.testing.expectError(error.WriteFailed, writeVerboseReply(&failing, &recv, 0, null));
+
+    const header = "Converting message:\n  netfn     = 0x2c\n  cmd       = 0x94\n";
+    var full: [header.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&full);
+    try std.testing.expectError(error.WriteFailed, writeVerboseMessage(&late, "Converting message:", 0x2c, 0x94, .{
+        .len = 2,
+        .hex = "00ff",
+    }));
+    try std.testing.expectEqualStrings(header, late.buffered());
+}
 
 test "verbose above two dumps the request header" {
     ModelDriver.reset();
