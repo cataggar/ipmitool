@@ -156,7 +156,10 @@ def run():
 
             wait_for(pid_ready, "daemon PID file")
             with open(pidfile, encoding="ascii") as file:
-                daemon_pid = int(file.read().strip())
+                content = file.read()
+            daemon_pid = int(content.strip())
+            assert content == f"{daemon_pid}\n", f"PID file format changed: {content!r}"
+            assert os.stat(pidfile).st_mode & 0o777 == 0o644, "PID file mode changed"
             wait_for(lambda: bmc.info_count > before, "daemon SEL request")
             assert alive(daemon_pid), "daemon exited before signal"
             os.kill(daemon_pid, sig)
