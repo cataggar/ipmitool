@@ -1091,6 +1091,49 @@ pub fn build(b: *std.Build) void {
     b.step("test-stdout-unit", "Run Zig stdout formatting and write-failure tests")
         .dependOn(&b.addRunArtifact(stdout_unit).step);
 
+    const raw_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.raw.test.raw stdout"},
+    });
+    const raw_stdout_step = b.step("test-raw-output", "Compare C/Zig raw response bytes and test writer failures");
+    raw_stdout_step.dependOn(&b.addRunArtifact(raw_stdout_unit).step);
+
+    const raw_c_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    configure(b, raw_c_mod, config_h, default_intf);
+    raw_c_mod.addCSourceFiles(.{
+        .files = &.{ "tests/raw_response_stdout.c", "lib/ipmi_raw.c" },
+        .flags = &base_cflags,
+    });
+    const raw_c = b.addExecutable(.{ .name = "raw-response-c", .root_module = raw_c_mod });
+
+    const raw_options = b.addOptions();
+    raw_options.addOption([]const []const u8, "zig_modules", &.{"raw"});
+    raw_options.addOption(bool, "have_crypto_sha256", openssl);
+    const raw_lib_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/exports.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    raw_lib_mod.addImport("ipmi_c", bridge_mod);
+    raw_lib_mod.addImport("build_options", raw_options.createModule());
+    const raw_lib = b.addLibrary(.{
+        .name = "raw_response_zig",
+        .linkage = .static,
+        .root_module = raw_lib_mod,
+    });
+    const raw_zig_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    configure(b, raw_zig_mod, config_h, default_intf);
+    raw_zig_mod.addCSourceFile(.{ .file = b.path("tests/raw_response_stdout.c"), .flags = &base_cflags });
+    raw_zig_mod.linkLibrary(raw_lib);
+    const raw_zig = b.addExecutable(.{ .name = "raw-response-zig", .root_module = raw_zig_mod });
+
+    const raw_compare = b.addSystemCommand(&.{ "python3", "-B", "tests/raw_response_stdout.py" });
+    raw_compare.addFileArg(raw_c.getEmittedBin());
+    raw_compare.addFileArg(raw_zig.getEmittedBin());
+    raw_stdout_step.dependOn(&raw_compare.step);
+    test_step.dependOn(raw_stdout_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},
