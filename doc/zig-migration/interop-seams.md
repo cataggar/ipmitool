@@ -399,6 +399,14 @@ earlier buffered C output before the pong details at verbosity 2. Only the
 dynamic CLI version, the 16-byte random-number diagnostic and the single
 trailing space on stderr's `>>    data    :` diagnostic lines are normalized
 there, not stdout or any other stderr lines.
+For LAN+ IPMI payloads at verbosity two or higher, the selected transport
+writes the stderr `>>    data    :` hex diagnostic through a Zig streaming
+writer after checking libc stderr's buffered output. It retains the trailing
+space after each byte, the empty-data space, and two terminating newlines.
+Write and final-flush failures terminate explicitly; `zig build
+test-lanplus-data-stderr` compares all byte values with libc's `%02x` and
+checks early and late writer failures. The existing `lanplus/pong-details`
+C/Zig transport fixture checks its place among adjacent C logging output.
 Without local OpenSSL headers, run the pong unit with
 `-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`
 (the unit runs independently of the transport). The transport comparison

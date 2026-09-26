@@ -1098,6 +1098,13 @@ pub fn build(b: *std.Build) void {
     b.step("test-lanplus-pong-stdout", "Check RMCP pong stdout formatting and write failures")
         .dependOn(&b.addRunArtifact(pong_stdout_unit).step);
 
+    const lanplus_data_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.lanplus.test.ipmi payload stderr"},
+    });
+    b.step("test-lanplus-data-stderr", "Compare LAN+ verbose data hex with C and reject write failures")
+        .dependOn(&b.addRunArtifact(lanplus_data_unit).step);
+
     const dump_stdout_step = b.step("test-lanplus-dump-stdout", "Compare C/Zig LAN+ dump bytes and test writer failures");
     const dump_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
