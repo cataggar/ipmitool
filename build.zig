@@ -1134,6 +1134,14 @@ pub fn build(b: *std.Build) void {
     raw_stdout_step.dependOn(&raw_compare.step);
     test_step.dependOn(raw_stdout_step);
 
+    const isol_info_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.isol.test.info stdout"},
+    });
+    const isol_info_step = b.step("test-isol-info-stdout", "Check ISOL info C bytes, output ordering, and I/O failures");
+    isol_info_step.dependOn(&b.addRunArtifact(isol_info_unit).step);
+    test_step.dependOn(isol_info_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},

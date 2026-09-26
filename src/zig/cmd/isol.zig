@@ -22,13 +22,19 @@ const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const fd_set = @import("../util/fd_set.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 
 const Request = ipmi.Request;
 const Response = ipmi.Response;
 const Payload = ipmi.V2Payload;
 const escape: u8 = '~';
 
-const Error = error{
+const StdoutError = error{
+    CStdoutFlushFailed,
+    StdoutWriteFailed,
+    StdoutFlushFailed,
+};
+const Error = StdoutError || error{
     NoResponse,
     Unsupported,
     CompletionCode,
@@ -97,16 +103,44 @@ fn getInfo(intf: *Intf) Error!Config {
 
 fn printInfo(intf: *Intf) Error!void {
     const params = try getInfo(intf);
-    const enabled: [*:0]const u8 = if (params.enabled & 1 != 0) "true" else "false";
-    const privilege = c.val2str(params.privilege_level & 0x0f, c.ipmi_privlvl_vals);
-    const baud = c.val2str(params.bit_rate & 0x0f, c.ipmi_bit_rate_vals);
-    if (c.csv_output != 0) {
-        _ = c.printf("%s,%s,%s,", enabled, privilege, baud);
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitInfo(&stdout.interface, c.csv_output != 0, params, infoValue, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "ISOL info stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "ISOL info stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "ISOL info stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return err;
+    };
+}
+
+const InfoField = enum { privilege, baud };
+
+fn infoValue(field: InfoField, value: u8) []const u8 {
+    const table = switch (field) {
+        .privilege => c.ipmi_privlvl_vals,
+        .baud => c.ipmi_bit_rate_vals,
+    };
+    return std.mem.span(@as([*:0]const u8, @ptrCast(c.val2str(value, table))));
+}
+
+fn writeInfo(writer: *std.Io.Writer, csv: bool, params: Config, lookup: anytype) std.Io.Writer.Error!void {
+    const enabled: []const u8 = if (params.enabled & 1 != 0) "true" else "false";
+    if (csv) {
+        try writer.print("{s},", .{enabled});
+        try writer.print("{s},", .{lookup(.privilege, params.privilege_level & 0x0f)});
+        try writer.print("{s},", .{lookup(.baud, params.bit_rate & 0x0f)});
     } else {
-        _ = c.printf("Enabled                         : %s\n", enabled);
-        _ = c.printf("Privilege Level                 : %s\n", privilege);
-        _ = c.printf("Bit Rate (kbps)                 : %s\n", baud);
+        try writer.print("Enabled                         : {s}\n", .{enabled});
+        try writer.print("Privilege Level                 : {s}\n", .{lookup(.privilege, params.privilege_level & 0x0f)});
+        try writer.print("Bit Rate (kbps)                 : {s}\n", .{lookup(.baud, params.bit_rate & 0x0f)});
     }
+}
+
+fn emitInfo(writer: *std.Io.Writer, csv: bool, params: Config, lookup: anytype, preflush: anytype) StdoutError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeInfo(writer, csv, params, lookup) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
 }
 
 fn equals(a: [*:0]const u8, b: []const u8) bool {
@@ -535,6 +569,162 @@ test "short successful Get Config response returns a typed error" {
         try std.testing.expectError(error.ShortResponse, getInfo(&intf));
         try std.testing.expectEqual(n, Stub.call_count);
     }
+}
+
+test "info stdout matches C snprintf for csv and human-readable values" {
+    const Names = struct {
+        var privilege: [*:0]const u8 = undefined;
+        var baud: [*:0]const u8 = undefined;
+        var fields: [2]InfoField = undefined;
+        var values: [2]u8 = undefined;
+        var count: usize = 0;
+
+        fn get(field: InfoField, value: u8) []const u8 {
+            fields[count] = field;
+            values[count] = value;
+            count += 1;
+            return std.mem.span(if (field == .privilege) privilege else baud);
+        }
+    };
+    const cases = [_]struct { params: Config, privilege: [*:0]const u8, baud: [*:0]const u8 }{
+        .{ .params = .{ .enabled = 0x83, .privilege_level = 0x84, .bit_rate = 0x8a }, .privilege = "ADMINISTRATOR", .baud = "115.2" },
+        .{ .params = .{ .enabled = 0x82, .privilege_level = 0x85, .bit_rate = 0x86 }, .privilege = "OEM", .baud = "9.6" },
+        .{ .params = .{ .enabled = 0, .privilege_level = 0x8e, .bit_rate = 0x8f }, .privilege = "Unknown (0x0E)", .baud = "Unknown (0x0F)" },
+        .{ .params = .{ .enabled = 1, .privilege_level = 3, .bit_rate = 10 }, .privilege = "OEM,100% ready\x00ignored", .baud = "a longer baud value with punctuation: %,;" },
+    };
+    for (cases) |case| {
+        Names.privilege = case.privilege;
+        Names.baud = case.baud;
+        const enabled: [*:0]const u8 = if (case.params.enabled & 1 != 0) "true" else "false";
+        for ([_]bool{ false, true }) |csv| {
+            Names.count = 0;
+            var expected: [512]u8 = undefined;
+            const length = if (csv)
+                c.snprintf(&expected, expected.len, "%s,%s,%s,", enabled, case.privilege, case.baud)
+            else
+                c.snprintf(
+                    &expected,
+                    expected.len,
+                    "Enabled                         : %s\n" ++
+                        "Privilege Level                 : %s\n" ++
+                        "Bit Rate (kbps)                 : %s\n",
+                    enabled,
+                    case.privilege,
+                    case.baud,
+                );
+            try std.testing.expect(length >= 0 and length < expected.len);
+            var actual: [512]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&actual);
+            try writeInfo(&writer, csv, case.params, Names.get);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], writer.buffered());
+            try std.testing.expectEqual(@as(usize, 2), Names.count);
+            try std.testing.expectEqual(InfoField.privilege, Names.fields[0]);
+            try std.testing.expectEqual(InfoField.baud, Names.fields[1]);
+            try std.testing.expectEqual(case.params.privilege_level & 0x0f, Names.values[0]);
+            try std.testing.expectEqual(case.params.bit_rate & 0x0f, Names.values[1]);
+        }
+    }
+}
+
+test "info stdout consumes shared unknown-value text before the next lookup" {
+    const Shared = struct {
+        var text: [32]u8 = undefined;
+
+        fn get(_: InfoField, value: u8) []const u8 {
+            const length = c.snprintf(&text, text.len, "Unknown (0x%02X)", @as(c_uint, value));
+            std.debug.assert(length > 0 and length < text.len);
+            return text[0..@intCast(length)];
+        }
+    };
+    const params: Config = .{ .enabled = 0, .privilege_level = 0x8e, .bit_rate = 0x8f };
+    for ([_]bool{ false, true }) |csv| {
+        var storage: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeInfo(&writer, csv, params, Shared.get);
+        try std.testing.expectEqualStrings(
+            if (csv)
+                "false,Unknown (0x0E),Unknown (0x0F),"
+            else
+                "Enabled                         : false\n" ++
+                    "Privilege Level                 : Unknown (0x0E)\n" ++
+                    "Bit Rate (kbps)                 : Unknown (0x0F)\n",
+            writer.buffered(),
+        );
+    }
+}
+
+test "info stdout propagates preflush and early late write and final flush errors" {
+    const Stub = struct {
+        var lookups: usize = 0;
+
+        fn get(field: InfoField, _: u8) []const u8 {
+            lookups += 1;
+            return if (field == .privilege) "ADMINISTRATOR" else "115.2";
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const params: Config = .{ .enabled = 1, .privilege_level = 4, .bit_rate = 10 };
+    var full: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&full);
+    Stub.lookups = 0;
+    try std.testing.expectError(error.CStdoutFlushFailed, emitInfo(&writer, true, params, Stub.get, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), Stub.lookups);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitInfo(&early, true, params, Stub.get, Stub.preflushOk));
+
+    const prefix =
+        "Enabled                         : true\n" ++
+        "Privilege Level                 : ADMINISTRATOR\n";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitInfo(&late, false, params, Stub.get, Stub.preflushOk));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitInfo(&writer, true, params, Stub.get, Stub.preflushOk));
+    try std.testing.expectEqualStrings("true,ADMINISTRATOR,115.2,", writer.buffered());
+}
+
+test "info stdout keeps preceding buffered C output before Zig and subsequent C" {
+    const Stub = struct {
+        fn get(field: InfoField, _: u8) []const u8 {
+            return if (field == .privilege) "ADMINISTRATOR" else "115.2";
+        }
+    };
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+    var pipe_fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&pipe_fds));
+    defer _ = c.close(pipe_fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(pipe_fds[1], stdout_fd));
+    _ = c.close(pipe_fds[1]);
+
+    _ = c.printf("C before ");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitInfo(&stdout.interface, true, .{ .enabled = 1, .privilege_level = 4, .bit_rate = 10 }, Stub.get, stdout_io.trySyncC);
+    _ = c.printf(" C after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+
+    var captured: [256]u8 = undefined;
+    const length = c.read(pipe_fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("C before true,ADMINISTRATOR,115.2, C after\n", captured[0..@intCast(length)]);
 }
 
 test "the input escape state survives reads and preserves doubled escape" {

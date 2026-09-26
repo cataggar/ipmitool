@@ -12,6 +12,18 @@ args: -c -I dummy isol info
 transcript: isol_full.tr
 covers: isol
 
+[isol_info_unknown_human]
+desc: privilege and rate both use the shared unknown-value fallback
+args: -I dummy isol info
+transcript: isol_unknown.tr
+covers: isol
+
+[isol_info_unknown_csv]
+desc: CSV emits distinct unknown fields with a trailing comma and no newline
+args: -c -I dummy isol info
+transcript: isol_unknown.tr
+covers: isol
+
 [isol_info_disabled]
 desc: disabled flag, OEM privilege and minimum supported rate
 args: -I dummy isol info
