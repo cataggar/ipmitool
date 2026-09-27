@@ -360,8 +360,37 @@ fn printWatchdogUsage() void {
     log.print(log.Level.notice, usage, .{});
 }
 
-/// `ipmi_mc_get_enables()`.
-fn mcGetEnables(intf: *Intf) c_int {
+fn writeMcEnables(writer: *std.Io.Writer, enabled: u8) std.Io.Writer.Error!void {
+    for (mc_enables_bf_table) |bf| {
+        const desc = bf.desc orelse break;
+        try writer.print("{s: <40} : {s}abled\n", .{
+            std.mem.span(desc),
+            if (enabled & @as(u8, @truncate(bf.mask)) != 0) @as([]const u8, "en") else "dis",
+        });
+    }
+}
+
+fn emitMcEnables(writer: *std.Io.Writer, enabled: u8, preflush: anytype) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcEnables(writer, enabled) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn emitMcEnableMessage(writer: *std.Io.Writer, comptime format: []const u8, args: anytype, preflush: anytype) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writer.print(format, args) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn logMcEnablesOutputError(action: [*:0]const u8, err: McOutputError, write_error: anyerror) void {
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(log.Level.err, "MC %s stdout C preflush failed (errno %d)", .{ action, std.c._errno().* }),
+        error.StdoutWriteFailed => log.print(log.Level.err, "MC %s stdout write failed: %s", .{ action, @errorName(write_error).ptr }),
+        error.StdoutFlushFailed => log.print(log.Level.err, "MC %s stdout final flush failed: %s", .{ action, @errorName(write_error).ptr }),
+    }
+}
+
+fn mcGetEnablesTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) McOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_app;
     req.msg.cmd = BMC_GET_GLOBAL_ENABLES;
@@ -375,20 +404,20 @@ fn mcGetEnables(intf: *Intf) c_int {
         return -1;
     }
 
-    for (mc_enables_bf_table) |bf| {
-        if (bf.name == null) break;
-        _ = c.printf(
-            "%-40s : %sabled\n",
-            bf.desc,
-            pick(rsp.data[0] & @as(u8, @truncate(bf.mask)) != 0, "en", "dis"),
-        );
-    }
-
+    try emitMcEnables(writer, rsp.data[0], preflush);
     return 0;
 }
 
-/// `ipmi_mc_set_enables()`.
-fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
+/// `ipmi_mc_get_enables()`.
+fn mcGetEnables(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return mcGetEnablesTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        logMcEnablesOutputError("getenables", err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
+fn mcSetEnablesTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, writer: *std.Io.Writer, preflush: anytype) McOutputError!c_int {
     if (argc < 1) {
         printfMcUsage();
         return -1;
@@ -435,10 +464,10 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
                 break :blk argv[@intCast(i)];
             };
             if (c.strcmp(value, "off") == 0) {
-                _ = c.printf("Disabling %s\n", bf.desc);
+                try emitMcEnableMessage(writer, "Disabling {s}\n", .{std.mem.span(bf.desc.?)}, preflush);
                 en &= ~@as(u8, @truncate(bf.mask));
             } else if (c.strcmp(value, "on") == 0) {
-                _ = c.printf("Enabling %s\n", bf.desc);
+                try emitMcEnableMessage(writer, "Enabling {s}\n", .{std.mem.span(bf.desc.?)}, preflush);
                 en |= @as(u8, @truncate(bf.mask));
             } else {
                 log.print(log.Level.err, "Unrecognized on/off value for %s: %s", .{ name, value });
@@ -453,8 +482,8 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     }
 
     if (en == original) {
-        _ = c.printf("\nNothing to change...\n");
-        _ = mcGetEnables(intf);
+        try emitMcEnableMessage(writer, "\nNothing to change...\n", .{}, preflush);
+        _ = try mcGetEnablesTo(intf, writer, preflush);
         return 0;
     }
 
@@ -471,10 +500,283 @@ fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
         return -1;
     }
 
-    _ = c.printf("\nVerifying...\n");
-    _ = mcGetEnables(intf);
+    try emitMcEnableMessage(writer, "\nVerifying...\n", .{}, preflush);
+    _ = try mcGetEnablesTo(intf, writer, preflush);
 
     return 0;
+}
+
+/// `ipmi_mc_set_enables()`.
+fn mcSetEnables(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return mcSetEnablesTo(intf, argc, argv, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        logMcEnablesOutputError("setenables", err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
+test "global enables stdout matches C masks and row widths" {
+    for ([_]u8{ 0, 1, 0x0f, 0x10, 0x55, 0xaa, 0xff }) |mask| {
+        var expected: [512]u8 = undefined;
+        var length: usize = 0;
+        for (mc_enables_bf_table) |bf| {
+            if (bf.name == null) break;
+            const n = c.snprintf(
+                @ptrCast(&expected[length]),
+                expected.len - length,
+                "%-40s : %sabled\n",
+                bf.desc,
+                pick(mask & @as(u8, @truncate(bf.mask)) != 0, "en", "dis"),
+            );
+            try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len - length);
+            const row = expected[length .. length + @as(usize, @intCast(n))];
+            try std.testing.expectEqual(@as(usize, 41), std.mem.indexOfScalar(u8, row, ':').?);
+            length += @intCast(n);
+        }
+        var storage: [512]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try emitMcEnables(&writer, mask, stdout_io.trySyncC);
+        try std.testing.expectEqualSlices(u8, expected[0..length], writer.buffered());
+    }
+}
+
+test "global enables stdout matches C progress and verification messages" {
+    for (mc_enables_bf_table) |bf| {
+        if (bf.name == null) break;
+        for ([_]bool{ false, true }) |on| {
+            var expected: [96]u8 = undefined;
+            const n = c.snprintf(&expected, expected.len, "%s %s\n", pick(on, "Enabling", "Disabling"), bf.desc);
+            try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+            var storage: [96]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            if (on) {
+                try emitMcEnableMessage(&writer, "Enabling {s}\n", .{std.mem.span(bf.desc.?)}, stdout_io.trySyncC);
+            } else {
+                try emitMcEnableMessage(&writer, "Disabling {s}\n", .{std.mem.span(bf.desc.?)}, stdout_io.trySyncC);
+            }
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+    for ([_]bool{ false, true }) |changed| {
+        const message: [*:0]const u8 = if (changed) "\nVerifying...\n" else "\nNothing to change...\n";
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "%s", message);
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        if (changed) {
+            try emitMcEnableMessage(&writer, "\nVerifying...\n", .{}, stdout_io.trySyncC);
+        } else {
+            try emitMcEnableMessage(&writer, "\nNothing to change...\n", .{}, stdout_io.trySyncC);
+        }
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "global enables stdout reports preflush early late and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcEnables(&writer, 0, Stub.preflushFail));
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcEnableMessage(&writer, "Enabling OEM 0\n", .{}, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcEnables(&early, 0, Stub.preflushOk));
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcEnableMessage(&early, "Enabling OEM 0\n", .{}, Stub.preflushOk));
+
+    var short_row: [55]u8 = undefined;
+    var late_row = std.Io.Writer.fixed(&short_row);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcEnables(&late_row, 0, Stub.preflushOk));
+    try std.testing.expect(std.mem.startsWith(u8, late_row.buffered(), "Receive Message Queue Interrupt"));
+    var short_message: [9]u8 = undefined;
+    var late_message = std.Io.Writer.fixed(&short_message);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcEnableMessage(&late_message, "Enabling OEM 0\n", .{}, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Enabling ", late_message.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcEnables(&writer, 0, Stub.preflushOk));
+    try std.testing.expect(writer.buffered().len > 0);
+    var message_storage: [64]u8 = undefined;
+    var message_writer = std.Io.Writer.fixed(&message_storage);
+    message_writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcEnableMessage(&message_writer, "\nVerifying...\n", .{}, Stub.preflushOk));
+    try std.testing.expectEqualStrings("\nVerifying...\n", message_writer.buffered());
+}
+
+test "global enables stdout orders buffered C output around Zig output" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitMcEnableMessage(&stdout.interface, "Enabling OEM 0\n", .{}, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitMcEnables(&stdout.interface, 0x10, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [512]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [512]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|Enabling OEM 0\n|between|");
+    try writeMcEnables(&expected, 0x10);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualStrings(expected.buffered(), captured[0..@intCast(length)]);
+}
+
+test "global enables setter preserves partial output and request statuses" {
+    const Stub = struct {
+        const Mode = enum { ok, initial_null, initial_ccode, set_null, set_ccode, verification_null, verification_ccode };
+        var mode: Mode = .ok;
+        var requests: usize = 0;
+        var gets: usize = 0;
+        var sets: usize = 0;
+        var sent_mask: u8 = 0;
+        var response: Response = std.mem.zeroes(Response);
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            response = std.mem.zeroes(Response);
+            switch (req.msg.cmd) {
+                BMC_GET_GLOBAL_ENABLES => {
+                    gets += 1;
+                    if ((gets == 1 and mode == .initial_null) or (gets == 2 and mode == .verification_null)) return null;
+                    if ((gets == 1 and mode == .initial_ccode) or (gets == 2 and mode == .verification_ccode)) response.ccode = 0xc1;
+                    response.data[0] = if (sets == 0) 0x0f else sent_mask;
+                },
+                BMC_SET_GLOBAL_ENABLES => {
+                    sets += 1;
+                    sent_mask = req.msg.data.?[0];
+                    if (mode == .set_null) return null;
+                    if (mode == .set_ccode) response.ccode = 0xc1;
+                },
+                else => unreachable,
+            }
+            return &response;
+        }
+        fn reset(next_mode: Mode) void {
+            mode = next_mode;
+            requests = 0;
+            gets = 0;
+            sets = 0;
+            sent_mask = 0;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var on = [_][*:0]u8{@constCast("oem0=on")};
+    var unchanged = [_][*:0]u8{@constCast("system_event_log=on")};
+    var invalid = [_][*:0]u8{ @constCast("oem0=on"), @constCast("system_event_log=maybe") };
+    var missing = [_][*:0]u8{ @constCast("oem0=on"), @constCast("oem1") };
+
+    for ([_]Stub.Mode{ .initial_null, .initial_ccode, .set_null, .set_ccode, .verification_null, .verification_ccode, .ok }) |mode| {
+        Stub.reset(mode);
+        var storage: [512]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        const status = try mcSetEnablesTo(&intf, on.len, &on, &writer, stdout_io.trySyncC);
+        const initial_failure = mode == .initial_null or mode == .initial_ccode;
+        const set_failure = mode == .set_null or mode == .set_ccode;
+        const verification_failure = mode == .verification_null or mode == .verification_ccode;
+        try std.testing.expectEqual(@as(c_int, if (initial_failure or set_failure) -1 else 0), status);
+        try std.testing.expectEqual(@as(usize, if (initial_failure) 1 else if (set_failure) 2 else 3), Stub.requests);
+        try std.testing.expectEqual(@as(usize, if (initial_failure) 0 else 1), Stub.sets);
+        if (!initial_failure) try std.testing.expectEqual(@as(u8, 0x2f), Stub.sent_mask);
+        const prefix = if (initial_failure) "" else if (set_failure) "Enabling OEM 0\n" else "Enabling OEM 0\n\nVerifying...\n";
+        try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), prefix));
+        if (initial_failure or set_failure or verification_failure) {
+            try std.testing.expectEqualStrings(prefix, writer.buffered());
+        } else {
+            try std.testing.expect(std.mem.indexOf(u8, writer.buffered(), "OEM 0                                    : enabled\n") != null);
+        }
+    }
+
+    for ([_]struct { args: [][*:0]u8, text: []const u8 }{
+        .{ .args = invalid[0..], .text = "Enabling OEM 0\n" },
+        .{ .args = missing[0..], .text = "Enabling OEM 0\n" },
+    }) |case| {
+        Stub.reset(.ok);
+        var storage: [512]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try mcSetEnablesTo(&intf, @intCast(case.args.len), case.args.ptr, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqualStrings(case.text, writer.buffered());
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+    }
+
+    for ([_]Stub.Mode{ .ok, .verification_null, .verification_ccode }) |mode| {
+        Stub.reset(mode);
+        var storage: [512]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, 0), try mcSetEnablesTo(&intf, unchanged.len, &unchanged, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 2), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), Stub.sets);
+        try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "Enabling System Event Logging\n\nNothing to change...\n"));
+        if (mode != .ok) try std.testing.expectEqualStrings("Enabling System Event Logging\n\nNothing to change...\n", writer.buffered());
+    }
+
+    Stub.reset(.ok);
+    var short: [90]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, mcSetEnablesTo(&intf, on.len, &on, &late, stdout_io.trySyncC));
+    try std.testing.expectEqual(@as(usize, 3), Stub.requests);
+    try std.testing.expect(std.mem.startsWith(u8, late.buffered(), "Enabling OEM 0\n\nVerifying...\n"));
+    var failing: std.Io.Writer = .failing;
+    Stub.reset(.ok);
+    try std.testing.expectError(error.StdoutWriteFailed, mcGetEnablesTo(&intf, &failing, stdout_io.trySyncC));
+    try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+}
+
+test "global enables setter preflushes before each message and verification" {
+    const Preflush = struct {
+        var calls: usize = 0;
+        fn failOnThird() error{CStdoutFlushFailed}!void {
+            calls += 1;
+            if (calls == 3) return error.CStdoutFlushFailed;
+        }
+    };
+    const Stub = struct {
+        var requests: usize = 0;
+        var response: Response = std.mem.zeroes(Response);
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            response = std.mem.zeroes(Response);
+            if (req.msg.cmd == BMC_GET_GLOBAL_ENABLES) response.data[0] = if (requests == 1) 0 else 0x20;
+            return &response;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var on = [_][*:0]u8{@constCast("oem0=on")};
+    Preflush.calls = 0;
+    Stub.requests = 0;
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, mcSetEnablesTo(&intf, on.len, &on, &writer, Preflush.failOnThird));
+    try std.testing.expectEqual(@as(usize, 3), Preflush.calls);
+    try std.testing.expectEqual(@as(usize, 3), Stub.requests);
+    try std.testing.expectEqualStrings("Enabling OEM 0\n\nVerifying...\n", writer.buffered());
 }
 
 // ---------------------------------------------------------------------------
