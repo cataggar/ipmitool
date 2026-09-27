@@ -1270,6 +1270,14 @@ pub fn build(b: *std.Build) void {
     chassis_bootparam_stdout_step.dependOn(&b.addRunArtifact(chassis_bootparam_stdout_unit).step);
     test_step.dependOn(chassis_bootparam_stdout_step);
 
+    const chassis_mailbox_requests_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis mailbox request"},
+    });
+    const chassis_mailbox_requests_step = b.step("test-chassis-mailbox-requests", "Check bounded mailbox request strings, truncation, and block order against C");
+    chassis_mailbox_requests_step.dependOn(&b.addRunArtifact(chassis_mailbox_requests_unit).step);
+    test_step.dependOn(chassis_mailbox_requests_step);
+
     const chassis_control_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.chassis.test.chassis control stdout"},
