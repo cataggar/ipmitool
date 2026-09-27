@@ -18,8 +18,8 @@
 //!   integer tenths and libc's locale decimal point instead of floating-point
 //!   formatting. Watchdog SET decimal values use Zig's saturating parser and
 //!   libc's locale whitespace classification. SET system-info strings use
-//!   Zig byte lengths and zero-padded block copies; `strcmp` still receives
-//!   the same valid inputs as C.
+//!   Zig byte lengths and zero-padded block copies; MC C-string equality
+//!   uses NUL-terminated Zig byte slices.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -132,6 +132,61 @@ fn ccString(ccode: u8) [*c]const u8 {
 // variadic boundary; this picks the NUL-terminated pointer instead.
 fn pick(cond: bool, yes: [*:0]const u8, no: [*:0]const u8) [*:0]const u8 {
     return if (cond) yes else no;
+}
+
+fn eqlCString(left: [*:0]const u8, right: [*:0]const u8) bool {
+    return std.mem.eql(u8, std.mem.span(left), std.mem.span(right));
+}
+
+fn expectMcStrcmpOracle(left: [*:0]const u8, right: [*:0]const u8) !void {
+    try std.testing.expectEqual(c.strcmp(left, right) == 0, eqlCString(left, right));
+}
+
+test "mc strcmp equality matches libc across bytes lengths and embedded NUL" {
+    const literals = [_][*:0]const u8{
+        "",
+        "help",
+        "Help",
+        "help ",
+        "reset",
+        "rfc",
+        "rfc4122",
+        "on",
+        "off",
+        "system_name",
+        "system_name_extra",
+        "delloem_url",
+    };
+    for (literals) |left| {
+        for (literals) |right| try expectMcStrcmpOracle(left, right);
+    }
+
+    for (0..256) |byte| {
+        const left = [_:0]u8{ @intCast(byte), 'x' };
+        const same_first_byte = [_:0]u8{ @intCast(byte), 'y' };
+        const different_first_byte = [_:0]u8{ @intCast((byte + 1) % 256), 'x' };
+        try expectMcStrcmpOracle(&left, &same_first_byte);
+        try expectMcStrcmpOracle(&left, &different_first_byte);
+    }
+
+    var left: [66]u8 = undefined;
+    var right: [66]u8 = undefined;
+    for (0..65) |length| {
+        @memset(&left, 'a');
+        @memset(&right, 'a');
+        left[length] = 0;
+        right[length] = 0;
+        left[length + 1] = 'X';
+        right[length + 1] = 'Y';
+        try expectMcStrcmpOracle(@ptrCast(&left), @ptrCast(&right));
+        right[length] = 'a';
+        right[length + 1] = 0;
+        try expectMcStrcmpOracle(@ptrCast(&left), @ptrCast(&right));
+    }
+
+    const hidden = [_:0]u8{ 'h', 'e', 'l', 'p', 0, 'x' };
+    try std.testing.expect(eqlCString(&hidden, "help"));
+    try expectMcStrcmpOracle(&hidden, "help");
 }
 
 fn sendrecv(intf: *Intf, req: *Request) ?*Response {
@@ -424,7 +479,7 @@ fn mcSetEnablesTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, writer: *std.Io.Wr
     if (argc < 1) {
         printfMcUsage();
         return -1;
-    } else if (c.strcmp(argv[0], "help") == 0) {
+    } else if (eqlCString(argv[0], "help")) {
         printfMcUsage();
         return 0;
     }
@@ -466,10 +521,10 @@ fn mcSetEnablesTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, writer: *std.Io.Wr
                 i += 1;
                 break :blk argv[@intCast(i)];
             };
-            if (c.strcmp(value, "off") == 0) {
+            if (eqlCString(value, "off")) {
                 try emitMcEnableMessage(writer, "Disabling {s}\n", .{std.mem.span(bf.desc.?)}, preflush);
                 en &= ~@as(u8, @truncate(bf.mask));
-            } else if (c.strcmp(value, "on") == 0) {
+            } else if (eqlCString(value, "on")) {
                 try emitMcEnableMessage(writer, "Enabling {s}\n", .{std.mem.span(bf.desc.?)}, preflush);
                 en |= @as(u8, @truncate(bf.mask));
             } else {
@@ -1852,10 +1907,11 @@ const wdt_action_table = wdtTable(&wdt_action_rows);
 
 /// `find_set_wdt_string()`.
 fn findSetWdtString(w: [*c]const ?*const WdtString, s: [*c]const u8) callconv(.c) c_int {
+    const name: [*:0]const u8 = @ptrCast(s);
     var val: c_int = 0;
     while (w[@intCast(val)] != null) {
         if (w[@intCast(val)].?.set) |value| {
-            if (c.strcmp(s, value) == 0) break;
+            if (eqlCString(name, value)) break;
         }
         val += 1;
     }
@@ -2183,7 +2239,7 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
     const MAX_PRETIMEOUT: c_int = 255;
     var err = true;
 
-    if (argc == 0 or c.strcmp(argv[0], "help") == 0) {
+    if (argc == 0 or eqlCString(argv[0], "help")) {
         return err;
     }
 
@@ -2697,19 +2753,20 @@ fn mcRstWatchdog(intf: *Intf) c_int {
 fn sysinfoParam(str: [*c]const u8, maxset: *c_int) c_int {
     if (str == null) return -1;
 
+    const name: [*:0]const u8 = @ptrCast(str);
     maxset.* = 4;
-    if (c.strcmp(str, "system_name") == 0) {
+    if (eqlCString(name, "system_name")) {
         return IPMI_SYSINFO_HOSTNAME;
-    } else if (c.strcmp(str, "primary_os_name") == 0) {
+    } else if (eqlCString(name, "primary_os_name")) {
         return IPMI_SYSINFO_PRIMARY_OS_NAME;
-    } else if (c.strcmp(str, "os_name") == 0) {
+    } else if (eqlCString(name, "os_name")) {
         return IPMI_SYSINFO_OS_NAME;
-    } else if (c.strcmp(str, "delloem_os_version") == 0) {
+    } else if (eqlCString(name, "delloem_os_version")) {
         return IPMI_SYSINFO_DELL_OS_VERSION;
-    } else if (c.strcmp(str, "delloem_url") == 0) {
+    } else if (eqlCString(name, "delloem_url")) {
         maxset.* = 2;
         return IPMI_SYSINFO_DELL_URL;
-    } else if (c.strcmp(str, "system_fw_version") == 0) {
+    } else if (eqlCString(name, "system_fw_version")) {
         return IPMI_SYSINFO_SYSTEM_FW_VERSION;
     }
 
@@ -2852,7 +2909,7 @@ fn sysinfoMainTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int, writ
     var maxset: c_int = 0;
     var set: c_int = 0;
 
-    if (argc == 2 and c.strcmp(argv[1], "help") == 0) {
+    if (argc == 2 and eqlCString(argv[1], "help")) {
         printfSysinfoUsage(1);
         return 0;
     } else if (argc < 2 or (is_set == 1 and argc < 3)) {
@@ -3515,85 +3572,85 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
         log.print(log.Level.err, "Not enough parameters given.", .{});
         printfMcUsage();
         rc = -1;
-    } else if (c.strcmp(argv[0], "help") == 0) {
+    } else if (eqlCString(argv[0], "help")) {
         printfMcUsage();
         rc = 0;
-    } else if (c.strcmp(argv[0], "reset") == 0) {
+    } else if (eqlCString(argv[0], "reset")) {
         if (argc < 2) {
             log.print(log.Level.err, "Not enough parameters given.", .{});
             printfMcResetUsage();
             rc = -1;
-        } else if (c.strcmp(argv[1], "help") == 0) {
+        } else if (eqlCString(argv[1], "help")) {
             printfMcResetUsage();
             rc = 0;
-        } else if (c.strcmp(argv[1], "cold") == 0) {
+        } else if (eqlCString(argv[1], "cold")) {
             rc = mcReset(intf, BMC_COLD_RESET);
-        } else if (c.strcmp(argv[1], "warm") == 0) {
+        } else if (eqlCString(argv[1], "warm")) {
             rc = mcReset(intf, BMC_WARM_RESET);
         } else {
             log.print(log.Level.err, "Invalid mc/bmc %s command: %s", .{ argv[0], argv[1] });
             printfMcResetUsage();
             rc = -1;
         }
-    } else if (c.strcmp(argv[0], "info") == 0) {
+    } else if (eqlCString(argv[0], "info")) {
         rc = mcGetDeviceid(intf);
-    } else if (c.strcmp(argv[0], "guid") == 0) {
+    } else if (eqlCString(argv[0], "guid")) {
         var guid_mode: c.ipmi_guid_mode_t = guid_auto;
 
         // Allow for 'rfc' and 'rfc4122'.
         if (argc > 1) {
-            if (c.strcmp(argv[1], "rfc") == 0 or c.strcmp(argv[1], "rfc4122") == 0) {
+            if (eqlCString(argv[1], "rfc") or eqlCString(argv[1], "rfc4122")) {
                 guid_mode = guid_rfc4122;
-            } else if (c.strcmp(argv[1], "smbios") == 0) {
+            } else if (eqlCString(argv[1], "smbios")) {
                 guid_mode = guid_smbios;
-            } else if (c.strcmp(argv[1], "ipmi") == 0) {
+            } else if (eqlCString(argv[1], "ipmi")) {
                 guid_mode = guid_ipmi;
-            } else if (c.strcmp(argv[1], "auto") == 0) {
+            } else if (eqlCString(argv[1], "auto")) {
                 guid_mode = guid_auto;
-            } else if (c.strcmp(argv[1], "dump") == 0) {
+            } else if (eqlCString(argv[1], "dump")) {
                 guid_mode = guid_dump;
             }
         }
         rc = mcPrintGuid(intf, guid_mode);
-    } else if (c.strcmp(argv[0], "getenables") == 0) {
+    } else if (eqlCString(argv[0], "getenables")) {
         rc = mcGetEnables(intf);
-    } else if (c.strcmp(argv[0], "setenables") == 0) {
+    } else if (eqlCString(argv[0], "setenables")) {
         rc = mcSetEnables(intf, argc - 1, argv + 1);
-    } else if (c.strcmp(argv[0], "selftest") == 0) {
+    } else if (eqlCString(argv[0], "selftest")) {
         rc = mcGetSelftest(intf);
-    } else if (c.strcmp(argv[0], "watchdog") == 0) {
+    } else if (eqlCString(argv[0], "watchdog")) {
         if (argc < 2) {
             log.print(log.Level.err, "Not enough parameters given.", .{});
             printWatchdogUsage();
             rc = -1;
-        } else if (c.strcmp(argv[1], "help") == 0) {
+        } else if (eqlCString(argv[1], "help")) {
             printWatchdogUsage();
             rc = 0;
-        } else if (c.strcmp(argv[1], "set") == 0) {
+        } else if (eqlCString(argv[1], "set")) {
             if (argc < 3) { // Requires options
                 log.print(log.Level.err, "Not enough parameters given.", .{});
                 printWatchdogUsage();
                 rc = -1;
-            } else if (argc == 3 and c.strcmp(argv[2], "help") == 0) {
+            } else if (argc == 3 and eqlCString(argv[2], "help")) {
                 printWatchdogUsage();
                 rc = 0;
             } else {
                 rc = mcSetWatchdog(intf, argc - 2, argv + 2);
             }
-        } else if (c.strcmp(argv[1], "get") == 0) {
+        } else if (eqlCString(argv[1], "get")) {
             rc = mcGetWatchdog(intf);
-        } else if (c.strcmp(argv[1], "off") == 0) {
+        } else if (eqlCString(argv[1], "off")) {
             rc = mcShutoffWatchdog(intf);
-        } else if (c.strcmp(argv[1], "reset") == 0) {
+        } else if (eqlCString(argv[1], "reset")) {
             rc = mcRstWatchdog(intf);
         } else {
             log.print(log.Level.err, "Invalid mc/bmc %s command: %s", .{ argv[0], argv[1] });
             printWatchdogUsage();
             rc = -1;
         }
-    } else if (c.strcmp(argv[0], "getsysinfo") == 0) {
+    } else if (eqlCString(argv[0], "getsysinfo")) {
         rc = sysinfoMain(intf, argc, argv, 0);
-    } else if (c.strcmp(argv[0], "setsysinfo") == 0) {
+    } else if (eqlCString(argv[0], "setsysinfo")) {
         rc = sysinfoMain(intf, argc, argv, 1);
     } else {
         log.print(log.Level.err, "Invalid mc/bmc command: %s", .{argv[0]});
@@ -3601,6 +3658,187 @@ fn mcMain(intf_ptr: [*c]Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int 
         rc = -1;
     }
     return rc;
+}
+
+test "mc strcmp watchdog and system-info selectors match libc" {
+    const hidden_url = [_:0]u8{ 'd', 'e', 'l', 'l', 'o', 'e', 'm', '_', 'u', 'r', 'l', 0, 'x' };
+    const selectors = [_]struct { name: [*:0]const u8, param: c_int, maxset: c_int }{
+        .{ .name = "system_name", .param = IPMI_SYSINFO_HOSTNAME, .maxset = 4 },
+        .{ .name = "primary_os_name", .param = IPMI_SYSINFO_PRIMARY_OS_NAME, .maxset = 4 },
+        .{ .name = "os_name", .param = IPMI_SYSINFO_OS_NAME, .maxset = 4 },
+        .{ .name = "delloem_os_version", .param = IPMI_SYSINFO_DELL_OS_VERSION, .maxset = 4 },
+        .{ .name = "delloem_url", .param = IPMI_SYSINFO_DELL_URL, .maxset = 2 },
+        .{ .name = "system_fw_version", .param = IPMI_SYSINFO_SYSTEM_FW_VERSION, .maxset = 4 },
+    };
+    const inputs = [_][*:0]const u8{
+        "",
+        "system_name",
+        "system_nam",
+        "system_name ",
+        "System_name",
+        "primary_os_name",
+        "os_name",
+        "delloem_os_version",
+        "delloem_url",
+        &hidden_url,
+        "delloem_URL",
+        "system_fw_version",
+    };
+    for (inputs) |input| {
+        var expected_param: c_int = -1;
+        var expected_maxset: c_int = 4;
+        for (selectors) |selector| {
+            if (c.strcmp(input, selector.name) == 0) {
+                expected_param = selector.param;
+                expected_maxset = selector.maxset;
+                break;
+            }
+        }
+        var maxset: c_int = -1;
+        try std.testing.expectEqual(expected_param, sysinfoParam(input, &maxset));
+        try std.testing.expectEqual(expected_maxset, maxset);
+    }
+    var unchanged_maxset: c_int = 9;
+    try std.testing.expectEqual(@as(c_int, -1), sysinfoParam(null, &unchanged_maxset));
+    try std.testing.expectEqual(@as(c_int, 9), unchanged_maxset);
+
+    const watchdog_names = [_][*:0]const u8{
+        "none",
+        "frb2",
+        "post",
+        "osload",
+        "sms",
+        "oem",
+        "smi",
+        "nmi",
+        "msg",
+        "reset",
+        "poweroff",
+        "cycle",
+        "Reserved",
+        "POST",
+        "",
+    };
+    inline for (.{ &wdt_use_table, &wdt_int_table, &wdt_action_table }) |table| {
+        for (watchdog_names) |input| {
+            var expected: c_int = -1;
+            for (table[0..], 0..) |entry, index| {
+                const row = entry orelse break;
+                const option = row.set orelse continue;
+                if (c.strcmp(input, option) == 0) {
+                    expected = @intCast(index);
+                    break;
+                }
+            }
+            try std.testing.expectEqual(expected, findSetWdtString(table, input));
+        }
+    }
+}
+
+test "mc strcmp watchdog and system-info requests preserve statuses" {
+    const Stub = struct {
+        const Mode = enum { ok, ccode, missing };
+        var mode: Mode = .ok;
+        var response: Response = std.mem.zeroes(Response);
+        var count: usize = 0;
+        var netfn: u6 = 0;
+        var cmd: u8 = 0;
+        var len: usize = 0;
+        var data_present = false;
+        var payload: [18]u8 = undefined;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            count += 1;
+            netfn = req.msg.netfn_lun.netfn;
+            cmd = req.msg.cmd;
+            len = @intCast(req.msg.data_len);
+            data_present = req.msg.data != null;
+            if (req.msg.data) |data| {
+                if (len > payload.len) return null;
+                @memcpy(payload[0..len], data[0..len]);
+            }
+            if (mode == .missing) return null;
+            response.ccode = if (mode == .ccode) 0xc1 else 0;
+            return &response;
+        }
+        fn reset(next: Mode) void {
+            mode = next;
+            count = 0;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    const saved_verbose = c.verbose;
+    defer c.verbose = saved_verbose;
+    c.verbose = 0;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+
+    var watchdog = [_][*:0]u8{
+        @constCast("use=sms"),
+        @constCast("action=reset"),
+    };
+    for ([_]Stub.Mode{ .ok, .ccode, .missing }) |mode| {
+        Stub.reset(mode);
+        try std.testing.expectEqual(
+            @as(c_int, switch (mode) {
+                .ok => 0,
+                .ccode => 0xc1,
+                .missing => -1,
+            }),
+            mcSetWatchdog(&intf, watchdog.len, &watchdog),
+        );
+        try std.testing.expectEqual(@as(usize, 1), Stub.count);
+        try std.testing.expectEqual(netfn_app, Stub.netfn);
+        try std.testing.expectEqual(BMC_SET_WATCHDOG_TIMER, Stub.cmd);
+        try std.testing.expectEqual(@as(usize, 6), Stub.len);
+        try std.testing.expect(Stub.data_present);
+        try std.testing.expectEqualSlices(u8, &[_]u8{ 4, 1, 0, 0, 0, 0 }, Stub.payload[0..6]);
+    }
+    const hidden_use = [_:0]u8{ 'u', 's', 'e', '=', 's', 'm', 's', 0, 'x' };
+    watchdog[0] = @constCast(&hidden_use);
+    Stub.reset(.ok);
+    try std.testing.expectEqual(@as(c_int, 0), mcSetWatchdog(&intf, watchdog.len, &watchdog));
+    try std.testing.expectEqual(@as(usize, 1), Stub.count);
+    try std.testing.expect(Stub.data_present);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 4, 1, 0, 0, 0, 0 }, Stub.payload[0..6]);
+    watchdog[0] = @constCast("use=SMS");
+    Stub.reset(.ok);
+    try std.testing.expectEqual(@as(c_int, -1), mcSetWatchdog(&intf, watchdog.len, &watchdog));
+    try std.testing.expectEqual(@as(usize, 0), Stub.count);
+
+    const hidden_url = [_:0]u8{ 'd', 'e', 'l', 'l', 'o', 'e', 'm', '_', 'u', 'r', 'l', 0, 'x' };
+    var sysinfo = [_][*:0]u8{
+        @constCast("setsysinfo"),
+        @constCast(&hidden_url),
+        @constCast("x"),
+    };
+    var writer: std.Io.Writer = .failing;
+    for ([_]Stub.Mode{ .ok, .ccode, .missing }) |mode| {
+        Stub.reset(mode);
+        try std.testing.expectEqual(
+            @as(c_int, switch (mode) {
+                .ok => 0,
+                .ccode => 0xc1,
+                .missing => -1,
+            }),
+            try sysinfoMainTo(&intf, sysinfo.len, &sysinfo, 1, &writer, Stub.preflushFail),
+        );
+        try std.testing.expectEqual(@as(usize, 1), Stub.count);
+        try std.testing.expectEqual(netfn_app, Stub.netfn);
+        try std.testing.expectEqual(IPMI_SET_SYS_INFO, Stub.cmd);
+        try std.testing.expectEqual(@as(usize, 18), Stub.len);
+        try std.testing.expect(Stub.data_present);
+        try std.testing.expectEqualSlices(u8, &[_]u8{
+            IPMI_SYSINFO_DELL_URL, 0, 0, 1, 'x', 0, 0, 0, 0,
+            0,                     0, 0, 0, 0,   0, 0, 0, 0,
+        }, &Stub.payload);
+    }
+    sysinfo[1] = @constCast("delloem_URL");
+    Stub.reset(.ok);
+    try std.testing.expectEqual(@as(c_int, -1), try sysinfoMainTo(&intf, sysinfo.len, &sysinfo, 1, &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), Stub.count);
 }
 
 // ---------------------------------------------------------------------------

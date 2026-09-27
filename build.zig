@@ -1366,6 +1366,14 @@ pub fn build(b: *std.Build) void {
     mc_sysinfo_set_copy_step.dependOn(&b.addRunArtifact(mc_sysinfo_set_copy_unit).step);
     test_step.dependOn(mc_sysinfo_set_copy_step);
 
+    const mc_strcmp_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc strcmp"},
+    });
+    const mc_strcmp_step = b.step("test-mc-strcmp", "Compare MC C-string equality, selectors, dispatch and request statuses with libc");
+    mc_strcmp_step.dependOn(&b.addRunArtifact(mc_strcmp_unit).step);
+    test_step.dependOn(mc_strcmp_step);
+
     const sel_time_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.sel.test.sel time stdout"},
