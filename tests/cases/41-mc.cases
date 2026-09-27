@@ -410,6 +410,12 @@ args: -I dummy mc watchdog get
 transcript: mc_wdt_b.tr
 covers: mc
 
+[mc_watchdog_get_maximum]
+desc: every expiration flag, reserved interrupt/action, maximum and fractional countdowns
+args: -I dummy mc watchdog get
+transcript: mc_wdt_max.tr
+covers: mc
+
 [mc_watchdog_get_ccode]
 desc: Get Watchdog Timer rejected by the BMC
 args: -I dummy mc watchdog get
