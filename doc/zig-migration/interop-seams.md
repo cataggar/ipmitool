@@ -445,6 +445,15 @@ Zig responses, including the tab-joined error line and exit status. Run
 candidate, then include `lan` in `-Dzig-modules` to check the selected LAN
 path in the main binary as well.
 
+The three selected `event 1`/`2`/`3` sample announcements use checked Zig
+stdout after flushing buffered C output, before SEL rendering and sending
+the Platform Event Message. Their C byte shape and ordering are pinned by
+the `event_num_*` C/Zig CLI goldens; `zig build test-event-sample-stdout`
+compares all three lines with libc formatting and tests pre-flush, early,
+late and final-flush failures. Output errors log a diagnostic and return
+`-1` without sending the event. Other event and sensor output stays on its
+existing C path.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print

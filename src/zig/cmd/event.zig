@@ -25,7 +25,8 @@
 //!   the port drift the moment the header changed, so offsets are resolved
 //!   through `ipmi_get_first_event_sensor_type()` /
 //!   `ipmi_get_next_event_sensor_type()` exactly as C does.
-//! * **Formatting and string handling keep libc behavior.** `printf`,
+//! * **Formatting and string handling keep libc behavior.** Apart from the
+//!   checked Zig stdout announcements for the three sample events, `printf`,
 //!   `strcmp`, `strcasecmp`, `strchr`, `strtok`, `isspace`, `fgets` and
 //!   `str2uchar` use the `ipmi_c` bridge. Diagnostics use the typed logger
 //!   (libc `snprintf` when selected, C `lprintf` otherwise); `%-9s` padding,
@@ -45,6 +46,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
@@ -326,14 +328,20 @@ fn sendPlatformEvent(intf: *Intf, emsg: *const PlatformEventMsg) c_int {
 /// `ipmi_send_platform_event_num()`.  The `default:` arm is unreachable from
 /// `ipmi_event_main()`, which only ever passes 1, 2 or 3, but it is kept so the
 /// function behaves identically if anything else ever calls it.
+const SampleOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn emitSampleAnnouncement(writer: *std.Io.Writer, text: []const u8, preflush: anytype) SampleOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writer.writeAll(text) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 fn sendPlatformEventNum(intf: *Intf, num: c_int) c_int {
     var emsg = std.mem.zeroes(PlatformEventMsg);
 
     // IPMB/LAN/etc
-    switch (num) {
-        1 => { // temperature
-            _ = c.printf("Sending SAMPLE event: Temperature - " ++
-                "Upper Critical - Going High\n");
+    const announcement: []const u8 = switch (num) {
+        1 => blk: { // temperature
             emsg.evm_rev = 0x04;
             emsg.sensor_type = 0x01;
             emsg.sensor_num = 0x30;
@@ -342,10 +350,9 @@ fn sendPlatformEventNum(intf: *Intf, num: c_int) c_int {
             emsg.event_data[0] = EVENT_THRESH_STATE_UCR_HI;
             emsg.event_data[1] = 0xff;
             emsg.event_data[2] = 0xff;
+            break :blk "Sending SAMPLE event: Temperature - Upper Critical - Going High\n";
         },
-        2 => { // voltage error
-            _ = c.printf("Sending SAMPLE event: Voltage Threshold - " ++
-                "Lower Critical - Going Low\n");
+        2 => blk: { // voltage error
             emsg.evm_rev = 0x04;
             emsg.sensor_type = 0x02;
             emsg.sensor_num = 0x60;
@@ -354,9 +361,9 @@ fn sendPlatformEventNum(intf: *Intf, num: c_int) c_int {
             emsg.event_data[0] = EVENT_THRESH_STATE_LCR_LO;
             emsg.event_data[1] = 0xff;
             emsg.event_data[2] = 0xff;
+            break :blk "Sending SAMPLE event: Voltage Threshold - Lower Critical - Going Low\n";
         },
-        3 => { // correctable ECC
-            _ = c.printf("Sending SAMPLE event: Memory - Correctable ECC\n");
+        3 => blk: { // correctable ECC
             emsg.evm_rev = 0x04;
             emsg.sensor_type = 0x0c;
             emsg.sensor_num = 0x53;
@@ -365,14 +372,67 @@ fn sendPlatformEventNum(intf: *Intf, num: c_int) c_int {
             emsg.event_data[0] = 0x00;
             emsg.event_data[1] = 0xff;
             emsg.event_data[2] = 0xff;
+            break :blk "Sending SAMPLE event: Memory - Correctable ECC\n";
         },
         else => {
             log.print(log.Level.err, "Invalid event number: %d", .{num});
             return -1;
         },
+    };
+
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitSampleAnnouncement(&stdout.interface, announcement, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Sample event stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Sample event stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Sample event stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+    return sendPlatformEvent(intf, &emsg);
+}
+
+test "sample event stdout matches C announcements and reports writer failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const lines = [_][:0]const u8{
+        "Sending SAMPLE event: Temperature - Upper Critical - Going High\n",
+        "Sending SAMPLE event: Voltage Threshold - Lower Critical - Going Low\n",
+        "Sending SAMPLE event: Memory - Correctable ECC\n",
+    };
+    for (lines) |line| {
+        var c_bytes: [96]u8 = undefined;
+        const n = c.snprintf(&c_bytes, c_bytes.len, "%s", line.ptr);
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < c_bytes.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try emitSampleAnnouncement(&writer, line, Stub.preflushOk);
+        try std.testing.expectEqualSlices(u8, c_bytes[0..@intCast(n)], writer.buffered());
     }
 
-    return sendPlatformEvent(intf, &emsg);
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitSampleAnnouncement(&writer, lines[0], Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitSampleAnnouncement(&early, lines[1], Stub.preflushOk));
+
+    var short: [lines[2].len - 1]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitSampleAnnouncement(&late, lines[2], Stub.preflushOk));
+    try std.testing.expectEqualStrings(lines[2][0 .. lines[2].len - 1], late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitSampleAnnouncement(&writer, lines[2], Stub.preflushOk));
+    try std.testing.expectEqualStrings(lines[2], writer.buffered());
 }
 
 // ---------------------------------------------------------------------------
