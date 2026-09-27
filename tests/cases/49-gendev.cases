@@ -181,3 +181,19 @@ blob: in.bin gendev/small-data.hex
 transcript: gendev_oversize.tr
 covers: gendev
 zig_diff: true
+
+[gendev_read_partial_error]
+desc: read output preserves progress before a later transfer error
+args: -I dummy gendev read EepOne {work}/out.bin
+capture: out.bin
+transcript: gendev_progress_error.tr
+covers: gendev
+zig_diff: true
+
+[gendev_write_partial_error]
+desc: write output preserves progress before a later transfer error
+args: -I dummy gendev write EepOne {work}/in.bin
+blob: in.bin gendev/small-data.hex
+transcript: gendev_progress_error.tr
+covers: gendev
+zig_diff: true

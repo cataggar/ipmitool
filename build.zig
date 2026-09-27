@@ -1146,6 +1146,14 @@ pub fn build(b: *std.Build) void {
     raw_i2c_stdout_step.dependOn(&b.addRunArtifact(raw_i2c_stdout_unit).step);
     test_step.dependOn(raw_i2c_stdout_step);
 
+    const gendev_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.gendev.test.gendev stdout"},
+    });
+    const gendev_stdout_step = b.step("test-gendev-stdout", "Compare gendev progress C bytes, ordering, and I/O failures");
+    gendev_stdout_step.dependOn(&b.addRunArtifact(gendev_stdout_unit).step);
+    test_step.dependOn(gendev_stdout_step);
+
     const isol_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.isol.test.info stdout"},
