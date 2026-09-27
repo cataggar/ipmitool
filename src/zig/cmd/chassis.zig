@@ -13,11 +13,12 @@
 //! Four things are worth knowing before reading on:
 //!
 //! * **Command results use checked Zig stdout.** Diagnostics use `log.print()`
-//!   from the selected logger archive (or its C fallback). libc `snprintf`
-//!   still builds mailbox request strings; `printf` remains in tests to seed
-//!   buffered C output. `strcmp`, `strncmp`, `strtok_r` and `str2uchar` keep
-//!   their C arguments, including writable strings split in place by
-//!   `strtok_r`. The `power_usage` format is a constant, never user input.
+//!   from the selected logger archive (or its C fallback). Boot mailbox
+//!   request selectors use bounded, NUL-terminated Zig formatting; `printf`
+//!   remains in tests to seed buffered C output. `strcmp`, `strncmp`,
+//!   `strtok_r` and `str2uchar` keep their C arguments, including writable
+//!   strings split in place by `strtok_r`. The `power_usage` format is a
+//!   constant, never user input.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -2749,7 +2750,16 @@ fn chassisSetBootmailbox(
 }
 
 /// `chassis_get_bootmailbox()`.
-fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) BootparamOutputError!c_int {
+fn formatBootmailboxParam(param_str: *[2]u8) void {
+    _ = std.fmt.bufPrintSentinel(param_str, "{d}", .{IPMI_CHASSIS_BOOTPARAM_INIT_MBOX}, 0) catch unreachable;
+}
+
+fn formatBootmailboxBlock(block_str: *[4]u8, block: c_int) void {
+    const byte: u8 = @truncate(@as(c_uint, @bitCast(block)));
+    _ = std.fmt.bufPrintSentinel(block_str, "{d}", .{byte}, 0) catch unreachable;
+}
+
+fn chassisGetBootmailboxWith(intf: *Intf, block: i16, use_text: bool, get: anytype) BootparamOutputError!c_int {
     var rc: c_int = IPMI_CC_UNSPECIFIED_ERROR;
     var param_str = [_]u8{0} ** 2; // Max "7"
     var block_str = [_]u8{0} ** 4; // Max "255"
@@ -2760,27 +2770,17 @@ fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) BootparamOutpu
 
     var flags: c_int = if (use_text) bpFlag(MBOX_PARSE_USE_TEXT) else 0;
 
-    _ = c.snprintf(&param_str, param_str.len, "%u", @as(c_uint, IPMI_CHASSIS_BOOTPARAM_INIT_MBOX));
+    formatBootmailboxParam(&param_str);
 
     if (block >= 0) {
-        _ = c.snprintf(
-            &block_str,
-            block_str.len,
-            "%u",
-            @as(c_uint, @as(u8, @truncate(@as(u16, @bitCast(block))))),
-        );
+        formatBootmailboxBlock(&block_str, block);
 
-        rc = try chassisGetBootparam(intf, bpargv.len, &bpargv, flags);
+        rc = try get(intf, bpargv.len, &bpargv, flags);
     } else {
         flags |= bpFlag(MBOX_PARSE_ALLBLOCKS);
         var currblk: c_int = 0;
         while (currblk <= 255) : (currblk += 1) {
-            _ = c.snprintf(
-                &block_str,
-                block_str.len,
-                "%u",
-                @as(c_uint, @as(u8, @truncate(@as(c_uint, @bitCast(currblk))))),
-            );
+            formatBootmailboxBlock(&block_str, currblk);
 
             if (currblk != 0) {
                 // If block 0 succeeded, we don't want to print generic info
@@ -2790,7 +2790,7 @@ fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) BootparamOutpu
                 flags |= bpFlag(PARAM_NO_RANGE_ERROR);
             }
 
-            rc = try chassisGetBootparam(intf, bpargv.len, &bpargv, flags);
+            rc = try get(intf, bpargv.len, &bpargv, flags);
 
             if (rc != 0) {
                 if (currblk != 0) rc = IPMI_CC_OK;
@@ -2800,6 +2800,117 @@ fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) BootparamOutpu
     }
 
     return rc;
+}
+
+fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) BootparamOutputError!c_int {
+    return chassisGetBootmailboxWith(intf, block, use_text, chassisGetBootparam);
+}
+
+test "chassis mailbox request strings match C bytes and NUL tails for every block" {
+    var param_actual = [_]u8{0xa5} ** 2;
+    var param_expected = param_actual;
+    const param_len = c.snprintf(&param_expected, param_expected.len, "%u", @as(c_uint, IPMI_CHASSIS_BOOTPARAM_INIT_MBOX));
+    formatBootmailboxParam(&param_actual);
+    try std.testing.expectEqual(@as(c_int, 1), param_len);
+    try std.testing.expectEqualSlices(u8, &param_expected, &param_actual);
+    try std.testing.expectEqualStrings("7", std.mem.sliceTo(&param_actual, 0));
+
+    var block_actual = [_]u8{0xa5} ** 4;
+    var block_expected = block_actual;
+    for (0..256) |value| {
+        const block: c_int = @intCast(value);
+        const c_byte: u8 = @truncate(@as(c_uint, @bitCast(block)));
+        const n = c.snprintf(&block_expected, block_expected.len, "%u", @as(c_uint, c_byte));
+        formatBootmailboxBlock(&block_actual, block);
+        try std.testing.expectEqual(@as(c_int, @intCast(std.mem.sliceTo(&block_expected, 0).len)), n);
+        try std.testing.expectEqualSlices(u8, &block_expected, &block_actual);
+    }
+    // Decreasing lengths also leave the same bytes after the terminator.
+    for ([_]c_int{ 32767, 511, 256, 255, 100, 99, 10, 9, 1, 0, -1, -256, -32768 }) |block| {
+        const c_byte: u8 = @truncate(@as(c_uint, @bitCast(block)));
+        _ = c.snprintf(&block_expected, block_expected.len, "%u", @as(c_uint, c_byte));
+        formatBootmailboxBlock(&block_actual, block);
+        try std.testing.expectEqualSlices(u8, &block_expected, &block_actual);
+    }
+}
+
+test "chassis mailbox request order flags and statuses match single and multi-block C paths" {
+    const Stub = struct {
+        var count: usize = 0;
+        var stop_at: usize = 0;
+        var stop_status: c_int = -1;
+        var output_fail_at: usize = 0;
+        var output_error: BootparamOutputError = error.StdoutWriteFailed;
+        var request_bytes: [256][3]u8 = undefined;
+        var request_flags: [256]c_int = undefined;
+        var block_ptr: usize = 0;
+
+        fn reset() void {
+            count = 0;
+            stop_at = 0;
+            stop_status = -1;
+            output_fail_at = 0;
+            block_ptr = 0;
+        }
+
+        fn get(_: *Intf, argc: c_int, argv: [*]const [*:0]const u8, flags: c_int) BootparamOutputError!c_int {
+            std.debug.assert(argc == 2 and count < request_bytes.len);
+            std.debug.assert(std.mem.eql(u8, std.mem.span(argv[0]), "7"));
+            if (block_ptr != 0) std.debug.assert(block_ptr == @intFromPtr(argv[1]));
+            block_ptr = @intFromPtr(argv[1]);
+            const block = std.fmt.parseInt(u8, std.mem.span(argv[1]), 10) catch unreachable;
+            request_bytes[count] = .{ 7, block, 0 };
+            request_flags[count] = flags;
+            count += 1;
+            if (count == output_fail_at) return output_error;
+            if (count == stop_at) return stop_status;
+            return 0;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    for ([_]i16{ 0, 1, 9, 10, 99, 100, 254, 255, 256, 257, 511, 32767 }) |block| {
+        for ([_]bool{ false, true }) |use_text| {
+            Stub.reset();
+            try std.testing.expectEqual(@as(c_int, 0), try chassisGetBootmailboxWith(&intf, block, use_text, Stub.get));
+            try std.testing.expectEqual(@as(usize, 1), Stub.count);
+            try std.testing.expectEqualSlices(u8, &.{ 7, @as(u8, @truncate(@as(u16, @bitCast(block)))), 0 }, &Stub.request_bytes[0]);
+            try std.testing.expectEqual(@as(c_int, if (use_text) bpFlag(MBOX_PARSE_USE_TEXT) else 0), Stub.request_flags[0]);
+        }
+    }
+
+    for ([_]bool{ false, true }) |use_text| {
+        Stub.reset();
+        Stub.stop_at = 3;
+        try std.testing.expectEqual(@as(c_int, 0), try chassisGetBootmailboxWith(&intf, -1, use_text, Stub.get));
+        try std.testing.expectEqual(@as(usize, 3), Stub.count);
+        for (0..Stub.count) |index| {
+            try std.testing.expectEqualSlices(u8, &.{ 7, @as(u8, @intCast(index)), 0 }, &Stub.request_bytes[index]);
+            const expected_flags = (if (use_text) bpFlag(MBOX_PARSE_USE_TEXT) else @as(c_int, 0)) |
+                bpFlag(MBOX_PARSE_ALLBLOCKS) |
+                (if (index == 0) @as(c_int, 0) else bpFlag(PARAM_NO_GENERIC_INFO) | bpFlag(PARAM_NO_RANGE_ERROR));
+            try std.testing.expectEqual(expected_flags, Stub.request_flags[index]);
+        }
+    }
+    Stub.reset();
+    Stub.stop_at = 1;
+    Stub.stop_status = IPMI_CC_UNSPECIFIED_ERROR;
+    try std.testing.expectEqual(IPMI_CC_UNSPECIFIED_ERROR, try chassisGetBootmailboxWith(&intf, -1, false, Stub.get));
+    try std.testing.expectEqual(@as(usize, 1), Stub.count);
+
+    Stub.reset();
+    try std.testing.expectEqual(@as(c_int, 0), try chassisGetBootmailboxWith(&intf, -1, false, Stub.get));
+    try std.testing.expectEqual(@as(usize, 256), Stub.count);
+    for (0..Stub.count) |index| {
+        try std.testing.expectEqualSlices(u8, &.{ 7, @as(u8, @intCast(index)), 0 }, &Stub.request_bytes[index]);
+    }
+
+    for ([_]BootparamOutputError{ error.CStdoutFlushFailed, error.StdoutWriteFailed, error.StdoutFlushFailed }) |err| {
+        Stub.reset();
+        Stub.output_fail_at = 2;
+        Stub.output_error = err;
+        try std.testing.expectError(err, chassisGetBootmailboxWith(&intf, -1, false, Stub.get));
+        try std.testing.expectEqual(@as(usize, 2), Stub.count);
+    }
 }
 
 /// `chassis_bootmailbox()`.

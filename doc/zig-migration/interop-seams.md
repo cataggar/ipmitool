@@ -546,8 +546,19 @@ multi-block read instead of being mistaken for the normal end-of-mailbox
 response. `zig build test-chassis-bootparam-stdout` checks C hex and
 acknowledgment parity, request and output status, mixed C/Zig ordering,
 cleanup requests and failure injection. The existing `chassis_bootparam_get*`,
-`chassis_bootdev_*` and `chassis_mbox_*` C/selected-Zig goldens cover every
+`chassis_bootdev_*` and `chassis_bootmbox_*` C/selected-Zig goldens cover every
 parameter, boot option and single/multi-block output.
+
+The selected `chassis bootmbox get` request selector strings now use bounded
+Zig formatting instead of libc `snprintf`. The caller-owned two- and four-byte
+arrays remain NUL-terminated, and explicit block numbers still truncate to
+`uint8_t` before decimal formatting. Requests retain their three-byte data,
+status, 0-through-255 block order, output handling and end-of-mailbox behavior.
+`zig build test-chassis-mailbox-requests` compares all selector bytes and
+buffer tails against C, including signed/out-of-range blocks, and checks
+single/all-block ordering and status propagation. The
+`chassis_bootmbox_get*` C, selected and all-selected CLI goldens also compare
+the on-wire request bytes. Mailbox SET, stdout printers and POH are unchanged.
 
 The selected `chassis power on/off/cycle/reset/diag/soft` (and top-level
 `power`) success messages now use checked Zig stdout. Their original
