@@ -64,12 +64,14 @@ stdout between Zig echo and set responses. `zig build test-shell-stdout-unit`
 checks echo and every successful set response against libc `snprintf`, with
 early and late failing writers. The PTY suite forces both a failed C pre-flush
 and failed Zig writes through `/dev/full`, requiring a nonzero exit and an
-error diagnostic instead of a shell panic. Its C pre-flush probe seeds libc
-stdout with `chassis poh` (a deterministic zero-count reply from the dummy
-BMC), then runs `mc reset warm` and Zig `echo`. When MC is selected, the probe
-requires the Zig reset's C pre-flush failure; with C MC, it requires Zig echo's
-C pre-flush failure. POH remains libc-buffered with either original-C or
-selected-Zig chassis. The dummy interface has no live session, so CLI goldens
+error diagnostic instead of a shell panic. The selected Zig chassis prints
+POH through checked Zig stdout and reports its own failed write. To keep
+testing an *actual* libc-buffered-to-Zig transition, `test-shell` also builds
+a test-only C-chassis/Zig-shell hybrid: its zero-count `chassis poh` reply is
+buffered in libc before `mc reset warm` and Zig `echo`. A `/dev/full` run
+requires the Zig reset's C pre-flush failure when MC is selected, or Zig
+echo's C pre-flush failure when MC is C. The dummy interface has no live
+session, so CLI goldens
 cannot reach successful hostname, username, password, authtype, privlvl, or
 port setters; their message formats have unit differential coverage, not
 successful CLI golden coverage. With reduced local
