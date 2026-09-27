@@ -2225,9 +2225,26 @@ fn chassisSetBootvalid(intf: *Intf, set_flag: u8, clr_flag: u8) c_int {
 }
 
 /// `ipmi_chassis_set_bootdev()`.
-fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_COUNT]u8) c_int {
+fn writeChassisBootdevAck(writer: *std.Io.Writer, arg: ?[*:0]const u8) std.Io.Writer.Error!void {
+    try writer.print("Set Boot Device to {s}\n", .{if (arg) |value| std.mem.span(value) else "(null)"});
+}
+
+fn emitChassisBootdevAck(writer: *std.Io.Writer, arg: ?[*:0]const u8, preflush: anytype) BootparamOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisBootdevAck(writer, arg) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisSetBootdevTo(
+    intf: *Intf,
+    arg: ?[*:0]const u8,
+    iflags: ?*const [BF_BYTE_COUNT]u8,
+    writer: *std.Io.Writer,
+    preflush: anytype,
+) BootparamOutputError!c_int {
     var flags = [_]u8{0} ** BF_BYTE_COUNT;
     var rc: c_int = undefined;
+    var output_error: ?BootparamOutputError = null;
 
     chassisBootparamSetInProgress(intf, SET_IN_PROGRESS);
     rc = chassisBootparamClearAck(intf, BIOS_POST_ACK);
@@ -2276,13 +2293,140 @@ fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_
             );
             if (rc == IPMI_CC_OK) {
                 chassisBootparamSetInProgress(intf, COMMIT_WRITE);
-                _ = c.printf("Set Boot Device to %s\n", @as([*c]const u8, @ptrCast(arg)));
+                emitChassisBootdevAck(writer, arg, preflush) catch |err| {
+                    output_error = err;
+                };
             }
         }
     }
 
     chassisBootparamSetInProgress(intf, SET_COMPLETE);
+    if (output_error) |err| return err;
     return rc;
+}
+
+fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_COUNT]u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisSetBootdevTo(intf, arg, iflags, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis bootdev stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis bootdev stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis bootdev stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis bootdev stdout matches C acknowledgment bytes" {
+    for ([_]?[*:0]const u8{ "none", "pxe", "force_pxe", "disk", "force_disk", "remotecd", null }) |arg| {
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "Set Boot Device to %s\n", arg);
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisBootdevAck(&writer, arg);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis bootdev stdout propagates preflush write and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisBootdevAck(&writer, "force_pxe", Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisBootdevAck(&early, "force_pxe", Stub.preflushOk));
+    var short: [25]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisBootdevAck(&late, "force_pxe", Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set Boot Device to ", late.buffered()[0..19]);
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisBootdevAck(&writer, "force_pxe", Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set Boot Device to force_pxe\n", writer.buffered());
+}
+
+test "chassis bootdev stdout keeps set complete after output failures" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: [5]u8 = undefined;
+        var count: usize = 0;
+        var fail_flags = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x8);
+            std.debug.assert(count < requests.len);
+            requests[count] = req.msg.data[0];
+            count += 1;
+            response.ccode = if (fail_flags and count == 3) 0xc1 else 0;
+            return &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    const original_progress = use_progress;
+    defer use_progress = original_progress;
+    use_progress = true;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var storage: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    Stub.count = 0;
+    Stub.fail_flags = false;
+    try std.testing.expectError(error.CStdoutFlushFailed, chassisSetBootdevTo(&intf, "pxe", null, &writer, Stub.preflushFail));
+    try std.testing.expectEqualSlices(u8, &.{ 0, 4, 5, 0, 0 }, Stub.requests[0..Stub.count]);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    Stub.count = 0;
+    Stub.fail_flags = true;
+    writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0xc1), try chassisSetBootdevTo(&intf, "pxe", null, &writer, Stub.preflushFail));
+    try std.testing.expectEqualSlices(u8, &.{ 0, 4, 5, 0 }, Stub.requests[0..Stub.count]);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    Stub.count = 0;
+    Stub.fail_flags = false;
+    writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisSetBootdevTo(&intf, "pxe", null, &writer, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set Boot Device to pxe\n", writer.buffered());
+    try std.testing.expectEqualSlices(u8, &.{ 0, 4, 5, 0, 0 }, Stub.requests[0..Stub.count]);
+}
+
+test "chassis bootdev stdout orders buffered C around Zig acknowledgment" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisBootdevAck(&stdout.interface, "pxe", stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [96]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|Set Boot Device to pxe\n|after\n", captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------

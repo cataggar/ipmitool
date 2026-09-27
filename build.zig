@@ -1248,9 +1248,9 @@ pub fn build(b: *std.Build) void {
 
     const chassis_bootparam_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
-        .filters = &.{"cmd.chassis.test.chassis bootparam stdout"},
+        .filters = &.{ "cmd.chassis.test.chassis bootparam stdout", "cmd.chassis.test.chassis bootdev stdout" },
     });
-    const chassis_bootparam_stdout_step = b.step("test-chassis-bootparam-stdout", "Compare boot option C bytes, statuses, output order and I/O failures");
+    const chassis_bootparam_stdout_step = b.step("test-chassis-bootparam-stdout", "Compare boot-option reads and bootdev acknowledgments, statuses, output order and I/O failures");
     chassis_bootparam_stdout_step.dependOn(&b.addRunArtifact(chassis_bootparam_stdout_unit).step);
     test_step.dependOn(chassis_bootparam_stdout_step);
 
