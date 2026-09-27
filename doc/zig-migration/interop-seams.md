@@ -633,6 +633,22 @@ selected-Zig CLI goldens in `tests/cases/41-mc.cases` cover the real dummy
 interface, including explicit and detected modes and error responses. Other
 MC output is unchanged.
 
+The selected `mc getsysinfo` output uses checked Zig streaming stdout for
+both the verbose selector triple before each request and the assembled GET
+value after the read loop. `%.2x` minimum-width hexadecimal formatting,
+raw payload bytes up to the first embedded NUL, the trailing newline (even
+on a request or completion-code error), block/encoding/length boundaries and
+original request statuses match C. Each emission pre-flushes libc stdout and
+checks writes and final flush; a failure logs its phase and returns `-1`
+without continuing requests or claiming success. `mc setsysinfo` has no
+success acknowledgement in C and remains silent, with unchanged requests
+and status. `zig build test-mc-sysinfo-stdout` covers libc byte parity,
+buffered C/Zig order, GET/SET request and status behavior and injected
+pre-flush, early/late write and final-flush failures. Original-C and
+selected-Zig `mc_getsysinfo*`/`mc_setsysinfo*` goldens remain the CLI oracle,
+including length 14/254/255 and embedded-NUL values; the GUID formatter and
+system-info assembly are unchanged.
+
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a
 checked final flush. It preserves the C labels, byte ordering, decimal/hex

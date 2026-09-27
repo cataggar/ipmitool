@@ -1326,6 +1326,14 @@ pub fn build(b: *std.Build) void {
     mc_guid_step.dependOn(&b.addRunArtifact(mc_guid_unit).step);
     test_step.dependOn(mc_guid_step);
 
+    const mc_sysinfo_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc sysinfo stdout"},
+    });
+    const mc_sysinfo_step = b.step("test-mc-sysinfo-stdout", "Compare MC sysinfo C bytes, request statuses, output order and failures");
+    mc_sysinfo_step.dependOn(&b.addRunArtifact(mc_sysinfo_unit).step);
+    test_step.dependOn(mc_sysinfo_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},

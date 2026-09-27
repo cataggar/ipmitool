@@ -11,13 +11,13 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **Unconverted formatting stays in libc.** Selected MC stdout printers
-//!   use checked Zig writers; remaining `printf` (system-info) and `sprintf`
-//!   (GUID helper) calls use `ipmi_c`. Diagnostics use `log.print()` from the
-//!   selected logger archive (falling back to C `lprintf` when `log` is not
-//!   selected). Watchdog countdowns use exact integer tenths and libc's
-//!   locale decimal point instead of floating-point formatting. `strcmp`,
-//!   `strlen`, `strncpy` and `strtol` still receive the same valid inputs as C.
+//! * **GUID formatting still uses libc.** Selected MC stdout printers use
+//!   checked Zig writers; `ipmi_guid2str()` retains its libc `sprintf`.
+//!   Diagnostics use `log.print()` from the selected logger archive (falling
+//!   back to C `lprintf` when `log` is not selected). Watchdog countdowns use
+//!   exact integer tenths and libc's locale decimal point instead of
+//!   floating-point formatting. `strcmp`, `strlen`, `strncpy` and `strtol`
+//!   still receive the same valid inputs as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -2435,14 +2435,49 @@ fn sysinfoParam(str: [*c]const u8, maxset: *c_int) c_int {
 }
 
 /// `ipmi_mc_getsysinfo()`.
-fn mcGetsysinfo(
+const SysinfoText = union(enum) {
+    verbose: struct { param: c_int, block: c_int, set: c_int },
+    value: []const u8,
+};
+
+fn writeMcSysinfo(writer: *std.Io.Writer, text: SysinfoText) std.Io.Writer.Error!void {
+    switch (text) {
+        .verbose => |v| try writer.print("getsysinfo: {x:0>2}/{x:0>2}/{x:0>2}\n", .{
+            @as(c_uint, @bitCast(v.param)),
+            @as(c_uint, @bitCast(v.block)),
+            @as(c_uint, @bitCast(v.set)),
+        }),
+        .value => |bytes| {
+            try writer.writeAll(std.mem.sliceTo(bytes, 0));
+            try writer.writeByte('\n');
+        },
+    }
+}
+
+fn emitMcSysinfo(writer: *std.Io.Writer, text: SysinfoText, preflush: anytype) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcSysinfo(writer, text) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn logMcSysinfoOutputError(err: McOutputError, write_error: anyerror) void {
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(log.Level.err, "MC sysinfo stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+        error.StdoutWriteFailed => log.print(log.Level.err, "MC sysinfo stdout write failed: %s", .{@errorName(write_error).ptr}),
+        error.StdoutFlushFailed => log.print(log.Level.err, "MC sysinfo stdout final flush failed: %s", .{@errorName(write_error).ptr}),
+    }
+}
+
+fn mcGetsysinfoTo(
     intf: [*c]Intf,
     param: c_int,
     block: c_int,
     set: c_int,
     len_in: c_int,
     buffer: ?*anyopaque,
-) callconv(.c) c_int {
+    writer: *std.Io.Writer,
+    preflush: anytype,
+) McOutputError!c_int {
     var data = [_]u8{0} ** 4;
     var len = len_in;
 
@@ -2460,14 +2495,7 @@ fn mcGetsysinfo(
     req.msg.data_len = 4;
     req.msg.data = &data;
 
-    if (c.verbose > 1) {
-        _ = c.printf(
-            "getsysinfo: %.2x/%.2x/%.2x\n",
-            @as(c_int, param),
-            @as(c_int, block),
-            @as(c_int, set),
-        );
-    }
+    if (c.verbose > 1) try emitMcSysinfo(writer, .{ .verbose = .{ .param = param, .block = block, .set = set } }, preflush);
 
     data[0] = 0; // get/set
     data[1] = @truncate(@as(c_uint, @bitCast(param)));
@@ -2494,6 +2522,22 @@ fn mcGetsysinfo(
     return rsp.ccode;
 }
 
+/// `ipmi_mc_getsysinfo()`.
+fn mcGetsysinfo(
+    intf: [*c]Intf,
+    param: c_int,
+    block: c_int,
+    set: c_int,
+    len: c_int,
+    buffer: ?*anyopaque,
+) callconv(.c) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return mcGetsysinfoTo(intf, param, block, set, len, buffer, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        logMcSysinfoOutputError(err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
 /// `ipmi_mc_setsysinfo()`.
 fn mcSetsysinfo(intf: [*c]Intf, len: c_int, buffer: ?*anyopaque) callconv(.c) c_int {
     var req = std.mem.zeroes(Request);
@@ -2513,8 +2557,7 @@ fn mcSetsysinfo(intf: [*c]Intf, len: c_int, buffer: ?*anyopaque) callconv(.c) c_
     return -1;
 }
 
-/// `ipmi_sysinfo_main()`.
-fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int {
+fn sysinfoMainTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int, writer: *std.Io.Writer, preflush: anytype) McOutputError!c_int {
     var infostr = [_]u8{0} ** 256;
     var paramdata = [_]u8{0} ** 18;
     var maxset: c_int = 0;
@@ -2584,7 +2627,7 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
         var pos: usize = 0;
         set = 0;
         while (set < maxset) : (set += 1) {
-            rc = mcGetsysinfo(intf, param, set, 0, 18, &paramdata);
+            rc = try mcGetsysinfoTo(intf, param, set, 0, 18, &paramdata, writer, preflush);
 
             if (rc != 0) break;
 
@@ -2601,7 +2644,7 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
             @memcpy(infostr[pos..][0..copy_len], paramdata[offset..][0..copy_len]);
             pos += copy_len;
         }
-        _ = c.printf("%s\n", &infostr);
+        try emitMcSysinfo(writer, .{ .value = &infostr }, preflush);
     }
     if (rc < 0) {
         log.print(log.Level.err, "%s %s set %d command failed", .{ argv[0], argv[1], set });
@@ -2621,6 +2664,397 @@ fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int 
         );
     }
     return rc;
+}
+
+/// `ipmi_sysinfo_main()`.
+fn sysinfoMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return sysinfoMainTo(intf, argc, argv, is_set, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        logMcSysinfoOutputError(err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
+test "mc sysinfo stdout matches libc selector width and raw value bytes" {
+    for ([_]struct { param: c_int, block: c_int, set: c_int }{
+        .{ .param = 0, .block = 0, .set = 0 },
+        .{ .param = 1, .block = 15, .set = 16 },
+        .{ .param = 0xff, .block = 0x100, .set = 0x12345 },
+        .{ .param = -1, .block = std.math.minInt(c_int), .set = std.math.maxInt(c_int) },
+    }) |case| {
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeMcSysinfo(&writer, .{ .verbose = .{ .param = case.param, .block = case.block, .set = case.set } });
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "getsysinfo: %.2x/%.2x/%.2x\n", @as(c_uint, @bitCast(case.param)), @as(c_uint, @bitCast(case.block)), @as(c_uint, @bitCast(case.set)));
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+
+    const short_values = [_][]const u8{
+        &.{0}, "A\x00continued", &.{ 0x80, 0xff, 'A', 0, 'X' },
+    };
+    var longest: [256]u8 = @splat('B');
+    longest[255] = 0;
+    for (short_values ++ [_][]const u8{&longest}) |value| {
+        var storage: [300]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeMcSysinfo(&writer, .{ .value = value });
+        var expected: [300]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "%s\n", @as([*c]const u8, @ptrCast(value.ptr)));
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "mc sysinfo stdout propagates preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    for ([_]SysinfoText{
+        .{ .verbose = .{ .param = 0x123, .block = -1, .set = 0 } },
+        .{ .value = "hello\x00ignored" },
+        .{ .value = &.{0} },
+    }) |text| {
+        var storage: [300]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectError(error.CStdoutFlushFailed, emitMcSysinfo(&writer, text, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+        var early: std.Io.Writer = .failing;
+        try std.testing.expectError(error.StdoutWriteFailed, emitMcSysinfo(&early, text, Stub.preflushOk));
+        try emitMcSysinfo(&writer, text, Stub.preflushOk);
+        const complete = writer.buffered();
+        var short: [300]u8 = undefined;
+        var late = std.Io.Writer.fixed(short[0 .. complete.len - 1]);
+        try std.testing.expectError(error.StdoutWriteFailed, emitMcSysinfo(&late, text, Stub.preflushOk));
+        try std.testing.expectEqualSlices(u8, complete[0 .. complete.len - 1], late.buffered());
+
+        var final = std.Io.Writer.fixed(&short);
+        final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        try std.testing.expectError(error.StdoutFlushFailed, emitMcSysinfo(&final, text, Stub.preflushOk));
+        try std.testing.expectEqualSlices(u8, complete, final.buffered());
+    }
+}
+
+test "mc sysinfo stdout preserves buffered C and Zig order across GET fields" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitMcSysinfo(&stdout.interface, .{ .verbose = .{ .param = 2, .block = 15, .set = 1 } }, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitMcSysinfo(&stdout.interface, .{ .value = "alpha\x00hidden" }, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|getsysinfo: 02/0f/01\n|between|alpha\n|after\n", captured[0..@intCast(length)]);
+}
+
+test "mc sysinfo stdout exported GET preserves request copy and completion statuses" {
+    const Stub = struct {
+        var response: Response = std.mem.zeroes(Response);
+        var missing = false;
+        var calls: usize = 0;
+        var request_ok = false;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            request_ok = req.msg.netfn_lun.netfn == netfn_app and req.msg.netfn_lun.lun == 0 and
+                req.msg.cmd == IPMI_GET_SYS_INFO and req.msg.data_len == 4 and
+                req.msg.data != null and std.mem.eql(u8, req.msg.data.?[0..4], &.{ 0, 2, 0xff, 3 });
+            return if (missing) null else &response;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const saved_verbose = c.verbose;
+    defer c.verbose = saved_verbose;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.response.data_len = 3;
+    @memcpy(Stub.response.data[0..3], "ABC");
+    c.verbose = 2;
+
+    for ([_]struct { missing: bool, ccode: u8, status: c_int }{
+        .{ .missing = false, .ccode = 0, .status = 0 },
+        .{ .missing = false, .ccode = 0x80, .status = 0x80 },
+        .{ .missing = true, .ccode = 0, .status = -1 },
+    }) |case| {
+        Stub.missing = case.missing;
+        Stub.response.ccode = case.ccode;
+        Stub.calls = 0;
+        Stub.request_ok = false;
+        var data: [18]u8 = @splat(0xee);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(case.status, try mcGetsysinfoTo(&intf, 2, -1, 3, data.len, &data, &writer, Stub.preflushOk));
+        try std.testing.expectEqual(@as(usize, 1), Stub.calls);
+        try std.testing.expect(Stub.request_ok);
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "getsysinfo: %.2x/%.2x/%.2x\n", @as(c_uint, 2), @as(c_uint, @bitCast(@as(c_int, -1))), @as(c_uint, 3));
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        try std.testing.expectEqualSlices(u8, if (case.status == 0) "ABC" else &.{ 0, 0, 0 }, data[0..3]);
+        try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 15), data[3..]);
+    }
+
+    Stub.missing = false;
+    Stub.response.ccode = 0;
+    c.verbose = 0;
+    Stub.calls = 0;
+    var silent: std.Io.Writer = .failing;
+    try std.testing.expectEqual(@as(c_int, 0), try mcGetsysinfoTo(&intf, 2, -1, 3, 0, null, &silent, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 1), Stub.calls);
+
+    c.verbose = 2;
+    const FailureKind = enum { preflush, write, flush };
+    for ([_]FailureKind{ .preflush, .write, .flush }) |kind| {
+        Stub.calls = 0;
+        var buffer: [18]u8 = @splat(0xff);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        switch (kind) {
+            .preflush => try std.testing.expectError(error.CStdoutFlushFailed, mcGetsysinfoTo(&intf, 2, -1, 3, buffer.len, &buffer, &writer, Stub.preflushFail)),
+            .write => {
+                var early: std.Io.Writer = .failing;
+                try std.testing.expectError(error.StdoutWriteFailed, mcGetsysinfoTo(&intf, 2, -1, 3, buffer.len, &buffer, &early, Stub.preflushOk));
+            },
+            .flush => {
+                writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+                try std.testing.expectError(error.StdoutFlushFailed, mcGetsysinfoTo(&intf, 2, -1, 3, buffer.len, &buffer, &writer, Stub.preflushOk));
+            },
+        }
+        try std.testing.expectEqual(@as(usize, 0), Stub.calls);
+        try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 18), &buffer);
+    }
+}
+
+test "mc sysinfo stdout GET assembly retains length encoding embedded NUL and request statuses" {
+    const Stub = struct {
+        const Mode = enum { ascii14, ascii15, ascii254, ascii255, nonascii, embedded, short_first, first_ccode, second_ccode, second_missing };
+        var mode: Mode = .ascii14;
+        var response: Response = std.mem.zeroes(Response);
+        var gets: usize = 0;
+        var request_ok = true;
+        var preflush_calls: usize = 0;
+
+        fn reset(next: Mode) void {
+            mode = next;
+            gets = 0;
+            request_ok = true;
+            preflush_calls = 0;
+        }
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            if (req.msg.netfn_lun.netfn != netfn_app or req.msg.cmd != IPMI_GET_SYS_INFO or
+                req.msg.data_len != 4 or req.msg.data == null)
+            {
+                request_ok = false;
+                return null;
+            }
+            const block: u8 = @intCast(gets);
+            request_ok = request_ok and std.mem.eql(u8, req.msg.data.?[0..4], &.{ 0, 2, block, 0 });
+            gets += 1;
+            if (block == 1 and mode == .second_missing) return null;
+            response = std.mem.zeroes(Response);
+            if ((block == 0 and mode == .first_ccode) or (block == 1 and mode == .second_ccode)) {
+                response.ccode = 0x80;
+                return &response;
+            }
+            response.data_len = if (block == 0 and mode == .short_first) 3 else 18;
+            response.data[0] = 0x11;
+            response.data[1] = block;
+            if (block == 0) {
+                response.data[2] = if (mode == .nonascii) 1 else 0;
+                response.data[3] = switch (mode) {
+                    .ascii14 => 14,
+                    .ascii254 => 254,
+                    .ascii255 => 255,
+                    .short_first, .nonascii, .first_ccode => 0,
+                    else => 15,
+                };
+                @memset(response.data[4..18], 'A');
+                if (mode == .embedded) {
+                    response.data[5] = 0;
+                    response.data[6] = 'Z';
+                }
+            } else {
+                @memset(response.data[2..18], 'B');
+            }
+            return &response;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn preflushSecond() error{CStdoutFlushFailed}!void {
+            preflush_calls += 1;
+            if (preflush_calls == 2) return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const saved_verbose = c.verbose;
+    defer c.verbose = saved_verbose;
+    c.verbose = 0;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var args = [_][*:0]u8{ @constCast("getsysinfo"), @constCast("system_name") };
+
+    for ([_]struct { mode: Stub.Mode, requests: usize, status: c_int, a: usize, b: usize }{
+        .{ .mode = .ascii14, .requests = 1, .status = 0, .a = 14, .b = 0 },
+        .{ .mode = .ascii15, .requests = 2, .status = 0, .a = 14, .b = 16 },
+        .{ .mode = .ascii254, .requests = 16, .status = 0, .a = 14, .b = 240 },
+        .{ .mode = .ascii255, .requests = 17, .status = 0, .a = 14, .b = 241 },
+        .{ .mode = .nonascii, .requests = 4, .status = 0, .a = 14, .b = 48 },
+        .{ .mode = .embedded, .requests = 2, .status = 0, .a = 1, .b = 0 },
+        .{ .mode = .short_first, .requests = 1, .status = 0, .a = 0, .b = 0 },
+        .{ .mode = .first_ccode, .requests = 1, .status = 0x80, .a = 0, .b = 0 },
+        .{ .mode = .second_ccode, .requests = 2, .status = 0x80, .a = 14, .b = 0 },
+        .{ .mode = .second_missing, .requests = 2, .status = -1, .a = 14, .b = 0 },
+    }) |case| {
+        Stub.reset(case.mode);
+        var storage: [300]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(case.status, try sysinfoMainTo(&intf, args.len, &args, 0, &writer, Stub.preflushOk));
+        try std.testing.expectEqual(case.requests, Stub.gets);
+        try std.testing.expect(Stub.request_ok);
+        var expected: [300]u8 = undefined;
+        @memset(expected[0..case.a], 'A');
+        @memset(expected[case.a..][0..case.b], 'B');
+        expected[case.a + case.b] = '\n';
+        try std.testing.expectEqualSlices(u8, expected[0 .. case.a + case.b + 1], writer.buffered());
+    }
+
+    Stub.reset(.ascii14);
+    var preflush_storage: [64]u8 = undefined;
+    var preflush_writer = std.Io.Writer.fixed(&preflush_storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, sysinfoMainTo(&intf, args.len, &args, 0, &preflush_writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 1), Stub.gets);
+    try std.testing.expectEqual(@as(usize, 0), preflush_writer.buffered().len);
+
+    Stub.reset(.ascii14);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, sysinfoMainTo(&intf, args.len, &args, 0, &early, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 1), Stub.gets);
+
+    Stub.reset(.ascii14);
+    var short: [14]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, sysinfoMainTo(&intf, args.len, &args, 0, &late, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 1), Stub.gets);
+    try std.testing.expectEqualSlices(u8, &([_]u8{'A'} ** 14), late.buffered());
+
+    Stub.reset(.ascii14);
+    var final_storage: [64]u8 = undefined;
+    var final = std.Io.Writer.fixed(&final_storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, sysinfoMainTo(&intf, args.len, &args, 0, &final, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 1), Stub.gets);
+    try std.testing.expectEqualSlices(u8, &([_]u8{'A'} ** 14) ++ "\n", final.buffered());
+
+    c.verbose = 2;
+    Stub.reset(.ascii14);
+    var verbose_storage: [128]u8 = undefined;
+    var verbose = std.Io.Writer.fixed(&verbose_storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, sysinfoMainTo(&intf, args.len, &args, 0, &verbose, Stub.preflushSecond));
+    try std.testing.expectEqual(@as(usize, 1), Stub.gets);
+    try std.testing.expectEqualStrings("getsysinfo: 02/00/00\n", verbose.buffered());
+
+    Stub.reset(.ascii15);
+    var blocks_storage: [128]u8 = undefined;
+    var blocks = std.Io.Writer.fixed(&blocks_storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, sysinfoMainTo(&intf, args.len, &args, 0, &blocks, Stub.preflushSecond));
+    try std.testing.expectEqual(@as(usize, 1), Stub.gets);
+    try std.testing.expectEqualStrings("getsysinfo: 02/00/00\n", blocks.buffered());
+}
+
+test "mc sysinfo stdout SET remains silent across block and failure statuses" {
+    const Stub = struct {
+        const Mode = enum { ok, ccode, missing };
+        var mode: Mode = .ok;
+        var response: Response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var expected: []const u8 = "";
+        var request_ok = true;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            const index = requests;
+            requests += 1;
+            if (req.msg.netfn_lun.netfn != netfn_app or req.msg.cmd != IPMI_SET_SYS_INFO or
+                req.msg.data_len != 18 or req.msg.data == null)
+            {
+                request_ok = false;
+                return null;
+            }
+            const data = req.msg.data.?[0..18];
+            request_ok = request_ok and data[0] == IPMI_SYSINFO_HOSTNAME and data[1] == index;
+            if (index == 0) {
+                request_ok = request_ok and data[2] == 0 and data[3] == expected.len and
+                    std.mem.eql(u8, data[4..18], expected[0..14]);
+            } else {
+                request_ok = request_ok and data[2] == expected[14] and
+                    std.mem.allEqual(u8, data[3..18], 0);
+            }
+            if (mode == .missing) return null;
+            response = std.mem.zeroes(Response);
+            if (mode == .ccode) response.ccode = 0x80;
+            return &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    const saved_verbose = c.verbose;
+    defer c.verbose = saved_verbose;
+    c.verbose = 2;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var short = [_][*:0]u8{ @constCast("setsysinfo"), @constCast("system_name"), @constCast("abcdefghijklmn") };
+    var long = [_][*:0]u8{ @constCast("setsysinfo"), @constCast("system_name"), @constCast("abcdefghijklmnO") };
+    for ([_]struct { value: []const u8, args: *[3][*:0]u8, mode: Stub.Mode, status: c_int, requests: usize }{
+        .{ .value = "abcdefghijklmn", .args = &short, .mode = .ok, .status = 0, .requests = 1 },
+        .{ .value = "abcdefghijklmnO", .args = &long, .mode = .ok, .status = 0, .requests = 2 },
+        .{ .value = "abcdefghijklmnO", .args = &long, .mode = .ccode, .status = 0x80, .requests = 1 },
+        .{ .value = "abcdefghijklmnO", .args = &long, .mode = .missing, .status = -1, .requests = 1 },
+    }) |case| {
+        Stub.expected = case.value;
+        Stub.mode = case.mode;
+        Stub.requests = 0;
+        Stub.request_ok = true;
+        var writer: std.Io.Writer = .failing;
+        try std.testing.expectEqual(case.status, try sysinfoMainTo(&intf, 3, case.args, 1, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(case.requests, Stub.requests);
+        try std.testing.expect(Stub.request_ok);
+    }
 }
 
 // ---------------------------------------------------------------------------
