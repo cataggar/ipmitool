@@ -1,0 +1,16 @@
+#!golden 1
+#!case session_info_modem12_csv
+#!section exit
+0
+#!section stdout
+5,63,10,63,Unknown (0x0E),IPMIv2/RMCP+,0x0f,Unknown (0xFE),15,192.0.2.129
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x3d target_cmd=0x00 data=00
+< rule=session_info_modem12 ccode=0x00 len=12 data=05 7f 8a bf 8e 8f fe ff c0 00 02 81
+bye
+#!section files

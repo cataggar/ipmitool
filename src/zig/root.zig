@@ -87,6 +87,7 @@ test {
     _ = @import("cmd/ime.zig");
     _ = @import("cmd/gendev.zig");
     _ = @import("cmd/raw.zig");
+    _ = @import("cmd/session.zig");
     _ = @import("cmd/user.zig");
     _ = @import("cmd/event.zig");
     _ = @import("cmd/mc.zig");

@@ -437,6 +437,21 @@ pre-flush, early/late write and final-flush failures. The existing
 `mc_selftest_*` C/selected-Zig CLI goldens cover all result branches;
 other MC output remains on its existing path.
 
+The selected `session info` printer also pre-flushes C stdout, then streams
+both human and CSV response fields through a checked Zig 0.16 writer with a
+checked final flush. It preserves the C labels, byte ordering, decimal/hex
+format, trailing blank line in human mode, and the length-specific 3-, 12-,
+14- and 18-byte layouts (including zero-filled short replies). A pre-flush,
+write or final-flush failure logs its phase and returns `-1`; a successful
+query still returns `0`. Other session request and completion-code behavior
+is unchanged. `zig build test-session-info-stdout` runs boundary-format and
+injected I/O failure tests plus a differential CLI fixture against original
+C on native builds with the dummy interface enabled, covering both modes,
+LAN, serial, slots-only, truncated replies, selectors and statuses. The
+`session_info_*` CLI snapshots remain the C byte oracle.
+Without local readline/OpenSSL headers, add `-Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lanplus=false`.
+
 The selected LAN v1.5 Activate Session completion-code path now writes only
 the `Activate Session error:` prefix with Zig stderr I/O. It deliberately
 has no newline: the immediately following `lprintf` starts with a tab on
