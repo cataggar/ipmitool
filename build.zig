@@ -1142,6 +1142,14 @@ pub fn build(b: *std.Build) void {
     isol_info_step.dependOn(&b.addRunArtifact(isol_info_unit).step);
     test_step.dependOn(isol_info_step);
 
+    const user_summary_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.user.test.summary stdout"},
+    });
+    const user_summary_step = b.step("test-user-summary-stdout", "Compare user summary C bytes and test writer failures");
+    user_summary_step.dependOn(&b.addRunArtifact(user_summary_unit).step);
+    test_step.dependOn(user_summary_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},

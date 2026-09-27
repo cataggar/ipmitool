@@ -415,6 +415,17 @@ parity oracles. Run those with `zig build test-golden -Dzig-modules=isol --
 --filter isol_info_`; without local readline/OpenSSL headers, add
 `-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
 
+The selected `user summary` command streams CSV and human-readable counters
+through checked Zig stdout after flushing buffered C output. It retains the
+three unsigned decimal fields, spacing, tabs and newlines, and returns `-1`
+with a diagnostic on pre-flush, write or final-flush failure. User listing
+and password output remain on their existing C paths. `zig build
+test-user-summary-stdout` compares representative counter boundaries with
+libc formatting, checks mixed C/Zig stdout order and injects early and late
+write and flush failures; the
+`user_summary_*` CLI goldens compare the original C command and selected Zig
+on both CSV and human output with real dummy-interface responses.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print

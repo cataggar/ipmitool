@@ -24,17 +24,18 @@
 //! The first prompted password must be saved before asking for confirmation;
 //! the bounded copy and request buffer are wiped after use. See issue #39.
 //!
-//! Everything this module needs from C - `printf`, `val2str`,
+//! Everything this module still needs from C - `printf`, `val2str`,
 //! `eval_ccode`, `getpass`, `str2int`, `str2uchar` and the `is_ipmi_*`
 //! validators - is reached through the `ipmi_c` bridge. Diagnostics use the
 //! shared typed logger, which falls back to C `lprintf` when Zig logging is
-//! not selected.
+//! not selected. The `summary` output uses a checked Zig stdout writer.
 
 const std = @import("std");
 
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("../intf/intf.zig");
 
@@ -317,6 +318,29 @@ fn printUserList(intf: *Intf, channel_number: u8) c_int {
 /// `ipmi_print_user_summary()`: print user statistics for one channel.
 ///
 /// Returns 0 on success and -1 on error.
+const SummaryOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeUserSummary(writer: *std.Io.Writer, csv: bool, access: *const UserAccess) std.Io.Writer.Error!void {
+    if (csv) {
+        try writer.print("{d},{d},{d}\n", .{
+            access.max_user_ids, access.enabled_user_ids, access.fixed_user_ids,
+        });
+    } else {
+        try writer.print(
+            "Maximum IDs\t    : {d}\n" ++
+                "Enabled User Count  : {d}\n" ++
+                "Fixed Name Count    : {d}\n",
+            .{ access.max_user_ids, access.enabled_user_ids, access.fixed_user_ids },
+        );
+    }
+}
+
+fn emitUserSummary(writer: *std.Io.Writer, csv: bool, access: *const UserAccess, preflush: anytype) SummaryOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeUserSummary(writer, csv, access) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 fn printUserSummary(intf: *Intf, channel_number: u8) c_int {
     var user_access = std.mem.zeroes(UserAccess);
     user_access.channel = channel_number;
@@ -325,19 +349,114 @@ fn printUserSummary(intf: *Intf, channel_number: u8) c_int {
     if (c.eval_ccode(ccode) != 0) {
         return -1;
     }
-    if (c.csv_output != 0) {
-        _ = c.printf(
-            "%u,%u,%u\n",
-            @as(c_uint, user_access.max_user_ids),
-            @as(c_uint, user_access.enabled_user_ids),
-            @as(c_uint, user_access.fixed_user_ids),
-        );
-    } else {
-        _ = c.printf("Maximum IDs\t    : %u\n", @as(c_uint, user_access.max_user_ids));
-        _ = c.printf("Enabled User Count  : %u\n", @as(c_uint, user_access.enabled_user_ids));
-        _ = c.printf("Fixed Name Count    : %u\n", @as(c_uint, user_access.fixed_user_ids));
-    }
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitUserSummary(&stdout.interface, c.csv_output != 0, &user_access, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "User summary stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "User summary stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "User summary stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
     return 0;
+}
+
+test "summary stdout matches C decimal formatting for csv and human counters" {
+    const counts = [_][3]u8{ .{ 0, 0, 0 }, .{ 1, 17, 42 }, .{ 63, 62, 61 } };
+    for (counts) |fields| {
+        var access = std.mem.zeroes(UserAccess);
+        access.max_user_ids = fields[0];
+        access.enabled_user_ids = fields[1];
+        access.fixed_user_ids = fields[2];
+        for ([_]bool{ false, true }) |csv| {
+            var expected: [128]u8 = undefined;
+            const n = if (csv)
+                c.snprintf(&expected, expected.len, "%u,%u,%u\n", @as(c_uint, fields[0]), @as(c_uint, fields[1]), @as(c_uint, fields[2]))
+            else
+                c.snprintf(
+                    &expected,
+                    expected.len,
+                    "Maximum IDs\t    : %u\n" ++
+                        "Enabled User Count  : %u\n" ++
+                        "Fixed Name Count    : %u\n",
+                    @as(c_uint, fields[0]),
+                    @as(c_uint, fields[1]),
+                    @as(c_uint, fields[2]),
+                );
+            try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+            var storage: [128]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeUserSummary(&writer, csv, &access);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
+
+test "summary stdout propagates preflush, early, late and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var access = std.mem.zeroes(UserAccess);
+    access.max_user_ids = 63;
+    access.enabled_user_ids = 62;
+    access.fixed_user_ids = 61;
+    var storage: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitUserSummary(&writer, true, &access, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitUserSummary(&early, true, &access, Stub.preflushOk));
+
+    const prefix = "Maximum IDs\t    : 63\nEnabled User Count  : 62\n";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitUserSummary(&late, false, &access, Stub.preflushOk));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitUserSummary(&writer, true, &access, Stub.preflushOk));
+    try std.testing.expectEqualStrings("63,62,61\n", writer.buffered());
+}
+
+test "summary stdout orders buffered C output before Zig and subsequent C output" {
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(fds[1], stdout_fd));
+    _ = c.close(fds[1]);
+
+    var access = std.mem.zeroes(UserAccess);
+    access.max_user_ids = 63;
+    access.enabled_user_ids = 62;
+    access.fixed_user_ids = 61;
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitUserSummary(&stdout.interface, true, &access, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|63,62,61\n|after\n", captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------
