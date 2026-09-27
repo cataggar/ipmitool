@@ -1,7 +1,8 @@
 //! Serial over LAN command and interactive session, selected by
 //! `zig build -Dzig-modules=sol` in place of lib/ipmi_sol.c.
 //! The request/response and payload types are shared ABI-checked Zig mirrors;
-//! libc handles formatting and terminal control to preserve CLI behaviour.
+//! libc still handles most formatting and terminal control to preserve CLI
+//! behaviour; the payload-access status line uses checked Zig stdout.
 //! Diagnostics use typed `log.print()` from the same selected archive as the
 //! logger state; without the Zig logger it retains the C `lprintf` fallback.
 
@@ -9,6 +10,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
@@ -84,6 +86,20 @@ fn payloadAccess(intf: *Intf, channel: u8, userid: u8, enable: c_int) callconv(.
     return 0;
 }
 
+const PayloadStatusOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writePayloadStatus(writer: *std.Io.Writer, channel: u8, userid: u8, enabled: bool) std.Io.Writer.Error!void {
+    try writer.print("User {d} on channel {d} is {s}\n", .{
+        userid, channel, if (enabled) "enabled" else "disabled",
+    });
+}
+
+fn emitPayloadStatus(writer: *std.Io.Writer, channel: u8, userid: u8, enabled: bool, preflush: anytype) PayloadStatusOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writePayloadStatus(writer, channel, userid, enabled) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 fn payloadAccessStatus(intf: *Intf, channel: u8, userid: u8) callconv(.c) c_int {
     var data = [2]u8{ channel & 0x0f, userid & 0x3f };
     var req = reqWithData(ipmi.NetFn.app, 0x4d, &data);
@@ -96,11 +112,101 @@ fn payloadAccessStatus(intf: *Intf, channel: u8, userid: u8) callconv(.c) c_int 
             log.print(log.Level.err, "Error parsing SOL payload status for user %d on channel %d", .{ @as(c_int, userid), @as(c_int, channel) });
             return -1;
         }
-        _ = c.printf("User %d on channel %d is %sabled\n", @as(c_int, userid), @as(c_int, channel), choose(rsp.data[0] & 2 != 0, "en", "dis"));
+        var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+        emitPayloadStatus(&stdout.interface, channel, userid, rsp.data[0] & 2 != 0, stdout_io.trySyncC) catch |err| {
+            switch (err) {
+                error.CStdoutFlushFailed => log.print(log.Level.err, "SOL payload status stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+                error.StdoutWriteFailed => log.print(log.Level.err, "SOL payload status stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+                error.StdoutFlushFailed => log.print(log.Level.err, "SOL payload status stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            }
+            return -1;
+        };
         return 0;
     }
     log.print(log.Level.err, "Error getting SOL payload status for user %d on channel %d: %s", .{ @as(c_int, userid), @as(c_int, channel), cc(rsp.ccode) });
     return -1;
+}
+
+test "payload status stdout matches C enabled and disabled formatting" {
+    const cases = [_]struct { channel: u8, userid: u8, enabled: bool }{
+        .{ .channel = 0, .userid = 0, .enabled = false },
+        .{ .channel = 4, .userid = 2, .enabled = true },
+        .{ .channel = 15, .userid = 63, .enabled = false },
+        .{ .channel = 255, .userid = 255, .enabled = true },
+    };
+    for (cases) |case| {
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(
+            &expected,
+            expected.len,
+            "User %d on channel %d is %sabled\n",
+            @as(c_int, case.userid),
+            @as(c_int, case.channel),
+            @as([*:0]const u8, if (case.enabled) "en" else "dis"),
+        );
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        var actual: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&actual);
+        try writePayloadStatus(&writer, case.channel, case.userid, case.enabled);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "payload status stdout detects preflush, early, late and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitPayloadStatus(&writer, 4, 2, true, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitPayloadStatus(&early, 4, 2, true, Stub.preflushOk));
+
+    const line = "User 2 on channel 4 is enabled\n";
+    var short: [line.len - 1]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitPayloadStatus(&late, 4, 2, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings(line[0 .. line.len - 1], late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitPayloadStatus(&writer, 4, 2, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings(line, writer.buffered());
+}
+
+test "payload status stdout preserves buffered C ordering" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitPayloadStatus(&stdout.interface, 4, 2, false, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [96]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|User 2 on channel 4 is disabled\n|after\n", captured[0..@intCast(length)]);
 }
 
 fn getSolInfo(intf: *Intf, channel: u8, params: *Config) callconv(.c) c_int {
