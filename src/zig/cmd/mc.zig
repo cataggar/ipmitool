@@ -11,11 +11,12 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **Most formatting stays in libc.** Other `printf` and `sprintf` calls use `ipmi_c`;
-//!   diagnostics use `log.print()` from the same selected archive as the
-//!   logger exports (falling back to C `lprintf` when `log` is not selected).
-//!   libc still renders `%0.1f`, `%02Xh`, `%-40s` and `%08x` with the same
-//!   original C argument widths. `strcmp`, `strlen`, `strncpy` and `strtol` also
+//! * **Unconverted formatting stays in libc.** Selected MC stdout printers
+//!   use checked Zig writers; remaining `printf` and `sprintf` calls use
+//!   `ipmi_c`. Diagnostics use `log.print()` from the selected logger archive
+//!   (falling back to C `lprintf` when `log` is not selected). libc still
+//!   renders `%0.1f`, `%-40s` and the GUID helper's `%08x` with the original
+//!   C argument widths. `strcmp`, `strlen`, `strncpy` and `strtol` also
 //!   receive the same valid inputs as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
@@ -1262,67 +1263,279 @@ fn toInt(v: u64) c_int {
     return @bitCast(@as(u32, @truncate(v)));
 }
 
-/// `ipmi_mc_print_guid()`.
-fn mcPrintGuid(intf: *Intf, guid_mode: c.ipmi_guid_mode_t) c_int {
-    // Allocate a byte array for ease of use in dump mode.
-    var guid_data: [@sizeOf(c.ipmi_guid_t)]u8 = undefined;
+const guid_ver_str = [_][*:0]const u8{
+    "Unknown/unsupported",
+    "Time-based",
+    "DCE Security with POSIX UIDs (not for IPMI)",
+    "Name-based using MD5",
+    "Random or pseudo-random",
+    "Name-based using SHA-1",
+};
 
-    const guid_ver_str = [_][*:0]const u8{
-        "Unknown/unsupported",
-        "Time-based",
-        "DCE Security with POSIX UIDs (not for IPMI)",
-        "Name-based using MD5",
-        "Random or pseudo-random",
-        "Name-based using SHA-1",
-    };
+const guid_mode_str = [_][*:0]const u8{
+    "RFC4122",
+    "IPMI",
+    "SMBIOS",
+    "Automatic (if you see this, report a bug)",
+    "Unknown (data dumped)",
+};
 
-    const guid_mode_str = [_][*:0]const u8{
-        "RFC4122",
-        "IPMI",
-        "SMBIOS",
-        "Automatic (if you see this, report a bug)",
-        "Unknown (data dumped)",
-    };
-
-    const rc = mcGetGuid(intf, @ptrCast(@alignCast(&guid_data)));
-    if (c.eval_ccode(rc) != 0) {
-        return -1;
+fn writeMcGuid(
+    writer: *std.Io.Writer,
+    text: []const u8,
+    guid: c.parsed_guid_t,
+    requested_mode: c.ipmi_guid_mode_t,
+    timestamp: ?[]const u8,
+) std.Io.Writer.Error!void {
+    try writer.print("System GUID   : {s}\n", .{text});
+    if (requested_mode == guid_auto) {
+        try writer.print("GUID Encoding : {s}", .{std.mem.span(guid_mode_str[guid.mode])});
+        if (guid.mode != guid_ipmi) {
+            try writer.writeAll(" (WARNING: IPMI Specification violation!)");
+        }
+        try writer.writeAll("\n");
     }
+    try writer.print("GUID Version  : {s}", .{std.mem.span(guid_ver_str[guid.ver])});
+    switch (guid.ver) {
+        guid_version_unknown => try writer.print(" ({d})\n", .{(toInt(guid.time_hi_and_version) >> 12) & 0x0f}),
+        guid_version_time => try writer.print("\nTimestamp     : {s}\n", .{timestamp.?}),
+        else => try writer.writeAll("\n"),
+    }
+}
 
-    _ = c.printf("System GUID   : ");
+fn emitMcGuid(
+    writer: *std.Io.Writer,
+    text: []const u8,
+    guid: c.parsed_guid_t,
+    requested_mode: c.ipmi_guid_mode_t,
+    timestamp: ?[]const u8,
+    preflush: anytype,
+) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcGuid(writer, text, guid, requested_mode, timestamp) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn printMcGuid(intf: *Intf, guid_mode: c.ipmi_guid_mode_t, writer: *std.Io.Writer, evaluate: anytype, preflush: anytype) McOutputError!c_int {
+    var guid_data: [@sizeOf(c.ipmi_guid_t)]u8 = undefined;
+    const rc = mcGetGuid(intf, @ptrCast(@alignCast(&guid_data)));
+    if (evaluate(rc) != 0) return -1;
 
     var buf: [GUID_STR_MAXLEN + 1]u8 = undefined;
     const guid = guid2str(&buf, &guid_data, guid_mode);
-    _ = c.printf("%s\n", &buf);
-
-    // Print the GUID properties.
-    if (guid_mode == guid_auto) {
-        // ipmi_parse_guid() returns only valid modes in guid.ver.
-        _ = c.printf("GUID Encoding : %s", guid_mode_str[guid.mode]);
-        if (guid.mode != guid_ipmi) {
-            _ = c.printf(" (WARNING: IPMI Specification violation!)");
-        }
-        _ = c.printf("\n");
-    }
-
-    _ = c.printf("GUID Version  : %s", guid_ver_str[guid.ver]);
-
-    switch (guid.ver) {
-        guid_version_unknown => {
-            _ = c.printf(" (%d)\n", (toInt(guid.time_hi_and_version) >> 12) & 0x0F);
-        },
-        guid_version_time => {
-            _ = c.printf(
-                "\nTimestamp     : %s\n",
-                c.ipmi_timestamp_numeric(@truncate(@as(u64, @bitCast(guid.time)))),
-            );
-        },
-        else => {
-            _ = c.printf("\n");
-        },
-    }
-
+    var timestamp_buf: [c.IPMI_ASCTIME_SZ]u8 = undefined;
+    const timestamp: ?[]const u8 = if (guid.ver == guid_version_time) blk: {
+        const value = std.mem.span(c.ipmi_timestamp_numeric(@truncate(@as(u64, @bitCast(guid.time)))));
+        @memcpy(timestamp_buf[0..value.len], value);
+        break :blk timestamp_buf[0..value.len];
+    } else null;
+    try emitMcGuid(writer, std.mem.sliceTo(&buf, 0), guid, guid_mode, timestamp, preflush);
     return 0;
+}
+
+/// `ipmi_mc_print_guid()`.
+fn mcPrintGuid(intf: *Intf, guid_mode: c.ipmi_guid_mode_t) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return printMcGuid(intf, guid_mode, &stdout.interface, c.eval_ccode, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "MC GUID stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "MC GUID stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "MC GUID stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+fn appendMcGuidCField(expected: []u8, offset: *usize, comptime fmt: [*:0]const u8, args: anytype) !void {
+    const n = @call(.auto, c.snprintf, .{ expected.ptr + offset.*, expected.len - offset.*, fmt } ++ args);
+    try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len - offset.*);
+    offset.* += @intCast(n);
+}
+
+test "mc guid stdout matches C bytes for explicit, automatic, dump, versions and time" {
+    const ipmi_raw = [16]u8{ 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0xa7, 0x88, 0x19, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    const rfc_raw = [16]u8{ 1, 2, 3, 4, 5, 6, 0x4a, 0xbc, 0x0f, 0x60, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+    const smbios_raw = [16]u8{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x91, 0x27, 0xaa, 0x70, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0 };
+    const time_raw = [16]u8{ 0xde, 0xad, 0xbe, 0xef, 0, 1, 0xa1, 0x30, 0xd9, 0x11, 0x43, 0x32, 0, 0xc0, 8, 0x28 };
+    const dump_raw = [16]u8{ 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0, 0, 0x12, 0, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde };
+    var unknown_raw = ipmi_raw;
+    unknown_raw[9] = 0xf9;
+    var md5_raw = rfc_raw;
+    md5_raw[6] = 0x3a;
+    var sha1_raw = rfc_raw;
+    sha1_raw[6] = 0x5a;
+    const cases = [_]struct { data: [16]u8, mode: c.ipmi_guid_mode_t, decoded: c.ipmi_guid_mode_t, version: c_uint }{
+        .{ .data = ipmi_raw, .mode = guid_ipmi, .decoded = guid_ipmi, .version = guid_version_time },
+        .{ .data = ipmi_raw, .mode = guid_rfc4122, .decoded = guid_rfc4122, .version = guid_version_unknown },
+        .{ .data = ipmi_raw, .mode = guid_smbios, .decoded = guid_smbios, .version = guid_version_unknown },
+        .{ .data = ipmi_raw, .mode = guid_dump, .decoded = guid_dump, .version = guid_version_unknown },
+        .{ .data = time_raw, .mode = guid_auto, .decoded = guid_ipmi, .version = guid_version_time },
+        .{ .data = rfc_raw, .mode = guid_auto, .decoded = guid_rfc4122, .version = 4 },
+        .{ .data = smbios_raw, .mode = guid_auto, .decoded = guid_smbios, .version = 2 },
+        .{ .data = dump_raw, .mode = guid_auto, .decoded = guid_dump, .version = guid_version_unknown },
+        .{ .data = unknown_raw, .mode = guid_ipmi, .decoded = guid_ipmi, .version = guid_version_unknown },
+        .{ .data = md5_raw, .mode = guid_rfc4122, .decoded = guid_rfc4122, .version = 3 },
+        .{ .data = sha1_raw, .mode = guid_rfc4122, .decoded = guid_rfc4122, .version = 5 },
+    };
+    for (cases) |case| {
+        var data = case.data;
+        var buf: [GUID_STR_MAXLEN + 1]u8 = undefined;
+        const guid = guid2str(&buf, &data, case.mode);
+        try std.testing.expectEqual(case.decoded, guid.mode);
+        try std.testing.expectEqual(case.version, guid.ver);
+        const timestamp = if (guid.ver == guid_version_time)
+            c.ipmi_timestamp_numeric(@truncate(@as(u64, @bitCast(guid.time))))
+        else
+            null;
+
+        var storage: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeMcGuid(&writer, std.mem.sliceTo(&buf, 0), guid, case.mode, if (timestamp) |value| std.mem.span(value) else null);
+
+        var expected: [256]u8 = undefined;
+        var offset: usize = 0;
+        try appendMcGuidCField(&expected, &offset, "System GUID   : %s\n", .{&buf});
+        if (case.mode == guid_auto) {
+            try appendMcGuidCField(&expected, &offset, "GUID Encoding : %s", .{guid_mode_str[guid.mode]});
+            if (guid.mode != guid_ipmi) {
+                try appendMcGuidCField(&expected, &offset, " (WARNING: IPMI Specification violation!)", .{});
+            }
+            try appendMcGuidCField(&expected, &offset, "\n", .{});
+        }
+        try appendMcGuidCField(&expected, &offset, "GUID Version  : %s", .{guid_ver_str[guid.ver]});
+        switch (guid.ver) {
+            guid_version_unknown => try appendMcGuidCField(&expected, &offset, " (%d)\n", .{(toInt(guid.time_hi_and_version) >> 12) & 0x0f}),
+            guid_version_time => try appendMcGuidCField(&expected, &offset, "\nTimestamp     : %s\n", .{timestamp.?}),
+            else => try appendMcGuidCField(&expected, &offset, "\n", .{}),
+        }
+        try std.testing.expectEqualSlices(u8, expected[0..offset], writer.buffered());
+    }
+}
+
+test "mc guid stdout retains request and response statuses" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var missing = false;
+        var request_ok = false;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            request_ok = req.msg.netfn_lun.netfn == netfn_app and
+                req.msg.cmd == BMC_GET_GUID and req.msg.data_len == 0;
+            return if (missing) null else &response;
+        }
+        fn evaluate(ccode: c_int) c_int {
+            return if (ccode == 0) 0 else -1;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.response.data_len = 16;
+    const raw = [16]u8{ 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0xa7, 0x88, 0x19, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    @memcpy(Stub.response.data[0..16], &raw);
+    var storage: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try printMcGuid(&intf, guid_dump, &writer, Stub.evaluate, Stub.preflushOk));
+    try std.testing.expect(Stub.request_ok);
+    try std.testing.expectEqualStrings(
+        "System GUID   : 00112233445566a78819aabbccddeeff\nGUID Version  : Unknown/unsupported (1)\n",
+        writer.buffered(),
+    );
+
+    const failures = [_]struct { missing: bool, ccode: u8, len: c_int }{
+        .{ .missing = true, .ccode = 0, .len = 16 },
+        .{ .missing = false, .ccode = 0xc1, .len = 16 },
+        .{ .missing = false, .ccode = 0, .len = 15 },
+        .{ .missing = false, .ccode = 0, .len = 17 },
+    };
+    for (failures) |failure| {
+        Stub.missing = failure.missing;
+        Stub.response.ccode = failure.ccode;
+        Stub.response.data_len = failure.len;
+        Stub.request_ok = false;
+        var empty_storage: [256]u8 = undefined;
+        var empty = std.Io.Writer.fixed(&empty_storage);
+        try std.testing.expectEqual(@as(c_int, -1), try printMcGuid(&intf, guid_auto, &empty, Stub.evaluate, Stub.preflushFail));
+        try std.testing.expect(Stub.request_ok);
+        try std.testing.expectEqual(@as(usize, 0), empty.buffered().len);
+    }
+}
+
+test "mc guid stdout reports preflush, early, late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var data = [16]u8{ 0xde, 0xad, 0xbe, 0xef, 0, 1, 0xa1, 0x30, 0xd9, 0x11, 0x43, 0x32, 0, 0xc0, 8, 0x28 };
+    var buf: [GUID_STR_MAXLEN + 1]u8 = undefined;
+    const guid = guid2str(&buf, &data, guid_auto);
+    const text = std.mem.sliceTo(&buf, 0);
+    const timestamp = std.mem.span(c.ipmi_timestamp_numeric(@truncate(@as(u64, @bitCast(guid.time)))));
+    var storage: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcGuid(&writer, text, guid, guid_auto, timestamp, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcGuid(&early, text, guid, guid_auto, timestamp, Stub.preflushOk));
+
+    try writeMcGuid(&writer, text, guid, guid_auto, timestamp);
+    const expected = writer.buffered();
+    var short: [256]u8 = undefined;
+    var late = std.Io.Writer.fixed(short[0 .. expected.len - 1]);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcGuid(&late, text, guid, guid_auto, timestamp, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected[0 .. expected.len - 1], late.buffered());
+
+    var final_storage: [256]u8 = undefined;
+    var final = std.Io.Writer.fixed(&final_storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcGuid(&final, text, guid, guid_auto, timestamp, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected, final.buffered());
+}
+
+test "mc guid stdout orders buffered C output around Zig output" {
+    var data = [16]u8{ 1, 2, 3, 4, 5, 6, 0x4a, 0xbc, 0x0f, 0x60, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+    var buf: [GUID_STR_MAXLEN + 1]u8 = undefined;
+    const guid = guid2str(&buf, &data, guid_auto);
+
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitMcGuid(&stdout.interface, std.mem.sliceTo(&buf, 0), guid, guid_auto, null, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [256]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|System GUID   : 01020304-0506-4abc-0f60-112233445566\n" ++
+            "GUID Encoding : RFC4122 (WARNING: IPMI Specification violation!)\n" ++
+            "GUID Version  : Random or pseudo-random\n|after\n",
+        captured[0..@intCast(length)],
+    );
 }
 
 // ---------------------------------------------------------------------------
