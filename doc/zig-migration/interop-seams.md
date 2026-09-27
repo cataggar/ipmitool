@@ -413,6 +413,24 @@ ordering, and injected pre-flush, early/late write and final-flush failures.
 The `i2c_*` C/selected Zig CLI goldens cover real dummy-interface responses
 with `-Dzig-modules=raw`.
 
+The selected `gendev read` and `gendev write` commands stream the locator
+announcement and EEPROM progress/completion lines through checked Zig stdout.
+Each line pre-flushes libc stdout before the Zig write and checks its final
+flush, preserving order around C SDR lookup output and retaining the original
+carriage returns, partial-read error text and literal `%100` on completion.
+On any pre-flush, write or final-flush failure, the command logs the failed
+phase and returns `-1`; read/write progress failures also stop the transfer
+and close the open C file without printing a misleading completion line. The
+SDR, I2C and file data paths remain in C. `zig build test-gendev-stdout`
+checks C formatting boundaries, mixed C/Zig ordering, and injected stdout
+failures. The `gd_*` C/selected-Zig CLI goldens cover successful transfers,
+lookup failures and early errors; the new `gendev_*_partial_error` C-recorded
+cases also pin the progress line before a late read/write failure at 43%.
+Run the existing cases with `zig build test-golden -Dzig-modules=gendev --
+--filter gd_`; select either late-error case by its full name with `--filter`.
+On hosts without readline/OpenSSL headers, add `-Dipmishell=false
+-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
+
 Only the selected ISOL `info` printer uses a checked Zig stdout writer; the
 interactive SOL session and all other ISOL paths still use their original C
 stdio. It flushes libc stdout before writing so previously buffered C output

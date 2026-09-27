@@ -2,17 +2,34 @@
 //! Selected with `-Dzig-modules=gendev`; the only exported symbol is
 //! `ipmi_gendev_main`. I2C, SDR lookup and safe file opening use the C ABI;
 //! logging uses the typed Zig interface backed by the selected logger.
+//! Locator and progress stdout uses a checked Zig streaming writer.
 
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Response = @import("../core/ipmi.zig").Response;
 
 const max_transfer: u8 = 16;
 const retry_count: u8 = 3; // The C loop increments twice per failure (0, 2, 4).
 const generic_locator: u8 = @intCast(c.SDR_RECORD_TYPE_GENERIC_DEVICE_LOCATOR);
+const OutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn emitOutput(writer: *std.Io.Writer, preflush: anytype, comptime format: []const u8, args: anytype) OutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writer.print(format, args) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn reportOutputError(comptime phase: [*:0]const u8, err: OutputError, write_error: anyerror) void {
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(log.Level.err, "Gendev %s stdout C preflush failed (errno %d)", .{ phase, std.c._errno().* }),
+        error.StdoutWriteFailed => log.print(log.Level.err, "Gendev %s stdout write failed: %s", .{ phase, @errorName(write_error).ptr }),
+        error.StdoutFlushFailed => log.print(log.Level.err, "Gendev %s stdout final flush failed: %s", .{ phase, @errorName(write_error).ptr }),
+    }
+}
 
 // translate-c loses ATTRIBUTE_PACKING on the SDR list and demotes the
 // locator's bitfields to opaque. Both mirrors are checked against C layouts.
@@ -143,23 +160,23 @@ fn transfer(
     return null;
 }
 
-fn progress(counter: u32, size: u32, previous: *u8, percent: *u8) void {
+fn progress(writer: *std.Io.Writer, counter: u32, size: u32, previous: *u8, percent: *u8, preflush: anytype) OutputError!void {
     percent.* = @intCast(counter * 100 / size);
     if (percent.* != previous.*) {
-        _ = c.printf("\r%i percent completed", @as(c_int, percent.*));
+        try emitOutput(writer, preflush, "\r{d} percent completed", .{percent.*});
         previous.* = percent.*;
     }
 }
 
-fn finishProgress(completed: bool, percent: u8) void {
+fn finishProgress(writer: *std.Io.Writer, completed: bool, percent: u8, preflush: anytype) OutputError!void {
     if (completed) {
-        _ = c.printf("\r%%100 percent completed\n");
+        try emitOutput(writer, preflush, "\r%100 percent completed\n", .{});
     } else {
-        _ = c.printf("\rError: %i percent completed, read not completed \n", @as(c_int, percent));
+        try emitOutput(writer, preflush, "\rError: {d} percent completed, read not completed \n", .{percent});
     }
 }
 
-fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int {
+fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8, stdout: *std.Io.File.Writer) c_int {
     const info = eepromInfo(dev) orelse {
         log.print(log.Level.err, "The selected generic device is not an eeprom", .{});
         return -1;
@@ -172,6 +189,7 @@ fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int 
     var counter: u32 = 0;
     var percent: u8 = 0;
     var previous: u8 = 101;
+    var output_failed = false;
 
     while (counter < info.size) {
         const chunk = transferSize(info, counter);
@@ -193,11 +211,21 @@ fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int 
             rc = -1;
             break;
         }
-        progress(counter, info.size, &previous, &percent);
+        progress(&stdout.interface, counter, info.size, &previous, &percent, stdout_io.trySyncC) catch |err| {
+            reportOutputError("read progress", err, stdout.err orelse error.WriteFailed);
+            rc = -1;
+            output_failed = true;
+            break;
+        };
         counter += chunk;
     }
 
-    finishProgress(counter == info.size, percent);
+    if (!output_failed) {
+        finishProgress(&stdout.interface, counter == info.size, percent, stdout_io.trySyncC) catch |err| {
+            reportOutputError("read completion", err, stdout.err orelse error.WriteFailed);
+            rc = -1;
+        };
+    }
     if (c.fclose(fp) != 0) {
         log.print(log.Level.err, "Error closing file %s", .{filename});
         rc = -1;
@@ -205,7 +233,7 @@ fn readFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int 
     return rc;
 }
 
-fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int {
+fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8, stdout: *std.Io.File.Writer) c_int {
     const info = eepromInfo(dev) orelse {
         log.print(log.Level.err, "The selected generic device is not an eeprom", .{});
         return -1;
@@ -237,6 +265,7 @@ fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int
     var counter: u32 = 0;
     var percent: u8 = 0;
     var previous: u8 = 101;
+    var output_failed = false;
     while (counter < info.size) {
         const chunk = transferSize(info, counter);
         const address = memoryOffset(info, counter);
@@ -252,11 +281,21 @@ fn writeFile(intf: *Intf, dev: *const GenLocator, filename: [*:0]const u8) c_int
             rc = -1;
             break;
         }
-        progress(counter, info.size, &previous, &percent);
+        progress(&stdout.interface, counter, info.size, &previous, &percent, stdout_io.trySyncC) catch |err| {
+            reportOutputError("write progress", err, stdout.err orelse error.WriteFailed);
+            rc = -1;
+            output_failed = true;
+            break;
+        };
         counter += chunk;
     }
 
-    finishProgress(counter == info.size, percent);
+    if (!output_failed) {
+        finishProgress(&stdout.interface, counter == info.size, percent, stdout_io.trySyncC) catch |err| {
+            reportOutputError("write completion", err, stdout.err orelse error.WriteFailed);
+            rc = -1;
+        };
+    }
     if (c.fclose(fp) != 0) {
         log.print(log.Level.err, "Error closing file %s", .{filename});
         rc = -1;
@@ -292,7 +331,11 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         return -1;
     }
     log.print(log.Level.err, if (is_read) "Gendev read sdr name : %s" else "Gendev write sdr name : %s", .{argv[1]});
-    _ = c.printf("Locating sensor record '%s'...\n", argv[1]);
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitOutput(&stdout.interface, stdout_io.trySyncC, "Locating sensor record '{s}'...\n", .{std.mem.span(argv[1])}) catch |err| {
+        reportOutputError("locator", err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
     const found = c.ipmi_sdr_find_sdr_byid(@ptrCast(intf), argv[1]);
     if (found == null) {
         log.print(log.Level.err, "Sensor data record not found!", .{});
@@ -308,8 +351,8 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         return -1;
     };
     log.print(log.Level.err, if (is_read) "Gendev read file name: %s" else "Gendev write file name: %s", .{argv[2]});
-    if (is_read) return readFile(intf, dev, argv[2]);
-    return writeFile(intf, dev, argv[2]);
+    if (is_read) return readFile(intf, dev, argv[2], &stdout);
+    return writeFile(intf, dev, argv[2], &stdout);
 }
 
 pub fn exportSymbols() void {
@@ -374,4 +417,132 @@ test "EEPROM table and address boundaries" {
     try std.testing.expectEqual(@as(u32, 0), memoryOffset(info, 65536));
     dev.slave = 0xff;
     try std.testing.expect(!addressRangeValid(&dev, info));
+}
+
+test "gendev stdout matches C locator and progress bytes at boundaries" {
+    const Stub = struct {
+        fn preflush() error{CStdoutFlushFailed}!void {}
+    };
+    for ([_][*:0]const u8{ "", "EepOne", "Board 'A' 7" }) |name| {
+        var expected: [128]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "Locating sensor record '%s'...\n", name);
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [128]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try emitOutput(&writer, Stub.preflush, "Locating sensor record '{s}'...\n", .{std.mem.span(name)});
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+
+    for ([_]struct { counter: u32, size: u32, previous: u8, result: u8 }{
+        .{ .counter = 0, .size = 128, .previous = 101, .result = 0 },
+        .{ .counter = 9, .size = 128, .previous = 0, .result = 7 },
+        .{ .counter = 127, .size = 128, .previous = 98, .result = 99 },
+        .{ .counter = 511, .size = 512, .previous = 98, .result = 99 },
+    }) |case| {
+        var previous = case.previous;
+        var percent: u8 = 0;
+        var storage: [80]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try progress(&writer, case.counter, case.size, &previous, &percent, Stub.preflush);
+        var expected: [80]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "\r%i percent completed", @as(c_int, case.result));
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        try std.testing.expectEqual(case.result, previous);
+        try std.testing.expectEqual(case.result, percent);
+        try progress(&writer, case.counter, case.size, &previous, &percent, Stub.preflush);
+        try std.testing.expectEqual(@as(usize, @intCast(n)), writer.buffered().len);
+    }
+
+    for ([_]u8{ 0, 7, 99 }) |percent| {
+        var storage: [128]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try finishProgress(&writer, false, percent, Stub.preflush);
+        var expected: [128]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "\rError: %i percent completed, read not completed \n", @as(c_int, percent));
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+    var storage: [80]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try finishProgress(&writer, true, 99, Stub.preflush);
+    var expected: [80]u8 = undefined;
+    const n = c.snprintf(&expected, expected.len, "\r%%100 percent completed\n");
+    try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    try std.testing.expectEqualStrings("\r%100 percent completed\n", writer.buffered());
+}
+
+test "gendev stdout orders buffered C SDR output around Zig progress" {
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(fds[1], stdout_fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitOutput(&stdout.interface, stdout_io.trySyncC, "Locating sensor record '{s}'...\n", .{"EepOne"});
+    _ = c.printf("SDR|");
+    var previous: u8 = 101;
+    var percent: u8 = 0;
+    try progress(&stdout.interface, 0, 128, &previous, &percent, stdout_io.trySyncC);
+    _ = c.printf("I2C|");
+    try finishProgress(&stdout.interface, true, percent, stdout_io.trySyncC);
+    _ = c.printf("after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+
+    var captured: [256]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Locating sensor record 'EepOne'...\nSDR|\r0 percent completedI2C|\r%100 percent completed\nafter\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "gendev stdout reports preflush write and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitOutput(&writer, Stub.preflushFail, "Locating sensor record '{s}'...\n", .{"EepOne"}));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var previous: u8 = 101;
+    var percent: u8 = 101;
+    try std.testing.expectError(error.CStdoutFlushFailed, progress(&writer, 0, 128, &previous, &percent, Stub.preflushFail));
+    try std.testing.expectEqual(@as(u8, 101), previous);
+    try std.testing.expectEqual(@as(u8, 0), percent);
+    try std.testing.expectError(error.CStdoutFlushFailed, finishProgress(&writer, false, percent, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, progress(&early, 0, 128, &previous, &percent, Stub.preflushOk));
+    try std.testing.expectEqual(@as(u8, 101), previous);
+
+    const prefix = "Locating sensor record 'EepOne'";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitOutput(&late, Stub.preflushOk, "Locating sensor record '{s}'...\n", .{"EepOne"}));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, finishProgress(&writer, true, percent, Stub.preflushOk));
+    try std.testing.expectEqualStrings("\r%100 percent completed\n", writer.buffered());
 }
