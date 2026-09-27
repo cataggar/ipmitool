@@ -390,13 +390,28 @@ output buffered by a caller stays ahead of the response, then checks writes
 and the final flush, returning `-1` with a diagnostic on failure. The
 lowercase, zero-padded two-digit bytes retain their leading space, wrap
 after every sixteen bytes, and always end in a newline, even for an empty
-response. `i2c` output, parsing, the C ABI and the original C oracle remain
+response. `i2c` parsing, the C ABI and the original C oracle remain
 unchanged. `zig build test-raw-output` compares lengths 0 through 1024 at
 wrap boundaries against libc `%2.2x` formatting, runs the same C caller with
 buffered output before and after the original C and selected Zig commands,
 and exercises early and late writer failures. The `raw_` CLI goldens pin
 response and verbose ordering with `-Dzig-modules=raw`. Use the
 reduced-feature flags above if needed.
+
+The selected `i2c` command now uses a checked Zig streaming stdout writer
+for its conditional `Wrote`/`Read` lines, lowercase 16-byte-wrap hex dump,
+and bit strings for replies of at most four bytes. It preserves the C
+`printbuf` diagnostic before the transfer, uppercase two-digit device
+address, spaces and newlines, and returns `-1` for a short read *after* any
+applicable summary lines, without dumping that reply. It checks libc stdout
+pre-flush (so earlier C output stays ahead of Zig output), Zig writes, and
+the final flush, logging the failed phase and returning `-1`. When C would
+print nothing (no read/write, or a quiet mixed short read), it preserves the
+status without touching stdout. `zig build test-raw-i2c-stdout` compares
+C-formatted boundaries and all summary modes, short replies, buffered C/Zig
+ordering, and injected pre-flush, early/late write and final-flush failures.
+The `i2c_*` C/selected Zig CLI goldens cover real dummy-interface responses
+with `-Dzig-modules=raw`.
 
 Only the selected ISOL `info` printer uses a checked Zig stdout writer; the
 interactive SOL session and all other ISOL paths still use their original C

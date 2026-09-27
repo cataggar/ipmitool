@@ -69,6 +69,14 @@ respond short_read
   data aa bb cc
 end
 
+# The quiet read-only path also prints "Read" before the short-length check.
+respond short_read_only
+  netfn 0x06
+  cmd 0x52
+  match 00 a0 08
+  data aa bb cc
+end
+
 # Write only, nothing to read.
 respond write_only
   netfn 0x06
