@@ -449,8 +449,15 @@ flush; failures log an error and return `-1`. `zig build
 test-mc-selftest-stdout` compares formatting and statuses, including libc
 hexadecimal output at width boundaries, mixed C/Zig output ordering, and
 pre-flush, early/late write and final-flush failures. The existing
-`mc_selftest_*` C/selected-Zig CLI goldens cover all result branches;
-other MC output remains on its existing path.
+`mc_selftest_*` C/selected-Zig CLI goldens cover all result branches.
+
+The selected MC warm/cold reset acknowledgement also streams through checked
+Zig stdout after a libc pre-flush. Its words, newline and command status
+match C; pre-flush, write and final-flush failures log and return `-1`.
+`zig build test-mc-reset-stdout` compares C formatting, buffered C/Zig
+ordering and injected failures. The existing `mc_reset_*` original-C and
+selected-Zig CLI goldens cover both successful reset variants and errors.
+Other MC output remains on its existing path.
 
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a
