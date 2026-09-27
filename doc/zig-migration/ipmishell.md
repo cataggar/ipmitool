@@ -64,11 +64,17 @@ stdout between Zig echo and set responses. `zig build test-shell-stdout-unit`
 checks echo and every successful set response against libc `snprintf`, with
 early and late failing writers. The PTY suite forces both a failed C pre-flush
 and failed Zig writes through `/dev/full`, requiring a nonzero exit and an
-error diagnostic instead of a shell panic. The dummy interface has no live
-session, so CLI goldens cannot reach successful hostname, username, password,
-authtype, privlvl, or port setters; their message formats have unit
-differential coverage, not successful CLI golden coverage. With reduced local
+error diagnostic instead of a shell panic. Its C pre-flush probe seeds libc
+stdout with `chassis poh` (a deterministic zero-count reply from the dummy
+BMC), then runs `mc reset warm` and Zig `echo`. When MC is selected, the probe
+requires the Zig reset's C pre-flush failure; with C MC, it requires Zig echo's
+C pre-flush failure. POH remains libc-buffered with either original-C or
+selected-Zig chassis. The dummy interface has no live session, so CLI goldens
+cannot reach successful hostname, username, password, authtype, privlvl, or
+port setters; their message formats have unit differential coverage, not
+successful CLI golden coverage. With reduced local
 flags `-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`, use
-`-Dipmishell=false` for the unit and CLI goldens; `test-shell` needs
-`-Dipmishell=true` to enable the interactive command even when Zig supplies
-the readline-free frontend.
+`-Dipmishell=false` for the unit and CLI goldens. For `test-shell`, select
+`-Dzig-modules=ipmishell` or `-Dzig-modules=all` without disabling the shell:
+both use the readline-free Zig frontend, including on hosts without readline
+headers.

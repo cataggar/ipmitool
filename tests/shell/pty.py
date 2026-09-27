@@ -47,7 +47,7 @@ class Dummy:
         self.listener.settimeout(.2)
         self.stop = threading.Event()
         self.warm_reset_success = threading.Event()
-        self.power_status_success = threading.Event()
+        self.poh_success = threading.Event()
         self.thread = threading.Thread(target=self.serve)
         self.thread.start()
         return self
@@ -71,18 +71,18 @@ class Dummy:
                         if netfn == 0x3F and command == 0xFF:
                             break
                         # Match the golden harness's default completion code.
-                        power_status = (
-                            self.power_status_success.is_set()
-                            and netfn == 0x00 and command == 0x01
+                        poh = (
+                            self.poh_success.is_set()
+                            and netfn == 0x00 and command == 0x0F
                         )
-                        ccode = 0 if power_status or (
+                        ccode = 0 if poh or (
                             self.warm_reset_success.is_set()
                             and netfn == 0x06 and command == 0x03
                         ) else 0xC1
                         conn.sendall(struct.pack(
                             "@BBBBB3xi4xP", netfn | 1, command, 0, lun, ccode,
-                            int(power_status), 0,
-                        ) + (b"\x01" if power_status else b""))
+                            5 if poh else 0, 0,
+                        ) + (b"\x01\x00\x00\x00\x00" if poh else b""))
                 except (OSError, TimeoutError):
                     pass
 
@@ -372,22 +372,34 @@ class ShellTests(unittest.TestCase):
                 self.assertIn(b": stdout WriteFailed", run.stderr)
 
     def test_shell_stdout_libc_flush_failure_is_not_success(self):
-        self.bmc.power_status_success.set()
+        self.bmc.poh_success.set()
+        self.bmc.warm_reset_success.set()
         try:
-            # Chassis status still buffers its output in libc before echo's Zig write.
-            SCRIPT.write_text("chassis power status\necho after\n", encoding="utf-8")
+            # POH is libc-buffered even with Zig chassis; the selected MC reset
+            # must preflush it. Echo covers builds with only Zig shell selected.
+            SCRIPT.write_text("chassis poh\nmc reset warm\necho after\n", encoding="utf-8")
             normal = cli(ZIG, "exec", str(SCRIPT))
             self.assertEqual(normal.returncode, 0, normal.stderr)
-            self.assertEqual(normal.stdout, b"Chassis Power is on\nafter \n")
+            self.assertEqual(
+                normal.stdout,
+                b"POH Counter  : 0 days, 0 hours, 0 minutes\n"
+                b"Sent warm reset command to MC\nafter \n",
+            )
             with open("/dev/full", "wb") as full:
                 run = subprocess.run(
                     [ZIG, "-I", "dummy", "exec", str(SCRIPT)], stdout=full,
                     stderr=subprocess.PIPE, env=env(), timeout=5, check=False,
                 )
             self.assertNotEqual(run.returncode, 0, run.stderr)
-            self.assertIn(b"echo: stdout CStdoutFlushFailed", run.stderr)
+            self.assertIn(
+                b"MC reset stdout C preflush failed"
+                if os.environ.get("IPMITOOL_TEST_ZIG_MC_RESET") == "1"
+                else b"echo: stdout CStdoutFlushFailed",
+                run.stderr,
+            )
         finally:
-            self.bmc.power_status_success.clear()
+            self.bmc.poh_success.clear()
+            self.bmc.warm_reset_success.clear()
 
     def test_redirected_input_eof_and_status(self):
         run = subprocess.run(

@@ -1230,6 +1230,14 @@ pub fn build(b: *std.Build) void {
     chassis_status_stdout_step.dependOn(&b.addRunArtifact(chassis_status_stdout_unit).step);
     test_step.dependOn(chassis_status_stdout_step);
 
+    const chassis_power_status_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis power status"},
+    });
+    const chassis_power_status_stdout_step = b.step("test-chassis-power-status-stdout", "Compare chassis power status C bytes, requests, output order and I/O failures");
+    chassis_power_status_stdout_step.dependOn(&b.addRunArtifact(chassis_power_status_stdout_unit).step);
+    test_step.dependOn(chassis_power_status_stdout_step);
+
     const chassis_restart_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.chassis.test.chassis restart cause stdout"},
@@ -2096,6 +2104,7 @@ pub fn build(b: *std.Build) void {
             "python3",
             b.pathFromRoot("tests/shell/pty.py"),
         });
+        shell_pty.setEnvironmentVariable("IPMITOOL_TEST_ZIG_MC_RESET", if (replacedByZig("lib/ipmi_mc.c", zig_selection)) "1" else "0");
         shell_pty.addArtifactArg(ipmitool);
         const shell_test = b.step("test-shell", "Run native shell PTY and CLI tests");
         shell_test.dependOn(&shell_pty.step);
