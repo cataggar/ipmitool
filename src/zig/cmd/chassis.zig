@@ -19,7 +19,8 @@
 //!   `strncmp`, `strtok_r` and `str2uchar` receive the same pointers as C,
 //!   including writable `argv` strings that `strtok_r()` splits in place.
 //!   The `power_usage` format is a compile-time constant, never user input.
-//!   Chassis power status, identify and self-test results use checked Zig stdout.
+//!   Chassis power status/control, restore policy, identify, restart cause,
+//!   status and self-test results use checked Zig stdout.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -2381,7 +2382,36 @@ fn chassisBootmailbox(intf: *Intf, argc_in: c_int, argv_in: [*]const [*:0]u8) c_
 // ---------------------------------------------------------------------------
 
 /// `ipmi_chassis_power_policy()`.
-fn chassisPowerPolicy(intf: *Intf, policy: u8) c_int {
+const PolicyOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisPowerPolicy(writer: *std.Io.Writer, policy: u8, supported: u8) std.Io.Writer.Error!void {
+    if (policy == IPMI_CHASSIS_POLICY_NO_CHANGE) {
+        try writer.writeAll("Supported chassis power policy:  ");
+        if (supported & (@as(u8, 1) << IPMI_CHASSIS_POLICY_ALWAYS_OFF) != 0)
+            try writer.writeAll("always-off ");
+        if (supported & (@as(u8, 1) << IPMI_CHASSIS_POLICY_ALWAYS_ON) != 0)
+            try writer.writeAll("always-on ");
+        if (supported & (@as(u8, 1) << IPMI_CHASSIS_POLICY_PREVIOUS) != 0)
+            try writer.writeAll("previous");
+        try writer.writeByte('\n');
+    } else {
+        try writer.writeAll("Set chassis power restore policy to ");
+        try writer.writeAll(switch (policy) {
+            IPMI_CHASSIS_POLICY_ALWAYS_ON => "always-on\n",
+            IPMI_CHASSIS_POLICY_ALWAYS_OFF => "always-off\n",
+            IPMI_CHASSIS_POLICY_PREVIOUS => "previous\n",
+            else => "unknown\n",
+        });
+    }
+}
+
+fn emitChassisPowerPolicy(writer: *std.Io.Writer, policy: u8, supported: u8, preflush: anytype) PolicyOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisPowerPolicy(writer, policy, supported) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisPowerPolicyTo(intf: *Intf, policy: u8, writer: *std.Io.Writer, preflush: anytype) PolicyOutputError!c_int {
     var policy_byte = policy;
 
     var req = std.mem.zeroes(Request);
@@ -2399,25 +2429,155 @@ fn chassisPowerPolicy(intf: *Intf, policy: u8) c_int {
         return -1;
     }
 
-    if (policy == IPMI_CHASSIS_POLICY_NO_CHANGE) {
-        _ = c.printf("Supported chassis power policy:  ");
-        if (rsp.data[0] & (@as(u8, 1) << @intCast(IPMI_CHASSIS_POLICY_ALWAYS_OFF)) != 0)
-            _ = c.printf("always-off ");
-        if (rsp.data[0] & (@as(u8, 1) << @intCast(IPMI_CHASSIS_POLICY_ALWAYS_ON)) != 0)
-            _ = c.printf("always-on ");
-        if (rsp.data[0] & (@as(u8, 1) << @intCast(IPMI_CHASSIS_POLICY_PREVIOUS)) != 0)
-            _ = c.printf("previous");
-        _ = c.printf("\n");
-    } else {
-        _ = c.printf("Set chassis power restore policy to ");
-        switch (policy) {
-            IPMI_CHASSIS_POLICY_ALWAYS_ON => _ = c.printf("always-on\n"),
-            IPMI_CHASSIS_POLICY_ALWAYS_OFF => _ = c.printf("always-off\n"),
-            IPMI_CHASSIS_POLICY_PREVIOUS => _ = c.printf("previous\n"),
-            else => _ = c.printf("unknown\n"),
-        }
-    }
+    try emitChassisPowerPolicy(writer, policy, rsp.data[0], preflush);
     return 0;
+}
+
+fn chassisPowerPolicy(intf: *Intf, policy: u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisPowerPolicyTo(intf, policy, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis policy stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis policy stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis policy stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis policy stdout matches C for supported masks and policy values" {
+    var expected: [96]u8 = undefined;
+    var storage: [96]u8 = undefined;
+    for (0..256) |mask| {
+        const supported: u8 = @intCast(mask);
+        const n = c.snprintf(
+            &expected,
+            expected.len,
+            "Supported chassis power policy:  %s%s%s\n",
+            if (supported & 1 != 0) "always-off " else "",
+            if (supported & 4 != 0) "always-on " else "",
+            if (supported & 2 != 0) "previous" else "",
+        );
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisPowerPolicy(&writer, IPMI_CHASSIS_POLICY_NO_CHANGE, supported);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+    for (0..256) |value| {
+        const policy: u8 = @intCast(value);
+        if (policy == IPMI_CHASSIS_POLICY_NO_CHANGE) continue;
+        const label: [*:0]const u8 = switch (policy) {
+            IPMI_CHASSIS_POLICY_ALWAYS_ON => "always-on",
+            IPMI_CHASSIS_POLICY_ALWAYS_OFF => "always-off",
+            IPMI_CHASSIS_POLICY_PREVIOUS => "previous",
+            else => "unknown",
+        };
+        const n = c.snprintf(&expected, expected.len, "Set chassis power restore policy to %s\n", label);
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisPowerPolicy(&writer, policy, 0xff);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis policy stdout propagates preflush, early, late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisPowerPolicy(&writer, IPMI_CHASSIS_POLICY_NO_CHANGE, 7, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPowerPolicy(&early, IPMI_CHASSIS_POLICY_NO_CHANGE, 7, Stub.preflushOk));
+    var short: [36]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPowerPolicy(&late, IPMI_CHASSIS_POLICY_NO_CHANGE, 7, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Supported chassis power policy:  ", late.buffered()[0..33]);
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisPowerPolicy(&writer, IPMI_CHASSIS_POLICY_ALWAYS_ON, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set chassis power restore policy to always-on\n", writer.buffered());
+}
+
+test "chassis policy stdout orders buffered C and Zig output" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisPowerPolicy(&stdout.interface, IPMI_CHASSIS_POLICY_NO_CHANGE, 5, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitChassisPowerPolicy(&stdout.interface, IPMI_CHASSIS_POLICY_PREVIOUS, 0, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [192]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Supported chassis power policy:  always-off always-on \n|between|Set chassis power restore policy to previous\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "chassis policy stdout preserves request and response statuses" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x6 and req.msg.data_len == 1);
+            std.debug.assert(req.msg.data[0] == IPMI_CHASSIS_POLICY_NO_CHANGE);
+            return if (present) &response else null;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.response = std.mem.zeroes(Response);
+    Stub.response.data[0] = 5;
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisPowerPolicyTo(&intf, IPMI_CHASSIS_POLICY_NO_CHANGE, &writer, stdout_io.trySyncC));
+    try std.testing.expectEqualStrings("Supported chassis power policy:  always-off always-on \n", writer.buffered());
+    try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.response.ccode = 0xc1;
+        var empty: [96]u8 = undefined;
+        var silent = std.Io.Writer.fixed(&empty);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisPowerPolicyTo(&intf, IPMI_CHASSIS_POLICY_NO_CHANGE, &silent, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), silent.buffered().len);
+    }
+    try std.testing.expectEqual(@as(usize, 3), Stub.requests);
+    Stub.present = true;
+    Stub.response.ccode = 0;
+    var silent = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, chassisPowerPolicyTo(&intf, IPMI_CHASSIS_POLICY_NO_CHANGE, &silent, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), silent.buffered().len);
+    try std.testing.expectEqual(@as(usize, 4), Stub.requests);
 }
 
 // ---------------------------------------------------------------------------

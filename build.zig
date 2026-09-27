@@ -1254,6 +1254,14 @@ pub fn build(b: *std.Build) void {
     chassis_control_stdout_step.dependOn(&b.addRunArtifact(chassis_control_stdout_unit).step);
     test_step.dependOn(chassis_control_stdout_step);
 
+    const chassis_policy_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis policy stdout"},
+    });
+    const chassis_policy_stdout_step = b.step("test-chassis-policy-stdout", "Compare chassis restore-policy C bytes, request statuses, output order and I/O failures");
+    chassis_policy_stdout_step.dependOn(&b.addRunArtifact(chassis_policy_stdout_unit).step);
+    test_step.dependOn(chassis_policy_stdout_step);
+
     const mc_reset_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.reset stdout"},
