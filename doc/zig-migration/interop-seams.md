@@ -605,7 +605,22 @@ request and completion-code errors still return without attempting output.
 and table paths and every countdown, buffered C/Zig ordering, request statuses
 and injected output failures. The original-C and selected-Zig
 `mc_watchdog_get*` goldens retain the CLI and wire-level oracle. Watchdog
-set/off/reset and other MC paths are unchanged.
+set/off/reset and other MC paths are unchanged by the GET output cutover.
+
+The selected `mc watchdog set` `t=`/`p=` values now use a Zig signed-decimal
+scanner instead of libc `strtol`. It skips whitespace according to the active
+C locale's `isspace`, accepts an optional sign and ASCII decimal digits, and
+returns the original offset on a conversion with no digits (including after
+leading whitespace/sign). It consumes every digit after overflow, saturates
+to the target's `LONG_MIN`/`LONG_MAX` for the existing `%ld` range diagnostic,
+and rejects trailing junk before checking the 1-6553/1-255 bounds. Requests,
+watchdog GET output and nonnumeric options are unchanged. `zig build
+test-mc-watchdog-numeric` compares consumed offsets and values against libc
+across the byte alphabet and numeric boundaries, and checks SET request bytes
+and statuses; the `mc_watchdog_*` CLI goldens provide the original-C oracle.
+Non-C locales may define additional non-ASCII digits for `strtol`; those
+implementation-defined numeric alphabets are outside this ASCII-decimal
+scanner's scope, while locale-specific whitespace remains supported.
 
 The selected `mc info` device-ID printer now streams its human-readable
 fields through checked Zig stdout, pre-flushing libc stdout before writing

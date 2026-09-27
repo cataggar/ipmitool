@@ -16,9 +16,10 @@
 //!   use `log.print()` from the selected logger archive (falling back to C
 //!   `lprintf` when `log` is not selected). Watchdog countdowns use exact
 //!   integer tenths and libc's locale decimal point instead of floating-point
-//!   formatting. SET system-info strings use Zig byte lengths and zero-padded
-//!   block copies; `strcmp` and `strtol` still receive the same valid inputs
-//!   as C.
+//!   formatting. Watchdog SET decimal values use Zig's saturating parser and
+//!   libc's locale whitespace classification. SET system-info strings use
+//!   Zig byte lengths and zero-padded block copies; `strcmp` still receives
+//!   the same valid inputs as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -2140,6 +2141,40 @@ const WdtConf = struct {
     dontstop: bool = false,
 };
 
+const WatchdogDecimal = struct {
+    value: c_long,
+    end: usize,
+};
+
+fn parseWatchdogDecimal(text: [*:0]const u8) WatchdogDecimal {
+    var end: usize = 0;
+    while (c.isspace(@as(c_int, text[end])) != 0) : (end += 1) {}
+    const negative = text[end] == '-';
+    if (negative or text[end] == '+') end += 1;
+
+    const digits = end;
+    const limit: c_ulong = @as(c_ulong, @intCast(std.math.maxInt(c_long))) + @intFromBool(negative);
+    var magnitude: c_ulong = 0;
+    while (text[end] >= '0' and text[end] <= '9') : (end += 1) {
+        const digit: c_ulong = text[end] - '0';
+        if (magnitude > (limit - digit) / 10) {
+            magnitude = limit;
+        } else {
+            magnitude = magnitude * 10 + digit;
+        }
+    }
+    if (end == digits) return .{ .value = 0, .end = 0 };
+    return .{
+        .value = if (negative and magnitude == limit)
+            std.math.minInt(c_long)
+        else if (negative)
+            -@as(c_long, @intCast(magnitude))
+        else
+            @intCast(magnitude),
+        .end = end,
+    };
+}
+
 /// `parse_set_wdt_options()`.
 fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
     // Seconds, makes almost USHRT_MAX when converted to 100ms intervals.
@@ -2169,9 +2204,9 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
         // Only check the first letter to allow for shortcuts.
         switch (arg[0]) {
             't', 'p' => { // timeout, pretimeout
-                var end: [*c]u8 = null;
-                val = c.strtol(vstr, &end, 10);
-                if (end == vstr or end[0] != 0) {
+                const parsed = parseWatchdogDecimal(@ptrCast(vstr));
+                val = parsed.value;
+                if (parsed.end == 0 or vstr[parsed.end] != 0) {
                     log.print(log.Level.err, "Invalid watchdog value '%s'", .{vstr});
                     return err;
                 }
@@ -2329,6 +2364,159 @@ fn mcSetWatchdog(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     }
 
     return rc;
+}
+
+fn expectWatchdogDecimalOracle(text: [*:0]const u8) !void {
+    var end: [*c]u8 = null;
+    const value = c.strtol(text, &end, 10);
+    try std.testing.expect(end != null);
+    const parsed = parseWatchdogDecimal(text);
+    try std.testing.expectEqual(value, parsed.value);
+    try std.testing.expectEqual(@intFromPtr(end) - @intFromPtr(text), parsed.end);
+}
+
+test "watchdog numeric decimal matches libc value and end across signs whitespace and overflow" {
+    const inputs = [_][*:0]const u8{
+        "",
+        " ",
+        "\t\r\n\x0b\x0c ",
+        "+",
+        "-",
+        " + ",
+        " - 1",
+        "abc",
+        "1sec",
+        "12  ",
+        "00",
+        "-0",
+        "+0001",
+        " \t+00030",
+        " \n-000255",
+        "10+2",
+        "1,000",
+        "0x10",
+        "0b11",
+        "  -2147483648",
+        "2147483647",
+        "2147483648",
+        "-2147483649",
+        "9223372036854775807",
+        "9223372036854775808",
+        "-9223372036854775808",
+        "-9223372036854775809",
+        "9223372036854775808bad",
+        "-9223372036854775809x",
+        "0009223372036854775808",
+        "-0009223372036854775809",
+        "99999999999999999999999999999999999999999999999999999999999999",
+        "-99999999999999999999999999999999999999999999999999999999999999x",
+    };
+    for (inputs) |text| try expectWatchdogDecimalOracle(text);
+
+    // Each possible byte is also exercised before a digit in the active C locale.
+    for (0..256) |byte| {
+        const text = [_:0]u8{ @intCast(byte), '7' };
+        try expectWatchdogDecimalOracle(&text);
+    }
+
+    var long_digits: [131]u8 = undefined;
+    long_digits[0] = '-';
+    @memset(long_digits[1..129], '9');
+    long_digits[129] = 'x';
+    long_digits[130] = 0;
+    try expectWatchdogDecimalOracle(@ptrCast(&long_digits));
+}
+
+test "watchdog numeric SET retains libc request bytes and error statuses" {
+    const Stub = struct {
+        var response: Response = std.mem.zeroes(Response);
+        var missing = false;
+        var calls: usize = 0;
+        var header_ok = false;
+        var payload: [6]u8 = undefined;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            header_ok = req.msg.netfn_lun.netfn == netfn_app and
+                req.msg.cmd == BMC_SET_WATCHDOG_TIMER and req.msg.data_len == 6 and req.msg.data != null;
+            if (header_ok) {
+                const data: [*]const u8 = @ptrCast(req.msg.data);
+                @memcpy(&payload, data[0..payload.len]);
+            }
+            return if (missing) null else &response;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+
+    const cases = [_]struct { arg: [*:0]const u8, ccode: u8 = 0, missing: bool = false }{
+        .{ .arg = "t=1" },
+        .{ .arg = "timeout=30" },
+        .{ .arg = "timeout= \t+0006553" },
+        .{ .arg = "t=\n001", .ccode = 0xc1 },
+        .{ .arg = "t=+10", .missing = true },
+        .{ .arg = "p=1" },
+        .{ .arg = "pretimeout=255" },
+        .{ .arg = "p= +00255", .ccode = 0xcc },
+        .{ .arg = "p=7", .missing = true },
+        .{ .arg = "t=" },
+        .{ .arg = "p= " },
+        .{ .arg = "t=+" },
+        .{ .arg = "p=++1" },
+        .{ .arg = "t=1sec" },
+        .{ .arg = "p=1 " },
+        .{ .arg = "t=0x10" },
+        .{ .arg = "t=0" },
+        .{ .arg = "p=-1" },
+        .{ .arg = "t=6554" },
+        .{ .arg = "p=256" },
+        .{ .arg = "t=9223372036854775808" },
+        .{ .arg = "p=-9223372036854775809" },
+        .{ .arg = "t=9223372036854775808bad" },
+    };
+    for (cases) |case| {
+        const arg = std.mem.span(case.arg);
+        const equals = std.mem.indexOfScalar(u8, arg, '=').?;
+        const value = case.arg + equals + 1;
+        var end: [*c]u8 = null;
+        const seconds = c.strtol(value, &end, 10);
+        const maximum: c_long = if (arg[0] == 'p') 255 else 6553;
+        const accepted = @intFromPtr(end) != @intFromPtr(value) and end[0] == 0 and
+            seconds >= 1 and seconds <= maximum;
+
+        Stub.calls = 0;
+        Stub.missing = case.missing;
+        Stub.response.ccode = case.ccode;
+        var options = [_][*:0]u8{@constCast(case.arg)};
+        const status = mcSetWatchdog(&intf, 1, &options);
+        try std.testing.expectEqual(
+            if (!accepted or case.missing) @as(c_int, -1) else @as(c_int, case.ccode),
+            status,
+        );
+        try std.testing.expectEqual(@as(usize, @intFromBool(accepted)), Stub.calls);
+        if (accepted) {
+            try std.testing.expect(Stub.header_ok);
+            var expected = [_]u8{0} ** 6;
+            if (arg[0] == 'p') {
+                expected[2] = @intCast(seconds);
+            } else {
+                htole16(@intCast(seconds * 10), expected[4..]);
+            }
+            try std.testing.expectEqualSlices(u8, &expected, &Stub.payload);
+        }
+    }
+
+    Stub.calls = 0;
+    var options = [_][*:0]u8{ @constCast("t=30"), @constCast("p=1bad") };
+    try std.testing.expectEqual(@as(c_int, -1), mcSetWatchdog(&intf, options.len, &options));
+    try std.testing.expectEqual(@as(usize, 0), Stub.calls);
+    options[1] = @constCast("p=9");
+    Stub.response.ccode = 0;
+    Stub.missing = false;
+    try std.testing.expectEqual(@as(c_int, 0), mcSetWatchdog(&intf, options.len, &options));
+    try std.testing.expectEqual(@as(usize, 1), Stub.calls);
+    try std.testing.expect(Stub.header_ok);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0, 0, 9, 0, 0x2c, 0x01 }, &Stub.payload);
 }
 
 fn writeMcWatchdogAck(writer: *std.Io.Writer, reset: bool) std.Io.Writer.Error!void {
