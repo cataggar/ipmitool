@@ -1,0 +1,7 @@
+default_ccode 0xc1
+
+respond session_info_modem12
+  netfn 0x06
+  cmd 0x3d
+  data 05 7f 8a bf 8e 8f fe ff c0 00 02 81
+end

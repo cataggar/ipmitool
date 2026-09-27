@@ -1078,6 +1078,7 @@ pub fn build(b: *std.Build) void {
     abi_options.addOption(bool, "have_crypto_sha256", openssl);
     abi_mod.addImport("build_options", abi_options.createModule());
     abi_mod.addCSourceFile(.{ .file = b.path("tests/fd_set_oracle.c"), .flags = &.{"-std=c11"} });
+    abi_mod.addCSourceFile(.{ .file = b.path("tests/session_info_mac_oracle.c"), .flags = &.{"-std=c11"} });
     addCryptoVectors(b, abi_mod);
     const abi_tests = b.addTest(.{ .root_module = abi_mod });
     const unit_tests = b.addRunArtifact(abi_tests);
@@ -1165,6 +1166,14 @@ pub fn build(b: *std.Build) void {
     const mc_selftest_step = b.step("test-mc-selftest-stdout", "Compare MC selftest C bytes and test writer failures");
     mc_selftest_step.dependOn(&b.addRunArtifact(mc_selftest_unit).step);
     test_step.dependOn(mc_selftest_step);
+
+    const session_info_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.session.test.session info stdout"},
+    });
+    const session_info_step = b.step("test-session-info-stdout", "Compare C/Zig session info CLI output and test writer failures");
+    session_info_step.dependOn(&b.addRunArtifact(session_info_unit).step);
+    test_step.dependOn(session_info_step);
 
     const lan_activate_unit = b.addTest(.{
         .root_module = abi_mod,
@@ -2045,6 +2054,45 @@ pub fn build(b: *std.Build) void {
             .optimize = .Debug,
         }),
     });
+
+    if (enabled[pluginIndex("dummy")] and target.result.os.tag == b.graph.host.result.os.tag and
+        target.result.cpu.arch == b.graph.host.result.cpu.arch)
+    {
+        const session_c = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+        const session_zig = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+        session_c[moduleIndex("session")] = false;
+        session_zig[moduleIndex("session")] = true;
+        var variant_options: SwappedOptions = .{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
+            .system_libs = undefined,
+        };
+        const oracle = if (!zig_selection[moduleIndex("session")]) ipmitool else blk: {
+            variant_options.system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, session_c);
+            break :blk addSelectedTool(b, variant_options, session_c, "ipmitool-session-c");
+        };
+        const selected = if (zig_selection[moduleIndex("session")]) ipmitool else blk: {
+            variant_options.system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, session_zig);
+            break :blk addSelectedTool(b, variant_options, session_zig, "ipmitool-session-zig");
+        };
+        const compare = b.addRunArtifact(golden_exe);
+        compare.addArg("--tests-dir");
+        compare.addDirectoryArg(b.path("tests"));
+        compare.addArgs(&.{ "--repo", b.build_root.path orelse ".", "--binary" });
+        compare.addFileArg(oracle.getEmittedBin());
+        compare.addArg("--candidate");
+        compare.addFileArg(selected.getEmittedBin());
+        compare.addArgs(&.{ "--filter", "session_info_", "--allow-uncovered", "--work-dir" });
+        compare.addDirectoryArg(b.tmpPath());
+        session_info_step.dependOn(&compare.step);
+    }
 
     const golden_step = b.step("test-golden", "Run the golden CLI test suite");
     golden_step.dependOn(&addGolden(

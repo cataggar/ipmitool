@@ -9,6 +9,7 @@ const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 
 const current = 0;
 const all = 1;
@@ -29,64 +30,86 @@ fn ipAddress(info: *const [info_size]u8, offset: usize, buffer: *[18]u8) [*c]con
     return c.inet_ntop(c.AF_INET, @ptrCast(&info[offset]), buffer, 16);
 }
 
-fn printSessionInfo(info: *const [info_size]u8, length: usize) void {
+fn cString(ptr: [*c]const u8) []const u8 {
+    return std.mem.span(@as([*:0]const u8, @ptrCast(ptr)));
+}
+
+const SessionOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeSessionInfo(writer: *std.Io.Writer, csv: bool, info: *const [info_size]u8, length: usize) std.Io.Writer.Error!void {
     var buffer: [18]u8 = undefined;
     const handle: c_int = info[0];
     const slots: c_int = info[1] & 0x3f;
     const active: c_int = info[2] & 0x3f;
-    if (c.csv_output != 0) {
-        _ = c.printf("%d", handle);
-        _ = c.printf(",%d", slots);
-        _ = c.printf(",%d", active);
+    if (csv) {
+        try writer.print("{d}", .{handle});
+        try writer.print(",{d}", .{slots});
+        try writer.print(",{d}", .{active});
         if (length == 3) {
-            _ = c.printf("\n");
+            try writer.writeAll("\n");
             return;
         }
-        _ = c.printf(",%d", @as(c_int, info[3] & 0x3f));
-        _ = c.printf(",%s", c.val2str(info[4] & 0x0f, c.ipmi_privlvl_vals));
-        const session_type: [*:0]const u8 = if ((info[5] & 0xf0) != 0) "IPMIv2/RMCP+" else "IPMIv1.5";
-        _ = c.printf(",%s", session_type);
-        _ = c.printf(",0x%02x", @as(c_uint, info[5] & 0x0f));
+        try writer.print(",{d}", .{info[3] & 0x3f});
+        try writer.print(",{s}", .{cString(c.val2str(info[4] & 0x0f, c.ipmi_privlvl_vals))});
+        const session_type: []const u8 = if ((info[5] & 0xf0) != 0) "IPMIv2/RMCP+" else "IPMIv1.5";
+        try writer.print(",{s}", .{session_type});
+        try writer.print(",0x{x:0>2}", .{info[5] & 0x0f});
         if (length == 18) {
-            _ = c.printf(",%s", ipAddress(info, channel_offset, &buffer));
-            _ = c.printf(",%s", c.mac2str(@ptrCast(&info[10])));
-            _ = c.printf(",%d", port(info));
+            try writer.print(",{s}", .{cString(ipAddress(info, channel_offset, &buffer))});
+            try writer.print(",{s}", .{cString(c.mac2str(@ptrCast(&info[10])))});
+            try writer.print(",{d}", .{port(info)});
         } else if (length == 12 or length == 14) {
-            _ = c.printf(",%s", c.val2str(info[6], c.ipmi_channel_activity_type_vals));
-            _ = c.printf(",%d", @as(c_int, info[7] & 0x0f));
-            _ = c.printf(",%s", ipAddress(info, 8, &buffer));
-            if (length == 14) _ = c.printf(",%d", port(info));
+            try writer.print(",{s}", .{cString(c.val2str(info[6], c.ipmi_channel_activity_type_vals))});
+            try writer.print(",{d}", .{info[7] & 0x0f});
+            try writer.print(",{s}", .{cString(ipAddress(info, 8, &buffer))});
+            if (length == 14) try writer.print(",{d}", .{port(info)});
         }
-        _ = c.printf("\n");
+        try writer.writeAll("\n");
         return;
     }
 
-    _ = c.printf("session handle                : %d\n", handle);
-    _ = c.printf("slot count                    : %d\n", slots);
-    _ = c.printf("active sessions               : %d\n", active);
+    try writer.print("session handle                : {d}\n", .{handle});
+    try writer.print("slot count                    : {d}\n", .{slots});
+    try writer.print("active sessions               : {d}\n", .{active});
     if (length == 3) {
-        _ = c.printf("\n");
+        try writer.writeAll("\n");
         return;
     }
-    _ = c.printf("user id                       : %d\n", @as(c_int, info[3] & 0x3f));
-    _ = c.printf("privilege level               : %s\n", c.val2str(info[4] & 0x0f, c.ipmi_privlvl_vals));
-    const session_type: [*:0]const u8 = if ((info[5] & 0xf0) != 0) "IPMIv2/RMCP+" else "IPMIv1.5";
-    _ = c.printf("session type                  : %s\n", session_type);
-    _ = c.printf("channel number                : 0x%02x\n", @as(c_uint, info[5] & 0x0f));
+    try writer.print("user id                       : {d}\n", .{info[3] & 0x3f});
+    try writer.print("privilege level               : {s}\n", .{cString(c.val2str(info[4] & 0x0f, c.ipmi_privlvl_vals))});
+    const session_type: []const u8 = if ((info[5] & 0xf0) != 0) "IPMIv2/RMCP+" else "IPMIv1.5";
+    try writer.print("session type                  : {s}\n", .{session_type});
+    try writer.print("channel number                : 0x{x:0>2}\n", .{info[5] & 0x0f});
     if (length == 18) {
-        _ = c.printf("console ip                    : %s\n", ipAddress(info, channel_offset, &buffer));
-        _ = c.printf("console mac                   : %s\n", c.mac2str(@ptrCast(&info[10])));
-        _ = c.printf("console port                  : %d\n", port(info));
+        try writer.print("console ip                    : {s}\n", .{cString(ipAddress(info, channel_offset, &buffer))});
+        try writer.print("console mac                   : {s}\n", .{cString(c.mac2str(@ptrCast(&info[10])))});
+        try writer.print("console port                  : {d}\n", .{port(info)});
     } else if (length == 12 or length == 14) {
-        _ = c.printf(
-            "Session/Channel Activity Type : %s\n",
-            c.val2str(info[6], c.ipmi_channel_activity_type_vals),
-        );
-        _ = c.printf("Destination selector          : %d\n", @as(c_int, info[7] & 0x0f));
-        _ = c.printf("console ip                    : %s\n", ipAddress(info, 8, &buffer));
-        if (length == 14) _ = c.printf("console port                  : %d\n", port(info));
+        try writer.print("Session/Channel Activity Type : {s}\n", .{cString(c.val2str(info[6], c.ipmi_channel_activity_type_vals))});
+        try writer.print("Destination selector          : {d}\n", .{info[7] & 0x0f});
+        try writer.print("console ip                    : {s}\n", .{cString(ipAddress(info, 8, &buffer))});
+        if (length == 14) try writer.print("console port                  : {d}\n", .{port(info)});
     }
-    _ = c.printf("\n");
+    try writer.writeAll("\n");
+}
+
+fn emitSessionInfo(writer: *std.Io.Writer, csv: bool, info: *const [info_size]u8, length: usize, preflush: anytype) SessionOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeSessionInfo(writer, csv, info, length) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn printSessionInfo(info: *const [info_size]u8, length: usize) bool {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitSessionInfo(&stdout.interface, c.csv_output != 0, info, length, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Session info stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Session info stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Session info stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return false;
+    };
+    return true;
 }
 
 fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(.c) c_int {
@@ -127,8 +150,7 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
         } else {
             const len: usize = @intCast(@min(@max(rsp.?.data_len, 0), info_size));
             @memcpy(info[0..len], rsp.?.data[0..len]);
-            printSessionInfo(&info, len);
-            return 0;
+            return if (printSessionInfo(&info, len)) 0 else -1;
         }
         if (request_type == current and c.strcmp(@ptrCast(&intf.name), "lan") != 0) {
             log.print(log.Level.err, "It is likely that the channel in use does not support sessions", .{});
@@ -152,7 +174,7 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
         if (rsp.data_len < 3) return -1;
         const len: usize = @intCast(@min(rsp.data_len, info_size));
         @memcpy(info[0..len], rsp.data[0..len]);
-        printSessionInfo(&info, len);
+        if (!printSessionInfo(&info, len)) return -1;
         if (slot > @as(c_int, info[1] & 0x3f)) return 0;
     }
 }
@@ -207,4 +229,213 @@ pub fn exportSymbols() void {
     abi.assertCallSignature(@TypeOf(main), @TypeOf(c.ipmi_session_main));
     @export(&getSessionInfo, .{ .name = "ipmi_get_session_info", .linkage = .strong });
     @export(&main, .{ .name = "ipmi_session_main", .linkage = .strong });
+}
+
+test "session info stdout matches C boundary formatting in csv and human modes" {
+    const cases = [_]struct { bytes: []const u8, length: usize }{
+        .{ .bytes = &.{ 255, 255, 255 }, .length = 3 },
+        .{ .bytes = &.{ 0, 0x40, 0xc0, 0xff, 0x8e, 0x8f, 0 }, .length = 7 },
+        .{ .bytes = &.{ 63, 0xbf, 0xfe, 0x7e, 0x84, 0x1f, 0xff, 0x9f, 255, 254, 128, 1 }, .length = 12 },
+        .{ .bytes = &.{ 63, 0xbf, 0xfe, 0x7e, 0x84, 0x1f, 0xff, 0x9f, 255, 254, 128, 1, 0xff, 0xff }, .length = 14 },
+        .{ .bytes = &.{ 63, 0xbf, 0xfe, 0x7e, 0x84, 0x1f, 255, 254, 128, 1, 0, 1, 2, 3, 4, 255, 0xff, 0xff }, .length = 18 },
+    };
+    for (cases) |case| {
+        var info = std.mem.zeroes([info_size]u8);
+        @memcpy(info[0..case.length], case.bytes);
+        for ([_]bool{ false, true }) |csv| {
+            var expected: [512]u8 = undefined;
+            var address: [18]u8 = undefined;
+            const n = if (case.length == 3)
+                if (csv)
+                    c.snprintf(&expected, expected.len, "%d,%d,%d\n", @as(c_int, info[0]), @as(c_int, info[1] & 0x3f), @as(c_int, info[2] & 0x3f))
+                else
+                    c.snprintf(
+                        &expected,
+                        expected.len,
+                        "session handle                : %d\n" ++
+                            "slot count                    : %d\n" ++
+                            "active sessions               : %d\n\n",
+                        @as(c_int, info[0]),
+                        @as(c_int, info[1] & 0x3f),
+                        @as(c_int, info[2] & 0x3f),
+                    )
+            else blk: {
+                // Build the C oracle a field at a time: val2str's unknown-value
+                // fallback uses a shared buffer which the next lookup overwrites.
+                var cursor: usize = 0;
+                const prefix = if (csv)
+                    c.snprintf(
+                        &expected,
+                        expected.len,
+                        "%d,%d,%d,%d,%s,%s,0x%02x",
+                        @as(c_int, info[0]),
+                        @as(c_int, info[1] & 0x3f),
+                        @as(c_int, info[2] & 0x3f),
+                        @as(c_int, info[3] & 0x3f),
+                        c.val2str(info[4] & 0x0f, c.ipmi_privlvl_vals),
+                        @as([*:0]const u8, if (info[5] & 0xf0 != 0) "IPMIv2/RMCP+" else "IPMIv1.5"),
+                        @as(c_uint, info[5] & 0x0f),
+                    )
+                else
+                    c.snprintf(
+                        &expected,
+                        expected.len,
+                        "session handle                : %d\n" ++
+                            "slot count                    : %d\n" ++
+                            "active sessions               : %d\n" ++
+                            "user id                       : %d\n" ++
+                            "privilege level               : %s\n" ++
+                            "session type                  : %s\n" ++
+                            "channel number                : 0x%02x\n",
+                        @as(c_int, info[0]),
+                        @as(c_int, info[1] & 0x3f),
+                        @as(c_int, info[2] & 0x3f),
+                        @as(c_int, info[3] & 0x3f),
+                        c.val2str(info[4] & 0x0f, c.ipmi_privlvl_vals),
+                        @as([*:0]const u8, if (info[5] & 0xf0 != 0) "IPMIv2/RMCP+" else "IPMIv1.5"),
+                        @as(c_uint, info[5] & 0x0f),
+                    );
+                try std.testing.expect(prefix >= 0 and prefix < expected.len);
+                cursor = @intCast(prefix);
+                if (case.length == 18) {
+                    const suffix = if (csv)
+                        c.snprintf(
+                            expected[cursor..].ptr,
+                            expected.len - cursor,
+                            ",%s,%s,%d",
+                            ipAddress(&info, channel_offset, &address),
+                            c.mac2str(@ptrCast(&info[10])),
+                            port(&info),
+                        )
+                    else
+                        c.snprintf(
+                            expected[cursor..].ptr,
+                            expected.len - cursor,
+                            "console ip                    : %s\n" ++
+                                "console mac                   : %s\n" ++
+                                "console port                  : %d\n",
+                            ipAddress(&info, channel_offset, &address),
+                            c.mac2str(@ptrCast(&info[10])),
+                            port(&info),
+                        );
+                    try std.testing.expect(suffix >= 0 and suffix < expected.len - cursor);
+                    cursor += @intCast(suffix);
+                } else if (case.length == 12 or case.length == 14) {
+                    const suffix = if (csv)
+                        c.snprintf(
+                            expected[cursor..].ptr,
+                            expected.len - cursor,
+                            if (case.length == 14) ",%s,%d,%s,%d" else ",%s,%d,%s",
+                            c.val2str(info[6], c.ipmi_channel_activity_type_vals),
+                            @as(c_int, info[7] & 0x0f),
+                            ipAddress(&info, 8, &address),
+                            port(&info),
+                        )
+                    else
+                        c.snprintf(
+                            expected[cursor..].ptr,
+                            expected.len - cursor,
+                            if (case.length == 14)
+                                "Session/Channel Activity Type : %s\n" ++
+                                    "Destination selector          : %d\n" ++
+                                    "console ip                    : %s\n" ++
+                                    "console port                  : %d\n"
+                            else
+                                "Session/Channel Activity Type : %s\n" ++
+                                    "Destination selector          : %d\n" ++
+                                    "console ip                    : %s\n",
+                            c.val2str(info[6], c.ipmi_channel_activity_type_vals),
+                            @as(c_int, info[7] & 0x0f),
+                            ipAddress(&info, 8, &address),
+                            port(&info),
+                        );
+                    try std.testing.expect(suffix >= 0 and suffix < expected.len - cursor);
+                    cursor += @intCast(suffix);
+                }
+                expected[cursor] = '\n';
+                break :blk @as(c_int, @intCast(cursor + 1));
+            };
+            try std.testing.expect(n >= 0 and n < expected.len);
+            var actual: [512]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&actual);
+            try writeSessionInfo(&writer, csv, &info, case.length);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
+
+test "session info stdout propagates preflush, early, late and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var info = std.mem.zeroes([info_size]u8);
+    info[0] = 2;
+    info[1] = 4;
+    info[2] = 1;
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitSessionInfo(&writer, false, &info, 3, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitSessionInfo(&early, true, &info, 3, Stub.preflushOk));
+
+    const prefix = "session handle                : 2\nslot count                    : 4\n";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitSessionInfo(&late, false, &info, 3, Stub.preflushOk));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitSessionInfo(&writer, true, &info, 3, Stub.preflushOk));
+    try std.testing.expectEqualStrings("2,4,1\n", writer.buffered());
+}
+
+test "session info stdout orders buffered C before Zig and subsequent C" {
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(fds[1], stdout_fd));
+    _ = c.close(fds[1]);
+
+    var info = std.mem.zeroes([info_size]u8);
+    info[0] = 2;
+    info[1] = 4;
+    info[2] = 1;
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitSessionInfo(&stdout.interface, true, &info, 3, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    _ = c.printf("before human|");
+    var human = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitSessionInfo(&human.interface, false, &info, 3, stdout_io.trySyncC);
+    _ = c.printf("|after human\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+
+    var captured: [512]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|2,4,1\n|after\n" ++
+            "before human|session handle                : 2\n" ++
+            "slot count                    : 4\n" ++
+            "active sessions               : 1\n\n|after human\n",
+        captured[0..@intCast(length)],
+    );
 }

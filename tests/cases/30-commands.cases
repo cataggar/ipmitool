@@ -135,6 +135,18 @@ args: -I dummy session info active
 transcript: session_info_lan.tr
 covers: session
 
+[session_info_slots_only]
+desc: Decode a three-byte slot summary without session data
+args: -I dummy session info active
+transcript: session_info_slots_only.tr
+covers: session
+
+[session_info_slots_only_csv]
+desc: Decode a three-byte slot summary in CSV mode
+args: -c -I dummy session info active
+transcript: session_info_slots_only.tr
+covers: session
+
 [session_info_lan_csv]
 desc: Decode full LAN session data in CSV mode
 args: -c -I dummy session info active
@@ -151,6 +163,18 @@ covers: session
 desc: Decode async serial/PPP session data in CSV mode
 args: -c -I dummy session info active
 transcript: session_info_modem.tr
+covers: session
+
+[session_info_modem12]
+desc: Decode twelve-byte serial session data without a console port
+args: -I dummy session info active
+transcript: session_info_modem12.tr
+covers: session
+
+[session_info_modem12_csv]
+desc: Decode twelve-byte serial session data in CSV mode
+args: -c -I dummy session info active
+transcript: session_info_modem12.tr
 covers: session
 
 [session_info_short]
