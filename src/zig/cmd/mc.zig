@@ -11,13 +11,13 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **GUID formatting still uses libc.** Selected MC stdout printers use
-//!   checked Zig writers; `ipmi_guid2str()` retains its libc `sprintf`.
-//!   Diagnostics use `log.print()` from the selected logger archive (falling
-//!   back to C `lprintf` when `log` is not selected). Watchdog countdowns use
-//!   exact integer tenths and libc's locale decimal point instead of
-//!   floating-point formatting. `strcmp`, `strlen`, `strncpy` and `strtol`
-//!   still receive the same valid inputs as C.
+//! * **MC stdout uses checked Zig writers.** The GUID helper formats into
+//!   bounded Zig storage before copying to its caller's C buffer. Diagnostics
+//!   use `log.print()` from the selected logger archive (falling back to C
+//!   `lprintf` when `log` is not selected). Watchdog countdowns use exact
+//!   integer tenths and libc's locale decimal point instead of floating-point
+//!   formatting. `strcmp`, `strlen`, `strncpy` and `strtol` still receive the
+//!   same valid inputs as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -1235,26 +1235,34 @@ fn parseGuid(guid: ?*anyopaque, guid_mode_in: c.ipmi_guid_mode_t) callconv(.c) c
 /// `ipmi_guid2str()`.
 fn guid2str(str: [*c]u8, data: ?*const anyopaque, mode: c.ipmi_guid_mode_t) callconv(.c) c.parsed_guid_t {
     const guid = parseGuid(@constCast(data), mode);
-
-    if (guid.mode == guid_dump) {
-        _ = c.sprintf(str, "%s", c.buf2str(@ptrCast(data), @sizeOf(c.ipmi_guid_t)));
-        return guid;
+    comptime {
+        if (GUID_STR_MAXLEN != c.GUID_STR_MAXLEN or @sizeOf(c.ipmi_guid_t) != 16)
+            @compileError("GUID output capacity or wire size drifted from the C ABI");
     }
-
-    _ = c.sprintf(
-        str,
-        "%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x",
-        toInt(guid.time_low),
-        toInt(guid.time_mid),
-        toInt(guid.time_hi_and_version),
-        @as(c_int, guid.clock_seq_and_rsvd),
-        @as(c_int, guid.node[0]),
-        @as(c_int, guid.node[1]),
-        @as(c_int, guid.node[2]),
-        @as(c_int, guid.node[3]),
-        @as(c_int, guid.node[4]),
-        @as(c_int, guid.node[5]),
-    );
+    var buffer: [GUID_STR_MAXLEN]u8 = undefined;
+    const text: []const u8 = if (guid.mode == guid_dump) blk: {
+        const raw: *const [16]u8 = @ptrCast(data.?);
+        const hex = std.fmt.bytesToHex(raw.*, .lower);
+        @memcpy(buffer[0..hex.len], &hex);
+        break :blk buffer[0..hex.len];
+    } else std.fmt.bufPrint(
+        &buffer,
+        "{x:0>8}-{x:0>4}-{x:0>4}-{x:0>4}-{x:0>2}{x:0>2}{x:0>2}{x:0>2}{x:0>2}{x:0>2}",
+        .{
+            @as(u32, @truncate(guid.time_low)),
+            @as(u16, @truncate(guid.time_mid)),
+            @as(u16, @truncate(guid.time_hi_and_version)),
+            @as(u16, @truncate(guid.clock_seq_and_rsvd)),
+            guid.node[0],
+            guid.node[1],
+            guid.node[2],
+            guid.node[3],
+            guid.node[4],
+            guid.node[5],
+        },
+    ) catch unreachable; // Fixed-width fields occupy exactly GUID_STR_MAXLEN bytes.
+    @memcpy(str[0..text.len], text);
+    str[text.len] = 0;
     return guid;
 }
 
@@ -1355,6 +1363,91 @@ fn appendMcGuidCField(expected: []u8, offset: *usize, comptime fmt: [*:0]const u
     const n = @call(.auto, c.snprintf, .{ expected.ptr + offset.*, expected.len - offset.*, fmt } ++ args);
     try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len - offset.*);
     offset.* += @intCast(n);
+}
+
+fn cGuidString(expected: *[GUID_STR_MAXLEN + 1]u8, raw: *const [16]u8, guid: c.parsed_guid_t) ![]const u8 {
+    if (guid.mode == guid_dump) {
+        for (raw, 0..) |byte, i| {
+            const n = c.snprintf(expected[i * 2 ..].ptr, expected.len - i * 2, "%2.2x", @as(c_int, byte));
+            try std.testing.expectEqual(@as(c_int, 2), n);
+        }
+        return expected[0..32];
+    }
+    const n = c.snprintf(
+        expected,
+        expected.len,
+        "%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x",
+        toInt(guid.time_low),
+        toInt(guid.time_mid),
+        toInt(guid.time_hi_and_version),
+        @as(c_int, guid.clock_seq_and_rsvd),
+        @as(c_int, guid.node[0]),
+        @as(c_int, guid.node[1]),
+        @as(c_int, guid.node[2]),
+        @as(c_int, guid.node[3]),
+        @as(c_int, guid.node[4]),
+        @as(c_int, guid.node[5]),
+    );
+    try std.testing.expectEqual(@as(c_int, GUID_STR_MAXLEN), n);
+    return expected[0..GUID_STR_MAXLEN];
+}
+
+test "mc guid stdout helper matches C formatting for every raw byte and explicit encoding" {
+    const seed = [16]u8{ 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0xa7, 0x88, 0x19, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    for (0..16) |position| {
+        for (0..256) |value| {
+            for ([_]c.ipmi_guid_mode_t{ guid_rfc4122, guid_ipmi, guid_smbios, guid_dump }) |mode| {
+                var raw = seed;
+                raw[position] = @intCast(value);
+                var output: [GUID_STR_MAXLEN + 2]u8 = @splat(0xa5);
+                const guid = guid2str(&output, &raw, mode);
+                try std.testing.expectEqual(mode, guid.mode);
+                var expected: [GUID_STR_MAXLEN + 1]u8 = undefined;
+                const text = try cGuidString(&expected, &raw, guid);
+                try std.testing.expectEqualSlices(u8, expected[0 .. text.len + 1], output[0 .. text.len + 1]);
+                try std.testing.expectEqual(@as(u8, 0xa5), output[text.len + 1]);
+            }
+        }
+    }
+}
+
+test "mc guid stdout helper retains caller buffer lifetime and handles aliasing and unaligned input" {
+    const first_raw = [16]u8{ 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0xa7, 0x88, 0x19, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    const second_raw = [16]u8{ 1, 2, 3, 4, 5, 6, 0x4a, 0xbc, 0x0f, 0x60, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+    var first: [GUID_STR_MAXLEN + 2]u8 = @splat(0xa5);
+    var second: [GUID_STR_MAXLEN + 2]u8 = @splat(0xa5);
+    const first_guid = guid2str(&first, &first_raw, guid_dump);
+    const preserved = first;
+    const second_guid = guid2str(&second, &second_raw, guid_rfc4122);
+    try std.testing.expectEqual(guid_dump, first_guid.mode);
+    try std.testing.expectEqual(guid_rfc4122, second_guid.mode);
+    try std.testing.expectEqualSlices(u8, &preserved, &first);
+    try std.testing.expectEqualStrings(
+        "01020304-0506-4abc-0f60-112233445566",
+        std.mem.sliceTo(&second, 0),
+    );
+
+    for ([_]c.ipmi_guid_mode_t{ guid_dump, guid_ipmi }) |mode| {
+        var alias: [GUID_STR_MAXLEN + 2]u8 = @splat(0xa5);
+        var separate = second_raw;
+        @memcpy(alias[0..16], &second_raw);
+        var expected: [GUID_STR_MAXLEN + 2]u8 = @splat(0xa5);
+        const separate_guid = guid2str(&expected, &separate, mode);
+        const aliased_guid = guid2str(&alias, &alias, mode);
+        try std.testing.expectEqual(separate_guid.mode, aliased_guid.mode);
+        try std.testing.expectEqualSlices(u8, std.mem.sliceTo(&expected, 0), std.mem.sliceTo(&alias, 0));
+        try std.testing.expectEqualSlices(u8, &preserved, &first);
+        try std.testing.expectEqual(@as(u8, 0xa5), alias[std.mem.sliceTo(&alias, 0).len + 1]);
+    }
+
+    var padded: [17]u8 align(16) = undefined;
+    @memcpy(padded[1..17], &second_raw);
+    try std.testing.expectEqual(@as(usize, 1), @intFromPtr(&padded[1]) % 16);
+    var unaligned_text: [GUID_STR_MAXLEN + 2]u8 = @splat(0xa5);
+    const unaligned_guid = guid2str(&unaligned_text, @ptrCast(&padded[1]), guid_rfc4122);
+    try std.testing.expectEqual(guid_rfc4122, unaligned_guid.mode);
+    try std.testing.expectEqualSlices(u8, std.mem.sliceTo(&second, 0), std.mem.sliceTo(&unaligned_text, 0));
+    try std.testing.expectEqualSlices(u8, &preserved, &first);
 }
 
 test "mc guid stdout matches C bytes for explicit, automatic, dump, versions and time" {
