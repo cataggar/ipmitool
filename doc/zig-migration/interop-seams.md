@@ -560,6 +560,20 @@ pre-flush, early/late write and final-flush failures. The existing
 `mc_watchdog_off*` and `mc_watchdog_reset*` C/selected-Zig goldens cover the
 success and error responses.
 
+The selected `mc watchdog get` result also uses checked Zig streaming stdout
+after pre-flushing libc stdout. Its field labels, table names, masked lookup
+indices, expiration-flag rows, status and IPMI request match the C command;
+countdowns render every `u16` tick count as exact decimal tenths with libc's
+locale decimal point, avoiding architecture- or FMA-dependent float rounding.
+The static watchdog table names remain borrowed through their writes. A
+pre-flush, write or final-flush failure logs its phase and returns `-1`, while
+request and completion-code errors still return without attempting output.
+`zig build test-mc-watchdog-get-stdout` compares libc bytes across the flag
+and table paths and every countdown, buffered C/Zig ordering, request statuses
+and injected output failures. The original-C and selected-Zig
+`mc_watchdog_get*` goldens retain the CLI and wire-level oracle. Watchdog
+set/off/reset and other MC paths are unchanged.
+
 The selected `mc info` device-ID printer now streams its human-readable
 fields through checked Zig stdout, pre-flushing libc stdout before writing
 and checking every write and the final flush. The labels, decimal and

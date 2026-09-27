@@ -1,0 +1,12 @@
+# Maximum 16-bit countdown, all eight expiration bits, and reserved
+# pre-timeout interrupt and action indices not covered by the other fixtures.
+
+default_ccode 0xc1
+
+respond get_watchdog_timer
+  netfn 0x06
+  cmd 0x25
+  # running and no-log set; use 6, interrupt 7, action 7 (all Reserved)
+  # pre-timeout 255s, flags 0xff, countdowns 65535 and 9 ticks
+  data c6 f7 ff ff ff ff 09 00
+end

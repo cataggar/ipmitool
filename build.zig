@@ -1286,6 +1286,14 @@ pub fn build(b: *std.Build) void {
     mc_watchdog_step.dependOn(&b.addRunArtifact(mc_watchdog_unit).step);
     test_step.dependOn(mc_watchdog_step);
 
+    const mc_watchdog_get_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.watchdog get stdout"},
+    });
+    const mc_watchdog_get_step = b.step("test-mc-watchdog-get-stdout", "Compare MC watchdog get C bytes, statuses, output order and I/O failures");
+    mc_watchdog_get_step.dependOn(&b.addRunArtifact(mc_watchdog_get_unit).step);
+    test_step.dependOn(mc_watchdog_get_step);
+
     const mc_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.mc info stdout"},

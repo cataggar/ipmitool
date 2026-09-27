@@ -12,12 +12,12 @@
 //! Three things are worth knowing before reading on:
 //!
 //! * **Unconverted formatting stays in libc.** Selected MC stdout printers
-//!   use checked Zig writers; remaining `printf` and `sprintf` calls use
-//!   `ipmi_c`. Diagnostics use `log.print()` from the selected logger archive
-//!   (falling back to C `lprintf` when `log` is not selected). libc still
-//!   renders `%0.1f`, `%-40s` and the GUID helper's `%08x` with the original
-//!   C argument widths. `strcmp`, `strlen`, `strncpy` and `strtol` also
-//!   receive the same valid inputs as C.
+//!   use checked Zig writers; remaining `printf` (system-info) and `sprintf`
+//!   (GUID helper) calls use `ipmi_c`. Diagnostics use `log.print()` from the
+//!   selected logger archive (falling back to C `lprintf` when `log` is not
+//!   selected). Watchdog countdowns use exact integer tenths and libc's
+//!   locale decimal point instead of floating-point formatting. `strcmp`,
+//!   `strlen`, `strncpy` and `strtol` still receive the same valid inputs as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -1770,8 +1770,56 @@ fn findSetWdtString(w: [*c]const ?*const WdtString, s: [*c]const u8) callconv(.c
     return val;
 }
 
-/// `ipmi_mc_get_watchdog()`.
-fn mcGetWatchdog(intf: *Intf) c_int {
+fn writeWatchdogTenths(writer: *std.Io.Writer, ticks: u16, decimal_point: []const u8) std.Io.Writer.Error!void {
+    // C's (double)ticks / 10.0 rounds to these exact decimal tenths at %.1f
+    // for every u16 value, even if the binary division is contracted/rounded.
+    try writer.print("{d}{s}{d}", .{ ticks / 10, decimal_point, ticks % 10 });
+}
+
+fn writeMcWatchdogGet(writer: *std.Io.Writer, d: [*]const u8) std.Io.Writer.Error!void {
+    const use = d[0];
+    const intr_action = d[1];
+    const pre_timeout = d[2];
+    const exp_flags = d[3];
+    try writer.print("Watchdog Timer Use:     {s} (0x{x:0>2})\n", .{
+        std.mem.span(wdt_use_table[use & IPMI_WDT_USE_MASK].?.get.?), use,
+    });
+    try writer.print("Watchdog Timer Is:      {s}\n", .{
+        if (use & (1 << IPMI_WDT_USE_RUNNING_SHIFT) != 0) @as([]const u8, "Started/Running") else "Stopped",
+    });
+    try writer.print("Watchdog Timer Logging: {s}\n", .{
+        if (use & (1 << IPMI_WDT_USE_NOLOG_SHIFT) != 0) @as([]const u8, "Off") else "On",
+    });
+    try writer.print("Watchdog Timer Action:  {s} (0x{x:0>2})\n", .{
+        std.mem.span(wdt_action_table[intr_action & IPMI_WDT_ACTION_MASK].?.get.?), intr_action,
+    });
+    try writer.print("Pre-timeout interrupt:  {s}\n", .{
+        std.mem.span(wdt_int_table[(intr_action >> IPMI_WDT_INTR_SHIFT) & IPMI_WDT_INTR_MASK].?.get.?),
+    });
+    try writer.print("Pre-timeout interval:   {d} seconds\n", .{pre_timeout});
+    try writer.print("Timer Expiration Flags: {s}(0x{x:0>2})\n", .{
+        if (exp_flags != 0) @as([]const u8, "") else "None ", exp_flags,
+    });
+    for (0..8) |i| {
+        if (exp_flags & (@as(u8, 1) << @intCast(i)) != 0) {
+            try writer.print("                        * {s}\n", .{std.mem.span(wdt_use_table[i].?.get.?)});
+        }
+    }
+    const decimal_point = std.mem.span(@as([*:0]const u8, @ptrCast(c.localeconv().*.decimal_point)));
+    try writer.writeAll("Initial Countdown:      ");
+    try writeWatchdogTenths(writer, le16(d + 4), decimal_point);
+    try writer.writeAll(" sec\nPresent Countdown:      ");
+    try writeWatchdogTenths(writer, le16(d + 6), decimal_point);
+    try writer.writeAll(" sec\n");
+}
+
+fn emitMcWatchdogGet(writer: *std.Io.Writer, d: [*]const u8, preflush: anytype) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcWatchdogGet(writer, d) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn mcGetWatchdogTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) McOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_app;
     req.msg.cmd = BMC_GET_WATCHDOG_TIMER;
@@ -1781,59 +1829,209 @@ fn mcGetWatchdog(intf: *Intf) c_int {
         log.print(log.Level.err, "Get Watchdog Timer command failed", .{});
         return -1;
     };
-
     if (rsp.ccode != 0) {
         log.print(log.Level.err, "Get Watchdog Timer command failed: %s", .{ccString(rsp.ccode)});
         return -1;
     }
-
-    const d: [*]const u8 = &rsp.data;
-    const use = d[0];
-    const intr_action = d[1];
-    const pre_timeout = d[2];
-    const exp_flags = d[3];
-
-    // Convert 100ms intervals to seconds.
-    const init_cnt: f64 = @as(f64, @floatFromInt(le16(d + 4))) / 10.0;
-    const pres_cnt: f64 = @as(f64, @floatFromInt(le16(d + 6))) / 10.0;
-
-    _ = c.printf(
-        "Watchdog Timer Use:     %s (0x%02x)\n",
-        wdt_use_table[use & IPMI_WDT_USE_MASK].?.get,
-        @as(c_uint, use),
-    );
-    _ = c.printf(
-        "Watchdog Timer Is:      %s\n",
-        pick(use & (1 << IPMI_WDT_USE_RUNNING_SHIFT) != 0, "Started/Running", "Stopped"),
-    );
-    _ = c.printf(
-        "Watchdog Timer Logging: %s\n",
-        pick(use & (1 << IPMI_WDT_USE_NOLOG_SHIFT) != 0, "Off", "On"),
-    );
-    _ = c.printf(
-        "Watchdog Timer Action:  %s (0x%02x)\n",
-        wdt_action_table[intr_action & IPMI_WDT_ACTION_MASK].?.get,
-        @as(c_uint, intr_action),
-    );
-    _ = c.printf(
-        "Pre-timeout interrupt:  %s\n",
-        wdt_int_table[(intr_action >> IPMI_WDT_INTR_SHIFT) & IPMI_WDT_INTR_MASK].?.get,
-    );
-    _ = c.printf("Pre-timeout interval:   %d seconds\n", @as(c_int, pre_timeout));
-    _ = c.printf(
-        "Timer Expiration Flags: %s(0x%02x)\n",
-        pick(exp_flags != 0, "", "None "),
-        @as(c_uint, exp_flags),
-    );
-    for (0..8) |i| {
-        if (exp_flags & (@as(u8, 1) << @intCast(i)) != 0) {
-            _ = c.printf("                        * %s\n", wdt_use_table[i].?.get);
-        }
-    }
-    _ = c.printf("Initial Countdown:      %0.1f sec\n", init_cnt);
-    _ = c.printf("Present Countdown:      %0.1f sec\n", pres_cnt);
-
+    try emitMcWatchdogGet(writer, &rsp.data, preflush);
     return 0;
+}
+
+/// `ipmi_mc_get_watchdog()`.
+fn mcGetWatchdog(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return mcGetWatchdogTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "MC watchdog get stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "MC watchdog get stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "MC watchdog get stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+fn appendMcWatchdogCField(expected: []u8, offset: *usize, comptime fmt: [*:0]const u8, args: anytype) !void {
+    const n = @call(.auto, c.snprintf, .{ expected.ptr + offset.*, expected.len - offset.*, fmt } ++ args);
+    try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len - offset.*);
+    offset.* += @intCast(n);
+}
+
+test "watchdog get stdout matches libc across flags tables and countdowns" {
+    for (0..256) |index| {
+        const value: u8 = @intCast(index);
+        const initial: u16 = @intCast(index * 257);
+        const present: u16 = 65535 - initial;
+        const data = [8]u8{
+            value,              value,                   value,              value,
+            @truncate(initial), @truncate(initial >> 8), @truncate(present), @truncate(present >> 8),
+        };
+        var storage: [1024]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try emitMcWatchdogGet(&writer, &data, stdout_io.trySyncC);
+
+        var expected: [1024]u8 = undefined;
+        var length: usize = 0;
+        try appendMcWatchdogCField(&expected, &length, "Watchdog Timer Use:     %s (0x%02x)\n", .{
+            wdt_use_table[value & IPMI_WDT_USE_MASK].?.get.?, @as(c_uint, value),
+        });
+        try appendMcWatchdogCField(&expected, &length, "Watchdog Timer Is:      %s\n", .{
+            pick(value & (1 << IPMI_WDT_USE_RUNNING_SHIFT) != 0, "Started/Running", "Stopped"),
+        });
+        try appendMcWatchdogCField(&expected, &length, "Watchdog Timer Logging: %s\n", .{
+            pick(value & (1 << IPMI_WDT_USE_NOLOG_SHIFT) != 0, "Off", "On"),
+        });
+        try appendMcWatchdogCField(&expected, &length, "Watchdog Timer Action:  %s (0x%02x)\n", .{
+            wdt_action_table[value & IPMI_WDT_ACTION_MASK].?.get.?, @as(c_uint, value),
+        });
+        try appendMcWatchdogCField(&expected, &length, "Pre-timeout interrupt:  %s\n", .{
+            wdt_int_table[(value >> IPMI_WDT_INTR_SHIFT) & IPMI_WDT_INTR_MASK].?.get.?,
+        });
+        try appendMcWatchdogCField(&expected, &length, "Pre-timeout interval:   %d seconds\n", .{@as(c_int, value)});
+        try appendMcWatchdogCField(&expected, &length, "Timer Expiration Flags: %s(0x%02x)\n", .{
+            pick(value != 0, "", "None "), @as(c_uint, value),
+        });
+        for (0..8) |bit| {
+            if (value & (@as(u8, 1) << @intCast(bit)) != 0) {
+                try appendMcWatchdogCField(&expected, &length, "                        * %s\n", .{wdt_use_table[bit].?.get.?});
+            }
+        }
+        try appendMcWatchdogCField(&expected, &length, "Initial Countdown:      %0.1f sec\n", .{
+            @as(f64, @floatFromInt(initial)) / 10.0,
+        });
+        try appendMcWatchdogCField(&expected, &length, "Present Countdown:      %0.1f sec\n", .{
+            @as(f64, @floatFromInt(present)) / 10.0,
+        });
+        try std.testing.expectEqualSlices(u8, expected[0..length], writer.buffered());
+    }
+}
+
+test "watchdog get stdout formats every u16 countdown like libc double" {
+    const decimal_point = std.mem.span(@as([*:0]const u8, @ptrCast(c.localeconv().*.decimal_point)));
+    for (0..65536) |value| {
+        const ticks: u16 = @intCast(value);
+        var storage: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeWatchdogTenths(&writer, ticks, decimal_point);
+        var expected: [32]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "%0.1f", @as(f64, @floatFromInt(ticks)) / 10.0);
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "watchdog get stdout retains request and response statuses" {
+    const Stub = struct {
+        var response: Response = std.mem.zeroes(Response);
+        var missing = false;
+        var calls: usize = 0;
+        var request_ok = false;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            request_ok = req.msg.netfn_lun.netfn == netfn_app and
+                req.msg.cmd == BMC_GET_WATCHDOG_TIMER and req.msg.data_len == 0 and req.msg.data == null;
+            return if (missing) null else &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    const data = [8]u8{ 0xc6, 0xf7, 255, 255, 255, 255, 9, 0 };
+    @memcpy(Stub.response.data[0..8], &data);
+    Stub.response.data_len = 0; // As in C, even a short success response is not rejected.
+
+    for ([_]struct { missing: bool, ccode: u8, status: c_int }{
+        .{ .missing = true, .ccode = 0, .status = -1 },
+        .{ .missing = false, .ccode = 0xc1, .status = -1 },
+        .{ .missing = false, .ccode = 0, .status = 0 },
+    }) |case| {
+        Stub.missing = case.missing;
+        Stub.response.ccode = case.ccode;
+        Stub.calls = 0;
+        Stub.request_ok = false;
+        var storage: [1024]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        if (case.status == 0) {
+            try std.testing.expectEqual(case.status, try mcGetWatchdogTo(&intf, &writer, stdout_io.trySyncC));
+            var countdown: [64]u8 = undefined;
+            const n = c.snprintf(&countdown, countdown.len, "Initial Countdown:      %0.1f sec\n", @as(f64, 6553.5));
+            try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < countdown.len);
+            try std.testing.expect(std.mem.indexOf(u8, writer.buffered(), countdown[0..@intCast(n)]) != null);
+        } else {
+            try std.testing.expectEqual(case.status, try mcGetWatchdogTo(&intf, &writer, Stub.preflushFail));
+            try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+        }
+        try std.testing.expectEqual(@as(usize, 1), Stub.calls);
+        try std.testing.expect(Stub.request_ok);
+    }
+}
+
+test "watchdog get stdout reports preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const data = [8]u8{ 0xc6, 0xf7, 255, 255, 255, 255, 9, 0 };
+    var storage: [1024]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcWatchdogGet(&writer, &data, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcWatchdogGet(&early, &data, Stub.preflushOk));
+    try emitMcWatchdogGet(&writer, &data, Stub.preflushOk);
+    const complete = writer.buffered();
+    var short: [1024]u8 = undefined;
+    var late = std.Io.Writer.fixed(short[0 .. complete.len - 1]);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcWatchdogGet(&late, &data, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, complete[0 .. complete.len - 1], late.buffered());
+
+    var final = std.Io.Writer.fixed(&short);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcWatchdogGet(&final, &data, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, complete, final.buffered());
+}
+
+test "watchdog get stdout preserves buffered C output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    const data = [8]u8{ 0x81, 0x32, 30, 0xa5, 0xd0, 7, 100, 0 };
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitMcWatchdogGet(&stdout.interface, &data, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [1024]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [1024]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    try writeMcWatchdogGet(&expected, &data);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualSlices(u8, expected.buffered(), captured[0..@intCast(length)]);
 }
 
 /// `wdt_conf_t`: configuration to set with `ipmi_mc_set_watchdog()`.
