@@ -216,7 +216,21 @@ fn chassisPrintPowerStatus(intf: *Intf) c_int {
 }
 
 /// `ipmi_chassis_power_control()`.
-fn chassisPowerControl(intf: *Intf, ctl: u8) callconv(.c) c_int {
+const ControlOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisPowerControl(writer: *std.Io.Writer, ctl: u8) std.Io.Writer.Error!void {
+    try writer.print("Chassis Power Control: {s}\n", .{
+        std.mem.span(c.val2str(ctl, c.ipmi_chassis_power_control_vals)),
+    });
+}
+
+fn emitChassisPowerControl(writer: *std.Io.Writer, ctl: u8, preflush: anytype) ControlOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisPowerControl(writer, ctl) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisPowerControlTo(intf: *Intf, ctl: u8, writer: *std.Io.Writer, preflush: anytype) ControlOutputError!c_int {
     var ctl_byte = ctl;
 
     var req = std.mem.zeroes(Request);
@@ -247,11 +261,140 @@ fn chassisPowerControl(intf: *Intf, ctl: u8) callconv(.c) c_int {
         return -1;
     }
 
-    _ = c.printf(
-        "Chassis Power Control: %s\n",
-        c.val2str(ctl, c.ipmi_chassis_power_control_vals),
-    );
+    try emitChassisPowerControl(writer, ctl, preflush);
     return 0;
+}
+
+/// `ipmi_chassis_power_control()`.
+fn chassisPowerControl(intf: *Intf, ctl: u8) callconv(.c) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisPowerControlTo(intf, ctl, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis control stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis control stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis control stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis control stdout matches C for all control bytes" {
+    for (0..256) |value| {
+        const ctl: u8 = @intCast(value);
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(
+            &expected,
+            expected.len,
+            "Chassis Power Control: %s\n",
+            c.val2str(ctl, c.ipmi_chassis_power_control_vals),
+        );
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisPowerControl(&writer, ctl);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis control stdout propagates preflush, early, late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisPowerControl(&writer, IPMI_CHASSIS_CTL_POWER_UP, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPowerControl(&early, IPMI_CHASSIS_CTL_POWER_UP, Stub.preflushOk));
+    var short: [23]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPowerControl(&late, IPMI_CHASSIS_CTL_POWER_UP, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Chassis Power Control: ", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisPowerControl(&writer, IPMI_CHASSIS_CTL_POWER_UP, Stub.preflushOk));
+    try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "Chassis Power Control: "));
+}
+
+test "chassis control stdout orders buffered C and Zig output" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisPowerControl(&stdout.interface, IPMI_CHASSIS_CTL_POWER_UP, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitChassisPowerControl(&stdout.interface, IPMI_CHASSIS_CTL_POWER_DOWN, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [160]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [160]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    try writeChassisPowerControl(&expected, IPMI_CHASSIS_CTL_POWER_UP);
+    try expected.writeAll("|between|");
+    try writeChassisPowerControl(&expected, IPMI_CHASSIS_CTL_POWER_DOWN);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualStrings(expected.buffered(), captured[0..@intCast(length)]);
+}
+
+test "chassis control preserves request bytes and errors" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var ctl: u8 = 0;
+        var present = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x2);
+            std.debug.assert(req.msg.data_len == 1);
+            ctl = req.msg.data.?[0];
+            return if (present) &response else null;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.requests = 0;
+        Stub.response = std.mem.zeroes(Response);
+        Stub.response.ccode = 0xc1;
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisPowerControlTo(&intf, IPMI_CHASSIS_CTL_POWER_CYCLE, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(IPMI_CHASSIS_CTL_POWER_CYCLE, Stub.ctl);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+    Stub.present = true;
+    Stub.requests = 0;
+    Stub.response.ccode = 0;
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisPowerControlTo(&intf, IPMI_CHASSIS_CTL_POWER_UP, &writer, stdout_io.trySyncC));
+    try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+    try std.testing.expectEqual(IPMI_CHASSIS_CTL_POWER_UP, Stub.ctl);
+    try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "Chassis Power Control: "));
 }
 
 // ---------------------------------------------------------------------------
