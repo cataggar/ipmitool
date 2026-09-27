@@ -629,13 +629,19 @@ The selected `mc guid` printer now pre-flushes buffered C stdout and streams
 the GUID, optional auto-detected encoding/warning, version and timestamp
 through checked Zig writes with a checked final flush. It preserves C byte
 formatting and the original GUID request, completion-code and short-response
-statuses; the Zig `ipmi_guid2str()` helper still uses libc `sprintf` and
-`ipmi_timestamp_numeric()` remains C, with transient strings copied before
-further C lookups.
+statuses. The C ABI `ipmi_guid2str()` helper now formats into a bounded Zig
+buffer and copies the NUL-terminated bytes to the caller's buffer, without
+libc `sprintf` or `buf2str`; it returns the same parsed struct by value and
+never exposes temporary Zig storage. Hex dump and canonical GUID spellings
+match C, including case, field widths and byte ordering. The timestamp
+formatter `ipmi_timestamp_numeric()` remains C, with transient strings copied
+before further C lookups.
 Pre-flush, write or final-flush failure logs an error and returns `-1`.
 `zig build test-mc-guid-stdout` compares libc bytes across explicit, automatic
 and dump modes, version and time formatting, request statuses, buffered C/Zig
-order and injected I/O failures. The existing `mc_guid*` original-C and
+order and injected I/O failures; it also checks the helper's C-format bytes,
+buffer lifetime and output bounds across every raw-byte position and value.
+The existing `mc_guid*` original-C and
 selected-Zig CLI goldens in `tests/cases/41-mc.cases` cover the real dummy
 interface, including explicit and detected modes and error responses. Other
 MC output is unchanged.
