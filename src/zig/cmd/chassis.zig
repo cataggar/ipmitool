@@ -19,7 +19,7 @@
 //!   `strncmp`, `strtok_r` and `str2uchar` receive the same pointers as C,
 //!   including writable `argv` strings that `strtok_r()` splits in place.
 //!   The `power_usage` format is a compile-time constant, never user input.
-//!   Chassis identify and self-test results use checked Zig stdout.
+//!   Chassis power status, identify and self-test results use checked Zig stdout.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -207,12 +207,151 @@ fn chassisPowerStatus(intf: *Intf) callconv(.c) c_int {
 }
 
 /// `ipmi_chassis_print_power_status()`.
-fn chassisPrintPowerStatus(intf: *Intf) c_int {
+const PowerStatusOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisPowerStatus(writer: *std.Io.Writer, ps: c_int) std.Io.Writer.Error!void {
+    try writer.writeAll("Chassis Power is ");
+    try writer.writeAll(if (ps != 0) "on\n" else "off\n");
+}
+
+fn emitChassisPowerStatus(writer: *std.Io.Writer, ps: c_int, preflush: anytype) PowerStatusOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisPowerStatus(writer, ps) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisPrintPowerStatusTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) PowerStatusOutputError!c_int {
     const ps = chassisPowerStatus(intf);
     if (ps < 0) return -1;
 
-    _ = c.printf("Chassis Power is %s\n", pick(ps != 0, "on", "off"));
+    try emitChassisPowerStatus(writer, ps, preflush);
     return 0;
+}
+
+fn chassisPrintPowerStatus(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisPrintPowerStatusTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis power status stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis power status stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis power status stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis power status stdout matches C bytes" {
+    for ([_]c_int{ 0, 1 }) |ps| {
+        var expected: [32]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "Chassis Power is %s\n", pick(ps != 0, "on", "off"));
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisPowerStatus(&writer, ps);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis power status stdout reports preflush, early, late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [32]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisPowerStatus(&writer, 1, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPowerStatus(&early, 1, Stub.preflushOk));
+    var short: [17]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPowerStatus(&late, 1, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Chassis Power is ", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisPowerStatus(&writer, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Chassis Power is off\n", writer.buffered());
+}
+
+test "chassis power status stdout orders buffered C around Zig results" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisPowerStatus(&stdout.interface, 0, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitChassisPowerStatus(&stdout.interface, 1, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [100]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Chassis Power is off\n|between|Chassis Power is on\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "chassis power status preserves request and response statuses" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x1 and req.msg.data_len == 0);
+            return if (present) &response else null;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]struct { status: u8, text: []const u8 }{
+        .{ .status = 0, .text = "Chassis Power is off\n" },
+        .{ .status = 1, .text = "Chassis Power is on\n" },
+        .{ .status = 0xfe, .text = "Chassis Power is off\n" },
+        .{ .status = 0xff, .text = "Chassis Power is on\n" },
+    }) |case| {
+        Stub.response = std.mem.zeroes(Response);
+        Stub.response.data[0] = case.status;
+        Stub.requests = 0;
+        Stub.present = true;
+        var storage: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, 0), try chassisPrintPowerStatusTo(&intf, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqualStrings(case.text, writer.buffered());
+    }
+    for ([_]bool{ false, true }) |present| {
+        Stub.response.ccode = 0xc1;
+        Stub.present = present;
+        Stub.requests = 0;
+        var storage: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisPrintPowerStatusTo(&intf, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
 }
 
 /// `ipmi_chassis_power_control()`.

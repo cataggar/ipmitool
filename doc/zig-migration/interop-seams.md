@@ -507,6 +507,18 @@ boundaries, mixed C/Zig output and injected I/O failures. The existing
 `chassis_status*` original-C and selected-Zig CLI goldens retain the wire and
 output oracle.
 
+The `chassis power status` and top-level `power status` success line also uses
+checked Zig stdout after a libc pre-flush. Its exact `Chassis Power is on/off`
+bytes and low-bit interpretation match C; request and completion-code errors
+still return `-1` without writing. Pre-flush, early/late write and final-flush
+errors log their phase and return `-1`. `zig build
+test-chassis-power-status-stdout` compares C bytes, response statuses,
+buffered C/Zig order and injected output failures; the `chassis_power_status*`
+and `power_status*` original-C/selected-Zig goldens check both command routes.
+The shell's C-preflush probe instead uses the still-libc `chassis poh` output,
+followed by a selected Zig MC warm reset (or Zig echo when MC is still C), so
+it covers the buffered-C-to-Zig transition even with all modules selected.
+
 The selected `chassis restart_cause` result likewise pre-flushes buffered C
 stdout before checked Zig writes and final flush, preserving all masked
 codes, table lookups, newline and request status. Output errors log their
