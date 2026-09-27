@@ -1326,6 +1326,14 @@ pub fn build(b: *std.Build) void {
     mc_watchdog_get_step.dependOn(&b.addRunArtifact(mc_watchdog_get_unit).step);
     test_step.dependOn(mc_watchdog_get_step);
 
+    const mc_watchdog_numeric_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.watchdog numeric"},
+    });
+    const mc_watchdog_numeric_step = b.step("test-mc-watchdog-numeric", "Compare MC watchdog SET decimal parsing, request bytes and statuses with libc");
+    mc_watchdog_numeric_step.dependOn(&b.addRunArtifact(mc_watchdog_numeric_unit).step);
+    test_step.dependOn(mc_watchdog_numeric_step);
+
     const mc_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.mc info stdout"},

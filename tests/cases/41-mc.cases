@@ -594,6 +594,36 @@ args: -I dummy mc watchdog set timeout=30
 transcript: mc_ccode.tr
 covers: mc
 
+[mc_watchdog_numeric_signed_space]
+desc: leading whitespace plus an explicit sign and zero padding still send the same watchdog timeout
+args: -I dummy mc watchdog set "timeout= +00030"
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_numeric_pretimeout_sign]
+desc: signed decimal pretimeout with leading whitespace reaches the high accepted boundary
+args: -I dummy mc watchdog set "pretimeout= +00255"
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_numeric_positive_overflow]
+desc: decimal overflow saturates to LONG_MAX in the timeout range diagnostic
+args: -I dummy mc watchdog set timeout=9223372036854775808
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_numeric_negative_overflow]
+desc: negative overflow saturates to LONG_MIN in the pretimeout range diagnostic
+args: -I dummy mc watchdog set pretimeout=-9223372036854775809
+transcript: mc.tr
+covers: mc
+
+[mc_watchdog_numeric_overflow_junk]
+desc: junk after overflowing decimal digits rejects the value before the range diagnostic
+args: -I dummy mc watchdog set timeout=9223372036854775808bad
+transcript: mc.tr
+covers: mc
+
 # ---------------------------------------------------------------------------
 # mc getsysinfo / setsysinfo
 # ---------------------------------------------------------------------------
