@@ -527,6 +527,21 @@ bytes across all cause bytes and checks buffered ordering and failure
 injection; the existing `chassis_restart_cause*` C/selected-Zig CLI goldens
 keep the oracle.
 
+The selected `chassis bootparam get` and `chassis bootmbox get` results now
+pre-flush libc stdout and stream checked Zig output for generic fields,
+decoded boot flags and mailbox blocks. Hex dumps preserve C's lowercase
+bytes and `buf2str` size limit; the mailbox keeps its block column alignment,
+PEN lookup and embedded-NUL text behavior. The `chassis bootdev` and
+`chassis bootparam set bootflag` success acknowledgment also uses checked
+Zig stdout, preserving the set-complete request even if output fails.
+Pre-flush, write and final-flush failures log and propagate through the
+multi-block read instead of being mistaken for the normal end-of-mailbox
+response. `zig build test-chassis-bootparam-stdout` checks C hex and
+acknowledgment parity, request and output status, mixed C/Zig ordering,
+cleanup requests and failure injection. The existing `chassis_bootparam_get*`,
+`chassis_bootdev_*` and `chassis_mbox_*` C/selected-Zig goldens cover every
+parameter, boot option and single/multi-block output.
+
 The selected `chassis power on/off/cycle/reset/diag/soft` (and top-level
 `power`) success messages now use checked Zig stdout. Their original
 value-table wording, newline, request and error behavior remain unchanged;

@@ -15,12 +15,12 @@
 //! * **Most formatting stays in libc.** `printf` and `snprintf` still use `ipmi_c`;
 //!   diagnostics use `log.print()` from the selected logger archive, with the
 //!   C `lprintf` fallback when `log` is not selected. libc still renders
-//!   `%3d`, `%08lXh`, `%-22s` and `%s` on a `buf2str()` result. `strcmp`,
-//!   `strncmp`, `strtok_r` and `str2uchar` receive the same pointers as C,
+//!   remaining C output formats. `strcmp`, `strncmp`, `strtok_r` and
+//!   `str2uchar` receive the same pointers as C,
 //!   including writable `argv` strings that `strtok_r()` splits in place.
 //!   The `power_usage` format is a compile-time constant, never user input.
-//!   Chassis power status/control, restore policy, identify, restart cause,
-//!   status and self-test results use checked Zig stdout.
+//!   Chassis boot options, power status/control, restore policy, identify,
+//!   restart cause, status and self-test results use checked Zig stdout.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -1540,10 +1540,14 @@ fn bpFlag(comptime bit: u5) c_int {
     return 1 << bit;
 }
 
-/// `chassis_bootmailbox_parse()`.
-///
-/// `buf` points at the parameter data, whose first byte is the block selector.
-fn chassisBootmailboxParse(buf: [*]const u8, len: usize, flags: c_int) void {
+fn writeBootparamHex(writer: *std.Io.Writer, bytes: []const u8) std.Io.Writer.Error!void {
+    // buf2str() has a 3073-byte static buffer and emits two digits per byte.
+    for (bytes[0..@min(bytes.len, 1536)]) |byte|
+        try writer.print("{x:0>2}", .{byte});
+}
+
+/// `chassis_bootmailbox_parse()`. `buf` starts with the block selector.
+fn writeChassisBootmailbox(writer: *std.Io.Writer, buf: [*]const u8, len: usize, flags: c_int) std.Io.Writer.Error!void {
     const use_text = flags & bpFlag(MBOX_PARSE_USE_TEXT) != 0;
     const all_blocks = flags & bpFlag(MBOX_PARSE_ALLBLOCKS) != 0;
 
@@ -1555,49 +1559,54 @@ fn chassisBootmailboxParse(buf: [*]const u8, len: usize, flags: c_int) void {
 
     if (!all_blocks) {
         // Print block selector only if a single block is printed.
-        _ = c.printf(" Selector       : %d\n", @as(c_int, block));
+        try writer.print(" Selector       : {d}\n", .{block});
     }
     if (block == 0) {
         const iana = c.ipmi24toh(@constCast(buf + 1));
         // For block zero print the IANA Private Enterprise Number.
-        _ = c.printf(
-            " IANA PEN       : %u [%s]\n",
-            iana,
-            c.val2str(iana, c.ipmi_oem_info),
-        );
+        try writer.print(" IANA PEN       : {d} [{s}]\n", .{ iana, std.mem.span(c.val2str(iana, c.ipmi_oem_info)) });
         blockdata = buf + 1 + CHASSIS_BOOT_MBOX_IANA_SZ;
         datalen -%= CHASSIS_BOOT_MBOX_IANA_SZ;
     }
 
-    _ = c.printf(" Block ");
+    try writer.writeAll(" Block ");
     if (all_blocks) {
-        _ = c.printf("%3u Data : ", @as(c_uint, block));
+        try writer.print("{d: >3} Data : ", .{block});
     } else {
-        _ = c.printf("Data     : ");
+        try writer.writeAll("Data     : ");
     }
     if (use_text) {
         // Ensure the data string is null-terminated.
         var text = [_]u8{0} ** (CHASSIS_BOOT_MBOX_BLOCK_SZ + 1);
         @memcpy(text[0..datalen], blockdata[0..datalen]);
-        _ = c.printf("'%s'\n", &text);
+        try writer.print("'{s}'\n", .{std.mem.sliceTo(text[0..], 0)});
     } else {
-        _ = c.printf("%s\n", c.buf2str(blockdata, @intCast(datalen)));
+        try writeBootparamHex(writer, blockdata[0..datalen]);
+        try writer.writeByte('\n');
     }
 }
 
+const BootparamOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn emitChassisBootparam(writer: *std.Io.Writer, rsp: *Response, flags: c_int, preflush: anytype) BootparamOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisBootparam(writer, rsp, flags) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 /// `ipmi_chassis_get_bootparam()`.
-fn chassisGetBootparam(
+fn chassisGetBootparamTo(
     intf: *Intf,
     argc_in: c_int,
     argv_in: [*]const [*:0]const u8,
     flags: c_int,
-) c_int {
+    writer: *std.Io.Writer,
+    preflush: anytype,
+) BootparamOutputError!c_int {
     var argc = argc_in;
     var argv = argv_in;
 
     var param_id: u8 = 0;
-    const skip_generic = flags & bpFlag(PARAM_NO_GENERIC_INFO) != 0;
-    const skip_data = flags & bpFlag(PARAM_NO_DATA_DUMP) != 0;
     const skip_range = flags & bpFlag(PARAM_NO_RANGE_ERROR) != 0;
 
     if (argc < 1) return -1;
@@ -1666,184 +1675,371 @@ fn chassisGetBootparam(
 
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "Boot Option");
 
-    param_id = rsp.data[1] & 0x7f;
+    try emitChassisBootparam(writer, rsp, flags, preflush);
+    return IPMI_CC_OK;
+}
+
+fn chassisGetBootparam(
+    intf: *Intf,
+    argc: c_int,
+    argv: [*]const [*:0]const u8,
+    flags: c_int,
+) BootparamOutputError!c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisGetBootparamTo(intf, argc, argv, flags, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis bootparam stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis bootparam stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis bootparam stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return err;
+    };
+}
+
+fn writeChassisBootparam(writer: *std.Io.Writer, rsp: *Response, flags: c_int) std.Io.Writer.Error!void {
+    const skip_generic = flags & bpFlag(PARAM_NO_GENERIC_INFO) != 0;
+    const skip_data = flags & bpFlag(PARAM_NO_DATA_DUMP) != 0;
+    const param_id = rsp.data[1] & 0x7f;
 
     if (!skip_generic) {
-        _ = c.printf("Boot parameter version: %d\n", @as(c_int, rsp.data[0]));
-        _ = c.printf(
-            "Boot parameter %d is %s\n",
-            @as(c_int, rsp.data[1] & 0x7f),
-            pick(rsp.data[1] & 0x80 != 0, "invalid/locked", "valid/unlocked"),
-        );
+        try writer.print("Boot parameter version: {d}\n", .{rsp.data[0]});
+        try writer.print("Boot parameter {d} is {s}\n", .{
+            param_id,
+            if (rsp.data[1] & 0x80 != 0) "invalid/locked" else "valid/unlocked",
+        });
         if (!skip_data) {
-            _ = c.printf(
-                "Boot parameter data: %s\n",
-                c.buf2str(rsp.data[2..], rsp.data_len - 2),
-            );
+            try writer.writeAll("Boot parameter data: ");
+            try writeBootparamHex(writer, rsp.data[2..][0..@intCast(@max(rsp.data_len - 2, 0))]);
+            try writer.writeByte('\n');
         }
     }
 
     switch (param_id) {
         0 => {
-            _ = c.printf(" Set In Progress : ");
-            switch (rsp.data[2] & 0x03) {
-                0 => _ = c.printf("set complete\n"),
-                1 => _ = c.printf("set in progress\n"),
-                2 => _ = c.printf("commit write\n"),
-                else => _ = c.printf("error, reserved bit\n"),
-            }
+            try writer.writeAll(" Set In Progress : ");
+            try writer.writeAll(switch (rsp.data[2] & 0x03) {
+                0 => "set complete\n",
+                1 => "set in progress\n",
+                2 => "commit write\n",
+                else => "error, reserved bit\n",
+            });
         },
         1 => {
-            _ = c.printf(" Service Partition Selector : ");
+            try writer.writeAll(" Service Partition Selector : ");
             if (rsp.data[2] == 0) {
-                _ = c.printf("unspecified\n");
+                try writer.writeAll("unspecified\n");
             } else {
-                _ = c.printf("%d\n", @as(c_int, rsp.data[2]));
+                try writer.print("{d}\n", .{rsp.data[2]});
             }
         },
         2 => {
-            _ = c.printf(" Service Partition Scan :\n");
+            try writer.writeAll(" Service Partition Scan :\n");
             if (rsp.data[2] & 0x03 != 0) {
                 if (rsp.data[2] & 0x01 == 0x01)
-                    _ = c.printf("     - Request BIOS to scan\n");
+                    try writer.writeAll("     - Request BIOS to scan\n");
                 if (rsp.data[2] & 0x02 == 0x02)
-                    _ = c.printf("     - Service Partition Discovered\n");
+                    try writer.writeAll("     - Service Partition Discovered\n");
             } else {
-                _ = c.printf("     No flag set\n");
+                try writer.writeAll("     No flag set\n");
             }
         },
         3 => {
-            _ = c.printf(" BMC boot flag valid bit clearing :\n");
+            try writer.writeAll(" BMC boot flag valid bit clearing :\n");
             if (rsp.data[2] & 0x1f != 0) {
                 if (rsp.data[2] & 0x10 == 0x10)
-                    _ = c.printf("     - Don't clear valid bit on reset/power cycle cause by PEF\n");
+                    try writer.writeAll("     - Don't clear valid bit on reset/power cycle cause by PEF\n");
                 if (rsp.data[2] & 0x08 == 0x08)
-                    _ = c.printf("     - Don't automatically clear boot flag valid bit on timeout\n");
+                    try writer.writeAll("     - Don't automatically clear boot flag valid bit on timeout\n");
                 if (rsp.data[2] & 0x04 == 0x04)
-                    _ = c.printf("     - Don't clear valid bit on reset/power cycle cause by watchdog\n");
+                    try writer.writeAll("     - Don't clear valid bit on reset/power cycle cause by watchdog\n");
                 if (rsp.data[2] & 0x02 == 0x02)
-                    _ = c.printf("     - Don't clear valid bit on push button reset // soft reset\n");
+                    try writer.writeAll("     - Don't clear valid bit on push button reset // soft reset\n");
                 if (rsp.data[2] & 0x01 == 0x01)
-                    _ = c.printf("     - Don't clear valid bit on power up via power push button or wake event\n");
+                    try writer.writeAll("     - Don't clear valid bit on power up via power push button or wake event\n");
             } else {
-                _ = c.printf("     No flag set\n");
+                try writer.writeAll("     No flag set\n");
             }
         },
         4 => {
-            _ = c.printf(" Boot Info Acknowledge :\n");
+            try writer.writeAll(" Boot Info Acknowledge :\n");
             if (rsp.data[3] & 0x1f != 0) {
                 if (rsp.data[3] & 0x10 == 0x10)
-                    _ = c.printf("    - OEM has handled boot info\n");
+                    try writer.writeAll("    - OEM has handled boot info\n");
                 if (rsp.data[3] & 0x08 == 0x08)
-                    _ = c.printf("    - SMS has handled boot info\n");
+                    try writer.writeAll("    - SMS has handled boot info\n");
                 if (rsp.data[3] & 0x04 == 0x04)
-                    _ = c.printf("    - OS // service partition has handled boot info\n");
+                    try writer.writeAll("    - OS // service partition has handled boot info\n");
                 if (rsp.data[3] & 0x02 == 0x02)
-                    _ = c.printf("    - OS Loader has handled boot info\n");
+                    try writer.writeAll("    - OS Loader has handled boot info\n");
                 if (rsp.data[3] & 0x01 == 0x01)
-                    _ = c.printf("    - BIOS/POST has handled boot info\n");
+                    try writer.writeAll("    - BIOS/POST has handled boot info\n");
             } else {
-                _ = c.printf("     No flag set\n");
+                try writer.writeAll("     No flag set\n");
             }
         },
-        5 => printBootFlags(rsp),
+        5 => try writeBootFlags(writer, rsp),
         6 => {
             var session_id: c_ulong = @as(c_ulong, rsp.data[3]);
             session_id |= @as(c_ulong, rsp.data[4]) << 8;
             session_id |= @as(c_ulong, rsp.data[5]) << 16;
             session_id |= @as(c_ulong, rsp.data[6]) << 24;
-
             const timestamp = c.ipmi32toh(&rsp.data[7]);
 
-            _ = c.printf(" Boot Initiator Info :\n");
-            _ = c.printf("    Channel Number : %d\n", @as(c_int, rsp.data[2] & 0x0f));
-            _ = c.printf("    Session Id     : %08lXh\n", session_id);
-            _ = c.printf("    Timestamp      : %s\n", c.ipmi_timestamp_numeric(timestamp));
+            try writer.writeAll(" Boot Initiator Info :\n");
+            try writer.print("    Channel Number : {d}\n", .{rsp.data[2] & 0x0f});
+            try writer.print("    Session Id     : {X:0>8}h\n", .{session_id});
+            try writer.print("    Timestamp      : {s}\n", .{std.mem.span(c.ipmi_timestamp_numeric(timestamp))});
         },
-        7 => chassisBootmailboxParse(
+        7 => try writeChassisBootmailbox(
+            writer,
             rsp.data[2..],
-            @intCast(rsp.data_len - 2),
+            @intCast(@max(rsp.data_len - 2, 0)),
             flags,
         ),
-        else => _ = c.printf(" Unsupported parameter %u\n", @as(c_uint, param_id)),
+        else => try writer.print(" Unsupported parameter {d}\n", .{param_id}),
     }
-
-    return IPMI_CC_OK;
 }
 
 /// The boot flags (parameter 5) decoder, split out of the `switch` above only
 /// because it is long.
-fn printBootFlags(rsp: *Response) void {
-    _ = c.printf(" Boot Flags :\n");
+fn writeBootFlags(writer: *std.Io.Writer, rsp: *Response) std.Io.Writer.Error!void {
+    try writer.writeAll(" Boot Flags :\n");
 
     if (rsp.data[2] & BF1_VALID != 0) {
-        _ = c.printf("   - Boot Flag Valid\n");
+        try writer.writeAll("   - Boot Flag Valid\n");
     } else {
-        _ = c.printf("   - Boot Flag Invalid\n");
+        try writer.writeAll("   - Boot Flag Invalid\n");
     }
 
     if (rsp.data[2] & BF1_PERSIST != 0) {
-        _ = c.printf("   - Options apply to all future boots\n");
+        try writer.writeAll("   - Options apply to all future boots\n");
     } else {
-        _ = c.printf("   - Options apply to only next boot\n");
+        try writer.writeAll("   - Options apply to only next boot\n");
     }
 
     if (rsp.data[2] & BF1_BOOT_TYPE_EFI != 0) {
-        _ = c.printf("   - BIOS EFI boot \n");
+        try writer.writeAll("   - BIOS EFI boot \n");
     } else {
-        _ = c.printf("   - BIOS PC Compatible (legacy) boot \n");
+        try writer.writeAll("   - BIOS PC Compatible (legacy) boot \n");
     }
 
-    if (rsp.data[3] & BF2_CMOS_CLEAR != 0) _ = c.printf("   - CMOS Clear\n");
-    if (rsp.data[3] & BF2_KEYLOCK != 0) _ = c.printf("   - Lock Keyboard\n");
-    _ = c.printf("   - Boot Device Selector : ");
-    switch (rsp.data[3] & BF2_BOOTDEV_MASK) {
-        BF2_BOOTDEV_DEFAULT => _ = c.printf("No override\n"),
-        BF2_BOOTDEV_PXE => _ = c.printf("Force PXE\n"),
-        BF2_BOOTDEV_HDD => _ = c.printf("Force Boot from default Hard-Drive\n"),
-        BF2_BOOTDEV_HDD_SAFE => _ = c.printf("Force Boot from default Hard-Drive, request Safe-Mode\n"),
-        BF2_BOOTDEV_DIAG_PART => _ = c.printf("Force Boot from Diagnostic Partition\n"),
-        BF2_BOOTDEV_CDROM => _ = c.printf("Force Boot from CD/DVD\n"),
-        BF2_BOOTDEV_SETUP => _ = c.printf("Force Boot into BIOS Setup\n"),
-        BF2_BOOTDEV_REMOTE_FDD => _ = c.printf("Force Boot from remotely connected Floppy/primary removable media\n"),
-        BF2_BOOTDEV_REMOTE_CDROM => _ = c.printf("Force Boot from remotely connected CD/DVD\n"),
-        BF2_BOOTDEV_REMOTE_PRIMARY_MEDIA => _ = c.printf("Force Boot from primary remote media\n"),
-        BF2_BOOTDEV_REMOTE_HDD => _ = c.printf("Force Boot from remotely connected Hard-Drive\n"),
-        BF2_BOOTDEV_FDD => _ = c.printf("Force Boot from Floppy/primary removable media\n"),
-        else => _ = c.printf("Flag error\n"),
-    }
-    if (rsp.data[3] & BF2_BLANK_SCREEN != 0) _ = c.printf("   - Screen blank\n");
-    if (rsp.data[3] & BF2_RESET_LOCKOUT != 0) _ = c.printf("   - Lock out Reset buttons\n");
+    if (rsp.data[3] & BF2_CMOS_CLEAR != 0) try writer.writeAll("   - CMOS Clear\n");
+    if (rsp.data[3] & BF2_KEYLOCK != 0) try writer.writeAll("   - Lock Keyboard\n");
+    try writer.writeAll("   - Boot Device Selector : ");
+    try writer.writeAll(switch (rsp.data[3] & BF2_BOOTDEV_MASK) {
+        BF2_BOOTDEV_DEFAULT => "No override\n",
+        BF2_BOOTDEV_PXE => "Force PXE\n",
+        BF2_BOOTDEV_HDD => "Force Boot from default Hard-Drive\n",
+        BF2_BOOTDEV_HDD_SAFE => "Force Boot from default Hard-Drive, request Safe-Mode\n",
+        BF2_BOOTDEV_DIAG_PART => "Force Boot from Diagnostic Partition\n",
+        BF2_BOOTDEV_CDROM => "Force Boot from CD/DVD\n",
+        BF2_BOOTDEV_SETUP => "Force Boot into BIOS Setup\n",
+        BF2_BOOTDEV_REMOTE_FDD => "Force Boot from remotely connected Floppy/primary removable media\n",
+        BF2_BOOTDEV_REMOTE_CDROM => "Force Boot from remotely connected CD/DVD\n",
+        BF2_BOOTDEV_REMOTE_PRIMARY_MEDIA => "Force Boot from primary remote media\n",
+        BF2_BOOTDEV_REMOTE_HDD => "Force Boot from remotely connected Hard-Drive\n",
+        BF2_BOOTDEV_FDD => "Force Boot from Floppy/primary removable media\n",
+        else => "Flag error\n",
+    });
+    if (rsp.data[3] & BF2_BLANK_SCREEN != 0) try writer.writeAll("   - Screen blank\n");
+    if (rsp.data[3] & BF2_RESET_LOCKOUT != 0) try writer.writeAll("   - Lock out Reset buttons\n");
 
     if (rsp.data[4] & BF3_POWER_LOCKOUT != 0)
-        _ = c.printf("   - Lock out (power off/sleep request) via Power Button\n");
+        try writer.writeAll("   - Lock out (power off/sleep request) via Power Button\n");
 
-    _ = c.printf("   - BIOS verbosity : ");
-    switch (rsp.data[4] & BF3_VERBOSITY_MASK) {
-        BF3_VERBOSITY_DEFAULT => _ = c.printf("System Default\n"),
-        BF3_VERBOSITY_QUIET => _ = c.printf("Request Quiet Display\n"),
-        BF3_VERBOSITY_VERBOSE => _ = c.printf("Request Verbose Display\n"),
-        else => _ = c.printf("Flag error\n"),
-    }
-    if (rsp.data[4] & BF3_EVENT_TRAPS != 0) _ = c.printf("   - Force progress event traps\n");
-    if (rsp.data[4] & BF3_PASSWD_BYPASS != 0) _ = c.printf("   - User password bypass\n");
-    if (rsp.data[4] & BF3_SLEEP_LOCKOUT != 0) _ = c.printf("   - Lock Out Sleep Button\n");
-    _ = c.printf("   - Console Redirection control : ");
-    switch (rsp.data[4] & BF3_CONSOLE_REDIR_MASK) {
-        BF3_CONSOLE_REDIR_DEFAULT => _ = c.printf("Console redirection occurs per BIOS configuration setting (default)\n"),
-        BF3_CONSOLE_REDIR_SUPPRESS => _ = c.printf("Suppress (skip) console redirection if enabled\n"),
-        BF3_CONSOLE_REDIR_ENABLE => _ = c.printf("Request console redirection be enabled\n"),
-        else => _ = c.printf("Flag error\n"),
-    }
+    try writer.writeAll("   - BIOS verbosity : ");
+    try writer.writeAll(switch (rsp.data[4] & BF3_VERBOSITY_MASK) {
+        BF3_VERBOSITY_DEFAULT => "System Default\n",
+        BF3_VERBOSITY_QUIET => "Request Quiet Display\n",
+        BF3_VERBOSITY_VERBOSE => "Request Verbose Display\n",
+        else => "Flag error\n",
+    });
+    if (rsp.data[4] & BF3_EVENT_TRAPS != 0) try writer.writeAll("   - Force progress event traps\n");
+    if (rsp.data[4] & BF3_PASSWD_BYPASS != 0) try writer.writeAll("   - User password bypass\n");
+    if (rsp.data[4] & BF3_SLEEP_LOCKOUT != 0) try writer.writeAll("   - Lock Out Sleep Button\n");
+    try writer.writeAll("   - Console Redirection control : ");
+    try writer.writeAll(switch (rsp.data[4] & BF3_CONSOLE_REDIR_MASK) {
+        BF3_CONSOLE_REDIR_DEFAULT => "Console redirection occurs per BIOS configuration setting (default)\n",
+        BF3_CONSOLE_REDIR_SUPPRESS => "Suppress (skip) console redirection if enabled\n",
+        BF3_CONSOLE_REDIR_ENABLE => "Request console redirection be enabled\n",
+        else => "Flag error\n",
+    });
 
-    if (rsp.data[5] & BF4_SHARED_MODE != 0) _ = c.printf("   - BIOS Shared Mode Override\n");
-    _ = c.printf("   - BIOS Mux Control Override : ");
-    switch (rsp.data[5] & BF4_BIOS_MUX_MASK) {
-        BF4_BIOS_MUX_DEFAULT => _ = c.printf("BIOS uses recommended setting of the mux at the end of POST\n"),
-        BF4_BIOS_MUX_BMC => _ = c.printf("Requests BIOS to force mux to BMC at conclusion of POST/start of OS boot\n"),
-        BF4_BIOS_MUX_SYSTEM => _ = c.printf("Requests BIOS to force mux to system at conclusion of POST/start of OS boot\n"),
-        else => _ = c.printf("Flag error\n"),
+    if (rsp.data[5] & BF4_SHARED_MODE != 0) try writer.writeAll("   - BIOS Shared Mode Override\n");
+    try writer.writeAll("   - BIOS Mux Control Override : ");
+    try writer.writeAll(switch (rsp.data[5] & BF4_BIOS_MUX_MASK) {
+        BF4_BIOS_MUX_DEFAULT => "BIOS uses recommended setting of the mux at the end of POST\n",
+        BF4_BIOS_MUX_BMC => "Requests BIOS to force mux to BMC at conclusion of POST/start of OS boot\n",
+        BF4_BIOS_MUX_SYSTEM => "Requests BIOS to force mux to system at conclusion of POST/start of OS boot\n",
+        else => "Flag error\n",
+    });
+}
+
+test "chassis bootparam stdout hex matches libc buffer conversion and truncation" {
+    var data: [1600]u8 = undefined;
+    for (&data, 0..) |*byte, index| byte.* = @truncate(index);
+    for ([_]usize{ 0, 1, 16, 255, data.len }) |length| {
+        var storage: [3100]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeBootparamHex(&writer, data[0..length]);
+        try std.testing.expectEqualStrings(
+            std.mem.span(c.buf2str(&data, @intCast(length))),
+            writer.buffered(),
+        );
     }
+}
+
+test "chassis bootparam stdout preserves generic fields flags and mailbox text" {
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 3;
+    rsp.data[0] = 1;
+    rsp.data[1] = 0x80;
+    rsp.data[2] = 3;
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writeChassisBootparam(&writer, &rsp, 0);
+    try std.testing.expectEqualStrings(
+        "Boot parameter version: 1\nBoot parameter 0 is invalid/locked\n" ++
+            "Boot parameter data: 03\n Set In Progress : error, reserved bit\n",
+        writer.buffered(),
+    );
+
+    writer = std.Io.Writer.fixed(&storage);
+    try writeChassisBootparam(&writer, &rsp, bpFlag(PARAM_NO_DATA_DUMP));
+    try std.testing.expectEqualStrings(
+        "Boot parameter version: 1\nBoot parameter 0 is invalid/locked\n Set In Progress : error, reserved bit\n",
+        writer.buffered(),
+    );
+    writer = std.Io.Writer.fixed(&storage);
+    try writeChassisBootparam(&writer, &rsp, bpFlag(PARAM_NO_GENERIC_INFO));
+    try std.testing.expectEqualStrings(" Set In Progress : error, reserved bit\n", writer.buffered());
+
+    rsp.data[1] = 8;
+    writer = std.Io.Writer.fixed(&storage);
+    try writeChassisBootparam(&writer, &rsp, bpFlag(PARAM_NO_GENERIC_INFO));
+    try std.testing.expectEqualStrings(" Unsupported parameter 8\n", writer.buffered());
+
+    const block = [4]u8{ 1, 'A', 0, 'B' };
+    writer = std.Io.Writer.fixed(&storage);
+    try writeChassisBootmailbox(&writer, &block, block.len, bpFlag(MBOX_PARSE_USE_TEXT));
+    try std.testing.expectEqualStrings(" Selector       : 1\n Block Data     : 'A'\n", writer.buffered());
+    writer = std.Io.Writer.fixed(&storage);
+    try writeChassisBootmailbox(&writer, &block, block.len, bpFlag(MBOX_PARSE_ALLBLOCKS));
+    try std.testing.expectEqualStrings(" Block   1 Data : 410042\n", writer.buffered());
+}
+
+test "chassis bootparam stdout propagates preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 6;
+    rsp.data[0] = 1;
+    rsp.data[1] = 5;
+    rsp.data[2] = 0xff;
+    rsp.data[3] = 0xff;
+    rsp.data[4] = 0xff;
+    rsp.data[5] = 0xff;
+    var storage: [2048]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisBootparam(&writer, &rsp, 0, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisBootparam(&early, &rsp, 0, Stub.preflushOk));
+    var short: [280]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisBootparam(&late, &rsp, 0, Stub.preflushOk));
+    try std.testing.expect(std.mem.indexOf(u8, late.buffered(), " Boot Flags :\n") != null);
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisBootparam(&writer, &rsp, 0, Stub.preflushOk));
+    try std.testing.expect(std.mem.indexOf(u8, writer.buffered(), " BIOS Mux Control Override : ") != null);
+}
+
+test "chassis bootparam stdout orders buffered C across Zig results" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 3;
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisBootparam(&stdout.interface, &rsp, bpFlag(PARAM_NO_GENERIC_INFO), stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    rsp.data[1] = 1;
+    rsp.data[2] = 7;
+    try emitChassisBootparam(&stdout.interface, &rsp, bpFlag(PARAM_NO_GENERIC_INFO), stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [192]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before| Set In Progress : set complete\n|between| Service Partition Selector : 7\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "chassis bootparam stdout retains request and response statuses" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x9 and req.msg.data_len == 3);
+            std.debug.assert(req.msg.data[0] == 0 and req.msg.data[1] == 0 and req.msg.data[2] == 0);
+            return if (present) &response else null;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.response = std.mem.zeroes(Response);
+    Stub.response.data_len = 3;
+    const args = [_][*:0]const u8{"0"};
+    var storage: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisGetBootparamTo(&intf, args.len, &args, 0, &writer, stdout_io.trySyncC));
+    try std.testing.expectEqualStrings(
+        "Boot parameter version: 0\nBoot parameter 0 is valid/unlocked\n" ++
+            "Boot parameter data: 00\n Set In Progress : set complete\n",
+        writer.buffered(),
+    );
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.response.ccode = 0xc1;
+        var empty: [128]u8 = undefined;
+        var silent = std.Io.Writer.fixed(&empty);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisGetBootparamTo(&intf, args.len, &args, 0, &silent, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), silent.buffered().len);
+    }
+    Stub.present = true;
+    Stub.response.ccode = 0;
+    var empty: [128]u8 = undefined;
+    var silent = std.Io.Writer.fixed(&empty);
+    try std.testing.expectError(error.CStdoutFlushFailed, chassisGetBootparamTo(&intf, args.len, &args, 0, &silent, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 4), Stub.requests);
 }
 
 // ---------------------------------------------------------------------------
@@ -2029,9 +2225,26 @@ fn chassisSetBootvalid(intf: *Intf, set_flag: u8, clr_flag: u8) c_int {
 }
 
 /// `ipmi_chassis_set_bootdev()`.
-fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_COUNT]u8) c_int {
+fn writeChassisBootdevAck(writer: *std.Io.Writer, arg: ?[*:0]const u8) std.Io.Writer.Error!void {
+    try writer.print("Set Boot Device to {s}\n", .{if (arg) |value| std.mem.span(value) else "(null)"});
+}
+
+fn emitChassisBootdevAck(writer: *std.Io.Writer, arg: ?[*:0]const u8, preflush: anytype) BootparamOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisBootdevAck(writer, arg) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisSetBootdevTo(
+    intf: *Intf,
+    arg: ?[*:0]const u8,
+    iflags: ?*const [BF_BYTE_COUNT]u8,
+    writer: *std.Io.Writer,
+    preflush: anytype,
+) BootparamOutputError!c_int {
     var flags = [_]u8{0} ** BF_BYTE_COUNT;
     var rc: c_int = undefined;
+    var output_error: ?BootparamOutputError = null;
 
     chassisBootparamSetInProgress(intf, SET_IN_PROGRESS);
     rc = chassisBootparamClearAck(intf, BIOS_POST_ACK);
@@ -2080,13 +2293,140 @@ fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_
             );
             if (rc == IPMI_CC_OK) {
                 chassisBootparamSetInProgress(intf, COMMIT_WRITE);
-                _ = c.printf("Set Boot Device to %s\n", @as([*c]const u8, @ptrCast(arg)));
+                emitChassisBootdevAck(writer, arg, preflush) catch |err| {
+                    output_error = err;
+                };
             }
         }
     }
 
     chassisBootparamSetInProgress(intf, SET_COMPLETE);
+    if (output_error) |err| return err;
     return rc;
+}
+
+fn chassisSetBootdev(intf: *Intf, arg: ?[*:0]const u8, iflags: ?*const [BF_BYTE_COUNT]u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisSetBootdevTo(intf, arg, iflags, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis bootdev stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis bootdev stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis bootdev stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis bootdev stdout matches C acknowledgment bytes" {
+    for ([_]?[*:0]const u8{ "none", "pxe", "force_pxe", "disk", "force_disk", "remotecd", null }) |arg| {
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "Set Boot Device to %s\n", arg);
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisBootdevAck(&writer, arg);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis bootdev stdout propagates preflush write and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisBootdevAck(&writer, "force_pxe", Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisBootdevAck(&early, "force_pxe", Stub.preflushOk));
+    var short: [25]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisBootdevAck(&late, "force_pxe", Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set Boot Device to ", late.buffered()[0..19]);
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisBootdevAck(&writer, "force_pxe", Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set Boot Device to force_pxe\n", writer.buffered());
+}
+
+test "chassis bootdev stdout keeps set complete after output failures" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: [5]u8 = undefined;
+        var count: usize = 0;
+        var fail_flags = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x8);
+            std.debug.assert(count < requests.len);
+            requests[count] = req.msg.data[0];
+            count += 1;
+            response.ccode = if (fail_flags and count == 3) 0xc1 else 0;
+            return &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    const original_progress = use_progress;
+    defer use_progress = original_progress;
+    use_progress = true;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var storage: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    Stub.count = 0;
+    Stub.fail_flags = false;
+    try std.testing.expectError(error.CStdoutFlushFailed, chassisSetBootdevTo(&intf, "pxe", null, &writer, Stub.preflushFail));
+    try std.testing.expectEqualSlices(u8, &.{ 0, 4, 5, 0, 0 }, Stub.requests[0..Stub.count]);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    Stub.count = 0;
+    Stub.fail_flags = true;
+    writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0xc1), try chassisSetBootdevTo(&intf, "pxe", null, &writer, Stub.preflushFail));
+    try std.testing.expectEqualSlices(u8, &.{ 0, 4, 5, 0 }, Stub.requests[0..Stub.count]);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    Stub.count = 0;
+    Stub.fail_flags = false;
+    writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisSetBootdevTo(&intf, "pxe", null, &writer, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Set Boot Device to pxe\n", writer.buffered());
+    try std.testing.expectEqualSlices(u8, &.{ 0, 4, 5, 0, 0 }, Stub.requests[0..Stub.count]);
+}
+
+test "chassis bootdev stdout orders buffered C around Zig acknowledgment" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisBootdevAck(&stdout.interface, "pxe", stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [96]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|Set Boot Device to pxe\n|after\n", captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -2278,7 +2618,7 @@ fn chassisSetBootmailbox(
 }
 
 /// `chassis_get_bootmailbox()`.
-fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) c_int {
+fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) BootparamOutputError!c_int {
     var rc: c_int = IPMI_CC_UNSPECIFIED_ERROR;
     var param_str = [_]u8{0} ** 2; // Max "7"
     var block_str = [_]u8{0} ** 4; // Max "255"
@@ -2299,7 +2639,7 @@ fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) c_int {
             @as(c_uint, @as(u8, @truncate(@as(u16, @bitCast(block))))),
         );
 
-        rc = chassisGetBootparam(intf, bpargv.len, &bpargv, flags);
+        rc = try chassisGetBootparam(intf, bpargv.len, &bpargv, flags);
     } else {
         flags |= bpFlag(MBOX_PARSE_ALLBLOCKS);
         var currblk: c_int = 0;
@@ -2319,7 +2659,7 @@ fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) c_int {
                 flags |= bpFlag(PARAM_NO_RANGE_ERROR);
             }
 
-            rc = chassisGetBootparam(intf, bpargv.len, &bpargv, flags);
+            rc = try chassisGetBootparam(intf, bpargv.len, &bpargv, flags);
 
             if (rc != 0) {
                 if (currblk != 0) rc = IPMI_CC_OK;
@@ -2332,7 +2672,7 @@ fn chassisGetBootmailbox(intf: *Intf, block: i16, use_text: bool) c_int {
 }
 
 /// `chassis_bootmailbox()`.
-fn chassisBootmailbox(intf: *Intf, argc_in: c_int, argv_in: [*]const [*:0]u8) c_int {
+fn chassisBootmailbox(intf: *Intf, argc_in: c_int, argv_in: [*]const [*:0]u8) BootparamOutputError!c_int {
     var argc = argc_in;
     var argv = argv_in;
 
@@ -2369,7 +2709,7 @@ fn chassisBootmailbox(intf: *Intf, argc_in: c_int, argv_in: [*]const [*:0]u8) c_
     }
 
     if (eqlArg(cmd, "get")) {
-        rc = chassisGetBootmailbox(intf, block, use_text);
+        rc = try chassisGetBootmailbox(intf, block, use_text);
     } else if (eqlArg(cmd, "set")) {
         rc = chassisSetBootmailbox(intf, block, use_text, argc, argv);
     }
@@ -2794,7 +3134,7 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
             log.print(log.Level.notice, "bootparam get <param #>", .{});
             chassisSetBootflagHelp();
         } else if (eqlArg(argv[1], "get")) {
-            rc = chassisGetBootparam(intf, argc - 2, argv + 2, 0);
+            rc = chassisGetBootparam(intf, argc - 2, argv + 2, 0) catch -1;
         } else if (eqlArg(argv[1], "set")) {
             var set_flag: u8 = 0;
             var clr_flag: u8 = 0;
@@ -2846,7 +3186,7 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
             rc = chassisSetBootdev(intf, argv[1], if (use_flags) &flags else null);
         }
     } else if (eqlArg(argv[0], "bootmbox")) {
-        rc = chassisBootmailbox(intf, argc - 1, argv + 1);
+        rc = chassisBootmailbox(intf, argc - 1, argv + 1) catch -1;
     } else {
         log.print(log.Level.err, "Invalid chassis command: %s", .{argv[0]});
     }
