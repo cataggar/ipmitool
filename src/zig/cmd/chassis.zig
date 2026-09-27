@@ -19,7 +19,7 @@
 //!   `strncmp`, `strtok_r` and `str2uchar` receive the same pointers as C,
 //!   including writable `argv` strings that `strtok_r()` splits in place.
 //!   The `power_usage` format is a compile-time constant, never user input.
-//!   Chassis self-test results use checked Zig stdout.
+//!   Chassis identify and self-test results use checked Zig stdout.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -262,7 +262,28 @@ fn chassisPowerControl(intf: *Intf, ctl: u8) callconv(.c) c_int {
 ///
 /// With no argument the request carries no data at all; with `force` it
 /// carries both bytes so the BMC can reject the optional second one.
-fn chassisIdentify(intf: *Intf, arg: ?[*:0]const u8) c_int {
+const IdentifyOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisIdentify(writer: *std.Io.Writer, has_arg: bool, forced: bool, interval: u8) std.Io.Writer.Error!void {
+    try writer.writeAll("Chassis identify interval: ");
+    if (!has_arg) {
+        try writer.writeAll("default (15 seconds)\n");
+    } else if (forced) {
+        try writer.writeAll("indefinite\n");
+    } else if (interval == 0) {
+        try writer.writeAll("off\n");
+    } else {
+        try writer.print("{d} seconds\n", .{interval});
+    }
+}
+
+fn emitChassisIdentify(writer: *std.Io.Writer, has_arg: bool, forced: bool, interval: u8, preflush: anytype) IdentifyOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisIdentify(writer, has_arg, forced, interval) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisIdentifyTo(intf: *Intf, arg: ?[*:0]const u8, writer: *std.Io.Writer, preflush: anytype) IdentifyOutputError!c_int {
     var identify_data = [2]u8{ 0, 0 };
     const interval = &identify_data[0];
     const force_on = &identify_data[1];
@@ -303,17 +324,153 @@ fn chassisIdentify(intf: *Intf, arg: ?[*:0]const u8) c_int {
         return -1;
     }
 
-    _ = c.printf("Chassis identify interval: ");
-    if (arg == null) {
-        _ = c.printf("default (15 seconds)\n");
-    } else if (force_on.* != 0) {
-        _ = c.printf("indefinite\n");
-    } else if (interval.* == 0) {
-        _ = c.printf("off\n");
-    } else {
-        _ = c.printf("%i seconds\n", @as(c_int, interval.*));
-    }
+    try emitChassisIdentify(writer, arg != null, force_on.* != 0, interval.*, preflush);
     return 0;
+}
+
+/// `ipmi_chassis_identify()`.
+fn chassisIdentify(intf: *Intf, arg: ?[*:0]const u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisIdentifyTo(intf, arg, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis identify stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis identify stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis identify stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis identify stdout matches C default, force, off and seconds" {
+    for ([_]struct { has_arg: bool, forced: bool, interval: u8 }{
+        .{ .has_arg = false, .forced = false, .interval = 0 },
+        .{ .has_arg = true, .forced = true, .interval = 0 },
+        .{ .has_arg = true, .forced = false, .interval = 0 },
+        .{ .has_arg = true, .forced = false, .interval = 1 },
+        .{ .has_arg = true, .forced = false, .interval = 15 },
+        .{ .has_arg = true, .forced = false, .interval = 255 },
+    }) |case| {
+        var expected: [80]u8 = undefined;
+        const n = if (!case.has_arg)
+            c.snprintf(&expected, expected.len, "Chassis identify interval: default (15 seconds)\n")
+        else if (case.forced)
+            c.snprintf(&expected, expected.len, "Chassis identify interval: indefinite\n")
+        else if (case.interval == 0)
+            c.snprintf(&expected, expected.len, "Chassis identify interval: off\n")
+        else
+            c.snprintf(&expected, expected.len, "Chassis identify interval: %i seconds\n", @as(c_int, case.interval));
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [80]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisIdentify(&writer, case.has_arg, case.forced, case.interval);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis identify stdout propagates preflush, write and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [80]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisIdentify(&writer, true, false, 255, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisIdentify(&early, false, false, 0, Stub.preflushOk));
+    var short: [27]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisIdentify(&late, true, true, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Chassis identify interval: ", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisIdentify(&writer, true, false, 255, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Chassis identify interval: 255 seconds\n", writer.buffered());
+}
+
+test "chassis identify stdout orders buffered C around Zig results" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisIdentify(&stdout.interface, false, false, 0, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitChassisIdentify(&stdout.interface, true, false, 255, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [160]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Chassis identify interval: default (15 seconds)\n" ++
+            "|between|Chassis identify interval: 255 seconds\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "chassis identify preserves request lengths and statuses" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var last_len: u16 = 0;
+        var data = [2]u8{ 0, 0 };
+        var present = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x4);
+            last_len = req.msg.data_len;
+            if (last_len > 0) @memcpy(data[0..last_len], req.msg.data.?[0..last_len]);
+            return if (present) &response else null;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]struct { arg: ?[*:0]const u8, length: u16, interval: u8, forced: u8, text: []const u8 }{
+        .{ .arg = null, .length = 0, .interval = 0, .forced = 0, .text = "Chassis identify interval: default (15 seconds)\n" },
+        .{ .arg = "force", .length = 2, .interval = 0, .forced = 1, .text = "Chassis identify interval: indefinite\n" },
+        .{ .arg = "0", .length = 1, .interval = 0, .forced = 0, .text = "Chassis identify interval: off\n" },
+        .{ .arg = "255", .length = 1, .interval = 255, .forced = 0, .text = "Chassis identify interval: 255 seconds\n" },
+    }) |case| {
+        Stub.requests = 0;
+        Stub.present = true;
+        Stub.response = std.mem.zeroes(Response);
+        var storage: [80]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, 0), try chassisIdentifyTo(&intf, case.arg, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(case.length, Stub.last_len);
+        if (case.length > 0) try std.testing.expectEqual(case.interval, Stub.data[0]);
+        if (case.length == 2) try std.testing.expectEqual(case.forced, Stub.data[1]);
+        try std.testing.expectEqualStrings(case.text, writer.buffered());
+    }
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.requests = 0;
+        Stub.response.ccode = 0xc1;
+        var storage: [80]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisIdentifyTo(&intf, "force", &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
 }
 
 // ---------------------------------------------------------------------------

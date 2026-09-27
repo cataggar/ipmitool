@@ -487,7 +487,16 @@ flush failure logs its phase and returns `-1`. `zig build
 test-chassis-selftest-stdout` checks C-byte parity across all self-test bits,
 buffered C/Zig ordering, request errors and injected I/O failures. The
 existing `chassis_selftest_*` original-C and selected-Zig CLI goldens retain
-the wire and output oracle. Other chassis output stays on its original path.
+the wire and output oracle.
+
+The selected `chassis identify` acknowledgement also uses checked Zig stdout,
+preserving the default/force/off/numeric messages and their request lengths and
+statuses. It pre-flushes libc stdout before writing, checks the final flush,
+and logs and returns `-1` on any output failure. `zig build
+test-chassis-identify-stdout` compares C bytes, buffered output order, request
+statuses and injected I/O failures. The existing `chassis_identify_*` CLI
+goldens retain the C wire/output oracle. Other chassis output remains on its
+original path.
 
 The selected MC warm/cold reset acknowledgement also streams through checked
 Zig stdout after a libc pre-flush. Its words, newline and command status

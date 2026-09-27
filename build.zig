@@ -1210,6 +1210,14 @@ pub fn build(b: *std.Build) void {
     chassis_selftest_stdout_step.dependOn(&b.addRunArtifact(chassis_selftest_stdout_unit).step);
     test_step.dependOn(chassis_selftest_stdout_step);
 
+    const chassis_identify_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis identify"},
+    });
+    const chassis_identify_stdout_step = b.step("test-chassis-identify-stdout", "Compare chassis identify C bytes, requests, output order and I/O failures");
+    chassis_identify_stdout_step.dependOn(&b.addRunArtifact(chassis_identify_stdout_unit).step);
+    test_step.dependOn(chassis_identify_stdout_step);
+
     const mc_reset_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.reset stdout"},
