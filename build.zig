@@ -1082,6 +1082,11 @@ pub fn build(b: *std.Build) void {
     abi_mod.addImport("build_options", abi_options.createModule());
     abi_mod.addCSourceFile(.{ .file = b.path("tests/fd_set_oracle.c"), .flags = &.{"-std=c11"} });
     abi_mod.addCSourceFile(.{ .file = b.path("tests/session_info_mac_oracle.c"), .flags = &.{"-std=c11"} });
+    configure(b, abi_mod, config_h, default_intf);
+    abi_mod.addCSourceFiles(.{
+        .files = &.{ "tests/mc_guid_stdout_deps.c", "lib/ipmi_time.c" },
+        .flags = &base_cflags,
+    });
     addCryptoVectors(b, abi_mod);
     const abi_tests = b.addTest(.{ .root_module = abi_mod });
     const unit_tests = b.addRunArtifact(abi_tests);
@@ -1249,6 +1254,14 @@ pub fn build(b: *std.Build) void {
     const mc_info_step = b.step("test-mc-info-stdout", "Compare MC info C bytes, output ordering, and I/O failures");
     mc_info_step.dependOn(&b.addRunArtifact(mc_info_unit).step);
     test_step.dependOn(mc_info_step);
+
+    const mc_guid_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc guid stdout"},
+    });
+    const mc_guid_step = b.step("test-mc-guid-stdout", "Compare MC GUID C bytes, statuses, output ordering, and I/O failures");
+    mc_guid_step.dependOn(&b.addRunArtifact(mc_guid_unit).step);
+    test_step.dependOn(mc_guid_step);
 
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
