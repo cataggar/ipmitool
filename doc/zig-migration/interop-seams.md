@@ -419,7 +419,7 @@ The selected `user summary` command streams CSV and human-readable counters
 through checked Zig stdout after flushing buffered C output. It retains the
 three unsigned decimal fields, spacing, tabs and newlines, and returns `-1`
 with a diagnostic on pre-flush, write or final-flush failure. User listing
-and password output remain on their existing C paths. `zig build
+remains on its existing C path. `zig build
 test-user-summary-stdout` compares representative counter boundaries with
 libc formatting, checks mixed C/Zig stdout order and injects early and late
 write and flush failures; the
@@ -451,6 +451,15 @@ LAN, serial, slots-only, truncated replies, selectors and statuses. The
 `session_info_*` CLI snapshots remain the C byte oracle.
 Without local readline/OpenSSL headers, add `-Dipmishell=false -Dopenssl=false
 -Dinternal-md5=true -Dintf-lanplus=false`.
+
+The selected `user test` password result now uses a checked Zig stdout writer
+for success, incorrect password, wrong size, and unknown errors, retaining
+the original bytes and return statuses. It pre-flushes C stdout before
+writing and checks the Zig write and final flush, logging failures and
+returning `-1`. `zig build test-user-password-test-stdout` checks C-format
+bytes, mixed buffered C/Zig order, and pre-flush, early/late write and
+final-flush errors. The existing `user_test_*` C/selected-Zig CLI goldens
+cover success and failure codes.
 
 The selected LAN v1.5 Activate Session completion-code path now writes only
 the `Activate Session error:` prefix with Zig stderr I/O. It deliberately

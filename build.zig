@@ -1175,6 +1175,14 @@ pub fn build(b: *std.Build) void {
     session_info_step.dependOn(&b.addRunArtifact(session_info_unit).step);
     test_step.dependOn(session_info_step);
 
+    const password_test_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.user.test.password test stdout"},
+    });
+    const password_test_step = b.step("test-user-password-test-stdout", "Compare user password test C output and test writer failures");
+    password_test_step.dependOn(&b.addRunArtifact(password_test_unit).step);
+    test_step.dependOn(password_test_step);
+
     const lan_activate_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lan.test.activate session stderr"},

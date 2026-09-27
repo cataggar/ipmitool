@@ -28,7 +28,7 @@
 //! `eval_ccode`, `getpass`, `str2int`, `str2uchar` and the `is_ipmi_*`
 //! validators - is reached through the `ipmi_c` bridge. Diagnostics use the
 //! shared typed logger, which falls back to C `lprintf` when Zig logging is
-//! not selected. The `summary` output uses a checked Zig stdout writer.
+//! not selected. The `summary` and password-test results use checked Zig stdout.
 
 const std = @import("std");
 
@@ -515,6 +515,23 @@ fn userSetUsername(intf: *Intf, user_id_in: u8, name: [*:0]const u8) c_int {
 
 /// `ipmi_user_test_password()`: run Set User Password with the test operation
 /// and interpret the result.
+const PasswordTestOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writePasswordTestResult(writer: *std.Io.Writer, ret: c_int) std.Io.Writer.Error!void {
+    try writer.writeAll(switch (ret) {
+        0 => "Success\n",
+        0x80 => "Failure: password incorrect\n",
+        0x81 => "Failure: wrong password size\n",
+        else => "Unknown error\n",
+    });
+}
+
+fn emitPasswordTestResult(writer: *std.Io.Writer, ret: c_int, preflush: anytype) PasswordTestOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writePasswordTestResult(writer, ret) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 fn userTestPassword(
     intf: *Intf,
     user_id: u8,
@@ -529,14 +546,89 @@ fn userTestPassword(
         is_twenty_byte_password,
     );
 
-    switch (ret) {
-        0 => _ = c.printf("Success\n"),
-        0x80 => _ = c.printf("Failure: password incorrect\n"),
-        0x81 => _ = c.printf("Failure: wrong password size\n"),
-        else => _ = c.printf("Unknown error\n"),
-    }
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitPasswordTestResult(&stdout.interface, ret, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "User password test stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "User password test stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "User password test stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
 
     return if (ret == 0) 0 else -1;
+}
+
+test "password test stdout matches C results" {
+    const cases = [_]struct { ret: c_int, text: [*:0]const u8 }{
+        .{ .ret = 0, .text = "Success" },
+        .{ .ret = 0x80, .text = "Failure: password incorrect" },
+        .{ .ret = 0x81, .text = "Failure: wrong password size" },
+        .{ .ret = 0x82, .text = "Unknown error" },
+        .{ .ret = -1, .text = "Unknown error" },
+    };
+    for (cases) |case| {
+        var expected: [64]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "%s\n", case.text);
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [64]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writePasswordTestResult(&writer, case.ret);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "password test stdout propagates preflush, write and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitPasswordTestResult(&writer, 0, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitPasswordTestResult(&early, 0, Stub.preflushOk));
+    var short: [7]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitPasswordTestResult(&late, 0x80, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Failure", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitPasswordTestResult(&writer, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Success\n", writer.buffered());
+}
+
+test "password test stdout orders buffered C output before and after Zig" {
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(fds[1], stdout_fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitPasswordTestResult(&stdout.interface, 0, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+    var captured: [64]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|Success\n|after\n", captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------
