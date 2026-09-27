@@ -1,0 +1,45 @@
+# Two rows print before a third Get User Name fails. The first name is blank;
+# the second fills all 16 bytes and both privilege levels use the fallback.
+default_ccode 0xc1
+
+respond get_user_access_1
+  netfn 0x06
+  cmd 0x44
+  match 01 01
+  data 03 00 00 06
+end
+
+respond get_user_name_1
+  netfn 0x06
+  cmd 0x46
+  match 01
+  ccode 0xcc
+end
+
+respond get_user_access_2
+  netfn 0x06
+  cmd 0x44
+  match 01 02
+  data 03 00 00 5e
+end
+
+respond get_user_name_2
+  netfn 0x06
+  cmd 0x46
+  match 02
+  data 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f 50
+end
+
+respond get_user_access_3
+  netfn 0x06
+  cmd 0x44
+  match 01 03
+  data 03 00 00 03
+end
+
+respond get_user_name_3
+  netfn 0x06
+  cmd 0x46
+  match 03
+  ccode 0xd5
+end

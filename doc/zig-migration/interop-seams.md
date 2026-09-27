@@ -433,13 +433,24 @@ parity oracles. Run those with `zig build test-golden -Dzig-modules=isol --
 The selected `user summary` command streams CSV and human-readable counters
 through checked Zig stdout after flushing buffered C output. It retains the
 three unsigned decimal fields, spacing, tabs and newlines, and returns `-1`
-with a diagnostic on pre-flush, write or final-flush failure. User listing
-remains on its existing C path. `zig build
+with a diagnostic on pre-flush, write or final-flush failure. `zig build
 test-user-summary-stdout` compares representative counter boundaries with
 libc formatting, checks mixed C/Zig stdout order and injects early and late
 write and flush failures; the
 `user_summary_*` CLI goldens compare the original C command and selected Zig
 on both CSV and human output with real dummy-interface responses.
+
+The selected `user list` printer streams the C-compatible header and rows
+through checked Zig stdout, preserving byte-width padding (including the
+human-mode boolean spaces), the shared privilege fallback and the header's
+process-lifetime, human-only once flag. It checks libc stdout before each
+row and flushes each row before fetching the next user, retaining prior rows
+if a later request fails. Preflush, write or final-flush errors log their
+phase and return `-1`. `zig build test-user-list-stdout` compares libc bytes
+for blank, 16-byte and non-ASCII names, bit combinations and unknown
+privileges; it tests repeated invocations, C/Zig buffered order and I/O
+failures. The `user_list_*` C/selected-Zig goldens include an error after
+two rows in both modes. Other user command output is unchanged.
 
 The selected `mc selftest` command uses a checked Zig stdout writer for all
 result codes, retaining the original messages, hexadecimal case and padding,

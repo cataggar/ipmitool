@@ -1,0 +1,28 @@
+#!golden 1
+#!case user_list_unknown_partial_csv
+#!section exit
+1
+#!section stdout
+1,,true,false,false,Unknown (0x06)
+2,ABCDEFGHIJKLMNOP,false,false,true,Unknown (0x0E)
+#!section stderr
+IPMI command failed: Command not supported in present state
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 01
+< rule=get_user_access_1 ccode=0x00 len=4 data=03 00 00 06
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=01
+< rule=get_user_name_1 ccode=0xcc len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 02
+< rule=get_user_access_2 ccode=0x00 len=4 data=03 00 00 5e
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=02
+< rule=get_user_name_2 ccode=0x00 len=16 data=41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f 50
+> netfn=0x06 lun=0x00 cmd=0x44 target_cmd=0x00 data=01 03
+< rule=get_user_access_3 ccode=0x00 len=4 data=03 00 00 03
+> netfn=0x06 lun=0x00 cmd=0x46 target_cmd=0x00 data=03
+< rule=get_user_name_3 ccode=0xd5 len=0 data=
+bye
+#!section files
