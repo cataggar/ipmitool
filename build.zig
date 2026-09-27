@@ -1150,6 +1150,13 @@ pub fn build(b: *std.Build) void {
     user_summary_step.dependOn(&b.addRunArtifact(user_summary_unit).step);
     test_step.dependOn(user_summary_step);
 
+    const lan_activate_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.lan.test.activate session stderr"},
+    });
+    b.step("test-lan-activate-stderr", "Check LAN activation stderr bytes, C logging order, and write failures")
+        .dependOn(&b.addRunArtifact(lan_activate_unit).step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},
