@@ -405,11 +405,13 @@ and bit strings for replies of at most four bytes. It preserves the C
 address, spaces and newlines, and returns `-1` for a short read *after* any
 applicable summary lines, without dumping that reply. It checks libc stdout
 pre-flush (so earlier C output stays ahead of Zig output), Zig writes, and
-the final flush, logging the failed phase and returning `-1`. `zig build
-test-raw-i2c-stdout` compares C-formatted boundaries and all summary modes,
-short replies, buffered C/Zig ordering, and injected pre-flush, early/late
-write and final-flush failures. The `i2c_*` C/selected Zig CLI goldens cover
-real dummy-interface responses with `-Dzig-modules=raw`.
+the final flush, logging the failed phase and returning `-1`. When C would
+print nothing (no read/write, or a quiet mixed short read), it preserves the
+status without touching stdout. `zig build test-raw-i2c-stdout` compares
+C-formatted boundaries and all summary modes, short replies, buffered C/Zig
+ordering, and injected pre-flush, early/late write and final-flush failures.
+The `i2c_*` C/selected Zig CLI goldens cover real dummy-interface responses
+with `-Dzig-modules=raw`.
 
 Only the selected ISOL `info` printer uses a checked Zig stdout writer; the
 interactive SOL session and all other ISOL paths still use their original C

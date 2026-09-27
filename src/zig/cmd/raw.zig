@@ -316,6 +316,9 @@ fn emitI2cResponse(
     verbose: bool,
     preflush: anytype,
 ) I2cOutputError!c_int {
+    if (wsize == 0 and rsize == 0) return 0;
+    if (wsize > 0 and rsize > 0 and !verbose and rsp.data_len < @as(c_int, rsize)) return -1;
+
     preflush() catch return error.CStdoutFlushFailed;
     const status = writeI2cResponse(writer, rsp, wsize, rsize, i2caddr, verbose) catch
         return error.StdoutWriteFailed;
@@ -566,6 +569,60 @@ test "raw i2c stdout detects preflush early late and final flush failures" {
     short_reply_fail.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
     try std.testing.expectError(error.StdoutFlushFailed, emitI2cResponse(&short_reply_fail, &rsp, 1, 8, 0xa0, true, Stub.preflushOk));
     try std.testing.expectEqualStrings(wrote ++ "Read 3 bytes from I2C device A0h\n", short_reply_fail.buffered());
+}
+
+test "raw i2c stdout skips I/O when C would print nothing" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const cases = [_]struct {
+        wsize: u8,
+        rsize: u8,
+        len: c_int,
+        verbose: bool,
+        status: c_int,
+    }{
+        .{ .wsize = 0, .rsize = 0, .len = 0, .verbose = false, .status = 0 },
+        .{ .wsize = 0, .rsize = 0, .len = 3, .verbose = true, .status = 0 },
+        .{ .wsize = 1, .rsize = 8, .len = 3, .verbose = false, .status = -1 },
+    };
+    var rsp = std.mem.zeroes(Response);
+    for (cases) |case| {
+        rsp.data_len = case.len;
+        var failing: std.Io.Writer = .failing;
+        failing.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        try std.testing.expectEqual(case.status, try emitI2cResponse(
+            &failing,
+            &rsp,
+            case.wsize,
+            case.rsize,
+            0xa0,
+            case.verbose,
+            Stub.preflushFail,
+        ));
+        try std.testing.expectEqual(case.status, try emitI2cResponse(
+            &failing,
+            &rsp,
+            case.wsize,
+            case.rsize,
+            0xa0,
+            case.verbose,
+            Stub.preflushOk,
+        ));
+        try std.testing.expectEqual(@as(usize, 0), failing.buffered().len);
+    }
+
+    rsp.data_len = 3;
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.CStdoutFlushFailed, emitI2cResponse(&failing, &rsp, 0, 8, 0xa0, false, Stub.preflushFail));
+    try std.testing.expectError(error.CStdoutFlushFailed, emitI2cResponse(&failing, &rsp, 1, 8, 0xa0, true, Stub.preflushFail));
+    try std.testing.expectError(error.StdoutWriteFailed, emitI2cResponse(&failing, &rsp, 1, 8, 0xa0, true, Stub.preflushOk));
 }
 
 test "raw i2c stdout preserves buffered C and Zig output order" {
