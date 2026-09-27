@@ -515,7 +515,9 @@ fn chassisSelftestTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) Sel
         return -1;
     }
 
-    try emitChassisSelftest(writer, rsp.data[0], rsp.data[1], preflush);
+    const code = rsp.data[0];
+    const detail: u8 = if (code == 0x55 or code == 0x56) 0 else rsp.data[1];
+    try emitChassisSelftest(writer, code, detail, preflush);
     return 0;
 }
 
