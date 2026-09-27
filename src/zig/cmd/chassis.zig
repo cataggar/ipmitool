@@ -524,7 +524,21 @@ fn chassisPoh(intf: *Intf) c_int {
 // ---------------------------------------------------------------------------
 
 /// `ipmi_chassis_restart_cause()`.
-fn chassisRestartCause(intf: *Intf) c_int {
+const RestartCauseOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisRestartCause(writer: *std.Io.Writer, cause: u8) std.Io.Writer.Error!void {
+    try writer.print("System restart cause: {s}\n", .{
+        std.mem.span(c.val2str(cause & 0x0f, c.ipmi_chassis_restart_cause_vals)),
+    });
+}
+
+fn emitChassisRestartCause(writer: *std.Io.Writer, cause: u8, preflush: anytype) RestartCauseOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisRestartCause(writer, cause) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisRestartCauseTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) RestartCauseOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_chassis;
     req.msg.cmd = 0x7;
@@ -538,15 +552,211 @@ fn chassisRestartCause(intf: *Intf) c_int {
         return -1;
     }
 
-    _ = c.printf(
-        "System restart cause: %s\n",
-        c.val2str(rsp.data[0] & 0xf, c.ipmi_chassis_restart_cause_vals),
-    );
+    try emitChassisRestartCause(writer, rsp.data[0], preflush);
     return 0;
 }
 
+/// `ipmi_chassis_restart_cause()`.
+fn chassisRestartCause(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisRestartCauseTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis restart cause stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis restart cause stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis restart cause stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis restart cause stdout matches C masked, known and unknown codes" {
+    for (0..256) |value| {
+        const cause: u8 = @intCast(value);
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(
+            &expected,
+            expected.len,
+            "System restart cause: %s\n",
+            c.val2str(cause & 0x0f, c.ipmi_chassis_restart_cause_vals),
+        );
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisRestartCause(&writer, cause);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis restart cause stdout reports preflush, write and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisRestartCause(&writer, 0, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisRestartCause(&early, 0, Stub.preflushOk));
+    var short: [22]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisRestartCause(&late, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("System restart cause: ", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisRestartCause(&writer, 0, Stub.preflushOk));
+    try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "System restart cause: "));
+}
+
+test "chassis restart cause stdout orders buffered C and Zig output" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisRestartCause(&stdout.interface, 0x05, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [128]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    try writeChassisRestartCause(&expected, 0x05);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualStrings(expected.buffered(), captured[0..@intCast(length)]);
+}
+
+test "chassis restart cause preserves request errors without stdout" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x7);
+            return if (present) &response else null;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.requests = 0;
+        Stub.response = std.mem.zeroes(Response);
+        Stub.response.ccode = 0xc1;
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisRestartCauseTo(&intf, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+}
+
 /// `ipmi_chassis_status()`.
-fn chassisStatus(intf: *Intf) callconv(.c) c_int {
+const StatusOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisStatus(writer: *std.Io.Writer, rsp: *const Response) std.Io.Writer.Error!void {
+    const status = rsp.data[0];
+    try writer.print(
+        "System Power         : {s}\n" ++
+            "Power Overload       : {s}\n" ++
+            "Power Interlock      : {s}\n" ++
+            "Main Power Fault     : {s}\n" ++
+            "Power Control Fault  : {s}\n",
+        .{
+            if (status & 0x01 != 0) "on" else "off",
+            if (status & 0x02 != 0) "true" else "false",
+            if (status & 0x04 != 0) "active" else "inactive",
+            if (status & 0x08 != 0) "true" else "false",
+            if (status & 0x10 != 0) "true" else "false",
+        },
+    );
+    const policy: []const u8 = switch ((status & 0x60) >> 5) {
+        0 => "always-off",
+        1 => "previous",
+        2 => "always-on",
+        else => "unknown",
+    };
+    try writer.print("Power Restore Policy : {s}\n", .{policy});
+
+    const events = rsp.data[1];
+    try writer.writeAll("Last Power Event     : ");
+    if (events & 0x01 != 0) try writer.writeAll("ac-failed ");
+    if (events & 0x02 != 0) try writer.writeAll("overload ");
+    if (events & 0x04 != 0) try writer.writeAll("interlock ");
+    if (events & 0x08 != 0) try writer.writeAll("fault ");
+    if (events & 0x10 != 0) try writer.writeAll("command");
+    try writer.writeByte('\n');
+
+    const faults = rsp.data[2];
+    try writer.print(
+        "Chassis Intrusion    : {s}\n" ++
+            "Front-Panel Lockout  : {s}\n" ++
+            "Drive Fault          : {s}\n" ++
+            "Cooling/Fan Fault    : {s}\n",
+        .{
+            if (faults & 0x01 != 0) "active" else "inactive",
+            if (faults & 0x02 != 0) "active" else "inactive",
+            if (faults & 0x04 != 0) "true" else "false",
+            if (faults & 0x08 != 0) "true" else "false",
+        },
+    );
+
+    if (rsp.data_len > 3) {
+        const panel = rsp.data[3];
+        if (panel == 0) {
+            try writer.writeAll("Front Panel Control  : none\n");
+        } else {
+            try writer.print(
+                "Sleep Button Disable : {s}\n" ++
+                    "Diag Button Disable  : {s}\n" ++
+                    "Reset Button Disable : {s}\n" ++
+                    "Power Button Disable : {s}\n" ++
+                    "Sleep Button Disabled: {s}\n" ++
+                    "Diag Button Disabled : {s}\n" ++
+                    "Reset Button Disabled: {s}\n" ++
+                    "Power Button Disabled: {s}\n",
+                .{
+                    if (panel & 0x80 != 0) "allowed" else "not allowed",
+                    if (panel & 0x40 != 0) "allowed" else "not allowed",
+                    if (panel & 0x20 != 0) "allowed" else "not allowed",
+                    if (panel & 0x10 != 0) "allowed" else "not allowed",
+                    if (panel & 0x08 != 0) "true" else "false",
+                    if (panel & 0x04 != 0) "true" else "false",
+                    if (panel & 0x02 != 0) "true" else "false",
+                    if (panel & 0x01 != 0) "true" else "false",
+                },
+            );
+        }
+    }
+}
+
+fn emitChassisStatus(writer: *std.Io.Writer, rsp: *const Response, preflush: anytype) StatusOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisStatus(writer, rsp) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisStatusTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) StatusOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_chassis;
     req.msg.cmd = 0x1;
@@ -560,62 +770,220 @@ fn chassisStatus(intf: *Intf) callconv(.c) c_int {
         return -1;
     }
 
-    // byte 1
-    _ = c.printf("System Power         : %s\n", pick(rsp.data[0] & 0x1 != 0, "on", "off"));
-    _ = c.printf("Power Overload       : %s\n", pick(rsp.data[0] & 0x2 != 0, "true", "false"));
-    _ = c.printf("Power Interlock      : %s\n", pick(rsp.data[0] & 0x4 != 0, "active", "inactive"));
-    _ = c.printf("Main Power Fault     : %s\n", pick(rsp.data[0] & 0x8 != 0, "true", "false"));
-    _ = c.printf("Power Control Fault  : %s\n", pick(rsp.data[0] & 0x10 != 0, "true", "false"));
-    _ = c.printf("Power Restore Policy : ");
-    switch ((rsp.data[0] & 0x60) >> 5) {
-        0x0 => _ = c.printf("always-off\n"),
-        0x1 => _ = c.printf("previous\n"),
-        0x2 => _ = c.printf("always-on\n"),
-        else => _ = c.printf("unknown\n"),
-    }
+    try emitChassisStatus(writer, rsp, preflush);
+    return 0;
+}
 
-    // byte 2
-    _ = c.printf("Last Power Event     : ");
-    if (rsp.data[1] & 0x1 != 0) _ = c.printf("ac-failed ");
-    if (rsp.data[1] & 0x2 != 0) _ = c.printf("overload ");
-    if (rsp.data[1] & 0x4 != 0) _ = c.printf("interlock ");
-    if (rsp.data[1] & 0x8 != 0) _ = c.printf("fault ");
-    if (rsp.data[1] & 0x10 != 0) _ = c.printf("command");
-    _ = c.printf("\n");
+/// `ipmi_chassis_status()`.
+fn chassisStatus(intf: *Intf) callconv(.c) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisStatusTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis status stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis status stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis status stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
 
-    // byte 3
-    _ = c.printf("Chassis Intrusion    : %s\n", pick(rsp.data[2] & 0x1 != 0, "active", "inactive"));
-    _ = c.printf("Front-Panel Lockout  : %s\n", pick(rsp.data[2] & 0x2 != 0, "active", "inactive"));
-    _ = c.printf("Drive Fault          : %s\n", pick(rsp.data[2] & 0x4 != 0, "true", "false"));
-    _ = c.printf("Cooling/Fan Fault    : %s\n", pick(rsp.data[2] & 0x8 != 0, "true", "false"));
-
-    if (rsp.data_len > 3) {
-        // optional byte 4
-        if (rsp.data[3] == 0) {
-            _ = c.printf("Front Panel Control  : none\n");
-        } else {
-            const allowed = struct {
-                fn f(set: bool) [*:0]const u8 {
-                    return pick(set, "allowed", "not allowed");
+test "chassis status stdout matches C fields, masks and optional panel" {
+    for ([_]u8{ 0, 0x1f, 0x40, 0x60, 0xff }) |status| {
+        for ([_]u8{ 0, 1, 0x0a, 0x10, 0xff }) |events| {
+            for ([_]u8{ 0, 5, 0x0a, 0xff }) |faults| {
+                for ([_]u8{ 0, 1, 0x80, 0x55, 0xff }) |panel| {
+                    for ([_]c_int{ 3, 4, 5 }) |data_len| {
+                        var rsp = std.mem.zeroes(Response);
+                        rsp.data_len = data_len;
+                        rsp.data[0] = status;
+                        rsp.data[1] = events;
+                        rsp.data[2] = faults;
+                        rsp.data[3] = panel;
+                        var expected: [900]u8 = undefined;
+                        const policy: [*:0]const u8 = switch ((status & 0x60) >> 5) {
+                            0 => "always-off",
+                            1 => "previous",
+                            2 => "always-on",
+                            else => "unknown",
+                        };
+                        const first = c.snprintf(
+                            &expected,
+                            expected.len,
+                            "System Power         : %s\n" ++
+                                "Power Overload       : %s\n" ++
+                                "Power Interlock      : %s\n" ++
+                                "Main Power Fault     : %s\n" ++
+                                "Power Control Fault  : %s\n" ++
+                                "Power Restore Policy : %s\n" ++
+                                "Last Power Event     : %s%s%s%s%s\n" ++
+                                "Chassis Intrusion    : %s\n" ++
+                                "Front-Panel Lockout  : %s\n" ++
+                                "Drive Fault          : %s\n" ++
+                                "Cooling/Fan Fault    : %s\n",
+                            pick(status & 0x01 != 0, "on", "off"),
+                            pick(status & 0x02 != 0, "true", "false"),
+                            pick(status & 0x04 != 0, "active", "inactive"),
+                            pick(status & 0x08 != 0, "true", "false"),
+                            pick(status & 0x10 != 0, "true", "false"),
+                            policy,
+                            pick(events & 0x01 != 0, "ac-failed ", ""),
+                            pick(events & 0x02 != 0, "overload ", ""),
+                            pick(events & 0x04 != 0, "interlock ", ""),
+                            pick(events & 0x08 != 0, "fault ", ""),
+                            pick(events & 0x10 != 0, "command", ""),
+                            pick(faults & 0x01 != 0, "active", "inactive"),
+                            pick(faults & 0x02 != 0, "active", "inactive"),
+                            pick(faults & 0x04 != 0, "true", "false"),
+                            pick(faults & 0x08 != 0, "true", "false"),
+                        );
+                        try std.testing.expect(first > 0 and @as(usize, @intCast(first)) < expected.len);
+                        var length: usize = @intCast(first);
+                        if (data_len > 3) {
+                            const next = if (panel == 0)
+                                c.snprintf(@ptrCast(&expected[length]), expected.len - length, "Front Panel Control  : none\n")
+                            else
+                                c.snprintf(
+                                    @ptrCast(&expected[length]),
+                                    expected.len - length,
+                                    "Sleep Button Disable : %s\n" ++
+                                        "Diag Button Disable  : %s\n" ++
+                                        "Reset Button Disable : %s\n" ++
+                                        "Power Button Disable : %s\n" ++
+                                        "Sleep Button Disabled: %s\n" ++
+                                        "Diag Button Disabled : %s\n" ++
+                                        "Reset Button Disabled: %s\n" ++
+                                        "Power Button Disabled: %s\n",
+                                    pick(panel & 0x80 != 0, "allowed", "not allowed"),
+                                    pick(panel & 0x40 != 0, "allowed", "not allowed"),
+                                    pick(panel & 0x20 != 0, "allowed", "not allowed"),
+                                    pick(panel & 0x10 != 0, "allowed", "not allowed"),
+                                    pick(panel & 0x08 != 0, "true", "false"),
+                                    pick(panel & 0x04 != 0, "true", "false"),
+                                    pick(panel & 0x02 != 0, "true", "false"),
+                                    pick(panel & 0x01 != 0, "true", "false"),
+                                );
+                            try std.testing.expect(next > 0 and @as(usize, @intCast(next)) < expected.len - length);
+                            length += @intCast(next);
+                        }
+                        var storage: [900]u8 = undefined;
+                        var writer = std.Io.Writer.fixed(&storage);
+                        try writeChassisStatus(&writer, &rsp);
+                        try std.testing.expectEqualSlices(u8, expected[0..length], writer.buffered());
+                    }
                 }
-            }.f;
-            const truth = struct {
-                fn f(set: bool) [*:0]const u8 {
-                    return pick(set, "true", "false");
-                }
-            }.f;
-            _ = c.printf("Sleep Button Disable : %s\n", allowed(rsp.data[3] & 0x80 != 0));
-            _ = c.printf("Diag Button Disable  : %s\n", allowed(rsp.data[3] & 0x40 != 0));
-            _ = c.printf("Reset Button Disable : %s\n", allowed(rsp.data[3] & 0x20 != 0));
-            _ = c.printf("Power Button Disable : %s\n", allowed(rsp.data[3] & 0x10 != 0));
-            _ = c.printf("Sleep Button Disabled: %s\n", truth(rsp.data[3] & 0x08 != 0));
-            _ = c.printf("Diag Button Disabled : %s\n", truth(rsp.data[3] & 0x04 != 0));
-            _ = c.printf("Reset Button Disabled: %s\n", truth(rsp.data[3] & 0x02 != 0));
-            _ = c.printf("Power Button Disabled: %s\n", truth(rsp.data[3] & 0x01 != 0));
+            }
         }
     }
+}
 
-    return 0;
+test "chassis status stdout propagates preflush, early, late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 4;
+    rsp.data[0] = 0xff;
+    rsp.data[1] = 0x1f;
+    rsp.data[2] = 0xff;
+    rsp.data[3] = 0xff;
+    var storage: [900]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisStatus(&writer, &rsp, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisStatus(&early, &rsp, Stub.preflushOk));
+    var short: [200]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisStatus(&late, &rsp, Stub.preflushOk));
+    try std.testing.expect(std.mem.startsWith(u8, late.buffered(), "System Power         : on\n"));
+    try std.testing.expect(late.buffered().len > 100);
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisStatus(&writer, &rsp, Stub.preflushOk));
+    try std.testing.expect(writer.buffered().len > 400);
+}
+
+test "chassis status stdout orders buffered C around Zig fields" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 3;
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisStatus(&stdout.interface, &rsp, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    rsp.data_len = 4;
+    rsp.data[3] = 0x55;
+    try emitChassisStatus(&stdout.interface, &rsp, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [2048]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [2048]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    rsp.data_len = 3;
+    try writeChassisStatus(&expected, &rsp);
+    try expected.writeAll("|between|");
+    rsp.data_len = 4;
+    try writeChassisStatus(&expected, &rsp);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualStrings(expected.buffered(), captured[0..@intCast(length)]);
+}
+
+test "chassis status preserves request errors without stdout" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x1);
+            return if (present) &response else null;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.requests = 0;
+        Stub.response = std.mem.zeroes(Response);
+        Stub.response.ccode = 0xc1;
+        var storage: [900]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisStatusTo(&intf, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+    Stub.present = true;
+    Stub.requests = 0;
+    Stub.response.ccode = 0;
+    Stub.response.data_len = 3;
+    var storage: [900]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisStatusTo(&intf, &writer, stdout_io.trySyncC));
+    try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+    try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "System Power         : off\n"));
 }
 
 /// `broken_dev_vals[]`, a block local table in `ipmi_chassis_selftest()`.
