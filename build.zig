@@ -1183,6 +1183,14 @@ pub fn build(b: *std.Build) void {
     sol_info_stdout_step.dependOn(&b.addRunArtifact(sol_info_stdout_unit).step);
     test_step.dependOn(sol_info_stdout_step);
 
+    const sol_interactive_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sol.test.sol interactive stdout"},
+    });
+    const sol_interactive_stdout_step = b.step("test-sol-interactive-stdout", "Compare interactive SOL C bytes, terminal statuses, output order and failures");
+    sol_interactive_stdout_step.dependOn(&b.addRunArtifact(sol_interactive_stdout_unit).step);
+    test_step.dependOn(sol_interactive_stdout_step);
+
     const user_summary_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.user.test.summary stdout"},

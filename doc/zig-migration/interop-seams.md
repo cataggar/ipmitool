@@ -702,7 +702,7 @@ The C implementation and `sol_payload_status` golden remain the reference.
 `zig build test-sol-payload-stdout` compares enabled/disabled boundary values
 with libc formatting, checks mixed C/Zig ordering and injects pre-flush,
 early, late and final-flush failures. Other SOL output and the interactive
-session are unchanged.
+session were unchanged by that payload-status cutover.
 
 The selected `sol info` CSV and human result printer streams through checked
 Zig stdout after a checked C stdout pre-flush. Its existing nine parameter
@@ -716,6 +716,24 @@ and tests fallback-buffer reuse, mixed C/Zig output order and pre-flush,
 early/late write and final-flush failures. The `sol_info_*` C and selected Zig
 goldens additionally check all original request/error paths and distinct
 unknown fallbacks in both output formats; only SOL info result printing moved.
+
+The selected SOL interactive *text* output now uses checked Zig streaming
+stdout: activation banners, escape help and acknowledgements (`~.`, `~^Z`,
+`~^X`, `~B`), and looptest progress/failure lines. It writes the escape
+character as one raw byte, preserving C `%c` even for high-bit values and
+the original `~^X` acknowledgement's `^Z` spelling. Every message pre-flushes
+libc stdout and checks its writes and final flush; failures log the phase
+and return `-1` rather than reporting a successful control action. An
+activation banner failure deactivates the payload; a mid-session output
+failure restores terminal mode and deactivates without falsely reporting
+that the BMC closed the session. Non-output request, escape, raw-terminal,
+binary SOL payload and wire behavior remains unchanged. The binary payload
+callback deliberately retains `fwrite`/`fflush` rather than text formatting.
+`zig build test-sol-interactive-stdout` checks libc bytes, C/Zig/binary
+output order, escape and looptest statuses, requests and injected failures.
+The existing C transport fixtures for `lanplus/sol-pty-*` and
+`lanplus/sol-looptest` compare the actual terminal session and wire traffic
+in original-C and selected-Zig builds.
 
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)

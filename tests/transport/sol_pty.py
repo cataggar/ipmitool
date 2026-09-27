@@ -20,8 +20,8 @@ def main():
         sys.argv[2:], stdin=slave, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     streams = {proc.stdout.fileno(): 1, proc.stderr.fileno(): 2}
-    # stdout is a pipe, so libc buffers the activation banner until exit.
-    # Wait for the *actual* raw-mode transition instead of racing a timer.
+    # The banner may be buffered by C or streamed by Zig; wait for the actual
+    # raw-mode transition instead of its visibility on stdout or a timer.
     deadline = time.monotonic() + 10
     while termios.tcgetattr(slave)[3] & (termios.ICANON | termios.ECHO):
         if time.monotonic() > deadline or proc.poll() is not None:
