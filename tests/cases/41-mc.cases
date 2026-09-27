@@ -902,6 +902,12 @@ args: -I dummy mc getsysinfo system_fw_version
 transcript: mc_sysinfo_long.tr
 covers: mc
 
+[mc_getsysinfo_embedded_nul]
+desc: a NUL inside the first block stops display but not the second GET request
+args: -I dummy mc getsysinfo system_name
+transcript: mc_sysinfo_embedded_nul.tr
+covers: mc
+
 [mc_getsysinfo_verbose_once]
 desc: a single -v is below the threshold for the param/block/set triple
 args: -I dummy -v mc getsysinfo system_name

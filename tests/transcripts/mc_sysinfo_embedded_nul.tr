@@ -1,0 +1,18 @@
+# A declared 15-byte ASCII value still requests the second block even though
+# its first block contains a NUL followed by nonzero bytes.
+
+default_ccode 0xc1
+
+respond get_name_first
+  netfn 0x06
+  cmd 0x59
+  match 00 02 00 00
+  data 11 00 00 0f 41 00 42 43 44 45 46 47 48 49 4a 4b 4c 4d
+end
+
+respond get_name_second
+  netfn 0x06
+  cmd 0x59
+  match 00 02 01 00
+  data 11 01 4e 4f 50 51 52 53 54 55 56 57 58 59 5a 30 31 32
+end

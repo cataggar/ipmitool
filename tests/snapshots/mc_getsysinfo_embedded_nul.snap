@@ -1,0 +1,18 @@
+#!golden 1
+#!case mc_getsysinfo_embedded_nul
+#!section exit
+0
+#!section stdout
+A
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 02 00 00
+< rule=get_name_first ccode=0x00 len=18 data=11 00 00 0f 41 00 42 43 44 45 46 47 48 49 4a 4b 4c 4d
+> netfn=0x06 lun=0x00 cmd=0x59 target_cmd=0x00 data=00 02 01 00
+< rule=get_name_second ccode=0x00 len=18 data=11 01 4e 4f 50 51 52 53 54 55 56 57 58 59 5a 30 31 32
+bye
+#!section files
