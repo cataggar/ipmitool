@@ -1158,6 +1158,14 @@ pub fn build(b: *std.Build) void {
     user_summary_step.dependOn(&b.addRunArtifact(user_summary_unit).step);
     test_step.dependOn(user_summary_step);
 
+    const mc_selftest_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.selftest stdout"},
+    });
+    const mc_selftest_step = b.step("test-mc-selftest-stdout", "Compare MC selftest C bytes and test writer failures");
+    mc_selftest_step.dependOn(&b.addRunArtifact(mc_selftest_unit).step);
+    test_step.dependOn(mc_selftest_step);
+
     const lan_activate_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lan.test.activate session stderr"},

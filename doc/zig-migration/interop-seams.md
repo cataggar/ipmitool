@@ -426,6 +426,17 @@ write and flush failures; the
 `user_summary_*` CLI goldens compare the original C command and selected Zig
 on both CSV and human output with real dummy-interface responses.
 
+The selected `mc selftest` command uses a checked Zig stdout writer for all
+result codes, retaining the original messages, hexadecimal case and padding,
+bitwise failure ordering, no-newline reserved result, and exit statuses.
+It pre-flushes buffered C output and checks both Zig writes and the final
+flush; failures log an error and return `-1`. `zig build
+test-mc-selftest-stdout` compares formatting and statuses, including libc
+hexadecimal output at width boundaries, mixed C/Zig output ordering, and
+pre-flush, early/late write and final-flush failures. The existing
+`mc_selftest_*` C/selected-Zig CLI goldens cover all result branches;
+other MC output remains on its existing path.
+
 The selected LAN v1.5 Activate Session completion-code path now writes only
 the `Activate Session error:` prefix with Zig stderr I/O. It deliberately
 has no newline: the immediately following `lprintf` starts with a tab on
