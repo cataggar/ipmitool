@@ -534,7 +534,14 @@ pre-flush, write or final-flush failures log and return `-1`. `zig build
 test-chassis-control-stdout` checks byte parity for all control bytes, request
 statuses, C/Zig buffered order and injected I/O errors. The existing
 `chassis_power_*` and `power_*` C/selected-Zig goldens retain the CLI oracle.
-Other chassis output remains on its original path.
+The `chassis policy list/always-on/always-off/previous` result also uses
+checked Zig stdout after a libc pre-flush. Its ordered support bits and
+trailing spaces match C, including an empty support mask; it preserves the
+request and completion-code statuses and logs/returns `-1` on output errors.
+`zig build test-chassis-policy-stdout` compares C bytes for every support
+mask and policy byte, buffered C/Zig order, statuses and injected failures;
+the `chassis_policy_*` C/selected-Zig goldens keep the CLI oracle. Other
+chassis output remains on its original path.
 
 The selected MC warm/cold reset acknowledgement also streams through checked
 Zig stdout after a libc pre-flush. Its words, newline and command status
