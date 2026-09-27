@@ -1250,6 +1250,14 @@ pub fn build(b: *std.Build) void {
     password_test_step.dependOn(&b.addRunArtifact(password_test_unit).step);
     test_step.dependOn(password_test_step);
 
+    const user_write_ack_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.user.test.user write acknowledgement stdout"},
+    });
+    const user_write_ack_step = b.step("test-user-write-ack-stdout", "Compare user privilege/password C bytes, output order and I/O failures");
+    user_write_ack_step.dependOn(&b.addRunArtifact(user_write_ack_unit).step);
+    test_step.dependOn(user_write_ack_step);
+
     const lan_activate_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lan.test.activate session stderr"},
