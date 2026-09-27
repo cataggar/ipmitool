@@ -1135,6 +1135,14 @@ pub fn build(b: *std.Build) void {
     raw_stdout_step.dependOn(&raw_compare.step);
     test_step.dependOn(raw_stdout_step);
 
+    const raw_i2c_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.raw.test.raw i2c stdout"},
+    });
+    const raw_i2c_stdout_step = b.step("test-raw-i2c-stdout", "Compare I2C response C bytes, output ordering, and I/O failures");
+    raw_i2c_stdout_step.dependOn(&b.addRunArtifact(raw_i2c_stdout_unit).step);
+    test_step.dependOn(raw_i2c_stdout_step);
+
     const isol_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.isol.test.info stdout"},

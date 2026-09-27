@@ -285,6 +285,12 @@ args: -I dummy -v i2c 0xa0 8 0x55
 transcript: i2c.tr
 covers: i2c
 
+[i2c_short_read_only]
+desc: a short read with no write data reports the actual length before returning -1, even without -v
+args: -I dummy i2c 0xa0 8
+transcript: i2c.tr
+covers: i2c
+
 # ---------------------------------------------------------------------------
 # i2c: the completion codes ipmi_master_write_read() names
 # ---------------------------------------------------------------------------

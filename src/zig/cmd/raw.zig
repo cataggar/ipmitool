@@ -10,11 +10,11 @@
 //! Three things are worth knowing before reading on:
 //!
 //! * **Formatting and parsing keep libc behavior.** The `raw` response hex
-//!   dump uses a checked Zig stdout writer; the `i2c` printer, `printbuf` and
-//!   `sscanf` still call through `ipmi_c`. Diagnostics use `util/log.zig`'s
-//!   typed logger, backed by libc `snprintf` when selected and C `lprintf`
-//!   otherwise. `%2.2x`, `%02Xh` and what exactly `sscanf("%u")` accepts
-//!   remain observable, as do the IPMI request bytes.
+//!   dump and `i2c` response printer use checked Zig stdout writers;
+//!   `printbuf` and `sscanf` still call through `ipmi_c`. Diagnostics use
+//!   `util/log.zig`'s typed logger, backed by libc `snprintf` when selected
+//!   and C `lprintf` otherwise. `%2.2x`, `%02Xh` and what exactly
+//!   `sscanf("%u")` accepts remain observable, as do the IPMI request bytes.
 //! * **`netfn` and `lun` are bit fields.**  `struct ipmi_rq` packs `netfn:6`
 //!   and `lun:2` into one byte, so `raw 0xff ...` reaches the wire as net
 //!   function 0x3f and `-l 7` as LUN 3.  `core/ipmi.zig` mirrors that with
@@ -263,6 +263,66 @@ fn rawi2cUsage() void {
     );
 }
 
+const I2cOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeI2cResponse(
+    writer: *std.Io.Writer,
+    rsp: *const Response,
+    wsize: u8,
+    rsize: u8,
+    i2caddr: u8,
+    verbose: bool,
+) std.Io.Writer.Error!c_int {
+    if (wsize > 0) {
+        if (verbose or rsize == 0)
+            try stdout_io.write(writer, "Wrote {d} bytes to I2C device {X:0>2}h\n", .{ wsize, i2caddr });
+    }
+
+    if (rsize > 0) {
+        if (verbose or wsize == 0)
+            try stdout_io.write(writer, "Read {d} bytes from I2C device {X:0>2}h\n", .{ rsp.data_len, i2caddr });
+
+        // The C command prints the Read line before rejecting a short reply.
+        if (rsp.data_len < @as(c_int, rsize)) return -1;
+
+        var i: c_int = 0;
+        while (i < rsp.data_len) : (i += 1) {
+            if (@rem(i, 16) == 0 and i != 0) try writer.writeByte('\n');
+            try stdout_io.write(writer, " {x:0>2}", .{rsp.data[@intCast(i)]});
+        }
+        try writer.writeByte('\n');
+
+        if (rsp.data_len <= 4) {
+            i = 0;
+            while (i < rsp.data_len) : (i += 1) {
+                const byte = rsp.data[@intCast(i)];
+                var bit: u8 = 0x80;
+                while (bit != 0) : (bit >>= 1)
+                    try writer.writeByte(if (byte & bit != 0) '1' else '0');
+                try writer.writeByte(' ');
+            }
+            try writer.writeByte('\n');
+        }
+    }
+    return 0;
+}
+
+fn emitI2cResponse(
+    writer: *std.Io.Writer,
+    rsp: *const Response,
+    wsize: u8,
+    rsize: u8,
+    i2caddr: u8,
+    verbose: bool,
+    preflush: anytype,
+) I2cOutputError!c_int {
+    preflush() catch return error.CStdoutFlushFailed;
+    const status = writeI2cResponse(writer, rsp, wsize, rsize, i2caddr, verbose) catch
+        return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+    return status;
+}
+
 /// `ipmi_rawi2c_main()` - the `i2c` command.
 fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
     var wdata: [i2c_master_max_size]u8 = undefined;
@@ -343,50 +403,204 @@ fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         return -1;
     };
 
-    if (wsize > 0) {
-        if (c.verbose != 0 or rsize == 0) {
-            _ = c.printf(
-                "Wrote %d bytes to I2C device %02Xh\n",
-                @as(c_int, wsize),
-                @as(c_uint, i2caddr),
-            );
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return emitI2cResponse(&stdout.interface, rsp, wsize, rsize, i2caddr, c.verbose != 0, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "I2C stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "I2C stdout Zig write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "I2C stdout Zig final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
         }
-    }
+        return -1;
+    };
+}
 
-    if (rsize > 0) {
-        if (c.verbose != 0 or wsize == 0) {
-            _ = c.printf(
-                "Read %d bytes from I2C device %02Xh\n",
-                rsp.data_len,
-                @as(c_uint, i2caddr),
-            );
+test "raw i2c stdout matches C formatting and conditional status boundaries" {
+    const Oracle = struct {
+        fn append(buffer: []u8, used: *usize, comptime format: [*:0]const u8, args: anytype) !void {
+            const n = @call(.auto, c.snprintf, .{
+                @as([*c]u8, @ptrCast(buffer.ptr + used.*)),
+                buffer.len - used.*,
+                format,
+            } ++ args);
+            try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < buffer.len - used.*);
+            used.* += @intCast(n);
         }
+    };
+    const cases = [_]struct {
+        wsize: u8,
+        rsize: u8,
+        len: c_int,
+        addr: u8 = 0xa0,
+        verbose: bool = false,
+    }{
+        .{ .wsize = 0, .rsize = 0, .len = 0 },
+        .{ .wsize = 0, .rsize = 0, .len = 5, .verbose = true },
+        .{ .wsize = 1, .rsize = 0, .len = 0, .addr = 0x02 },
+        .{ .wsize = 64, .rsize = 0, .len = 0, .addr = 0xfe, .verbose = true },
+        .{ .wsize = 0, .rsize = 1, .len = 1 },
+        .{ .wsize = 0, .rsize = 4, .len = 4 },
+        .{ .wsize = 1, .rsize = 4, .len = 4 },
+        .{ .wsize = 1, .rsize = 4, .len = 4, .verbose = true },
+        .{ .wsize = 1, .rsize = 4, .len = 5 },
+        .{ .wsize = 0, .rsize = 5, .len = 5 },
+        .{ .wsize = 0, .rsize = 15, .len = 15 },
+        .{ .wsize = 0, .rsize = 16, .len = 16 },
+        .{ .wsize = 0, .rsize = 17, .len = 17 },
+        .{ .wsize = 0, .rsize = 20, .len = 20 },
+        .{ .wsize = 0, .rsize = 64, .len = 64 },
+        .{ .wsize = 0, .rsize = 1, .len = 0 },
+        .{ .wsize = 0, .rsize = 8, .len = 3 },
+        .{ .wsize = 1, .rsize = 8, .len = 3 },
+        .{ .wsize = 1, .rsize = 8, .len = 3, .verbose = true },
+    };
+    var rsp = std.mem.zeroes(Response);
+    rsp.data[0] = 0x5a;
+    rsp.data[1] = 0xa5;
+    rsp.data[2] = 0x0f;
+    rsp.data[3] = 0xf0;
+    for (rsp.data[4..], 4..) |*byte, index| byte.* = @truncate(index * 41);
+    var actual: [512]u8 = undefined;
+    var expected: [512]u8 = undefined;
 
-        if (rsp.data_len < @as(c_int, rsize)) return -1;
+    for (cases) |case| {
+        rsp.data_len = case.len;
+        var writer = std.Io.Writer.fixed(&actual);
+        const status = try writeI2cResponse(&writer, &rsp, case.wsize, case.rsize, case.addr, case.verbose);
+        try std.testing.expectEqual(
+            @as(c_int, if (case.rsize > 0 and case.len < @as(c_int, case.rsize)) -1 else 0),
+            status,
+        );
 
-        // Print the raw response buffer.
-        i = 0;
-        while (i < rsp.data_len) : (i += 1) {
-            if (@rem(i, 16) == 0 and i != 0) _ = c.printf("\n");
-            _ = c.printf(" %2.2x", @as(c_uint, rsp.data[@intCast(i)]));
-        }
-        _ = c.printf("\n");
-
-        if (rsp.data_len <= 4) {
-            i = 0;
-            while (i < rsp.data_len) : (i += 1) {
-                var bit: u32 = 0x80;
-                while (bit > 0) : (bit /= 2) {
-                    const set = (@as(u32, rsp.data[@intCast(i)]) & bit) != 0;
-                    _ = c.printf("%s", @as([*:0]const u8, if (set) "1" else "0"));
+        var used: usize = 0;
+        if (case.wsize > 0 and (case.verbose or case.rsize == 0))
+            try Oracle.append(&expected, &used, "Wrote %d bytes to I2C device %02Xh\n", .{
+                @as(c_int, case.wsize), @as(c_uint, case.addr),
+            });
+        if (case.rsize > 0) {
+            if (case.verbose or case.wsize == 0)
+                try Oracle.append(&expected, &used, "Read %d bytes from I2C device %02Xh\n", .{
+                    case.len, @as(c_uint, case.addr),
+                });
+            if (case.len >= @as(c_int, case.rsize)) {
+                for (rsp.data[0..@intCast(case.len)], 0..) |byte, index| {
+                    if (index != 0 and index % 16 == 0) {
+                        expected[used] = '\n';
+                        used += 1;
+                    }
+                    try Oracle.append(&expected, &used, " %2.2x", .{@as(c_uint, byte)});
                 }
-                _ = c.printf(" ");
+                expected[used] = '\n';
+                used += 1;
+                if (case.len <= 4) {
+                    for (rsp.data[0..@intCast(case.len)]) |byte| {
+                        var bit: u32 = 0x80;
+                        while (bit > 0) : (bit /= 2)
+                            try Oracle.append(&expected, &used, "%s", .{
+                                @as([*:0]const u8, if (@as(u32, byte) & bit != 0) "1" else "0"),
+                            });
+                        expected[used] = ' ';
+                        used += 1;
+                    }
+                    expected[used] = '\n';
+                    used += 1;
+                }
             }
-            _ = c.printf("\n");
         }
+        try std.testing.expectEqualSlices(u8, expected[0..used], writer.buffered());
     }
 
-    return 0;
+    rsp.data_len = 4;
+    var writer = std.Io.Writer.fixed(&actual);
+    try std.testing.expectEqual(@as(c_int, 0), try writeI2cResponse(&writer, &rsp, 0, 4, 0xa0, false));
+    try std.testing.expectEqualStrings(
+        "Read 4 bytes from I2C device A0h\n 5a a5 0f f0\n01011010 10100101 00001111 11110000 \n",
+        writer.buffered(),
+    );
+}
+
+test "raw i2c stdout detects preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 4;
+    rsp.data[0] = 0x5a;
+    rsp.data[1] = 0xa5;
+    rsp.data[2] = 0x0f;
+    rsp.data[3] = 0xf0;
+    var storage: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitI2cResponse(&writer, &rsp, 1, 4, 0xa0, true, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitI2cResponse(&early, &rsp, 1, 4, 0xa0, true, Stub.preflushOk));
+
+    const wrote = "Wrote 1 bytes to I2C device A0h\n";
+    var short: [wrote.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitI2cResponse(&late, &rsp, 1, 4, 0xa0, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings(wrote, late.buffered());
+
+    const read_hex = "Read 4 bytes from I2C device A0h\n 5a a5 0f f0\n";
+    var bits_short: [read_hex.len + 3]u8 = undefined;
+    var bits_late = std.Io.Writer.fixed(&bits_short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitI2cResponse(&bits_late, &rsp, 0, 4, 0xa0, false, Stub.preflushOk));
+    try std.testing.expectEqualStrings(read_hex ++ "010", bits_late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitI2cResponse(&writer, &rsp, 0, 4, 0xa0, false, Stub.preflushOk));
+    try std.testing.expectEqualStrings(read_hex ++ "01011010 10100101 00001111 11110000 \n", writer.buffered());
+
+    rsp.data_len = 3;
+    var short_reply = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, -1), try emitI2cResponse(&short_reply, &rsp, 1, 8, 0xa0, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings(wrote ++ "Read 3 bytes from I2C device A0h\n", short_reply.buffered());
+    var short_reply_fail = std.Io.Writer.fixed(&storage);
+    short_reply_fail.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitI2cResponse(&short_reply_fail, &rsp, 1, 8, 0xa0, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings(wrote ++ "Read 3 bytes from I2C device A0h\n", short_reply_fail.buffered());
+}
+
+test "raw i2c stdout preserves buffered C and Zig output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 1;
+    rsp.data[0] = 0xff;
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expectEqual(@as(c_int, 0), try emitI2cResponse(&stdout.interface, &rsp, 1, 1, 0xa0, true, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [256]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Wrote 1 bytes to I2C device A0h\nRead 1 bytes from I2C device A0h\n ff\n11111111 \n|after\n",
+        captured[0..@intCast(length)],
+    );
 }
 
 /// `ipmi_raw_help()` - print the `raw` help text.
