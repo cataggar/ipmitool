@@ -513,7 +513,16 @@ codes, table lookups, newline and request status. Output errors log their
 phase and return `-1`. `zig build test-chassis-restart-stdout` compares C
 bytes across all cause bytes and checks buffered ordering and failure
 injection; the existing `chassis_restart_cause*` C/selected-Zig CLI goldens
-keep the oracle. Other chassis output remains on its original path.
+keep the oracle.
+
+The selected `chassis power on/off/cycle/reset/diag/soft` (and top-level
+`power`) success messages now use checked Zig stdout. Their original
+value-table wording, newline, request and error behavior remain unchanged;
+pre-flush, write or final-flush failures log and return `-1`. `zig build
+test-chassis-control-stdout` checks byte parity for all control bytes, request
+statuses, C/Zig buffered order and injected I/O errors. The existing
+`chassis_power_*` and `power_*` C/selected-Zig goldens retain the CLI oracle.
+Other chassis output remains on its original path.
 
 The selected MC warm/cold reset acknowledgement also streams through checked
 Zig stdout after a libc pre-flush. Its words, newline and command status

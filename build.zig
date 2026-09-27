@@ -1238,6 +1238,14 @@ pub fn build(b: *std.Build) void {
     chassis_restart_stdout_step.dependOn(&b.addRunArtifact(chassis_restart_stdout_unit).step);
     test_step.dependOn(chassis_restart_stdout_step);
 
+    const chassis_control_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis control stdout"},
+    });
+    const chassis_control_stdout_step = b.step("test-chassis-control-stdout", "Compare chassis power-control C bytes, request statuses, output order and I/O failures");
+    chassis_control_stdout_step.dependOn(&b.addRunArtifact(chassis_control_stdout_unit).step);
+    test_step.dependOn(chassis_control_stdout_step);
+
     const mc_reset_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.reset stdout"},
