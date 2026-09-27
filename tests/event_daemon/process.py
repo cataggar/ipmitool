@@ -96,7 +96,7 @@ def alive(pid):
     try:
         with open(f"/proc/{pid}/stat", encoding="ascii") as proc:
             return proc.read().split()[2] != "Z"
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
         return False
 
 
