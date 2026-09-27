@@ -156,6 +156,18 @@ args: -c -I dummy user list 1
 transcript: user_five.tr
 covers: user
 
+[user_list_unknown_partial]
+desc: unknown privilege values, empty and 16-byte names survive a later name error
+args: -I dummy user list 1
+transcript: user_list_unknown_partial.tr
+covers: user
+
+[user_list_unknown_partial_csv]
+desc: csv rows with unknown privileges survive a later name error
+args: -c -I dummy user list 1
+transcript: user_list_unknown_partial.tr
+covers: user
+
 [user_list_uid_mask]
 desc: max_user_ids 0x81 masks to 1, so exactly one row is printed
 args: -I dummy user list 1

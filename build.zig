@@ -1178,6 +1178,14 @@ pub fn build(b: *std.Build) void {
     user_summary_step.dependOn(&b.addRunArtifact(user_summary_unit).step);
     test_step.dependOn(user_summary_step);
 
+    const user_list_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.user.test.list stdout"},
+    });
+    const user_list_step = b.step("test-user-list-stdout", "Compare user list C bytes, header lifetime, output order and I/O failures");
+    user_list_step.dependOn(&b.addRunArtifact(user_list_unit).step);
+    test_step.dependOn(user_list_step);
+
     const mc_selftest_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.selftest stdout"},

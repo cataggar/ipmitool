@@ -28,7 +28,7 @@
 //! `eval_ccode`, `getpass`, `str2int`, `str2uchar` and the `is_ipmi_*`
 //! validators - is reached through the `ipmi_c` bridge. Diagnostics use the
 //! shared typed logger, which falls back to C `lprintf` when Zig logging is
-//! not selected. The `summary` and password-test results use checked Zig stdout.
+//! not selected. The list, summary and password-test results use checked Zig stdout.
 
 const std = @import("std");
 
@@ -246,35 +246,53 @@ fn setUserPassword(
 // ---------------------------------------------------------------------------
 
 /// `dump_user_access()`'s function level `static int printed_header`.
-var printed_header: c_int = 0;
+var printed_header = false;
 
-fn dumpUserAccess(user_name: [*:0]const u8, user_access: *const UserAccess) void {
-    if (printed_header == 0) {
-        _ = c.printf("ID  Name\t     Callin  Link Auth\tIPMI Msg   " ++
-            "Channel Priv Limit\n");
-        printed_header = 1;
-    }
-    _ = c.printf(
-        "%-4d%-17s%-8s%-11s%-11s%-s\n",
-        @as(c_int, user_access.user_id),
-        user_name,
-        @as([*:0]const u8, if (user_access.callin_callback != 0) "false" else "true "),
-        @as([*:0]const u8, if (user_access.link_auth != 0) "true " else "false"),
-        @as([*:0]const u8, if (user_access.ipmi_messaging != 0) "true " else "false"),
-        c.val2str(user_access.privilege_limit, c.ipmi_privlvl_vals),
-    );
+const list_header = "ID  Name\t     Callin  Link Auth\tIPMI Msg   Channel Priv Limit\n";
+const ListOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writePadded(writer: *std.Io.Writer, text: []const u8, width: usize) std.Io.Writer.Error!void {
+    try writer.writeAll(text);
+    try writer.writeAll("                 "[0..width -| text.len]);
 }
 
-fn dumpUserAccessCsv(user_name: [*:0]const u8, user_access: *const UserAccess) void {
-    _ = c.printf(
-        "%d,%s,%s,%s,%s,%s\n",
-        @as(c_int, user_access.user_id),
-        user_name,
-        @as([*:0]const u8, if (user_access.callin_callback != 0) "false" else "true"),
-        @as([*:0]const u8, if (user_access.link_auth != 0) "true" else "false"),
-        @as([*:0]const u8, if (user_access.ipmi_messaging != 0) "true" else "false"),
-        c.val2str(user_access.privilege_limit, c.ipmi_privlvl_vals),
-    );
+fn dumpUserAccess(writer: *std.Io.Writer, user_name: [*:0]const u8, user_access: *const UserAccess, privilege: []const u8, header: *bool) std.Io.Writer.Error!void {
+    if (!header.*) {
+        try writer.writeAll(list_header);
+        header.* = true;
+    }
+    var id_buf: [3]u8 = undefined;
+    const id = std.fmt.bufPrint(&id_buf, "{d}", .{user_access.user_id}) catch unreachable;
+    try writePadded(writer, id, 4);
+    try writePadded(writer, std.mem.span(user_name), 17);
+    try writePadded(writer, if (user_access.callin_callback != 0) "false" else "true ", 8);
+    try writePadded(writer, if (user_access.link_auth != 0) "true " else "false", 11);
+    try writePadded(writer, if (user_access.ipmi_messaging != 0) "true " else "false", 11);
+    try writer.writeAll(privilege);
+    try writer.writeByte('\n');
+}
+
+fn dumpUserAccessCsv(writer: *std.Io.Writer, user_name: [*:0]const u8, user_access: *const UserAccess, privilege: []const u8) std.Io.Writer.Error!void {
+    try writer.print("{d},{s},{s},{s},{s},", .{
+        user_access.user_id,
+        std.mem.span(user_name),
+        if (user_access.callin_callback != 0) "false" else "true",
+        if (user_access.link_auth != 0) "true" else "false",
+        if (user_access.ipmi_messaging != 0) "true" else "false",
+    });
+    try writer.writeAll(privilege);
+    try writer.writeByte('\n');
+}
+
+fn emitUserListRow(writer: *std.Io.Writer, csv: bool, user_name: [*:0]const u8, user_access: *const UserAccess, header: *bool, preflush: anytype) ListOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    const privilege = std.mem.span(c.val2str(user_access.privilege_limit, c.ipmi_privlvl_vals));
+    if (csv) {
+        dumpUserAccessCsv(writer, user_name, user_access, privilege) catch return error.StdoutWriteFailed;
+    } else {
+        dumpUserAccess(writer, user_name, user_access, privilege, header) catch return error.StdoutWriteFailed;
+    }
+    writer.flush() catch return error.StdoutFlushFailed;
 }
 
 /// `ipmi_print_user_list()`: list IPMI users and their ACLs for one channel.
@@ -285,6 +303,7 @@ fn printUserList(intf: *Intf, channel_number: u8) c_int {
     var user_name = std.mem.zeroes(UserName);
     var ccode: c_int = 0;
     var current_user_id: u8 = 1;
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
     while (true) {
         user_access = std.mem.zeroes(UserAccess);
         user_access.user_id = current_user_id;
@@ -303,16 +322,183 @@ fn printUserList(intf: *Intf, channel_number: u8) c_int {
             return -1;
         }
         const name: [*:0]const u8 = @ptrCast(&user_name.user_name);
-        if (c.csv_output != 0) {
-            dumpUserAccessCsv(name, &user_access);
-        } else {
-            dumpUserAccess(name, &user_access);
-        }
+        emitUserListRow(&stdout.interface, c.csv_output != 0, name, &user_access, &printed_header, stdout_io.trySyncC) catch |err| {
+            switch (err) {
+                error.CStdoutFlushFailed => log.print(log.Level.err, "User list stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+                error.StdoutWriteFailed => log.print(log.Level.err, "User list stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+                error.StdoutFlushFailed => log.print(log.Level.err, "User list stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            }
+            return -1;
+        };
         current_user_id +%= 1;
         if (!(current_user_id <= user_access.max_user_ids and
             current_user_id <= uid_max)) break;
     }
     return 0;
+}
+
+test "list stdout matches libc byte widths, access bits and privilege fallbacks" {
+    const cases = [_]struct {
+        name: [*:0]const u8,
+        id: u8,
+        callin: u8,
+        link: u8,
+        messaging: u8,
+        privilege_text: [*:0]const u8,
+    }{
+        .{ .name = "", .id = 1, .callin = 0, .link = 0, .messaging = 0, .privilege_text = "Unknown (0x00)" },
+        .{ .name = "a", .id = 9, .callin = 0x40, .link = 0x20, .messaging = 0x10, .privilege_text = "ADMINISTRATOR" },
+        .{ .name = "0123456789abcdef", .id = 10, .callin = 0, .link = 0x20, .messaging = 0, .privilege_text = "Unknown (0x06)" },
+        .{ .name = "\x80x", .id = 63, .callin = 0x40, .link = 0, .messaging = 0x10, .privilege_text = "NO ACCESS" },
+    };
+    for (cases) |case| {
+        var access = std.mem.zeroes(UserAccess);
+        access.user_id = case.id;
+        access.callin_callback = case.callin;
+        access.link_auth = case.link;
+        access.ipmi_messaging = case.messaging;
+        for ([_]bool{ false, true }) |csv| {
+            var expected: [256]u8 = undefined;
+            const n = if (csv)
+                c.snprintf(&expected, expected.len, "%d,%s,%s,%s,%s,%s\n", @as(c_int, case.id), case.name, @as([*:0]const u8, if (case.callin != 0) "false" else "true"), @as([*:0]const u8, if (case.link != 0) "true" else "false"), @as([*:0]const u8, if (case.messaging != 0) "true" else "false"), case.privilege_text)
+            else
+                c.snprintf(&expected, expected.len, "%-4d%-17s%-8s%-11s%-11s%-s\n", @as(c_int, case.id), case.name, @as([*:0]const u8, if (case.callin != 0) "false" else "true "), @as([*:0]const u8, if (case.link != 0) "true " else "false"), @as([*:0]const u8, if (case.messaging != 0) "true " else "false"), case.privilege_text);
+            try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+            var storage: [256]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            var header = true;
+            if (csv) {
+                try dumpUserAccessCsv(&writer, case.name, &access, std.mem.span(case.privilege_text));
+            } else {
+                try dumpUserAccess(&writer, case.name, &access, std.mem.span(case.privilege_text), &header);
+            }
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
+
+test "list stdout propagates preflush, header, row and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var access = std.mem.zeroes(UserAccess);
+    access.user_id = 2;
+    access.privilege_limit = 6;
+    var header = false;
+    var storage: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitUserListRow(&writer, false, "alice", &access, &header, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    try std.testing.expect(!header);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitUserListRow(&early, false, "alice", &access, &header, Stub.preflushOk));
+    try std.testing.expect(!header);
+
+    var short: [list_header.len + 8]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitUserListRow(&late, false, "alice", &access, &header, Stub.preflushOk));
+    try std.testing.expect(header);
+    try std.testing.expectEqualStrings(list_header ++ "2   alic", late.buffered());
+
+    var csv_short: ["2,alice,".len]u8 = undefined;
+    var csv_writer = std.Io.Writer.fixed(&csv_short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitUserListRow(&csv_writer, true, "alice", &access, &header, Stub.preflushOk));
+    try std.testing.expectEqualStrings("2,alice,", csv_writer.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitUserListRow(&writer, true, "alice", &access, &header, Stub.preflushOk));
+    try std.testing.expectEqualStrings("2,alice,true,false,false,\n", writer.buffered());
+    try std.testing.expectError(error.CStdoutFlushFailed, emitUserListRow(&writer, true, "bob", &access, &header, Stub.preflushFail));
+    try std.testing.expectEqualStrings("2,alice,true,false,false,\n", writer.buffered());
+}
+
+test "list stdout keeps header once across invocations and orders C output between rows" {
+    const Exports = struct {
+        var csv_output: c_int = 0;
+        fn evalCcode(ccode: c_int) callconv(.c) c_int {
+            return if (ccode == 0) 0 else -1;
+        }
+    };
+    comptime {
+        @export(&Exports.csv_output, .{ .name = "csv_output" });
+        @export(&Exports.evalCcode, .{ .name = "eval_ccode" });
+    }
+    const Stub = struct {
+        var requests: usize = 0;
+        var response: Response = std.mem.zeroes(Response);
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            response = std.mem.zeroes(Response);
+            if (req.msg.cmd == cmd_get_user_access) {
+                response.data_len = 4;
+                response.data[0] = 1;
+                response.data[3] = 0x34;
+            } else if (req.msg.cmd == cmd_get_user_name) {
+                response.data_len = 16;
+                response.data[0] = 'r';
+            } else return null;
+            return &response;
+        }
+    };
+    const old_header = printed_header;
+    const old_csv = c.csv_output;
+    defer {
+        printed_header = old_header;
+        c.csv_output = old_csv;
+    }
+    printed_header = false;
+    Stub.requests = 0;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(fds[1], stdout_fd));
+    _ = c.close(fds[1]);
+
+    c.csv_output = 0;
+    _ = c.printf("before|");
+    try std.testing.expectEqual(@as(c_int, 0), printUserList(&intf, 1));
+    _ = c.printf("|between|");
+    c.csv_output = 1;
+    try std.testing.expectEqual(@as(c_int, 0), printUserList(&intf, 1));
+    _ = c.printf("|again|");
+    c.csv_output = 0;
+    try std.testing.expectEqual(@as(c_int, 0), printUserList(&intf, 1));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+
+    var captured: [512]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    // The ABI test binary stubs val2str as empty; the CLI goldens check the real lookup.
+    try std.testing.expectEqualStrings(
+        "before|" ++ list_header ++
+            "1   r                true    true       true       \n" ++
+            "|between|1,r,true,true,true,\n" ++
+            "|again|1   r                true    true       true       \n" ++
+            "|after\n",
+        captured[0..@intCast(length)],
+    );
+    try std.testing.expectEqual(@as(usize, 6), Stub.requests);
 }
 
 /// `ipmi_print_user_summary()`: print user statistics for one channel.
