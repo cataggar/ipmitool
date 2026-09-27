@@ -1,8 +1,8 @@
 //! Serial over LAN command and interactive session, selected by
 //! `zig build -Dzig-modules=sol` in place of lib/ipmi_sol.c.
 //! The request/response and payload types are shared ABI-checked Zig mirrors;
-//! libc still handles most formatting and terminal control to preserve CLI
-//! behaviour; payload-access status and SOL info results use checked Zig stdout.
+//! libc still handles terminal control and binary SOL payload bytes; SOL
+//! interactive text, payload-access status and info use checked Zig stdout.
 //! Diagnostics use typed `log.print()` from the same selected archive as the
 //! logger state; without the Zig logger it retains the C `lprintf` fallback.
 
@@ -13,6 +13,7 @@ const log = @import("../util/log.zig");
 const stdout_io = @import("../util/stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
+const Session = @import("../intf/intf.zig").Session;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
 const Config = c.struct_sol_config_parameters;
@@ -806,23 +807,74 @@ fn suspendSelf(restore_tty: bool) void {
     if (restore_tty) enterRawMode();
 }
 
-fn printEscapes(intf: *Intf) void {
-    const e: c_int = intf.ssn_params.sol_escape_char;
-    _ = c.printf(
-        "%c?\n\tSupported escape sequences:\n\t%c.  - terminate connection\n" ++
-            "\t%c^Z - suspend ipmitool\n\t%c^X - suspend ipmitool, but don't restore tty on restart\n" ++
-            "\t%cB  - send break\n\t%c?  - this message\n" ++
-            "\t%c%c  - send the escape character by typing it twice\n" ++
-            "\t(Note that escapes are only recognized immediately after newline.)\n",
-        e,
-        e,
-        e,
-        e,
-        e,
-        e,
-        e,
-        e,
-    );
+const InteractiveText = union(enum) {
+    help: u8,
+    terminated: u8,
+    suspended: u8,
+    break_sent: u8,
+    banner: u8,
+    progress: c_int,
+    failure: c_int,
+};
+
+fn writeInteractiveText(writer: *std.Io.Writer, text: InteractiveText) std.Io.Writer.Error!void {
+    switch (text) {
+        .help => |e| {
+            try writer.writeByte(e);
+            try writer.writeAll("?\n\tSupported escape sequences:\n\t");
+            try writer.writeByte(e);
+            try writer.writeAll(".  - terminate connection\n\t");
+            try writer.writeByte(e);
+            try writer.writeAll("^Z - suspend ipmitool\n\t");
+            try writer.writeByte(e);
+            try writer.writeAll("^X - suspend ipmitool, but don't restore tty on restart\n\t");
+            try writer.writeByte(e);
+            try writer.writeAll("B  - send break\n\t");
+            try writer.writeByte(e);
+            try writer.writeAll("?  - this message\n\t");
+            try writer.writeByte(e);
+            try writer.writeByte(e);
+            try writer.writeAll("  - send the escape character by typing it twice\n" ++
+                "\t(Note that escapes are only recognized immediately after newline.)\n");
+        },
+        .terminated => |e| {
+            try writer.writeByte(e);
+            try writer.writeAll(". [terminated ipmitool]\n");
+        },
+        .suspended => |e| {
+            try writer.writeByte(e);
+            try writer.writeAll("^Z [suspend ipmitool]\n");
+        },
+        .break_sent => |e| {
+            try writer.writeByte(e);
+            try writer.writeAll("B [send break]\n");
+        },
+        .banner => |e| {
+            try writer.writeAll("[SOL Session operational.  Use ");
+            try writer.writeByte(e);
+            try writer.writeAll("? for help]\n");
+        },
+        .progress => |count| try writer.print("remain loop test counter: {d}\n", .{count}),
+        .failure => |status| try writer.print("SOL looptest failed: {d}\n", .{status}),
+    }
+}
+
+fn emitInteractiveText(writer: *std.Io.Writer, text: InteractiveText, preflush: anytype) StdoutError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeInteractiveText(writer, text) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn logInteractiveOutputError(err: StdoutError, write_error: anyerror) void {
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(log.Level.err, "SOL interactive stdout C preflush failed", .{}),
+        error.StdoutWriteFailed => log.print(log.Level.err, "SOL interactive stdout write failed: %s", .{@errorName(write_error).ptr}),
+        error.StdoutFlushFailed => log.print(log.Level.err, "SOL interactive stdout final flush failed: %s", .{@errorName(write_error).ptr}),
+    }
+}
+
+fn printEscapes(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) StdoutError!void {
+    try emitInteractiveText(writer, .{ .help = intf.ssn_params.sol_escape_char }, preflush);
 }
 
 const EscapeState = struct {
@@ -831,7 +883,7 @@ const EscapeState = struct {
 };
 var escape_state: EscapeState = .{};
 
-fn processUserInput(intf: *Intf, input: []const u8) c_int {
+fn processUserInput(intf: *Intf, input: []const u8, writer: *std.Io.Writer, preflush: anytype, suspend_fn: anytype) StdoutError!c_int {
     var payload = std.mem.zeroes(ipmi.V2Payload);
     // A pending escape from the preceding read can add one byte to this read.
     var data: [ipmi.buf_size + 1]u8 = undefined;
@@ -843,26 +895,26 @@ fn processUserInput(intf: *Intf, input: []const u8) c_int {
             escape_state.pending = false;
             switch (ch) {
                 '.' => {
-                    _ = c.printf("%c. [terminated ipmitool]\n", @as(c_int, e));
+                    try emitInteractiveText(writer, .{ .terminated = e }, preflush);
                     result = 1;
                 },
                 26 => {
-                    _ = c.printf("%c^Z [suspend ipmitool]\n", @as(c_int, e));
-                    suspendSelf(true);
+                    try emitInteractiveText(writer, .{ .suspended = e }, preflush);
+                    suspend_fn(true);
                     continue;
                 },
                 24 => {
-                    _ = c.printf("%c^Z [suspend ipmitool]\n", @as(c_int, e));
-                    suspendSelf(false);
+                    try emitInteractiveText(writer, .{ .suspended = e }, preflush);
+                    suspend_fn(false);
                     continue;
                 },
                 'B' => {
-                    _ = c.printf("%cB [send break]\n", @as(c_int, e));
+                    try emitInteractiveText(writer, .{ .break_sent = e }, preflush);
                     sendBreak(intf);
                     continue;
                 },
                 '?' => {
-                    printEscapes(intf);
+                    try printEscapes(intf, writer, preflush);
                     continue;
                 },
                 else => {
@@ -933,7 +985,7 @@ fn keepalive(intf: *Intf) c_int {
     return 0;
 }
 
-fn sessionLoop(intf: *Intf, instance: c_int) c_int {
+fn sessionLoop(intf: *Intf, instance: c_int, writer: *std.Io.Writer, preflush: anytype) StdoutError!c_int {
     const ssn = intf.session orelse return -1;
     const cap: usize = @min(
         if (ssn.sol_data.max_inbound_payload_size > 4)
@@ -958,6 +1010,7 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
     var closed_by_bmc = false;
     var keepalive_failure: c_int = 0;
     var retries: u8 = 0;
+    var output_error: ?StdoutError = null;
     while (true) {
         if (c.ipmi_oem_active(@ptrCast(intf), "i82571spt") == 0) {
             keepalive_failure = keepalive(intf);
@@ -979,7 +1032,10 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
         if (fds[0].revents != 0) {
             const count = c.read(0, buffer.ptr, buffer.len);
             if (count <= 0) break;
-            const rc = processUserInput(intf, buffer[0..@intCast(count)]);
+            const rc = processUserInput(intf, buffer[0..@intCast(count)], writer, preflush, suspendSelf) catch |err| {
+                output_error = err;
+                break;
+            };
             if (rc != 0) {
                 if (rc < 0) closed_by_bmc = true;
                 break;
@@ -1000,6 +1056,10 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
         }
     }
     leaveRawMode();
+    if (output_error) |err| {
+        _ = deactivate(intf, instance);
+        return err;
+    }
     if (keepalive_failure != 0) {
         log.print(log.Level.err, "Error: No response to keepalive - Terminating session", .{});
         _ = deactivate(intf, instance);
@@ -1013,7 +1073,7 @@ fn sessionLoop(intf: *Intf, instance: c_int) c_int {
     return 0;
 }
 
-fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int {
+fn activateTo(intf: *Intf, looptest: bool, interval: c_int, instance: c_int, writer: *std.Io.Writer, preflush: anytype) StdoutError!c_int {
     if (!std.mem.eql(u8, std.mem.sliceTo(&intf.name, 0), "lanplus")) {
         log.print(log.Level.err, "Error: This command is only available over the lanplus interface", .{});
         return -1;
@@ -1082,18 +1142,501 @@ fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int
             return -1;
         }
     }
-    _ = c.printf("[SOL Session operational.  Use %c? for help]\n", @as(c_int, intf.ssn_params.sol_escape_char));
+    emitInteractiveText(writer, .{ .banner = intf.ssn_params.sol_escape_char }, preflush) catch |err| {
+        _ = deactivate(intf, instance);
+        return err;
+    };
     if (looptest) {
         _ = deactivate(intf, instance);
         if (interval > 0) _ = c.usleep(@as(c_uint, @intCast(interval)) *% 1000);
         return 0;
     }
-    if (sessionLoop(intf, instance) != 0) {
+    if (try sessionLoop(intf, instance, writer, preflush) != 0) {
         _ = deactivate(intf, instance);
         log.print(log.Level.err, "Error in SOL session", .{});
         return -1;
     }
     return 0;
+}
+
+fn activate(intf: *Intf, looptest: bool, interval: c_int, instance: c_int) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return activateTo(intf, looptest, interval, instance, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        logInteractiveOutputError(err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
+fn loopTestTo(intf: *Intf, initial_count: c_int, interval: c_int, instance: c_int, writer: *std.Io.Writer, preflush: anytype) StdoutError!c_int {
+    var count = initial_count;
+    while (count > 0) : (count -= 1) {
+        try emitInteractiveText(writer, .{ .progress = count }, preflush);
+        const result = try activateTo(intf, true, interval, instance, writer, preflush);
+        if (result != 0) {
+            try emitInteractiveText(writer, .{ .failure = result }, preflush);
+            return result;
+        }
+    }
+    return 0;
+}
+
+fn interactiveCBytes(buffer: []u8, text: InteractiveText) ![]const u8 {
+    const n: c_int = switch (text) {
+        .help => |e| c.snprintf(
+            buffer.ptr,
+            buffer.len,
+            "%c?\n\tSupported escape sequences:\n\t%c.  - terminate connection\n" ++
+                "\t%c^Z - suspend ipmitool\n\t%c^X - suspend ipmitool, but don't restore tty on restart\n" ++
+                "\t%cB  - send break\n\t%c?  - this message\n" ++
+                "\t%c%c  - send the escape character by typing it twice\n" ++
+                "\t(Note that escapes are only recognized immediately after newline.)\n",
+            @as(c_int, e),
+            @as(c_int, e),
+            @as(c_int, e),
+            @as(c_int, e),
+            @as(c_int, e),
+            @as(c_int, e),
+            @as(c_int, e),
+            @as(c_int, e),
+        ),
+        .terminated => |e| c.snprintf(buffer.ptr, buffer.len, "%c. [terminated ipmitool]\n", @as(c_int, e)),
+        .suspended => |e| c.snprintf(buffer.ptr, buffer.len, "%c^Z [suspend ipmitool]\n", @as(c_int, e)),
+        .break_sent => |e| c.snprintf(buffer.ptr, buffer.len, "%cB [send break]\n", @as(c_int, e)),
+        .banner => |e| c.snprintf(buffer.ptr, buffer.len, "[SOL Session operational.  Use %c? for help]\n", @as(c_int, e)),
+        .progress => |count| c.snprintf(buffer.ptr, buffer.len, "remain loop test counter: %d\n", count),
+        .failure => |status| c.snprintf(buffer.ptr, buffer.len, "SOL looptest failed: %d\n", status),
+    };
+    try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < buffer.len);
+    return buffer[0..@intCast(n)];
+}
+
+test "sol interactive stdout matches libc control and looptest bytes" {
+    for ([_]u8{ 0, '~', '^', 0x80, 0xff }) |escape| {
+        for ([_]InteractiveText{
+            .{ .help = escape },
+            .{ .terminated = escape },
+            .{ .suspended = escape },
+            .{ .break_sent = escape },
+            .{ .banner = escape },
+        }) |text| {
+            var storage: [512]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeInteractiveText(&writer, text);
+            var expected: [512]u8 = undefined;
+            try std.testing.expectEqualSlices(u8, try interactiveCBytes(&expected, text), writer.buffered());
+        }
+    }
+    for ([_]c_int{ std.math.minInt(c_int), -1, 0, 1, 200, std.math.maxInt(c_int) }) |count| {
+        for ([_]InteractiveText{ .{ .progress = count }, .{ .failure = count } }) |text| {
+            var storage: [512]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeInteractiveText(&writer, text);
+            var expected: [512]u8 = undefined;
+            try std.testing.expectEqualSlices(u8, try interactiveCBytes(&expected, text), writer.buffered());
+        }
+    }
+}
+
+test "sol interactive stdout rejects preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    for ([_]InteractiveText{
+        .{ .help = '~' },       .{ .terminated = '~' }, .{ .suspended = '~' },
+        .{ .break_sent = '~' }, .{ .banner = '~' },     .{ .progress = 200 },
+        .{ .failure = -1 },
+    }) |text| {
+        var storage: [512]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectError(error.CStdoutFlushFailed, emitInteractiveText(&writer, text, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+        var early: std.Io.Writer = .failing;
+        try std.testing.expectError(error.StdoutWriteFailed, emitInteractiveText(&early, text, Stub.preflushOk));
+        try emitInteractiveText(&writer, text, Stub.preflushOk);
+        const complete = writer.buffered();
+        var short: [512]u8 = undefined;
+        var late = std.Io.Writer.fixed(short[0 .. complete.len - 1]);
+        try std.testing.expectError(error.StdoutWriteFailed, emitInteractiveText(&late, text, Stub.preflushOk));
+        try std.testing.expectEqualSlices(u8, complete[0 .. complete.len - 1], late.buffered());
+
+        var final = std.Io.Writer.fixed(&short);
+        final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        try std.testing.expectError(error.StdoutFlushFailed, emitInteractiveText(&final, text, Stub.preflushOk));
+        try std.testing.expectEqualSlices(u8, complete, final.buffered());
+    }
+}
+
+test "sol interactive stdout orders C buffering binary payload and Zig text" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitInteractiveText(&stdout.interface, .{ .banner = '^' }, stdout_io.trySyncC);
+    var rsp = std.mem.zeroes(Response);
+    rsp.session.authtype = c.IPMI_SESSION_AUTHTYPE_RMCP_PLUS;
+    rsp.session.payloadtype = @intFromEnum(ipmi.PayloadType.sol);
+    rsp.data_len = 3;
+    rsp.data[0] = 0;
+    rsp.data[1] = 0xff;
+    rsp.data[2] = '\r';
+    output(&rsp);
+    _ = c.printf("|between|");
+    try emitInteractiveText(&stdout.interface, .{ .break_sent = '^' }, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [512]u8 = undefined;
+    const n = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(n >= 0);
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writer.writeAll("before|");
+    try writeInteractiveText(&writer, .{ .banner = '^' });
+    try writer.writeAll(&.{ 0, 0xff, '\r' });
+    try writer.writeAll("|between|");
+    try writeInteractiveText(&writer, .{ .break_sent = '^' });
+    try writer.writeAll("|after\n");
+    try std.testing.expectEqualSlices(u8, writer.buffered(), captured[0..@intCast(n)]);
+}
+
+test "sol interactive stdout escape controls retain statuses wire data and side effects" {
+    const Stub = struct {
+        var response: Response = std.mem.zeroes(Response);
+        var breaks: usize = 0;
+        var data_sends: usize = 0;
+        var sent: [32]u8 = undefined;
+        var sent_len: usize = 0;
+        var suspends: [2]bool = undefined;
+        var suspend_count: usize = 0;
+
+        fn send(_: *Intf, payload: *ipmi.V2Payload) callconv(.c) ?*Response {
+            if (payload.payload.sol_packet.generate_break != 0) {
+                breaks += 1;
+            } else {
+                data_sends += 1;
+                sent_len = payload.payload.sol_packet.character_count;
+                @memcpy(sent[0..sent_len], payload.payload.sol_packet.data[0..sent_len]);
+            }
+            return &response;
+        }
+        fn suspendStub(restore: bool) void {
+            suspends[suspend_count] = restore;
+            suspend_count += 1;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    escape_state = .{};
+    defer escape_state = .{};
+    var intf = std.mem.zeroes(Intf);
+    intf.ssn_params.sol_escape_char = '~';
+    intf.ssn_params.retry = 1;
+    intf.send_sol = Stub.send;
+    Stub.breaks = 0;
+    Stub.data_sends = 0;
+    Stub.suspend_count = 0;
+    var storage: [1024]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+
+    try std.testing.expectEqual(@as(c_int, 0), try processUserInput(&intf, "~?", &writer, Stub.preflushOk, Stub.suspendStub));
+    try std.testing.expectEqual(@as(c_int, 0), try processUserInput(&intf, "~B", &writer, Stub.preflushOk, Stub.suspendStub));
+    try std.testing.expectEqual(@as(c_int, 0), try processUserInput(&intf, "~\x1a~\x18", &writer, Stub.preflushOk, Stub.suspendStub));
+    try std.testing.expectEqual(@as(c_int, 1), try processUserInput(&intf, "~.", &writer, Stub.preflushOk, Stub.suspendStub));
+    try std.testing.expectEqual(@as(usize, 1), Stub.breaks);
+    try std.testing.expectEqual(@as(usize, 0), Stub.data_sends);
+    try std.testing.expectEqual(@as(usize, 2), Stub.suspend_count);
+    try std.testing.expect(Stub.suspends[0]);
+    try std.testing.expect(!Stub.suspends[1]);
+    var expected_storage: [1024]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    for ([_]InteractiveText{
+        .{ .help = '~' },      .{ .break_sent = '~' }, .{ .suspended = '~' },
+        .{ .suspended = '~' }, .{ .terminated = '~' },
+    }) |text| {
+        var c_bytes: [512]u8 = undefined;
+        try expected.writeAll(try interactiveCBytes(&c_bytes, text));
+    }
+    try std.testing.expectEqualSlices(u8, expected.buffered(), writer.buffered());
+
+    escape_state = .{};
+    var data_storage: [64]u8 = undefined;
+    var data_writer = std.Io.Writer.fixed(&data_storage);
+    try std.testing.expectEqual(@as(c_int, 0), try processUserInput(&intf, "\r~~\r~q", &data_writer, Stub.preflushFail, Stub.suspendStub));
+    try std.testing.expectEqual(@as(usize, 1), Stub.data_sends);
+    try std.testing.expectEqualStrings("\r~\r~q", Stub.sent[0..Stub.sent_len]);
+    try std.testing.expectEqual(@as(usize, 0), data_writer.buffered().len);
+
+    for ([_][]const u8{ "~?", "~B", "~\x1a", "~\x18", "~." }) |input| {
+        escape_state = .{};
+        var failed_storage: [512]u8 = undefined;
+        var failed = std.Io.Writer.fixed(&failed_storage);
+        try std.testing.expectError(error.CStdoutFlushFailed, processUserInput(&intf, input, &failed, Stub.preflushFail, Stub.suspendStub));
+        try std.testing.expectEqual(@as(usize, 0), failed.buffered().len);
+        try std.testing.expectEqual(@as(usize, 1), Stub.breaks);
+        try std.testing.expectEqual(@as(usize, 2), Stub.suspend_count);
+        try std.testing.expectEqual(@as(usize, 1), Stub.data_sends);
+    }
+}
+
+test "sol interactive stdout activation and looptest preserve requests cleanup and statuses" {
+    const Stub = struct {
+        const Mode = enum { ok, missing, ccode, short, wrong_port };
+        var mode: Mode = .ok;
+        var response: Response = std.mem.zeroes(Response);
+        var activations: usize = 0;
+        var deactivations: usize = 0;
+        var requests_ok = true;
+        var preflush_calls: usize = 0;
+
+        fn reset(next: Mode) void {
+            mode = next;
+            activations = 0;
+            deactivations = 0;
+            requests_ok = true;
+            preflush_calls = 0;
+        }
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            if (req.msg.netfn_lun.netfn != ipmi.NetFn.app or req.msg.data_len != 6 or req.msg.data == null) {
+                requests_ok = false;
+                return null;
+            }
+            response = std.mem.zeroes(Response);
+            if (req.msg.cmd == 0x48) {
+                activations += 1;
+                requests_ok = requests_ok and std.mem.eql(u8, req.msg.data.?[0..6], &.{ 1, 7, 0xc6, 0, 0, 0 });
+                if (mode == .missing) return null;
+                response.ccode = if (mode == .ccode) 0x81 else 0;
+                response.data_len = if (mode == .short) 0 else 12;
+                response.data[4] = 64;
+                response.data[6] = 64;
+                response.data[8] = if (mode == .wrong_port) 0x70 else 0x6f;
+                response.data[9] = 2;
+            } else if (req.msg.cmd == 0x49) {
+                deactivations += 1;
+                requests_ok = requests_ok and std.mem.eql(u8, req.msg.data.?[0..6], &.{ 1, 7, 0, 0, 0, 0 });
+            } else requests_ok = false;
+            return &response;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn preflushSecond() error{CStdoutFlushFailed}!void {
+            preflush_calls += 1;
+            if (preflush_calls == 2) return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    @memcpy(intf.name[0..7], "lanplus");
+    intf.ssn_params.sol_escape_char = '^';
+    intf.ssn_params.port = 623;
+    var session = std.mem.zeroes(Session);
+    intf.session = &session;
+    intf.sendrecv = Stub.send;
+
+    for ([_]struct { mode: Stub.Mode, result: c_int, deactivations: usize }{
+        .{ .mode = .missing, .result = -1, .deactivations = 0 },
+        .{ .mode = .ccode, .result = -1, .deactivations = 0 },
+        .{ .mode = .short, .result = -1, .deactivations = 0 },
+        .{ .mode = .wrong_port, .result = -1, .deactivations = 0 },
+        .{ .mode = .ok, .result = 0, .deactivations = 1 },
+    }) |case| {
+        Stub.reset(case.mode);
+        var storage: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(case.result, try activateTo(&intf, true, 0, 7, &writer, Stub.preflushOk));
+        try std.testing.expectEqual(@as(usize, 1), Stub.activations);
+        try std.testing.expectEqual(case.deactivations, Stub.deactivations);
+        try std.testing.expect(Stub.requests_ok);
+        var expected: [256]u8 = undefined;
+        try std.testing.expectEqualSlices(
+            u8,
+            if (case.result == 0) try interactiveCBytes(&expected, .{ .banner = '^' }) else "",
+            writer.buffered(),
+        );
+    }
+
+    const FailureKind = enum { preflush, write, flush };
+    for ([_]FailureKind{ .preflush, .write, .flush }) |kind| {
+        Stub.reset(.ok);
+        var storage: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        switch (kind) {
+            .preflush => try std.testing.expectError(error.CStdoutFlushFailed, activateTo(&intf, true, 0, 7, &writer, Stub.preflushFail)),
+            .write => {
+                var early: std.Io.Writer = .failing;
+                try std.testing.expectError(error.StdoutWriteFailed, activateTo(&intf, true, 0, 7, &early, Stub.preflushOk));
+            },
+            .flush => {
+                writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+                try std.testing.expectError(error.StdoutFlushFailed, activateTo(&intf, true, 0, 7, &writer, Stub.preflushOk));
+            },
+        }
+        try std.testing.expectEqual(@as(usize, 1), Stub.activations);
+        try std.testing.expectEqual(@as(usize, 1), Stub.deactivations);
+        try std.testing.expect(Stub.requests_ok);
+    }
+
+    Stub.reset(.ok);
+    var success_storage: [256]u8 = undefined;
+    var success = std.Io.Writer.fixed(&success_storage);
+    try std.testing.expectEqual(@as(c_int, 0), try loopTestTo(&intf, 2, 0, 7, &success, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 2), Stub.activations);
+    try std.testing.expectEqual(@as(usize, 2), Stub.deactivations);
+    try std.testing.expect(Stub.requests_ok);
+    var expected_storage: [256]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    for ([_]InteractiveText{ .{ .progress = 2 }, .{ .banner = '^' }, .{ .progress = 1 }, .{ .banner = '^' } }) |text| {
+        var c_bytes: [512]u8 = undefined;
+        try expected.writeAll(try interactiveCBytes(&c_bytes, text));
+    }
+    try std.testing.expectEqualSlices(u8, expected.buffered(), success.buffered());
+
+    var bad_intf = std.mem.zeroes(Intf);
+    Stub.reset(.ok);
+    var failed_storage: [256]u8 = undefined;
+    var failed = std.Io.Writer.fixed(&failed_storage);
+    try std.testing.expectEqual(@as(c_int, -1), try loopTestTo(&bad_intf, 2, 0, 7, &failed, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 0), Stub.activations);
+    var failure_storage: [256]u8 = undefined;
+    var failure = std.Io.Writer.fixed(&failure_storage);
+    for ([_]InteractiveText{ .{ .progress = 2 }, .{ .failure = -1 } }) |text| {
+        var c_bytes: [512]u8 = undefined;
+        try failure.writeAll(try interactiveCBytes(&c_bytes, text));
+    }
+    try std.testing.expectEqualSlices(u8, failure.buffered(), failed.buffered());
+
+    Stub.reset(.ok);
+    var early_storage: [256]u8 = undefined;
+    var early = std.Io.Writer.fixed(&early_storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, loopTestTo(&intf, 2, 0, 7, &early, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), Stub.activations);
+    try std.testing.expectEqual(@as(usize, 0), early.buffered().len);
+
+    Stub.reset(.ok);
+    var late_storage: [256]u8 = undefined;
+    var late = std.Io.Writer.fixed(&late_storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, loopTestTo(&intf, 2, 0, 7, &late, Stub.preflushSecond));
+    try std.testing.expectEqual(@as(usize, 1), Stub.activations);
+    try std.testing.expectEqual(@as(usize, 1), Stub.deactivations);
+    var progress_bytes: [64]u8 = undefined;
+    try std.testing.expectEqualSlices(u8, try interactiveCBytes(&progress_bytes, .{ .progress = 2 }), late.buffered());
+
+    Stub.reset(.ok);
+    var failed_line_storage: [256]u8 = undefined;
+    var failed_line = std.Io.Writer.fixed(&failed_line_storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, loopTestTo(&bad_intf, 2, 0, 7, &failed_line, Stub.preflushSecond));
+    try std.testing.expectEqualSlices(u8, try interactiveCBytes(&progress_bytes, .{ .progress = 2 }), failed_line.buffered());
+}
+
+test "sol interactive stdout mid-session failure restores raw mode and deactivates" {
+    if (comptime @import("builtin").target.os.tag != .linux) return error.SkipZigTest;
+    const Stub = struct {
+        var response: Response = std.mem.zeroes(Response);
+        var deactivations: usize = 0;
+        var request_ok = false;
+        var raw_on_failure = false;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            deactivations += 1;
+            request_ok = req.msg.netfn_lun.netfn == ipmi.NetFn.app and req.msg.cmd == 0x49 and
+                req.msg.data_len == 6 and req.msg.data != null and
+                std.mem.eql(u8, req.msg.data.?[0..6], &.{ 1, 1, 0, 0, 0, 0 });
+            return &response;
+        }
+        fn failWhileRaw() error{CStdoutFlushFailed}!void {
+            var tio: c.struct_termios = undefined;
+            raw_on_failure = c.tcgetattr(0, &tio) == 0 and (tio.c_lflag & c.ICANON) == 0;
+            return error.CStdoutFlushFailed;
+        }
+    };
+    const master = c.open("/dev/ptmx", c.O_RDWR | c.O_NOCTTY);
+    try std.testing.expect(master >= 0);
+    defer _ = c.close(master);
+    var unlocked: c_int = 0;
+    try std.testing.expectEqual(@as(c_int, 0), c.ioctl(master, c.TIOCSPTLCK, &unlocked));
+    var pty_number: c_uint = 0;
+    try std.testing.expectEqual(@as(c_int, 0), c.ioctl(master, c.TIOCGPTN, &pty_number));
+    var path_buf: [64]u8 = undefined;
+    const slave_path = try std.fmt.bufPrintSentinel(&path_buf, "/dev/pts/{d}", .{pty_number}, 0);
+    const slave = c.open(slave_path.ptr, c.O_RDWR | c.O_NOCTTY);
+    try std.testing.expect(slave >= 0);
+    defer _ = c.close(slave);
+
+    const old_stdin = c.dup(0);
+    try std.testing.expect(old_stdin >= 0);
+    defer {
+        _ = c.dup2(old_stdin, 0);
+        _ = c.close(old_stdin);
+    }
+    try std.testing.expectEqual(@as(c_int, 0), c.dup2(slave, 0));
+    var before: c.struct_termios = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.tcgetattr(0, &before));
+    try std.testing.expect(before.c_lflag & c.ICANON != 0);
+
+    const old_keepalive = disable_keepalive;
+    const old_escape_state = escape_state;
+    defer {
+        disable_keepalive = old_keepalive;
+        escape_state = old_escape_state;
+    }
+    disable_keepalive = true;
+    escape_state = .{};
+    var session = std.mem.zeroes(Session);
+    session.sol_data.max_inbound_payload_size = 64;
+    var intf = std.mem.zeroes(Intf);
+    intf.session = &session;
+    intf.ssn_params.sol_escape_char = '~';
+    intf.sendrecv = Stub.send;
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer {
+        _ = c.close(fds[0]);
+        _ = c.close(fds[1]);
+    }
+    intf.fd = fds[0];
+    Stub.deactivations = 0;
+    Stub.request_ok = false;
+    Stub.raw_on_failure = false;
+    try std.testing.expectEqual(@as(isize, 3), c.write(master, "~?\r", 3));
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, sessionLoop(&intf, 1, &writer, Stub.failWhileRaw));
+    try std.testing.expect(Stub.raw_on_failure);
+    try std.testing.expectEqual(@as(usize, 1), Stub.deactivations);
+    try std.testing.expect(Stub.request_ok);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var after: c.struct_termios = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.tcgetattr(0, &after));
+    try std.testing.expectEqual(before.c_lflag, after.c_lflag);
+    try std.testing.expectEqual(before.c_iflag, after.c_iflag);
+    try std.testing.expectEqual(before.c_oflag, after.c_oflag);
 }
 
 fn usage() void {
@@ -1216,15 +1759,11 @@ fn main(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
             usage();
             return -1;
         }
-        while (count > 0) : (count -= 1) {
-            _ = c.printf("remain loop test counter: %d\n", count);
-            const result = activate(intf, true, interval, instance);
-            if (result != 0) {
-                _ = c.printf("SOL looptest failed: %d\n", result);
-                return result;
-            }
-        }
-        return 0;
+        var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+        return loopTestTo(intf, count, interval, instance, &stdout.interface, stdout_io.trySyncC) catch |err| {
+            logInteractiveOutputError(err, stdout.err orelse error.WriteFailed);
+            return -1;
+        };
     }
     usage();
     return -1;

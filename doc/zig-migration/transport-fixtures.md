@@ -99,6 +99,9 @@ The `lanplus/sol-pty-*` cases launch ipmitool with stdin attached to a real
 pseudo-terminal via `sol_pty.py`, then feed serial bytes and escape sequences
 after activation. The C fixtures pin the RMCP+ wire, terminal output, retry
 count and cleanup.
+The selected SOL interactive text cutover checks its banner, help, escape
+acknowledgements and looptest messages against these C fixtures; the embedded
+NUL in BMC SOL data stays on the binary `fwrite` path.
 
 ### One code path for record and check
 
