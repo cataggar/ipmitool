@@ -1210,6 +1210,14 @@ pub fn build(b: *std.Build) void {
     mc_reset_step.dependOn(&b.addRunArtifact(mc_reset_unit).step);
     test_step.dependOn(mc_reset_step);
 
+    const mc_watchdog_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.watchdog ack stdout"},
+    });
+    const mc_watchdog_step = b.step("test-mc-watchdog-stdout", "Compare MC watchdog acknowledgements with C and test writer failures");
+    mc_watchdog_step.dependOn(&b.addRunArtifact(mc_watchdog_unit).step);
+    test_step.dependOn(mc_watchdog_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},

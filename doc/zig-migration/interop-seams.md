@@ -486,7 +486,16 @@ match C; pre-flush, write and final-flush failures log and return `-1`.
 `zig build test-mc-reset-stdout` compares C formatting, buffered C/Zig
 ordering and injected failures. The existing `mc_reset_*` original-C and
 selected-Zig CLI goldens cover both successful reset variants and errors.
-Other MC output remains on its existing path.
+
+The selected `mc watchdog off` and `mc watchdog reset` success acknowledgements
+also use checked Zig streaming stdout with a libc pre-flush. Their messages,
+newlines and success statuses match C, while pre-flush, write and final-flush
+failures log the phase and return `-1`; requests, completion-code errors and
+other MC output are unchanged. `zig build test-mc-watchdog-stdout` checks C
+byte parity for both messages, mixed buffered C/Zig ordering and injected
+pre-flush, early/late write and final-flush failures. The existing
+`mc_watchdog_off*` and `mc_watchdog_reset*` C/selected-Zig goldens cover the
+success and error responses.
 
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a
