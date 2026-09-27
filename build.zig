@@ -1162,6 +1162,14 @@ pub fn build(b: *std.Build) void {
     sol_payload_step.dependOn(&b.addRunArtifact(sol_payload_unit).step);
     test_step.dependOn(sol_payload_step);
 
+    const sol_info_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sol.test.sol info stdout"},
+    });
+    const sol_info_stdout_step = b.step("test-sol-info-stdout", "Compare SOL info C bytes, output ordering, and I/O failures");
+    sol_info_stdout_step.dependOn(&b.addRunArtifact(sol_info_stdout_unit).step);
+    test_step.dependOn(sol_info_stdout_step);
+
     const user_summary_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.user.test.summary stdout"},

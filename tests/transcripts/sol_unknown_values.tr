@@ -1,0 +1,65 @@
+# Distinct unknown lookups share val2str's static fallback buffer.
+default_ccode 0xc1
+
+respond get_set_in_progress
+  netfn 0x0c
+  cmd 0x22
+  match 0e 00
+  data 11 03
+end
+
+respond get_enabled
+  netfn 0x0c
+  cmd 0x22
+  match 0e 01
+  data 11 00
+end
+
+respond get_auth
+  netfn 0x0c
+  cmd 0x22
+  match 0e 02
+  data 11 0e
+end
+
+respond get_intervals
+  netfn 0x0c
+  cmd 0x22
+  match 0e 03
+  data 11 ff 00
+end
+
+respond get_retry
+  netfn 0x0c
+  cmd 0x22
+  match 0e 04
+  data 11 07 ff
+end
+
+respond get_nonvolatile_rate
+  netfn 0x0c
+  cmd 0x22
+  match 0e 05
+  data 11 0f
+end
+
+respond get_volatile_rate
+  netfn 0x0c
+  cmd 0x22
+  match 0e 06
+  data 11 05
+end
+
+respond get_payload_channel
+  netfn 0x0c
+  cmd 0x22
+  match 0e 07
+  data 11 ff
+end
+
+respond get_payload_port
+  netfn 0x0c
+  cmd 0x22
+  match 0e 08
+  data 11 ff ff
+end
