@@ -491,11 +491,25 @@ The selected `mc watchdog off` and `mc watchdog reset` success acknowledgements
 also use checked Zig streaming stdout with a libc pre-flush. Their messages,
 newlines and success statuses match C, while pre-flush, write and final-flush
 failures log the phase and return `-1`; requests, completion-code errors and
-other MC output are unchanged. `zig build test-mc-watchdog-stdout` checks C
+other watchdog output are unchanged. `zig build test-mc-watchdog-stdout` checks C
 byte parity for both messages, mixed buffered C/Zig ordering and injected
 pre-flush, early/late write and final-flush failures. The existing
 `mc_watchdog_off*` and `mc_watchdog_reset*` C/selected-Zig goldens cover the
 success and error responses.
+
+The selected `mc info` device-ID printer now streams its human-readable
+fields through checked Zig stdout, pre-flushing libc stdout before writing
+and checking every write and the final flush. The labels, decimal and
+hexadecimal widths, optional product name, ordered support bits and exact-
+length auxiliary firmware section follow the original C printer. Manufacturer
+and product lookups still use the C tables, consuming each shared unknown-name
+buffer before the next lookup. Any output failure logs its phase and returns
+`-1`; BMC request and response errors retain their existing behavior.
+`zig build test-mc-info-stdout` compares libc bytes at each field, optional
+sections and unknown lookups, buffered C/Zig order and injected I/O failures.
+The existing `mc_info*` original-C and selected-Zig CLI goldens in
+`41-mc.cases` and `30-commands.cases` retain the C oracle. Other MC output
+remains on its existing path.
 
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a

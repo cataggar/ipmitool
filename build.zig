@@ -1218,6 +1218,14 @@ pub fn build(b: *std.Build) void {
     mc_watchdog_step.dependOn(&b.addRunArtifact(mc_watchdog_unit).step);
     test_step.dependOn(mc_watchdog_step);
 
+    const mc_info_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc info stdout"},
+    });
+    const mc_info_step = b.step("test-mc-info-stdout", "Compare MC info C bytes, output ordering, and I/O failures");
+    mc_info_step.dependOn(&b.addRunArtifact(mc_info_unit).step);
+    test_step.dependOn(mc_info_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},
