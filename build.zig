@@ -1210,6 +1210,14 @@ pub fn build(b: *std.Build) void {
     mc_reset_step.dependOn(&b.addRunArtifact(mc_reset_unit).step);
     test_step.dependOn(mc_reset_step);
 
+    const mc_enables_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.global enables stdout"},
+    });
+    const mc_enables_step = b.step("test-mc-enables-stdout", "Compare MC Global Enables C bytes, statuses and output failures");
+    mc_enables_step.dependOn(&b.addRunArtifact(mc_enables_unit).step);
+    test_step.dependOn(mc_enables_step);
+
     const mc_watchdog_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.watchdog ack stdout"},

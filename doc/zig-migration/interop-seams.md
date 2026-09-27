@@ -508,8 +508,23 @@ buffer before the next lookup. Any output failure logs its phase and returns
 `zig build test-mc-info-stdout` compares libc bytes at each field, optional
 sections and unknown lookups, buffered C/Zig order and injected I/O failures.
 The existing `mc_info*` original-C and selected-Zig CLI goldens in
-`41-mc.cases` and `30-commands.cases` retain the C oracle. Other MC output
-remains on its existing path.
+`41-mc.cases` and `30-commands.cases` retain the C oracle.
+
+The selected `mc getenables` and `mc setenables` output now uses checked Zig
+streaming stdout. The seven flag rows retain C's 40-byte left alignment,
+reserved-bit gap, mask order and enabled/disabled text; setter progress,
+verification and no-change lines retain their exact newlines. Each output
+phase pre-flushes buffered libc stdout and checks its write and final flush.
+An output failure logs the phase and returns `-1`, including failures in the
+verification get called by the setter. Requests, parsing, and partial output
+before a later invalid option or request failure remain unchanged. In
+particular, the legacy setter still returns `0` if the verification *request*
+fails after successful set/no-change, but no longer ignores verification
+*output* failures. `zig build test-mc-enables-stdout` checks C byte parity,
+mixed buffered output, statuses and injected I/O failures. The existing
+`mc_getenables*` and `mc_setenables*` original-C/selected-Zig CLI goldens cover
+successful and rejected requests and option parsing. Other MC output remains
+on its existing path.
 
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a
