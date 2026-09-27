@@ -1053,9 +1053,12 @@ pub fn build(b: *std.Build) void {
         b.graph.host.result.os.tag == .linux and
         target.result.cpu.arch == b.graph.host.result.cpu.arch)
     {
+        const alive_test = b.addSystemCommand(&.{ "python3", "-B" });
+        alive_test.addFileArg(b.path("tests/event_daemon_alive.py"));
         const process_test = b.addSystemCommand(&.{ "python3", "-B" });
         process_test.addFileArg(b.path("tests/event_daemon/process.py"));
         process_test.addFileArg(ipmievd.getEmittedBin());
+        process_test.step.dependOn(&alive_test.step);
         b.step("test-event-daemon-process", "Exercise signals and daemon PID lifecycle")
             .dependOn(&process_test.step);
         test_step.dependOn(&process_test.step);
