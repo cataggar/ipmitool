@@ -1157,6 +1157,14 @@ pub fn build(b: *std.Build) void {
     b.step("test-lan-activate-stderr", "Check LAN activation stderr bytes, C logging order, and write failures")
         .dependOn(&b.addRunArtifact(lan_activate_unit).step);
 
+    const event_sample_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.event.test.sample event stdout"},
+    });
+    const event_sample_step = b.step("test-event-sample-stdout", "Compare sample event C bytes and test writer failures");
+    event_sample_step.dependOn(&b.addRunArtifact(event_sample_unit).step);
+    test_step.dependOn(event_sample_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},
