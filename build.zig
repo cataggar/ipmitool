@@ -1350,6 +1350,14 @@ pub fn build(b: *std.Build) void {
     mc_sysinfo_step.dependOn(&b.addRunArtifact(mc_sysinfo_unit).step);
     test_step.dependOn(mc_sysinfo_step);
 
+    const mc_sysinfo_set_copy_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc sysinfo SET copy"},
+    });
+    const mc_sysinfo_set_copy_step = b.step("test-mc-sysinfo-set-copy", "Compare MC sysinfo SET blocks with libc and verify request failures");
+    mc_sysinfo_set_copy_step.dependOn(&b.addRunArtifact(mc_sysinfo_set_copy_unit).step);
+    test_step.dependOn(mc_sysinfo_set_copy_step);
+
     const sel_time_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.sel.test.sel time stdout"},

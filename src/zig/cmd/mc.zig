@@ -16,8 +16,9 @@
 //!   use `log.print()` from the selected logger archive (falling back to C
 //!   `lprintf` when `log` is not selected). Watchdog countdowns use exact
 //!   integer tenths and libc's locale decimal point instead of floating-point
-//!   formatting. `strcmp`, `strlen`, `strncpy` and `strtol` still receive the
-//!   same valid inputs as C.
+//!   formatting. SET system-info strings use Zig byte lengths and zero-padded
+//!   block copies; `strcmp` and `strtol` still receive the same valid inputs
+//!   as C.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -2650,6 +2651,13 @@ fn mcSetsysinfo(intf: [*c]Intf, len: c_int, buffer: ?*anyopaque) callconv(.c) c_
     return -1;
 }
 
+fn copySysinfoSetBlock(paramdata: *[18]u8, offset: usize, source: []const u8, pos: c_int, block_len: usize) void {
+    const start: usize = @intCast(pos);
+    if (start >= source.len) return;
+    const copy_len = @min(block_len, source.len - start);
+    @memcpy(paramdata[offset..][0..copy_len], source[start..][0..copy_len]);
+}
+
 fn sysinfoMainTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int, writer: *std.Io.Writer, preflush: anytype) McOutputError!c_int {
     var infostr = [_]u8{0} ** 256;
     var paramdata = [_]u8{0} ** 18;
@@ -2676,9 +2684,10 @@ fn sysinfoMainTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int, writ
     var rc: c_int = 0;
     if (is_set != 0) {
         const str = argv[2];
+        const value = std.mem.span(str);
         var pos: c_int = 0;
         set = 0;
-        var len: c_int = @intCast(c.strlen(str));
+        var len: c_int = @intCast(value.len);
 
         // First block holds 14 bytes, all others hold 16.
         if (@divTrunc(len + 2 + 15, 16) >= maxset) {
@@ -2693,18 +2702,10 @@ fn sysinfoMainTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, is_set: c_int, writ
                 // First block is special case.
                 paramdata[2] = 0; // ascii encoding
                 paramdata[3] = @bitCast(@as(u8, @truncate(@as(c_uint, @bitCast(len))))); // length
-                _ = c.strncpy(
-                    @ptrCast(paramdata[4..].ptr),
-                    str + @as(usize, @intCast(pos)),
-                    IPMI_SYSINFO_SET0_SIZE,
-                );
+                copySysinfoSetBlock(&paramdata, 4, value, pos, IPMI_SYSINFO_SET0_SIZE);
                 pos += IPMI_SYSINFO_SET0_SIZE;
             } else {
-                _ = c.strncpy(
-                    @ptrCast(paramdata[2..].ptr),
-                    str + @as(usize, @intCast(pos)),
-                    IPMI_SYSINFO_SETN_SIZE,
-                );
+                copySysinfoSetBlock(&paramdata, 2, value, pos, IPMI_SYSINFO_SETN_SIZE);
                 pos += IPMI_SYSINFO_SETN_SIZE;
             }
             rc = mcSetsysinfo(intf, 18, &paramdata);
@@ -3147,6 +3148,169 @@ test "mc sysinfo stdout SET remains silent across block and failure statuses" {
         try std.testing.expectEqual(case.status, try sysinfoMainTo(&intf, 3, case.args, 1, &writer, Stub.preflushFail));
         try std.testing.expectEqual(case.requests, Stub.requests);
         try std.testing.expect(Stub.request_ok);
+    }
+}
+
+fn cSysinfoSetPackets(packets: *[4][18]u8, str: [*:0]const u8, param: u8, maxset: c_int) usize {
+    var len: c_int = @intCast(c.strlen(str));
+    if (@divTrunc(len + 2 + 15, 16) >= maxset)
+        len = (maxset * 16) - 2;
+
+    var pos: usize = 0;
+    var set: usize = 0;
+    while (true) {
+        @memset(&packets[set], 0);
+        packets[set][0] = param;
+        packets[set][1] = @intCast(set);
+        if (set == 0) {
+            packets[set][2] = 0;
+            packets[set][3] = @truncate(@as(c_uint, @bitCast(len)));
+            _ = c.strncpy(@ptrCast(&packets[set][4]), str + pos, IPMI_SYSINFO_SET0_SIZE);
+            pos += IPMI_SYSINFO_SET0_SIZE;
+        } else {
+            _ = c.strncpy(@ptrCast(&packets[set][2]), str + pos, IPMI_SYSINFO_SETN_SIZE);
+            pos += IPMI_SYSINFO_SETN_SIZE;
+        }
+        set += 1;
+        if (pos >= len) return set;
+    }
+}
+
+test "mc sysinfo SET copy matches libc packets for string and block boundaries" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var packets: [4][18]u8 = undefined;
+        var count: usize = 0;
+        var request_ok = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            request_ok = request_ok and req.msg.netfn_lun.netfn == netfn_app and
+                req.msg.cmd == IPMI_SET_SYS_INFO and req.msg.data_len == 18 and
+                req.msg.data != null and count < packets.len;
+            if (!request_ok) return null;
+            @memcpy(&packets[count], req.msg.data.?[0..18]);
+            count += 1;
+            response.ccode = 0;
+            return &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    const saved_verbose = c.verbose;
+    defer c.verbose = saved_verbose;
+    c.verbose = 0;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+
+    for ([_]struct { key: [*:0]u8, param: u8, maxset: c_int }{
+        .{ .key = @constCast("system_name"), .param = IPMI_SYSINFO_HOSTNAME, .maxset = 4 },
+        .{ .key = @constCast("delloem_url"), .param = IPMI_SYSINFO_DELL_URL, .maxset = 2 },
+    }) |kind| {
+        for ([_]usize{ 0, 1, 13, 14, 15, 16, 29, 30, 31, 45, 46, 47, 48, 61, 62, 63, 64, 100, 255 }) |length| {
+            var input: [280]u8 = @splat('Z');
+            for (input[0..length], 0..) |*byte, index|
+                byte.* = @as(u8, 'a') + @as(u8, @intCast(index % 26));
+            input[length] = 0;
+            var args = [_][*:0]u8{ @constCast("setsysinfo"), kind.key, @ptrCast(&input) };
+            var expected: [4][18]u8 = undefined;
+            const expected_count = cSysinfoSetPackets(&expected, args[2], kind.param, kind.maxset);
+            Stub.count = 0;
+            Stub.request_ok = true;
+            var writer: std.Io.Writer = .failing;
+            try std.testing.expectEqual(@as(c_int, 0), try sysinfoMainTo(&intf, args.len, &args, 1, &writer, Stub.preflushFail));
+            try std.testing.expect(Stub.request_ok);
+            try std.testing.expectEqual(expected_count, Stub.count);
+            for (0..expected_count) |index| {
+                try std.testing.expectEqualSlices(u8, &expected[index], &Stub.packets[index]);
+            }
+            try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+        }
+    }
+}
+
+test "mc sysinfo SET copy ignores bytes after embedded NUL when the advertised length is clamped" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var packets: [4][18]u8 = undefined;
+        var count: usize = 0;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            std.debug.assert(req.msg.cmd == IPMI_SET_SYS_INFO and req.msg.data_len == 18 and req.msg.data != null);
+            @memcpy(&packets[count], req.msg.data.?[0..18]);
+            count += 1;
+            response.ccode = 0;
+            return &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]struct { key: [*:0]u8, param: u8, maxset: c_int }{
+        .{ .key = @constCast("system_name"), .param = IPMI_SYSINFO_HOSTNAME, .maxset = 4 },
+        .{ .key = @constCast("delloem_url"), .param = IPMI_SYSINFO_DELL_URL, .maxset = 2 },
+    }) |kind| {
+        var input: [64]u8 = @splat('Z');
+        for (input[0..15], 0..) |*byte, index|
+            byte.* = @as(u8, 'a') + @as(u8, @intCast(index));
+        input[15] = 0;
+        input[31] = 0;
+        var args = [_][*:0]u8{ @constCast("setsysinfo"), kind.key, @ptrCast(&input) };
+        var expected: [4][18]u8 = undefined;
+        const expected_count = cSysinfoSetPackets(&expected, args[2], kind.param, kind.maxset);
+        try std.testing.expectEqual(@as(usize, 2), expected_count);
+        Stub.count = 0;
+        var writer: std.Io.Writer = .failing;
+        try std.testing.expectEqual(@as(c_int, 0), try sysinfoMainTo(&intf, args.len, &args, 1, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(expected_count, Stub.count);
+        for (0..expected_count) |index| {
+            try std.testing.expectEqualSlices(u8, &expected[index], &Stub.packets[index]);
+        }
+        try std.testing.expectEqual(@as(u8, if (kind.maxset == 2) 30 else 15), Stub.packets[0][3]);
+        try std.testing.expectEqual(@as(u8, 'o'), Stub.packets[1][2]);
+        try std.testing.expect(std.mem.allEqual(u8, Stub.packets[1][3..], 0));
+    }
+}
+
+test "mc sysinfo SET copy stops on second or third request failure without changing packets" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var packets: [4][18]u8 = undefined;
+        var count: usize = 0;
+        var fail_at: usize = 0;
+        var missing = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_app and
+                req.msg.cmd == IPMI_SET_SYS_INFO and req.msg.data_len == 18 and req.msg.data != null);
+            @memcpy(&packets[count], req.msg.data.?[0..18]);
+            count += 1;
+            if (count == fail_at and missing) return null;
+            response.ccode = if (count == fail_at) 0x80 else 0;
+            return &response;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var input: [80]u8 = @splat('Q');
+    input[47] = 0;
+    var args = [_][*:0]u8{ @constCast("setsysinfo"), @constCast("system_name"), @ptrCast(&input) };
+    var expected: [4][18]u8 = undefined;
+    try std.testing.expectEqual(@as(usize, 4), cSysinfoSetPackets(&expected, args[2], IPMI_SYSINFO_HOSTNAME, 4));
+    for ([_]usize{ 2, 3 }) |fail_at| {
+        for ([_]bool{ false, true }) |missing| {
+            Stub.fail_at = fail_at;
+            Stub.missing = missing;
+            Stub.count = 0;
+            var writer: std.Io.Writer = .failing;
+            try std.testing.expectEqual(@as(c_int, if (missing) -1 else 0x80), try sysinfoMainTo(&intf, args.len, &args, 1, &writer, Stub.preflushFail));
+            try std.testing.expectEqual(fail_at, Stub.count);
+            for (0..fail_at) |index| {
+                try std.testing.expectEqualSlices(u8, &expected[index], &Stub.packets[index]);
+            }
+        }
     }
 }
 

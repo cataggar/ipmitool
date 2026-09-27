@@ -665,13 +665,19 @@ on a request or completion-code error), block/encoding/length boundaries and
 original request statuses match C. Each emission pre-flushes libc stdout and
 checks writes and final flush; a failure logs its phase and returns `-1`
 without continuing requests or claiming success. `mc setsysinfo` has no
-success acknowledgement in C and remains silent, with unchanged requests
-and status. `zig build test-mc-sysinfo-stdout` covers libc byte parity,
-buffered C/Zig order, GET/SET request and status behavior and injected
+success acknowledgement in C and remains silent. Its SET packet assembly
+now uses Zig byte length and copies only the logical string bytes into each
+zeroed 18-byte block instead of libc `strlen`/`strncpy`. The original signed
+length clamp, low-byte advertised length, 14/16-byte progression, padded
+request bytes and error statuses remain unchanged. `zig build
+test-mc-sysinfo-set-copy` compares full requests with libc across length
+boundaries, early NULs and midstream failures; `zig build
+test-mc-sysinfo-stdout` covers libc byte parity, buffered C/Zig order,
+GET/SET request and status behavior and injected
 pre-flush, early/late write and final-flush failures. Original-C and
 selected-Zig `mc_getsysinfo*`/`mc_setsysinfo*` goldens remain the CLI oracle,
-including length 14/254/255 and embedded-NUL values; the GUID formatter and
-system-info assembly are unchanged.
+including GET length 14/254/255 and embedded-NUL values; the GUID formatter
+and GET system-info assembly are unchanged.
 
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a
