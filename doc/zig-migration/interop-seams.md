@@ -694,6 +694,17 @@ selected-Zig `mc_getsysinfo*`/`mc_setsysinfo*` goldens remain the CLI oracle,
 including GET length 14/254/255 and embedded-NUL values; the GUID formatter
 and GET system-info assembly are unchanged.
 
+The selected MC dispatch, GUID modes, global-enables values, watchdog literal
+options and system-info parameter names now compare typed NUL-terminated Zig
+byte slices instead of calling libc `strcmp`. The original argument guards,
+selector ordering, case sensitivity, embedded-NUL behavior, request bytes
+and statuses remain unchanged; `strchr`, watchdog numeric parsing and
+system-info SET copies are outside this change. `zig build test-mc-strcmp`
+compares libc equality for every byte and string-length boundaries, checks
+watchdog and system-info selectors, and exercises real SET requests and
+response statuses. Existing original-C, selected-MC and all-selected
+`mc_*`/`bmc_*` CLI goldens cover dispatch throughout the command tree.
+
 The selected `session info` printer also pre-flushes C stdout, then streams
 both human and CSV response fields through a checked Zig 0.16 writer with a
 checked final flush. It preserves the C labels, byte ordering, decimal/hex
