@@ -91,6 +91,7 @@ test {
     _ = @import("cmd/user.zig");
     _ = @import("cmd/event.zig");
     _ = @import("cmd/mc.zig");
+    _ = @import("cmd/sel.zig");
     _ = @import("frontend/ipmishell.zig");
     _ = @import("cmd/pef.zig");
     _ = @import("cmd/delloem.zig");
