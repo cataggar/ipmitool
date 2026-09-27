@@ -1,0 +1,32 @@
+#!golden 1
+#!case sol_info_unknown_csv
+#!section exit
+0
+#!section stdout
+Unknown (0x03),false,false,false,Unknown (0x0E),1275,0,7,2550,Unknown (0x05),Unknown (0x0F),255,65535
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 00 00 00
+< rule=get_set_in_progress ccode=0x00 len=2 data=11 03
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 01 00 00
+< rule=get_enabled ccode=0x00 len=2 data=11 00
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 02 00 00
+< rule=get_auth ccode=0x00 len=2 data=11 0e
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 03 00 00
+< rule=get_intervals ccode=0x00 len=3 data=11 ff 00
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 04 00 00
+< rule=get_retry ccode=0x00 len=3 data=11 07 ff
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 05 00 00
+< rule=get_nonvolatile_rate ccode=0x00 len=2 data=11 0f
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 06 00 00
+< rule=get_volatile_rate ccode=0x00 len=2 data=11 05
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 07 00 00
+< rule=get_payload_channel ccode=0x00 len=2 data=11 ff
+> netfn=0x0c lun=0x00 cmd=0x22 target_cmd=0x00 data=0e 08 00 00
+< rule=get_payload_port ccode=0x00 len=3 data=11 ff ff
+bye
+#!section files

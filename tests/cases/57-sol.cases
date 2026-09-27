@@ -15,6 +15,18 @@ args: -c -I dummy sol info
 transcript: sol_config.tr
 covers: sol
 
+[sol_info_unknown_human]
+desc: progress, privilege and both bit rates use distinct shared val2str unknown fallbacks
+args: -I dummy sol info
+transcript: sol_unknown_values.tr
+covers: sol
+
+[sol_info_unknown_csv]
+desc: each unknown fallback is consumed before the next CSV field lookup
+args: -c -I dummy sol info
+transcript: sol_unknown_values.tr
+covers: sol
+
 [sol_info_unsupported]
 args: -I dummy sol info
 transcript: sol_unsupported.tr

@@ -2,7 +2,7 @@
 //! `zig build -Dzig-modules=sol` in place of lib/ipmi_sol.c.
 //! The request/response and payload types are shared ABI-checked Zig mirrors;
 //! libc still handles most formatting and terminal control to preserve CLI
-//! behaviour; the payload-access status line uses checked Zig stdout.
+//! behaviour; payload-access status and SOL info results use checked Zig stdout.
 //! Diagnostics use typed `log.print()` from the same selected archive as the
 //! logger state; without the Zig logger it retains the C `lprintf` fallback.
 
@@ -86,7 +86,7 @@ fn payloadAccess(intf: *Intf, channel: u8, userid: u8, enable: c_int) callconv(.
     return 0;
 }
 
-const PayloadStatusOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+const StdoutError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
 
 fn writePayloadStatus(writer: *std.Io.Writer, channel: u8, userid: u8, enabled: bool) std.Io.Writer.Error!void {
     try writer.print("User {d} on channel {d} is {s}\n", .{
@@ -94,7 +94,7 @@ fn writePayloadStatus(writer: *std.Io.Writer, channel: u8, userid: u8, enabled: 
     });
 }
 
-fn emitPayloadStatus(writer: *std.Io.Writer, channel: u8, userid: u8, enabled: bool, preflush: anytype) PayloadStatusOutputError!void {
+fn emitPayloadStatus(writer: *std.Io.Writer, channel: u8, userid: u8, enabled: bool, preflush: anytype) StdoutError!void {
     preflush() catch return error.CStdoutFlushFailed;
     writePayloadStatus(writer, channel, userid, enabled) catch return error.StdoutWriteFailed;
     writer.flush() catch return error.StdoutFlushFailed;
@@ -270,31 +270,332 @@ fn getSolInfo(intf: *Intf, channel: u8, params: *Config) callconv(.c) c_int {
     return 0;
 }
 
+const InfoField = enum { progress, privilege, bit_rate };
+
+fn infoValue(field: InfoField, value: u8) []const u8 {
+    const table = switch (field) {
+        .progress => c.ipmi_set_in_progress_vals,
+        .privilege => c.ipmi_privlvl_vals,
+        .bit_rate => c.ipmi_bit_rate_vals,
+    };
+    return std.mem.span(@as([*:0]const u8, @ptrCast(c.val2str(value, table))));
+}
+
+fn writeSolInfo(writer: *std.Io.Writer, csv: bool, p: Config, lookup: anytype) std.Io.Writer.Error!void {
+    const enabled: []const u8 = if (p.enabled != 0) "true" else "false";
+    const encryption: []const u8 = if (p.force_encryption != 0) "true" else "false";
+    if (csv) {
+        try writer.print("{s},", .{lookup(.progress, p.set_in_progress & 3)});
+        // The original CSV printer repeats encryption instead of authentication.
+        try writer.print("{s},{s},{s},", .{ enabled, encryption, encryption });
+        try writer.print("{s},", .{lookup(.privilege, p.privilege_level)});
+        try writer.print("{d},{d},{d},{d},", .{ @as(c_int, p.character_accumulate_level) * 5, p.character_send_threshold, p.retry_count, @as(c_int, p.retry_interval) * 10 });
+        try writer.print("{s},", .{lookup(.bit_rate, p.volatile_bit_rate)});
+        try writer.print("{s},", .{lookup(.bit_rate, p.non_volatile_bit_rate)});
+        try writer.print("{d},{d}\n", .{ p.payload_channel, p.payload_port });
+    } else {
+        try writer.print("Set in progress                 : {s}\n", .{lookup(.progress, p.set_in_progress & 3)});
+        try writer.print("Enabled                         : {s}\n", .{enabled});
+        try writer.print("Force Encryption                : {s}\n", .{encryption});
+        try writer.print("Force Authentication            : {s}\n", .{if (p.force_authentication != 0) @as([]const u8, "true") else "false"});
+        try writer.print("Privilege Level                 : {s}\n", .{lookup(.privilege, p.privilege_level)});
+        try writer.print("Character Accumulate Level (ms) : {d}\n", .{@as(c_int, p.character_accumulate_level) * 5});
+        try writer.print("Character Send Threshold        : {d}\n", .{p.character_send_threshold});
+        try writer.print("Retry Count                     : {d}\n", .{p.retry_count});
+        try writer.print("Retry Interval (ms)             : {d}\n", .{@as(c_int, p.retry_interval) * 10});
+        try writer.print("Volatile Bit Rate (kbps)        : {s}\n", .{lookup(.bit_rate, p.volatile_bit_rate)});
+        try writer.print("Non-Volatile Bit Rate (kbps)    : {s}\n", .{lookup(.bit_rate, p.non_volatile_bit_rate)});
+        try writer.print("Payload Channel                 : {d} (0x{x:0>2})\n", .{ p.payload_channel, p.payload_channel });
+        try writer.print("Payload Port                    : {d}\n", .{p.payload_port});
+    }
+}
+
+fn emitSolInfo(writer: *std.Io.Writer, csv: bool, p: Config, lookup: anytype, preflush: anytype) StdoutError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeSolInfo(writer, csv, p, lookup) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 fn printSolInfo(intf: *Intf, channel: u8) c_int {
     var p = std.mem.zeroes(Config);
     if (getSolInfo(intf, channel, &p) != 0) return -1;
-    const progress = c.val2str(p.set_in_progress & 3, c.ipmi_set_in_progress_vals);
-    const privilege = c.val2str(p.privilege_level, c.ipmi_privlvl_vals);
-    const volatile_rate = c.val2str(p.volatile_bit_rate, c.ipmi_bit_rate_vals);
-    const nonvolatile_rate = c.val2str(p.non_volatile_bit_rate, c.ipmi_bit_rate_vals);
-    if (c.csv_output != 0) {
-        _ = c.printf("%s,%s,%s,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d\n", progress, choose(p.enabled != 0, "true", "false"), choose(p.force_encryption != 0, "true", "false"), choose(p.force_encryption != 0, "true", "false"), privilege, @as(c_int, p.character_accumulate_level) * 5, @as(c_int, p.character_send_threshold), @as(c_int, p.retry_count), @as(c_int, p.retry_interval) * 10, volatile_rate, nonvolatile_rate, @as(c_int, p.payload_channel), @as(c_int, p.payload_port));
-    } else {
-        _ = c.printf("Set in progress                 : %s\n", progress);
-        _ = c.printf("Enabled                         : %s\n", choose(p.enabled != 0, "true", "false"));
-        _ = c.printf("Force Encryption                : %s\n", choose(p.force_encryption != 0, "true", "false"));
-        _ = c.printf("Force Authentication            : %s\n", choose(p.force_authentication != 0, "true", "false"));
-        _ = c.printf("Privilege Level                 : %s\n", privilege);
-        _ = c.printf("Character Accumulate Level (ms) : %d\n", @as(c_int, p.character_accumulate_level) * 5);
-        _ = c.printf("Character Send Threshold        : %d\n", @as(c_int, p.character_send_threshold));
-        _ = c.printf("Retry Count                     : %d\n", @as(c_int, p.retry_count));
-        _ = c.printf("Retry Interval (ms)             : %d\n", @as(c_int, p.retry_interval) * 10);
-        _ = c.printf("Volatile Bit Rate (kbps)        : %s\n", volatile_rate);
-        _ = c.printf("Non-Volatile Bit Rate (kbps)    : %s\n", nonvolatile_rate);
-        _ = c.printf("Payload Channel                 : %d (0x%02x)\n", @as(c_int, p.payload_channel), @as(c_uint, p.payload_channel));
-        _ = c.printf("Payload Port                    : %d\n", @as(c_int, p.payload_port));
-    }
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitSolInfo(&stdout.interface, c.csv_output != 0, p, infoValue, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "SOL info stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "SOL info stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "SOL info stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
     return 0;
+}
+
+test "sol info stdout matches libc formatting at field boundaries" {
+    const Names = struct {
+        var progress: [*:0]const u8 = undefined;
+        var privilege: [*:0]const u8 = undefined;
+        var volatile_rate: [*:0]const u8 = undefined;
+        var nonvolatile_rate: [*:0]const u8 = undefined;
+        var fields: [4]InfoField = undefined;
+        var values: [4]u8 = undefined;
+        var count: usize = 0;
+
+        fn get(field: InfoField, value: u8) []const u8 {
+            fields[count] = field;
+            values[count] = value;
+            count += 1;
+            const text = switch (field) {
+                .progress => progress,
+                .privilege => privilege,
+                .bit_rate => if (count == 3) volatile_rate else nonvolatile_rate,
+            };
+            return std.mem.span(text);
+        }
+    };
+    const cases = [_]struct {
+        p: Config,
+        progress: [*:0]const u8,
+        privilege: [*:0]const u8,
+        volatile_rate: [*:0]const u8,
+        nonvolatile_rate: [*:0]const u8,
+    }{
+        .{ .p = std.mem.zeroes(Config), .progress = "set-complete", .privilege = "Unknown (0x00)", .volatile_rate = "IPMI-Over-Serial-Setting", .nonvolatile_rate = "IPMI-Over-Serial-Setting" },
+        .{ .p = .{
+            .set_in_progress = 0xff,
+            .enabled = 2,
+            .force_encryption = 0,
+            .force_authentication = 1,
+            .privilege_level = 0xfe,
+            .character_accumulate_level = 255,
+            .character_send_threshold = 255,
+            .retry_count = 255,
+            .retry_interval = 255,
+            .volatile_bit_rate = 0x0f,
+            .non_volatile_bit_rate = 0x05,
+            .payload_channel = 255,
+            .payload_port = 65535,
+        }, .progress = "Unknown (0x03)", .privilege = "Unknown (0xFE)", .volatile_rate = "Unknown (0x0F)", .nonvolatile_rate = "Unknown (0x05)" },
+        .{ .p = .{
+            .set_in_progress = 2,
+            .enabled = 0,
+            .force_encryption = 1,
+            .force_authentication = 0,
+            .privilege_level = 4,
+            .character_accumulate_level = 1,
+            .character_send_threshold = 1,
+            .retry_count = 1,
+            .retry_interval = 1,
+            .volatile_bit_rate = 10,
+            .non_volatile_bit_rate = 7,
+            .payload_channel = 10,
+            .payload_port = 623,
+        }, .progress = "commit-write", .privilege = "ADMINISTRATOR", .volatile_rate = "115.2", .nonvolatile_rate = "19.2" },
+        .{ .p = .{ .set_in_progress = 1, .privilege_level = 5, .volatile_bit_rate = 6, .non_volatile_bit_rate = 8 }, .progress = "progress,100% done", .privilege = "OEM", .volatile_rate = "9.6\x00ignored", .nonvolatile_rate = "38.4" },
+    };
+    for (cases) |case| {
+        Names.progress = case.progress;
+        Names.privilege = case.privilege;
+        Names.volatile_rate = case.volatile_rate;
+        Names.nonvolatile_rate = case.nonvolatile_rate;
+        const p = case.p;
+        const enabled = choose(p.enabled != 0, "true", "false");
+        const encryption = choose(p.force_encryption != 0, "true", "false");
+        const authentication = choose(p.force_authentication != 0, "true", "false");
+        for ([_]bool{ false, true }) |csv| {
+            Names.count = 0;
+            var expected: [1024]u8 = undefined;
+            const length = if (csv)
+                c.snprintf(
+                    &expected,
+                    expected.len,
+                    "%s,%s,%s,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d\n",
+                    case.progress,
+                    enabled,
+                    encryption,
+                    encryption,
+                    case.privilege,
+                    @as(c_int, p.character_accumulate_level) * 5,
+                    @as(c_int, p.character_send_threshold),
+                    @as(c_int, p.retry_count),
+                    @as(c_int, p.retry_interval) * 10,
+                    case.volatile_rate,
+                    case.nonvolatile_rate,
+                    @as(c_int, p.payload_channel),
+                    @as(c_int, p.payload_port),
+                )
+            else
+                c.snprintf(
+                    &expected,
+                    expected.len,
+                    "Set in progress                 : %s\n" ++
+                        "Enabled                         : %s\n" ++
+                        "Force Encryption                : %s\n" ++
+                        "Force Authentication            : %s\n" ++
+                        "Privilege Level                 : %s\n" ++
+                        "Character Accumulate Level (ms) : %d\n" ++
+                        "Character Send Threshold        : %d\n" ++
+                        "Retry Count                     : %d\n" ++
+                        "Retry Interval (ms)             : %d\n" ++
+                        "Volatile Bit Rate (kbps)        : %s\n" ++
+                        "Non-Volatile Bit Rate (kbps)    : %s\n" ++
+                        "Payload Channel                 : %d (0x%02x)\n" ++
+                        "Payload Port                    : %d\n",
+                    case.progress,
+                    enabled,
+                    encryption,
+                    authentication,
+                    case.privilege,
+                    @as(c_int, p.character_accumulate_level) * 5,
+                    @as(c_int, p.character_send_threshold),
+                    @as(c_int, p.retry_count),
+                    @as(c_int, p.retry_interval) * 10,
+                    case.volatile_rate,
+                    case.nonvolatile_rate,
+                    @as(c_int, p.payload_channel),
+                    @as(c_uint, p.payload_channel),
+                    @as(c_int, p.payload_port),
+                );
+            try std.testing.expect(length >= 0 and length < expected.len);
+            var actual: [1024]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&actual);
+            try writeSolInfo(&writer, csv, p, Names.get);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], writer.buffered());
+            try std.testing.expectEqual(@as(usize, 4), Names.count);
+            try std.testing.expectEqualSlices(InfoField, &.{ .progress, .privilege, .bit_rate, .bit_rate }, &Names.fields);
+            try std.testing.expectEqualSlices(u8, &.{ p.set_in_progress & 3, p.privilege_level, p.volatile_bit_rate, p.non_volatile_bit_rate }, &Names.values);
+        }
+    }
+}
+
+test "sol info stdout consumes shared val2str unknown fallback before next lookup" {
+    const Shared = struct {
+        var text: [32]u8 = undefined;
+        fn get(_: InfoField, value: u8) []const u8 {
+            const length = c.snprintf(&text, text.len, "Unknown (0x%02X)", @as(c_uint, value));
+            std.debug.assert(length > 0 and length < text.len);
+            return text[0..@intCast(length)];
+        }
+    };
+    const p: Config = .{
+        .set_in_progress = 3,
+        .privilege_level = 0x0e,
+        .volatile_bit_rate = 0x05,
+        .non_volatile_bit_rate = 0x0f,
+    };
+    for ([_]bool{ false, true }) |csv| {
+        var storage: [640]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeSolInfo(&writer, csv, p, Shared.get);
+        try std.testing.expectEqualStrings(
+            if (csv)
+                "Unknown (0x03),false,false,false,Unknown (0x0E),0,0,0,0,Unknown (0x05),Unknown (0x0F),0,0\n"
+            else
+                "Set in progress                 : Unknown (0x03)\n" ++
+                    "Enabled                         : false\n" ++
+                    "Force Encryption                : false\n" ++
+                    "Force Authentication            : false\n" ++
+                    "Privilege Level                 : Unknown (0x0E)\n" ++
+                    "Character Accumulate Level (ms) : 0\n" ++
+                    "Character Send Threshold        : 0\n" ++
+                    "Retry Count                     : 0\n" ++
+                    "Retry Interval (ms)             : 0\n" ++
+                    "Volatile Bit Rate (kbps)        : Unknown (0x05)\n" ++
+                    "Non-Volatile Bit Rate (kbps)    : Unknown (0x0F)\n" ++
+                    "Payload Channel                 : 0 (0x00)\n" ++
+                    "Payload Port                    : 0\n",
+            writer.buffered(),
+        );
+    }
+}
+
+test "sol info stdout detects preflush early late and final flush failures" {
+    const Stub = struct {
+        var lookups: usize = 0;
+        fn get(field: InfoField, _: u8) []const u8 {
+            lookups += 1;
+            return switch (field) {
+                .progress => "commit-write",
+                .privilege => "ADMINISTRATOR",
+                .bit_rate => "115.2",
+            };
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const p: Config = .{ .set_in_progress = 2, .enabled = 1, .force_encryption = 1, .privilege_level = 4, .volatile_bit_rate = 10, .non_volatile_bit_rate = 10 };
+    var full: [640]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&full);
+    Stub.lookups = 0;
+    try std.testing.expectError(error.CStdoutFlushFailed, emitSolInfo(&writer, true, p, Stub.get, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), Stub.lookups);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitSolInfo(&early, true, p, Stub.get, Stub.preflushOk));
+
+    const prefix =
+        "Set in progress                 : commit-write\n" ++
+        "Enabled                         : true\n" ++
+        "Force Encryption                : true\n" ++
+        "Force Authentication            : false\n" ++
+        "Privilege Level                 : ADMINISTRATOR\n";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitSolInfo(&late, false, p, Stub.get, Stub.preflushOk));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitSolInfo(&writer, true, p, Stub.get, Stub.preflushOk));
+    try std.testing.expectEqualStrings("commit-write,true,true,true,ADMINISTRATOR,0,0,0,0,115.2,115.2,0,0\n", writer.buffered());
+}
+
+test "sol info stdout preserves preceding buffered C and subsequent C ordering" {
+    const Stub = struct {
+        var rates: usize = 0;
+        fn get(field: InfoField, _: u8) []const u8 {
+            return switch (field) {
+                .progress => "commit-write",
+                .privilege => "ADMINISTRATOR",
+                .bit_rate => blk: {
+                    rates += 1;
+                    break :blk if (rates == 1) "115.2" else "19.2";
+                },
+            };
+        }
+    };
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("C before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    Stub.rates = 0;
+    try emitSolInfo(&stdout.interface, true, .{ .set_in_progress = 2, .enabled = 1, .privilege_level = 4, .volatile_bit_rate = 10, .non_volatile_bit_rate = 7 }, Stub.get, stdout_io.trySyncC);
+    _ = c.printf("|C after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [256]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("C before|commit-write,true,false,false,ADMINISTRATOR,0,0,0,0,115.2,19.2,0,0\n|C after\n", captured[0..@intCast(length)]);
 }
 
 fn isValidU8(value: [*:0]const u8, param: [*:0]const u8, min: u8, max: u8, out: *u8) callconv(.c) c_int {

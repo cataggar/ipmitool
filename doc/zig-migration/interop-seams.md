@@ -521,6 +521,19 @@ with libc formatting, checks mixed C/Zig ordering and injects pre-flush,
 early, late and final-flush failures. Other SOL output and the interactive
 session are unchanged.
 
+The selected `sol info` CSV and human result printer streams through checked
+Zig stdout after a checked C stdout pre-flush. Its existing nine parameter
+requests, error statuses and diagnostics are unchanged. CSV retains the C
+printer's duplicated force-encryption field; human labels, spacing, decimal
+scales, lowercase channel hex and final newlines remain byte-identical.
+Each `val2str` result is written before the next lookup because unknown values
+reuse one C fallback buffer. A write or final-flush error logs and returns
+`-1`. `zig build test-sol-info-stdout` compares libc-format boundary values
+and tests fallback-buffer reuse, mixed C/Zig output order and pre-flush,
+early/late write and final-flush failures. The `sol_info_*` C and selected Zig
+goldens additionally check all original request/error paths and distinct
+unknown fallbacks in both output formats; only SOL info result printing moved.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print
