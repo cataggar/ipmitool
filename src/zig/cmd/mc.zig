@@ -1317,8 +1317,13 @@ fn emitMcGuid(
 }
 
 fn printMcGuid(intf: *Intf, guid_mode: c.ipmi_guid_mode_t, writer: *std.Io.Writer, evaluate: anytype, preflush: anytype) McOutputError!c_int {
-    var guid_data: [@sizeOf(c.ipmi_guid_t)]u8 = undefined;
-    const rc = mcGetGuid(intf, @ptrCast(@alignCast(&guid_data)));
+    var guid_data: c.ipmi_guid_t = undefined;
+    comptime {
+        if (@sizeOf(c.ipmi_guid_t) != 16 or
+            @alignOf(@TypeOf(guid_data)) < @alignOf(c.ipmi_guid_t))
+            @compileError("MC GUID request storage must match the 16-byte C GUID ABI");
+    }
+    const rc = mcGetGuid(intf, &guid_data);
     if (evaluate(rc) != 0) return -1;
 
     var buf: [GUID_STR_MAXLEN + 1]u8 = undefined;
