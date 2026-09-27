@@ -24,11 +24,11 @@
 //! The first prompted password must be saved before asking for confirmation;
 //! the bounded copy and request buffer are wiped after use. See issue #39.
 //!
-//! Everything this module still needs from C - `printf`, `val2str`,
+//! Everything this module still needs from C - `snprintf`, `val2str`,
 //! `eval_ccode`, `getpass`, `str2int`, `str2uchar` and the `is_ipmi_*`
 //! validators - is reached through the `ipmi_c` bridge. Diagnostics use the
 //! shared typed logger, which falls back to C `lprintf` when Zig logging is
-//! not selected. The list, summary and password-test results use checked Zig stdout.
+//! not selected. User output uses checked Zig stdout.
 
 const std = @import("std");
 
@@ -817,6 +817,115 @@ test "password test stdout orders buffered C output before and after Zig" {
     try std.testing.expectEqualStrings("before|Success\n|after\n", captured[0..@intCast(length)]);
 }
 
+const UserWriteAck = enum { privilege, password };
+const UserWriteAckOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeUserWriteAck(writer: *std.Io.Writer, action: UserWriteAck, user_id: u8) std.Io.Writer.Error!void {
+    const command = switch (action) {
+        .privilege => "Set Privilege Level",
+        .password => "Set User Password",
+    };
+    try writer.print("{s} command successful (user {d})\n", .{ command, user_id });
+}
+
+fn emitUserWriteAck(writer: *std.Io.Writer, action: UserWriteAck, user_id: u8, preflush: anytype) UserWriteAckOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeUserWriteAck(writer, action, user_id) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn printUserWriteAck(action: UserWriteAck, user_id: u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitUserWriteAck(&stdout.interface, action, user_id, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "User write acknowledgement stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "User write acknowledgement stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "User write acknowledgement stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+    return 0;
+}
+
+test "user write acknowledgement stdout matches C for both commands and user IDs" {
+    for ([_]UserWriteAck{ .privilege, .password }) |action| {
+        const format: [*:0]const u8 = switch (action) {
+            .privilege => "Set Privilege Level command successful (user %d)\n",
+            .password => "Set User Password command successful (user %d)\n",
+        };
+        for ([_]u8{ 0, 1, 9, 10, 63 }) |user_id| {
+            var expected: [80]u8 = undefined;
+            const n = c.snprintf(&expected, expected.len, format, @as(c_int, user_id));
+            try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+            var storage: [80]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeUserWriteAck(&writer, action, user_id);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
+
+test "user write acknowledgement stdout propagates preflush, write and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    for ([_]UserWriteAck{ .privilege, .password }) |action| {
+        var storage: [80]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectError(error.CStdoutFlushFailed, emitUserWriteAck(&writer, action, 63, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+        var early: std.Io.Writer = .failing;
+        try std.testing.expectError(error.StdoutWriteFailed, emitUserWriteAck(&early, action, 63, Stub.preflushOk));
+        var short: [4]u8 = undefined;
+        var late = std.Io.Writer.fixed(&short);
+        try std.testing.expectError(error.StdoutWriteFailed, emitUserWriteAck(&late, action, 63, Stub.preflushOk));
+        try std.testing.expectEqualStrings("Set ", late.buffered());
+        writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        try std.testing.expectError(error.StdoutFlushFailed, emitUserWriteAck(&writer, action, 63, Stub.preflushOk));
+        try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "Set "));
+    }
+}
+
+test "user write acknowledgement stdout orders buffered C and Zig for both commands" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitUserWriteAck(&stdout.interface, .privilege, 2, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitUserWriteAck(&stdout.interface, .password, 63, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [160]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Set Privilege Level command successful (user 2)\n" ++
+            "|between|Set User Password command successful (user 63)\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Usage and the password prompt
 // ---------------------------------------------------------------------------
@@ -971,13 +1080,8 @@ fn userPriv(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_int
             .{@as(c_int, user_access.user_id)},
         );
         return -1;
-    } else {
-        _ = c.printf(
-            "Set Privilege Level command successful (user %d)\n",
-            @as(c_int, user_access.user_id),
-        );
-        return 0;
     }
+    return printUserWriteAck(.privilege, user_access.user_id);
 }
 
 /// `ipmi_user_mod()`: the `disable` and `enable` subcommands.
@@ -1094,13 +1198,8 @@ fn userPassword(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c
             .{@as(c_int, user_id)},
         );
         return -1;
-    } else {
-        _ = c.printf(
-            "Set User Password command successful (user %d)\n",
-            @as(c_int, user_id),
-        );
-        return 0;
     }
+    return printUserWriteAck(.password, user_id);
 }
 
 /// `ipmi_user_name()`: the `set name` subcommand.

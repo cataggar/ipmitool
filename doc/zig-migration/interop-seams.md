@@ -550,6 +550,15 @@ bytes, mixed buffered C/Zig order, and pre-flush, early/late write and
 final-flush errors. The existing `user_test_*` C/selected-Zig CLI goldens
 cover success and failure codes.
 
+The selected `user priv` and `user set password` success acknowledgements
+stream through checked Zig stdout after a libc pre-flush. They preserve the
+C wording, user IDs, newline and status, while pre-flush, write and final-flush
+failures log the phase and return `-1`. Request failures and the other user
+subcommands retain their existing behavior. `zig build test-user-write-ack-stdout`
+checks libc byte parity, C/Zig buffered output order and injected I/O failures.
+The existing `user_priv_*` and `user_pw_*` original-C and selected-Zig CLI
+goldens cover successful and rejected requests and option parsing.
+
 The selected LAN v1.5 Activate Session completion-code path now writes only
 the `Activate Session error:` prefix with Zig stderr I/O. It deliberately
 has no newline: the immediately following `lprintf` starts with a tab on
