@@ -493,6 +493,69 @@ const ipm_dev_adtl_dev_support_table = [8]?[*:0]const u8{
     "Chassis Device",
 };
 
+const McDeviceIdNames = struct {
+    fn manufacturer(mfg: u32) []const u8 {
+        return std.mem.span(c.val2str(mfg, c.ipmi_oem_info));
+    }
+
+    fn product(mfg: u32, id: u16) ?[]const u8 {
+        const name = c.oemval2str(mfg, id, c.ipmi_oem_product_info);
+        return if (name == null) null else std.mem.span(name);
+    }
+};
+
+fn writeMcDeviceid(
+    writer: *std.Io.Writer,
+    devid: *c.struct_ipm_devid_rsp,
+    data_len: c_int,
+    comptime Names: type,
+) std.Io.Writer.Error!void {
+    try writer.print("Device ID                 : {d}\n", .{devid.device_id});
+    try writer.print("Device Revision           : {d}\n", .{devid.device_revision & 0x0f});
+    try writer.print("Firmware Revision         : {d}.{x:0>2}\n", .{ devid.fw_rev1 & 0x7f, devid.fw_rev2 });
+    try writer.print("IPMI Version              : {x}.{x}\n", .{ devid.ipmi_version & 0x0f, devid.ipmi_version >> 4 });
+
+    const mfg = c.ipmi24toh(&devid.manufacturer_id);
+    try writer.print("Manufacturer ID           : {d}\n", .{mfg});
+    try writer.print("Manufacturer Name         : {s}\n", .{Names.manufacturer(mfg)});
+
+    const product_id = c.ipmi16toh(&devid.product_id);
+    try writer.print(
+        "Product ID                : {d} (0x{x:0>2}{x:0>2})\n",
+        .{ le16(&devid.product_id), devid.product_id[1], devid.product_id[0] },
+    );
+    if (Names.product(mfg, product_id)) |name| {
+        try writer.print("Product Name              : {s}\n", .{name});
+    }
+
+    try writer.print("Device Available          : {s}\n", .{if (devid.fw_rev1 & 0x80 != 0) "no" else "yes"});
+    try writer.print("Provides Device SDRs      : {s}\n", .{if (devid.device_revision & 0x80 != 0) "yes" else "no"});
+    try writer.writeAll("Additional Device Support :\n");
+    for (ipm_dev_adtl_dev_support_table, 0..) |name, i| {
+        if (devid.adtl_device_support & (@as(u8, 1) << @intCast(i)) != 0) {
+            try writer.print("    {s}\n", .{std.mem.span(name.?)});
+        }
+    }
+    if (data_len == @sizeOf(c.struct_ipm_devid_rsp)) {
+        try writer.writeAll("Aux Firmware Rev Info     : \n");
+        for (devid.aux_fw_rev) |revision| {
+            try writer.print("    0x{x:0>2}\n", .{revision});
+        }
+    }
+}
+
+fn emitMcDeviceid(
+    writer: *std.Io.Writer,
+    devid: *c.struct_ipm_devid_rsp,
+    data_len: c_int,
+    comptime Names: type,
+    preflush: anytype,
+) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcDeviceid(writer, devid, data_len, Names) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 /// `ipmi_mc_get_deviceid()`.
 fn mcGetDeviceid(intf: *Intf) c_int {
     var req = std.mem.zeroes(Request);
@@ -511,62 +574,199 @@ fn mcGetDeviceid(intf: *Intf) c_int {
 
     const devid: *c.struct_ipm_devid_rsp = @ptrCast(@alignCast(&rsp.data[0]));
 
-    _ = c.printf("Device ID                 : %i\n", @as(c_int, devid.device_id));
-    _ = c.printf("Device Revision           : %i\n", @as(c_int, devid.device_revision & 0x0F));
-    _ = c.printf(
-        "Firmware Revision         : %u.%02x\n",
-        @as(c_uint, devid.fw_rev1 & 0x7f),
-        @as(c_uint, devid.fw_rev2),
-    );
-    _ = c.printf(
-        "IPMI Version              : %x.%x\n",
-        @as(c_uint, devid.ipmi_version & 0x0F),
-        @as(c_uint, (devid.ipmi_version & 0xF0) >> 4),
-    );
-    const mfg = c.ipmi24toh(&devid.manufacturer_id);
-    _ = c.printf("Manufacturer ID           : %lu\n", @as(c_long, mfg));
-    _ = c.printf("Manufacturer Name         : %s\n", c.val2str(mfg, c.ipmi_oem_info));
-
-    _ = c.printf(
-        "Product ID                : %u (0x%02x%02x)\n",
-        @as(c_uint, c.buf2short(&devid.product_id)),
-        @as(c_uint, devid.product_id[1]),
-        @as(c_uint, devid.product_id[0]),
-    );
-
-    const product = c.oemval2str(mfg, c.ipmi16toh(&devid.product_id), c.ipmi_oem_product_info);
-
-    if (product != null) {
-        _ = c.printf("Product Name              : %s\n", product);
-    }
-
-    _ = c.printf(
-        "Device Available          : %s\n",
-        pick(devid.fw_rev1 & 0x80 != 0, "no", "yes"),
-    );
-    _ = c.printf(
-        "Provides Device SDRs      : %s\n",
-        pick(devid.device_revision & 0x80 != 0, "yes", "no"),
-    );
-    _ = c.printf("Additional Device Support :\n");
-    for (ipm_dev_adtl_dev_support_table, 0..) |name, i| {
-        if (devid.adtl_device_support & (@as(u8, 1) << @intCast(i)) != 0) {
-            _ = c.printf("    %s\n", name);
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitMcDeviceid(&stdout.interface, devid, rsp.data_len, McDeviceIdNames, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "MC info stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "MC info stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "MC info stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
         }
-    }
-    if (rsp.data_len == @sizeOf(c.struct_ipm_devid_rsp)) {
-        _ = c.printf("Aux Firmware Rev Info     : \n");
-        // These values could be looked-up by vendor if documented, so we put
-        // them on individual lines for better treatment later.
-        _ = c.printf(
-            "    0x%02x\n    0x%02x\n    0x%02x\n    0x%02x\n",
-            @as(c_uint, devid.aux_fw_rev[0]),
-            @as(c_uint, devid.aux_fw_rev[1]),
-            @as(c_uint, devid.aux_fw_rev[2]),
-            @as(c_uint, devid.aux_fw_rev[3]),
-        );
-    }
+        return -1;
+    };
     return 0;
+}
+
+fn expectMcDeviceidCField(actual: []const u8, offset: *usize, comptime fmt: [*:0]const u8, args: anytype) !void {
+    var expected: [128]u8 = undefined;
+    const n = @call(.auto, c.snprintf, .{ &expected, expected.len, fmt } ++ args);
+    try std.testing.expect(n >= 0 and n < expected.len);
+    const end = offset.* + @as(usize, @intCast(n));
+    try std.testing.expect(end <= actual.len);
+    try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], actual[offset.*..end]);
+    offset.* = end;
+}
+
+const McDeviceIdTestNames = struct {
+    var unknown: [32]u8 = undefined;
+    fn manufacturer(mfg: u32) [*:0]const u8 {
+        if (mfg == 343) return "Intel Corporation";
+        _ = c.snprintf(&unknown, unknown.len, "Unknown (0x%02X)", @as(c_uint, mfg));
+        return @ptrCast(&unknown);
+    }
+    fn product(mfg: u32, id: u16) ?[*:0]const u8 {
+        if (mfg == 343 and id == 40) return "S5000PAL";
+        _ = c.snprintf(&unknown, unknown.len, "Unknown (0x%02X)", @as(c_uint, id));
+        return @ptrCast(&unknown);
+    }
+};
+
+const McDeviceIdNoProduct = struct {
+    fn manufacturer(mfg: u32) [*:0]const u8 {
+        return McDeviceIdTestNames.manufacturer(mfg);
+    }
+    fn product(_: u32, _: u16) ?[*:0]const u8 {
+        return null;
+    }
+};
+
+test "mc info stdout matches C at every field and optional section" {
+    const cases = [_]struct { bytes: [15]u8, len: c_int, no_product: bool = false }{
+        .{ .bytes = .{ 0x7f, 0x0f, 0x81, 0x99, 0x51, 0x41, 0x57, 0x01, 0x00, 0x28, 0x00, 0, 0, 0, 0 }, .len = 11 },
+        .{ .bytes = .{ 0xb7, 0x59, 0xc3, 0x45, 0x36, 0x82, 0xb1, 0xc2, 0xf3, 0xd4, 0xe5, 0x1a, 0x2b, 0x3c, 0x4d }, .len = 15 },
+        .{ .bytes = .{ 0xff, 0x8f, 0xff, 0x00, 0xfa, 0xff, 0xb1, 0xc2, 0xf3, 0xd4, 0xe5, 0x00, 0x01, 0x0f, 0xff }, .len = 16 },
+        .{ .bytes = .{ 0, 0, 0, 0xff, 0, 0, 0x57, 0x01, 0x00, 0x28, 0x00, 0, 0, 0, 0 }, .len = 15, .no_product = true },
+    };
+    for (cases) |case| {
+        var devid: c.struct_ipm_devid_rsp = undefined;
+        @memcpy(std.mem.asBytes(&devid), &case.bytes);
+        var storage: [1024]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        if (case.no_product) {
+            try writeMcDeviceid(&writer, &devid, case.len, McDeviceIdNoProduct);
+        } else {
+            try writeMcDeviceid(&writer, &devid, case.len, McDeviceIdTestNames);
+        }
+        const actual = writer.buffered();
+        var offset: usize = 0;
+        try expectMcDeviceidCField(actual, &offset, "Device ID                 : %i\n", .{@as(c_int, devid.device_id)});
+        try expectMcDeviceidCField(actual, &offset, "Device Revision           : %i\n", .{@as(c_int, devid.device_revision & 0x0f)});
+        try expectMcDeviceidCField(actual, &offset, "Firmware Revision         : %u.%02x\n", .{ @as(c_uint, devid.fw_rev1 & 0x7f), @as(c_uint, devid.fw_rev2) });
+        try expectMcDeviceidCField(actual, &offset, "IPMI Version              : %x.%x\n", .{ @as(c_uint, devid.ipmi_version & 0x0f), @as(c_uint, devid.ipmi_version >> 4) });
+        const mfg = c.ipmi24toh(&devid.manufacturer_id);
+        try expectMcDeviceidCField(actual, &offset, "Manufacturer ID           : %lu\n", .{@as(c_long, mfg)});
+        try expectMcDeviceidCField(actual, &offset, "Manufacturer Name         : %s\n", .{McDeviceIdTestNames.manufacturer(mfg)});
+        try expectMcDeviceidCField(actual, &offset, "Product ID                : %u (0x%02x%02x)\n", .{
+            @as(c_uint, c.ipmi16toh(&devid.product_id)),
+            @as(c_uint, devid.product_id[1]),
+            @as(c_uint, devid.product_id[0]),
+        });
+        if (!case.no_product) {
+            const product = McDeviceIdTestNames.product(mfg, c.ipmi16toh(&devid.product_id));
+            try std.testing.expect(product != null);
+            try expectMcDeviceidCField(actual, &offset, "Product Name              : %s\n", .{product});
+        }
+        try expectMcDeviceidCField(actual, &offset, "Device Available          : %s\n", .{pick(devid.fw_rev1 & 0x80 != 0, "no", "yes")});
+        try expectMcDeviceidCField(actual, &offset, "Provides Device SDRs      : %s\n", .{pick(devid.device_revision & 0x80 != 0, "yes", "no")});
+        try expectMcDeviceidCField(actual, &offset, "Additional Device Support :\n", .{});
+        for (ipm_dev_adtl_dev_support_table, 0..) |name, i| {
+            if (devid.adtl_device_support & (@as(u8, 1) << @intCast(i)) != 0) {
+                try expectMcDeviceidCField(actual, &offset, "    %s\n", .{name});
+            }
+        }
+        if (case.len == @sizeOf(c.struct_ipm_devid_rsp)) {
+            try expectMcDeviceidCField(actual, &offset, "Aux Firmware Rev Info     : \n", .{});
+            for (devid.aux_fw_rev) |revision| {
+                try expectMcDeviceidCField(actual, &offset, "    0x%02x\n", .{@as(c_uint, revision)});
+            }
+        }
+        try std.testing.expectEqual(actual.len, offset);
+    }
+}
+
+test "mc info stdout consumes shared manufacturer fallback before product lookup" {
+    const Shared = struct {
+        var text: [32]u8 = undefined;
+        fn manufacturer(_: u32) []const u8 {
+            const n = c.snprintf(&text, text.len, "Unknown (0x%02X)", @as(c_uint, 0xf3c2b1));
+            return text[0..@intCast(n)];
+        }
+        fn product(_: u32, _: u16) ?[]const u8 {
+            const n = c.snprintf(&text, text.len, "Unknown (0x%02X)", @as(c_uint, 0xe5d4));
+            return text[0..@intCast(n)];
+        }
+    };
+    var devid = std.mem.zeroes(c.struct_ipm_devid_rsp);
+    devid.manufacturer_id = .{ 0xb1, 0xc2, 0xf3 };
+    devid.product_id = .{ 0xd4, 0xe5 };
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writeMcDeviceid(&writer, &devid, 11, Shared);
+    try std.testing.expect(std.mem.indexOf(u8, writer.buffered(), "Manufacturer Name         : Unknown (0xF3C2B1)\n") != null);
+    try std.testing.expect(std.mem.indexOf(u8, writer.buffered(), "Product Name              : Unknown (0xE5D4)\n") != null);
+}
+
+test "mc info stdout reports preflush, early, late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var devid = std.mem.zeroes(c.struct_ipm_devid_rsp);
+    devid.manufacturer_id = .{ 0xb1, 0xc2, 0xf3 };
+    devid.product_id = .{ 0xd4, 0xe5 };
+    devid.adtl_device_support = 0xff;
+    devid.aux_fw_rev = .{ 0, 1, 0xfe, 0xff };
+    var storage: [1024]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcDeviceid(&writer, &devid, 15, McDeviceIdTestNames, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcDeviceid(&early, &devid, 15, McDeviceIdTestNames, Stub.preflushOk));
+
+    try writeMcDeviceid(&writer, &devid, 15, McDeviceIdTestNames);
+    const expected = writer.buffered();
+    var short: [1024]u8 = undefined;
+    var late = std.Io.Writer.fixed(short[0 .. expected.len - 1]);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcDeviceid(&late, &devid, 15, McDeviceIdTestNames, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected[0 .. expected.len - 1], late.buffered());
+
+    var final_storage: [1024]u8 = undefined;
+    var final = std.Io.Writer.fixed(&final_storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcDeviceid(&final, &devid, 15, McDeviceIdTestNames, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected, final.buffered());
+}
+
+test "mc info stdout orders buffered C output around Zig output" {
+    var devid = std.mem.zeroes(c.struct_ipm_devid_rsp);
+    devid.device_id = 0x7f;
+    devid.manufacturer_id = .{ 0x57, 0x01, 0 };
+    devid.product_id = .{ 0x28, 0 };
+    var expected_storage: [512]u8 = undefined;
+    var expected_writer = std.Io.Writer.fixed(&expected_storage);
+    try expected_writer.writeAll("before|");
+    try writeMcDeviceid(&expected_writer, &devid, 11, McDeviceIdTestNames);
+    try expected_writer.writeAll("|after\n");
+
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitMcDeviceid(&stdout.interface, &devid, 11, McDeviceIdTestNames, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [512]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualSlices(u8, expected_writer.buffered(), captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------
