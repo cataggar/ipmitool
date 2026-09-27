@@ -12,13 +12,14 @@
 //!
 //! Four things are worth knowing before reading on:
 //!
-//! * **Formatting stays in libc.** `printf` and `snprintf` still use `ipmi_c`;
+//! * **Most formatting stays in libc.** `printf` and `snprintf` still use `ipmi_c`;
 //!   diagnostics use `log.print()` from the selected logger archive, with the
 //!   C `lprintf` fallback when `log` is not selected. libc still renders
 //!   `%3d`, `%08lXh`, `%-22s` and `%s` on a `buf2str()` result. `strcmp`,
 //!   `strncmp`, `strtok_r` and `str2uchar` receive the same pointers as C,
 //!   including writable `argv` strings that `strtok_r()` splits in place.
 //!   The `power_usage` format is a compile-time constant, never user input.
+//!   Chassis self-test results use checked Zig stdout.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -48,6 +49,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
@@ -473,7 +475,33 @@ const broken_dev_vals = [_]ValStr{
 };
 
 /// `ipmi_chassis_selftest()`.
-fn chassisSelftest(intf: *Intf) c_int {
+const SelftestOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisSelftest(writer: *std.Io.Writer, code: u8, detail: u8) std.Io.Writer.Error!void {
+    try writer.writeAll("Self Test Results    : ");
+    switch (code) {
+        0x55 => try writer.writeAll("passed\n"),
+        0x56 => try writer.writeAll("not implemented\n"),
+        0x57 => {
+            try writer.writeAll("device error\n");
+            for (broken_dev_vals[0..8], 0..) |entry, bit| {
+                if (detail & (@as(u8, 1) << @intCast(bit)) != 0) {
+                    try writer.print("                       [{s}]\n", .{std.mem.span(entry.str.?)});
+                }
+            }
+        },
+        0x58 => try writer.print("Fatal hardware error: {x:0>2}h\n", .{detail}),
+        else => try writer.print("Device-specific failure {x:0>2}h:{x:0>2}h\n", .{ code, detail }),
+    }
+}
+
+fn emitChassisSelftest(writer: *std.Io.Writer, code: u8, detail: u8, preflush: anytype) SelftestOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisSelftest(writer, code, detail) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisSelftestTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) SelftestOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_app;
     req.msg.cmd = 0x4;
@@ -487,31 +515,143 @@ fn chassisSelftest(intf: *Intf) c_int {
         return -1;
     }
 
-    _ = c.printf("Self Test Results    : ");
-    switch (rsp.data[0]) {
-        0x55 => _ = c.printf("passed\n"),
-        0x56 => _ = c.printf("not implemented\n"),
-        0x57 => {
-            _ = c.printf("device error\n");
-            var i: u4 = 0;
-            while (i < 8) : (i += 1) {
-                if (rsp.data[1] & (@as(u8, 1) << @intCast(i)) != 0) {
-                    _ = c.printf(
+    try emitChassisSelftest(writer, rsp.data[0], rsp.data[1], preflush);
+    return 0;
+}
+
+/// `ipmi_chassis_selftest()`.
+fn chassisSelftest(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisSelftestTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis selftest stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis selftest stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis selftest stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis selftest stdout matches C codes and failure bits" {
+    for ([_]u8{ 0, 1, 2, 4, 8, 16, 32, 64, 128, 0x55, 0xaa, 0xff }) |bits| {
+        for ([_]u8{ 0x55, 0x56, 0x57, 0x58, 0x80 }) |code| {
+            var expected: [512]u8 = undefined;
+            const first = c.snprintf(&expected, expected.len, "Self Test Results    : ");
+            try std.testing.expect(first > 0);
+            var length: usize = @intCast(first);
+            const next = switch (code) {
+                0x55 => c.snprintf(@ptrCast(&expected[length]), expected.len - length, "passed\n"),
+                0x56 => c.snprintf(@ptrCast(&expected[length]), expected.len - length, "not implemented\n"),
+                0x57 => c.snprintf(@ptrCast(&expected[length]), expected.len - length, "device error\n"),
+                0x58 => c.snprintf(@ptrCast(&expected[length]), expected.len - length, "Fatal hardware error: %02xh\n", @as(c_uint, bits)),
+                else => c.snprintf(@ptrCast(&expected[length]), expected.len - length, "Device-specific failure %02xh:%02xh\n", @as(c_uint, code), @as(c_uint, bits)),
+            };
+            try std.testing.expect(next > 0 and @as(usize, @intCast(next)) < expected.len - length);
+            length += @intCast(next);
+            if (code == 0x57) {
+                for (0..8) |bit| {
+                    if (bits & (@as(u8, 1) << @intCast(bit)) == 0) continue;
+                    const n = c.snprintf(
+                        @ptrCast(&expected[length]),
+                        expected.len - length,
                         "                       [%s]\n",
-                        c.val2str(@as(u32, i), @ptrCast(&broken_dev_vals)),
+                        c.val2str(@intCast(bit), @ptrCast(&broken_dev_vals)),
                     );
+                    try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len - length);
+                    length += @intCast(n);
                 }
             }
-        },
-        0x58 => _ = c.printf("Fatal hardware error: %02xh\n", @as(c_uint, rsp.data[1])),
-        else => _ = c.printf(
-            "Device-specific failure %02xh:%02xh\n",
-            @as(c_uint, rsp.data[0]),
-            @as(c_uint, rsp.data[1]),
-        ),
+            var storage: [512]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeChassisSelftest(&writer, code, bits);
+            try std.testing.expectEqualSlices(u8, expected[0..length], writer.buffered());
+        }
     }
+}
 
-    return 0;
+test "chassis selftest stdout reports preflush, write and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisSelftest(&writer, 0x57, 0xff, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisSelftest(&early, 0x55, 0, Stub.preflushOk));
+    var short: [23]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisSelftest(&late, 0x57, 0xff, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Self Test Results    : ", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisSelftest(&writer, 0x55, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Self Test Results    : passed\n", writer.buffered());
+}
+
+test "chassis selftest stdout orders buffered C around Zig results" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisSelftest(&stdout.interface, 0x55, 0, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitChassisSelftest(&stdout.interface, 0x58, 0x80, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [160]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Self Test Results    : passed\n" ++
+            "|between|Self Test Results    : Fatal hardware error: 80h\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "chassis selftest preserves request errors without stdout" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_app and req.msg.cmd == 0x4);
+            return if (present) &response else null;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.requests = 0;
+        Stub.response = std.mem.zeroes(Response);
+        Stub.response.ccode = 0xc1;
+        var storage: [64]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisSelftestTo(&intf, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
 }
 
 // ---------------------------------------------------------------------------

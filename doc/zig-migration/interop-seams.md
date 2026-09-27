@@ -480,6 +480,15 @@ hexadecimal output at width boundaries, mixed C/Zig output ordering, and
 pre-flush, early/late write and final-flush failures. The existing
 `mc_selftest_*` C/selected-Zig CLI goldens cover all result branches.
 
+The selected `chassis selftest` result streams through checked Zig stdout
+after pre-flushing buffered libc output. It preserves the C labels, bit order,
+lowercase hex and success/request-error statuses; any pre-flush, write or final
+flush failure logs its phase and returns `-1`. `zig build
+test-chassis-selftest-stdout` checks C-byte parity across all self-test bits,
+buffered C/Zig ordering, request errors and injected I/O failures. The
+existing `chassis_selftest_*` original-C and selected-Zig CLI goldens retain
+the wire and output oracle. Other chassis output stays on its original path.
+
 The selected MC warm/cold reset acknowledgement also streams through checked
 Zig stdout after a libc pre-flush. Its words, newline and command status
 match C; pre-flush, write and final-flush failures log and return `-1`.
