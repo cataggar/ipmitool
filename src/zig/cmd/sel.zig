@@ -38,6 +38,9 @@
 //!   Short replies and malformed file records are rejected before decoding.
 //!   PPS timestamps are initialized to zero (pre-init time) until the
 //!   timezone semantics are addressed in issue #23.
+//! * **SEL info results use checked Zig stdout.**  The main and optional
+//!   allocation displays pre-flush libc stdout and check writes and final
+//!   flushes, retaining C's timestamp formatter and request statuses.
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sel` is selected.
@@ -1738,11 +1741,84 @@ fn wholeNumber(v: f32) bool {
 // SEL info and record retrieval
 // ---------------------------------------------------------------------------
 
-/// `ipmi_sel_get_info()`.
-fn selGetInfo(intf: *Intf) c_int {
+const SelInfoOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeSelInfo(writer: *std.Io.Writer, rsp: *const Response) std.Io.Writer.Error!void {
     const fs: u32 = 0xffffffff;
     const zeros: u32 = 0;
 
+    try writer.writeAll("SEL Information\n");
+    const version: u16 = rsp.data[0];
+    try writer.print(
+        "Version          : {d}.{d} ({s})\n",
+        .{
+            version & 0xf,
+            (version >> 4) & 0xf,
+            if (version == 0x51 or version == 0x02) "v1.5, v2 compliant" else "Unknown",
+        },
+    );
+
+    const e = std.mem.readInt(u16, rsp.data[1..3], .little);
+    const free_space = std.mem.readInt(u16, rsp.data[3..5], .little);
+    try writer.print("Entries          : {d}\n", .{e});
+    try writer.print("Free Space       : {d} bytes {s}\n", .{ free_space, if (free_space == 0xffff) "or more" else "" });
+
+    var pctfull: c_int = 0;
+    const used: u32 = @as(u32, e) * 16;
+    const total: u32 = used + free_space;
+    if (used != 0 and free_space != 0xffff) {
+        pctfull = @intFromFloat(100 * (@as(f64, @floatFromInt(used)) / @as(f64, @floatFromInt(total))));
+    }
+    if (free_space == 0xffff) {
+        try writer.writeAll("Percent Used     : unknown\n");
+    } else {
+        try writer.print("Percent Used     : {d}%\n", .{pctfull});
+    }
+
+    if (c.memcmp(&rsp.data[5], &fs, 4) == 0 or c.memcmp(&rsp.data[5], &zeros, 4) == 0) {
+        try writer.writeAll("Last Add Time    : Not Available\n");
+    } else {
+        try writer.print("Last Add Time    : {s}\n", .{std.mem.span(c.ipmi_timestamp_numeric(std.mem.readInt(u32, rsp.data[5..9], .little)))});
+    }
+    if (c.memcmp(&rsp.data[9], &fs, 4) == 0 or c.memcmp(&rsp.data[9], &zeros, 4) == 0) {
+        try writer.writeAll("Last Del Time    : Not Available\n");
+    } else {
+        try writer.print("Last Del Time    : {s}\n", .{std.mem.span(c.ipmi_timestamp_numeric(std.mem.readInt(u32, rsp.data[9..13], .little)))});
+    }
+
+    try writer.print("Overflow         : {s}\n", .{if (rsp.data[13] & 0x80 != 0) "true" else "false"});
+    try writer.writeAll("Supported Cmds   : ");
+    if (rsp.data[13] & 0x0f != 0) {
+        if (rsp.data[13] & 0x08 != 0) try writer.writeAll("'Delete' ");
+        if (rsp.data[13] & 0x04 != 0) try writer.writeAll("'Partial Add' ");
+        if (rsp.data[13] & 0x02 != 0) try writer.writeAll("'Reserve' ");
+        if (rsp.data[13] & 0x01 != 0) try writer.writeAll("'Get Alloc Info' ");
+    } else {
+        try writer.writeAll("None");
+    }
+    try writer.writeAll("\n");
+}
+
+fn writeSelAllocInfo(writer: *std.Io.Writer, rsp: *const Response) std.Io.Writer.Error!void {
+    try writer.print("# of Alloc Units : {d}\n", .{std.mem.readInt(u16, rsp.data[0..2], .little)});
+    try writer.print("Alloc Unit Size  : {d}\n", .{std.mem.readInt(u16, rsp.data[2..4], .little)});
+    try writer.print("# Free Units     : {d}\n", .{std.mem.readInt(u16, rsp.data[4..6], .little)});
+    try writer.print("Largest Free Blk : {d}\n", .{std.mem.readInt(u16, rsp.data[6..8], .little)});
+    try writer.print("Max Record Size  : {d}\n", .{rsp.data[8]});
+}
+
+fn emitSelInfo(writer: *std.Io.Writer, rsp: *const Response, comptime allocation: bool, preflush: anytype) SelInfoOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    if (allocation) {
+        writeSelAllocInfo(writer, rsp) catch return error.StdoutWriteFailed;
+    } else {
+        writeSelInfo(writer, rsp) catch return error.StdoutWriteFailed;
+    }
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+/// `ipmi_sel_get_info()`.
+fn selGetInfoTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) SelInfoOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_storage;
     req.msg.cmd = cmd_get_sel_info;
@@ -1766,57 +1842,7 @@ fn selGetInfo(intf: *Intf) c_int {
         c.printbuf(&rsp.data, rsp.data_len, "sel_info");
     }
 
-    _ = c.printf("SEL Information\n");
-    const version: u16 = rsp.data[0];
-    _ = c.printf(
-        "Version          : %d.%d (%s)\n",
-        @as(c_int, version & 0xf),
-        @as(c_int, (version >> 4) & 0xf),
-        pick(version == 0x51 or version == 0x02, "v1.5, v2 compliant", "Unknown"),
-    );
-
-    // save the entry count and free space to determine percent full
-    const e: u16 = c.buf2short(&rsp.data[1]);
-    const free_space: u16 = c.buf2short(&rsp.data[3]);
-    _ = c.printf("Entries          : %d\n", @as(c_int, e));
-    _ = c.printf("Free Space       : %d bytes %s\n", @as(c_int, free_space), pick(free_space == 0xffff, "or more", ""));
-
-    var pctfull: c_int = 0;
-    const used: u32 = @as(u32, e) * 16;
-    const total: u32 = used + free_space;
-    if (used != 0 and free_space != 0xffff) {
-        pctfull = @intFromFloat(100 * (@as(f64, @floatFromInt(used)) / @as(f64, @floatFromInt(total))));
-    }
-
-    if (free_space == 0xffff) {
-        _ = c.printf("Percent Used     : %s\n", "unknown");
-    } else {
-        _ = c.printf("Percent Used     : %d%%\n", pctfull);
-    }
-
-    if (c.memcmp(&rsp.data[5], &fs, 4) == 0 or c.memcmp(&rsp.data[5], &zeros, 4) == 0) {
-        _ = c.printf("Last Add Time    : Not Available\n");
-    } else {
-        _ = c.printf("Last Add Time    : %s\n", c.ipmi_timestamp_numeric(c.buf2long(&rsp.data[5])));
-    }
-
-    if (c.memcmp(&rsp.data[9], &fs, 4) == 0 or c.memcmp(&rsp.data[9], &zeros, 4) == 0) {
-        _ = c.printf("Last Del Time    : Not Available\n");
-    } else {
-        _ = c.printf("Last Del Time    : %s\n", c.ipmi_timestamp_numeric(c.buf2long(&rsp.data[9])));
-    }
-
-    _ = c.printf("Overflow         : %s\n", pick(rsp.data[13] & 0x80 != 0, "true", "false"));
-    _ = c.printf("Supported Cmds   : ");
-    if (rsp.data[13] & 0x0f != 0) {
-        if (rsp.data[13] & 0x08 != 0) _ = c.printf("'Delete' ");
-        if (rsp.data[13] & 0x04 != 0) _ = c.printf("'Partial Add' ");
-        if (rsp.data[13] & 0x02 != 0) _ = c.printf("'Reserve' ");
-        if (rsp.data[13] & 0x01 != 0) _ = c.printf("'Get Alloc Info' ");
-    } else {
-        _ = c.printf("None");
-    }
-    _ = c.printf("\n");
+    try emitSelInfo(writer, rsp, false, preflush);
 
     // get sel allocation info if supported
     if (rsp.data[13] & 1 != 0) {
@@ -1837,13 +1863,374 @@ fn selGetInfo(intf: *Intf) c_int {
             return -1;
         }
 
-        _ = c.printf("# of Alloc Units : %d\n", @as(c_int, c.buf2short(&rsp.data)));
-        _ = c.printf("Alloc Unit Size  : %d\n", @as(c_int, c.buf2short(&rsp.data[2])));
-        _ = c.printf("# Free Units     : %d\n", @as(c_int, c.buf2short(&rsp.data[4])));
-        _ = c.printf("Largest Free Blk : %d\n", @as(c_int, c.buf2short(&rsp.data[6])));
-        _ = c.printf("Max Record Size  : %d\n", @as(c_int, rsp.data[8]));
+        try emitSelInfo(writer, rsp, true, preflush);
     }
     return 0;
+}
+
+fn selGetInfo(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return selGetInfoTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "SEL info stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "SEL info stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "SEL info stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+fn selInfoTestResponse(version: u8, entries: u16, free_space: u16, add: u32, del: u32, flags: u8) Response {
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = 14;
+    rsp.data[0] = version;
+    std.mem.writeInt(u16, rsp.data[1..3], entries, .little);
+    std.mem.writeInt(u16, rsp.data[3..5], free_space, .little);
+    std.mem.writeInt(u32, rsp.data[5..9], add, .little);
+    std.mem.writeInt(u32, rsp.data[9..13], del, .little);
+    rsp.data[13] = flags;
+    return rsp;
+}
+
+fn selAllocTestResponse(data_len: c_int) Response {
+    var rsp = std.mem.zeroes(Response);
+    rsp.data_len = data_len;
+    const data = [9]u8{ 0x34, 0x12, 0x78, 0x56, 0xbc, 0x9a, 0xf0, 0xde, 0xff };
+    @memcpy(rsp.data[0..data.len], &data);
+    return rsp;
+}
+
+fn appendSelInfoC(expected: []u8, offset: *usize, comptime fmt: [*:0]const u8, args: anytype) !void {
+    const n = @call(.auto, c.snprintf, .{ expected.ptr + offset.*, expected.len - offset.*, fmt } ++ args);
+    try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len - offset.*);
+    offset.* += @intCast(n);
+}
+
+fn cSelInfoBody(expected: []u8, rsp: *const Response) ![]const u8 {
+    var offset: usize = 0;
+    const version: u16 = rsp.data[0];
+    const entries = std.mem.readInt(u16, rsp.data[1..3], .little);
+    const free_space = std.mem.readInt(u16, rsp.data[3..5], .little);
+    const used: u32 = @as(u32, entries) * 16;
+    const total: u32 = used + free_space;
+    var pctfull: c_int = 0;
+    if (used != 0 and free_space != 0xffff)
+        pctfull = @intFromFloat(100 * (@as(f64, @floatFromInt(used)) / @as(f64, @floatFromInt(total))));
+
+    try appendSelInfoC(expected, &offset, "SEL Information\n", .{});
+    try appendSelInfoC(expected, &offset, "Version          : %d.%d (%s)\n", .{
+        @as(c_int, version & 0xf),
+        @as(c_int, (version >> 4) & 0xf),
+        pick(version == 0x51 or version == 0x02, "v1.5, v2 compliant", "Unknown"),
+    });
+    try appendSelInfoC(expected, &offset, "Entries          : %d\n", .{@as(c_int, entries)});
+    try appendSelInfoC(expected, &offset, "Free Space       : %d bytes %s\n", .{
+        @as(c_int, free_space),
+        pick(free_space == 0xffff, "or more", ""),
+    });
+    if (free_space == 0xffff) {
+        try appendSelInfoC(expected, &offset, "Percent Used     : %s\n", .{@as([*:0]const u8, "unknown")});
+    } else {
+        try appendSelInfoC(expected, &offset, "Percent Used     : %d%%\n", .{pctfull});
+    }
+    for ([_]struct { index: usize, label: [*:0]const u8 }{
+        .{ .index = 5, .label = "Last Add Time    : " },
+        .{ .index = 9, .label = "Last Del Time    : " },
+    }) |field| {
+        const stamp = std.mem.readInt(u32, rsp.data[field.index..][0..4], .little);
+        if (stamp == 0 or stamp == 0xffffffff) {
+            try appendSelInfoC(expected, &offset, "%sNot Available\n", .{field.label});
+        } else {
+            try appendSelInfoC(expected, &offset, "%s%s\n", .{ field.label, c.ipmi_timestamp_numeric(stamp) });
+        }
+    }
+    try appendSelInfoC(expected, &offset, "Overflow         : %s\n", .{pick(rsp.data[13] & 0x80 != 0, "true", "false")});
+    try appendSelInfoC(expected, &offset, "Supported Cmds   : ", .{});
+    if (rsp.data[13] & 0x0f != 0) {
+        if (rsp.data[13] & 0x08 != 0) try appendSelInfoC(expected, &offset, "'Delete' ", .{});
+        if (rsp.data[13] & 0x04 != 0) try appendSelInfoC(expected, &offset, "'Partial Add' ", .{});
+        if (rsp.data[13] & 0x02 != 0) try appendSelInfoC(expected, &offset, "'Reserve' ", .{});
+        if (rsp.data[13] & 0x01 != 0) try appendSelInfoC(expected, &offset, "'Get Alloc Info' ", .{});
+    } else {
+        try appendSelInfoC(expected, &offset, "None", .{});
+    }
+    try appendSelInfoC(expected, &offset, "\n", .{});
+    return expected[0..offset];
+}
+
+fn cSelAllocInfo(expected: []u8, rsp: *const Response) ![]const u8 {
+    var offset: usize = 0;
+    try appendSelInfoC(expected, &offset, "# of Alloc Units : %d\n", .{@as(c_int, std.mem.readInt(u16, rsp.data[0..2], .little))});
+    try appendSelInfoC(expected, &offset, "Alloc Unit Size  : %d\n", .{@as(c_int, std.mem.readInt(u16, rsp.data[2..4], .little))});
+    try appendSelInfoC(expected, &offset, "# Free Units     : %d\n", .{@as(c_int, std.mem.readInt(u16, rsp.data[4..6], .little))});
+    try appendSelInfoC(expected, &offset, "Largest Free Blk : %d\n", .{@as(c_int, std.mem.readInt(u16, rsp.data[6..8], .little))});
+    try appendSelInfoC(expected, &offset, "Max Record Size  : %d\n", .{@as(c_int, rsp.data[8])});
+    return expected[0..offset];
+}
+
+test "sel info stdout matches libc bytes across flags, percentages, timestamps and allocation" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    const states = [_]struct { version: u8, entries: u16, free: u16, add: u32, del: u32, percent: []const u8 }{
+        .{ .version = 0x51, .entries = 0, .free = 0xffff, .add = 0, .del = 0xffffffff, .percent = "unknown" },
+        .{ .version = 0x02, .entries = 65535, .free = 0, .add = 0xffffffff, .del = 0, .percent = "100%" },
+        .{ .version = 0x10, .entries = 4096, .free = 100, .add = 1530395348, .del = 1615705200, .percent = "99%" },
+        .{ .version = 0xff, .entries = 1, .free = 15, .add = 1615705199, .del = 1636264800, .percent = "51%" },
+        .{ .version = 0x51, .entries = 1, .free = 65534, .add = 0x20000000, .del = 0x20000001, .percent = "0%" },
+        .{ .version = 0x02, .entries = 2, .free = 0xffff, .add = 0, .del = 1636264799, .percent = "unknown" },
+    };
+    for (states) |state| {
+        for (0..256) |flags| {
+            var rsp = selInfoTestResponse(state.version, state.entries, state.free, state.add, state.del, @intCast(flags));
+            const alloc = selAllocTestResponse(if (flags & 0x40 != 0) 0 else 9);
+            var expected: [1024]u8 = undefined;
+            const body = try cSelInfoBody(&expected, &rsp);
+            var length = body.len;
+            if (flags & 1 != 0) {
+                length += (try cSelAllocInfo(expected[length..], &alloc)).len;
+            }
+            var storage: [1024]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try emitSelInfo(&writer, &rsp, false, Stub.preflushOk);
+            if (flags & 1 != 0) try emitSelInfo(&writer, &alloc, true, Stub.preflushOk);
+            try std.testing.expectEqualSlices(u8, expected[0..length], writer.buffered());
+            var percent_row: [48]u8 = undefined;
+            const row = try std.fmt.bufPrint(&percent_row, "Percent Used     : {s}\n", .{state.percent});
+            try std.testing.expect(std.mem.indexOf(u8, writer.buffered(), row) != null);
+        }
+    }
+}
+
+test "sel info stdout preserves main and optional request statuses and response lengths" {
+    const Stub = struct {
+        const Failure = enum { none, missing, ccode, short, long };
+        var main = selInfoTestResponse(0x51, 3, 512, 1530395348, 1615705200, 0x0f);
+        var allocation = selAllocTestResponse(9);
+        var response = std.mem.zeroes(Response);
+        var main_failure: Failure = .none;
+        var alloc_failure: Failure = .none;
+        var requests: usize = 0;
+        var preflushes: usize = 0;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage and req.msg.data_len == 0);
+            if (req.msg.cmd == cmd_get_sel_info) {
+                if (main_failure == .missing) return null;
+                response = main;
+                response.ccode = if (main_failure == .ccode) 0xc1 else 0;
+                response.data_len = switch (main_failure) {
+                    .short => 13,
+                    .long => 15,
+                    else => 14,
+                };
+            } else {
+                std.debug.assert(req.msg.cmd == cmd_get_sel_alloc_info);
+                if (alloc_failure == .missing) return null;
+                response = allocation;
+                response.ccode = if (alloc_failure == .ccode) 0xc1 else 0;
+            }
+            return &response;
+        }
+        fn preflushCount() error{CStdoutFlushFailed}!void {
+            preflushes += 1;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]Stub.Failure{ .missing, .ccode, .short, .long }) |failure| {
+        Stub.main_failure = failure;
+        Stub.requests = 0;
+        Stub.preflushes = 0;
+        var storage: [1024]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try selGetInfoTo(&intf, &writer, Stub.preflushCount));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), Stub.preflushes);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+    Stub.main_failure = .none;
+    var expected: [1024]u8 = undefined;
+    const body = try cSelInfoBody(&expected, &Stub.main);
+    for ([_]Stub.Failure{ .missing, .ccode }) |failure| {
+        Stub.alloc_failure = failure;
+        Stub.requests = 0;
+        Stub.preflushes = 0;
+        var storage: [1024]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try selGetInfoTo(&intf, &writer, Stub.preflushCount));
+        try std.testing.expectEqual(@as(usize, 2), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 1), Stub.preflushes);
+        try std.testing.expectEqualSlices(u8, body, writer.buffered());
+    }
+    Stub.alloc_failure = .none;
+    Stub.allocation.data_len = 0;
+    Stub.requests = 0;
+    Stub.preflushes = 0;
+    var storage: [1024]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try selGetInfoTo(&intf, &writer, Stub.preflushCount));
+    try std.testing.expectEqual(@as(usize, 2), Stub.requests);
+    try std.testing.expectEqual(@as(usize, 2), Stub.preflushes);
+    const allocation = try cSelAllocInfo(expected[body.len..], &Stub.allocation);
+    try std.testing.expectEqualSlices(u8, expected[0 .. body.len + allocation.len], writer.buffered());
+
+    Stub.main.data[13] = 0x8e;
+    Stub.requests = 0;
+    Stub.preflushes = 0;
+    writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try selGetInfoTo(&intf, &writer, Stub.preflushCount));
+    try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+    try std.testing.expectEqual(@as(usize, 1), Stub.preflushes);
+}
+
+test "sel info stdout reports preflush, early and late writes, and final flush in both phases" {
+    const Stub = struct {
+        var main = selInfoTestResponse(0x51, 3, 512, 1530395348, 1615705200, 0x0f);
+        var allocation = selAllocTestResponse(9);
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var preflushes: usize = 0;
+        var flushes: usize = 0;
+        var fail_preflush_at: usize = 0;
+        var fail_flush_at: usize = 0;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage and req.msg.data_len == 0);
+            if (req.msg.cmd == cmd_get_sel_info) {
+                response = main;
+            } else {
+                std.debug.assert(req.msg.cmd == cmd_get_sel_alloc_info);
+                response = allocation;
+            }
+            return &response;
+        }
+        fn preflush() error{CStdoutFlushFailed}!void {
+            preflushes += 1;
+            if (preflushes == fail_preflush_at) return error.CStdoutFlushFailed;
+        }
+        fn flushFailAt(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            flushes += 1;
+            if (flushes == fail_flush_at) return error.WriteFailed;
+        }
+        fn reset(pre_at: usize, final_at: usize) void {
+            requests = 0;
+            preflushes = 0;
+            flushes = 0;
+            fail_preflush_at = pre_at;
+            fail_flush_at = final_at;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var expected: [1024]u8 = undefined;
+    const body = try cSelInfoBody(&expected, &Stub.main);
+    const allocation = try cSelAllocInfo(expected[body.len..], &Stub.allocation);
+    const complete = expected[0 .. body.len + allocation.len];
+
+    for ([_]usize{ 1, 2 }) |phase| {
+        Stub.reset(phase, 0);
+        var storage: [1024]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectError(error.CStdoutFlushFailed, selGetInfoTo(&intf, &writer, Stub.preflush));
+        try std.testing.expectEqual(phase, Stub.requests);
+        try std.testing.expectEqual(phase, Stub.preflushes);
+        try std.testing.expectEqualSlices(u8, if (phase == 1) "" else body, writer.buffered());
+
+        Stub.reset(0, 0);
+        if (phase == 1) {
+            var early: std.Io.Writer = .failing;
+            try std.testing.expectError(error.StdoutWriteFailed, selGetInfoTo(&intf, &early, Stub.preflush));
+            try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+            var truncated: [32]u8 = undefined;
+            var late = std.Io.Writer.fixed(&truncated);
+            Stub.reset(0, 0);
+            try std.testing.expectError(error.StdoutWriteFailed, selGetInfoTo(&intf, &late, Stub.preflush));
+            try std.testing.expectEqualSlices(u8, body[0..32], late.buffered());
+            try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        } else {
+            var early_storage: [1024]u8 = undefined;
+            var early = std.Io.Writer.fixed(early_storage[0..body.len]);
+            try std.testing.expectError(error.StdoutWriteFailed, selGetInfoTo(&intf, &early, Stub.preflush));
+            try std.testing.expectEqualSlices(u8, body, early.buffered());
+            try std.testing.expectEqual(@as(usize, 2), Stub.requests);
+
+            Stub.reset(0, 0);
+            var late_storage: [1024]u8 = undefined;
+            var late = std.Io.Writer.fixed(late_storage[0 .. body.len + 8]);
+            try std.testing.expectError(error.StdoutWriteFailed, selGetInfoTo(&intf, &late, Stub.preflush));
+            try std.testing.expectEqualSlices(u8, complete[0 .. body.len + 8], late.buffered());
+            try std.testing.expectEqual(@as(usize, 2), Stub.requests);
+        }
+
+        Stub.reset(0, phase);
+        writer = std.Io.Writer.fixed(&storage);
+        writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFailAt };
+        try std.testing.expectError(error.StdoutFlushFailed, selGetInfoTo(&intf, &writer, Stub.preflush));
+        try std.testing.expectEqual(phase, Stub.requests);
+        try std.testing.expectEqual(phase, Stub.flushes);
+        try std.testing.expectEqualSlices(u8, if (phase == 1) body else complete, writer.buffered());
+    }
+}
+
+test "sel info stdout preflushes C output before the main and allocation fields" {
+    const Stub = struct {
+        var main = selInfoTestResponse(0x51, 3, 512, 1530395348, 1615705200, 0x0f);
+        var allocation = selAllocTestResponse(9);
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage and req.msg.data_len == 0);
+            if (req.msg.cmd == cmd_get_sel_info) {
+                response = main;
+            } else {
+                std.debug.assert(req.msg.cmd == cmd_get_sel_alloc_info);
+                _ = c.printf("|between|");
+                response = allocation;
+            }
+            return &response;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.requests = 0;
+    var expected_storage: [1024]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    var body_storage: [1024]u8 = undefined;
+    try expected.writeAll(try cSelInfoBody(&body_storage, &Stub.main));
+    try expected.writeAll("|between|");
+    var allocation_storage: [256]u8 = undefined;
+    try expected.writeAll(try cSelAllocInfo(&allocation_storage, &Stub.allocation));
+    try expected.writeAll("|after\n");
+
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expectEqual(@as(c_int, 0), try selGetInfoTo(&intf, &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [1024]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualSlices(u8, expected.buffered(), captured[0..@intCast(length)]);
+    try std.testing.expectEqual(@as(usize, 2), Stub.requests);
 }
 
 /// `ipmi_sel_get_std_entry()`: fetch one complete record and unpack it.

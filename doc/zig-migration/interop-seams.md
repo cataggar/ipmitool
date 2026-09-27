@@ -737,6 +737,19 @@ counts/statuses, and injected pre-flush/write/final-flush failures. The
 `sl_time_*` and `sel_time_*` original-C/selected-Zig goldens cover the CLI
 including fixed timezones and DST; unrelated SEL record output is unchanged.
 
+The selected `sel info` statistics display now streams checked Zig stdout
+after a libc pre-flush. It preserves C's version/percent/flags formatting,
+trailing spaces, timestamp sentinel handling and immediate consumption of
+the C timestamp formatter's static buffer. The main response is printed
+before the optional allocation-info request; that result has its own checked
+pre-flush, write and final flush. Request validation, optional-response
+length behavior, partial stdout on later failures, and return statuses
+remain as in C except that output failures now log their phase and return
+`-1`. `zig build test-sel-info-stdout` compares libc bytes across response
+flags and size boundaries, buffered output order, request statuses and
+injected failures. The original-C/selected-Zig `sel_info` and `sl_info_*`
+goldens cover the actual dummy interface; SEL record printers are unchanged.
+
 The selected `sol payload status` result now uses checked Zig stdout for
 both enabled and disabled lines, retaining the C decimal fields and newline.
 The C stdout pre-flush preserves buffered output from earlier code; write

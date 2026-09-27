@@ -1350,6 +1350,14 @@ pub fn build(b: *std.Build) void {
     sel_time_stdout_step.dependOn(&b.addRunArtifact(sel_time_stdout_unit).step);
     test_step.dependOn(sel_time_stdout_step);
 
+    const sel_info_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sel.test.sel info stdout"},
+    });
+    const sel_info_stdout_step = b.step("test-sel-info-stdout", "Compare SEL info C bytes, request statuses, output order and I/O failures");
+    sel_info_stdout_step.dependOn(&b.addRunArtifact(sel_info_stdout_unit).step);
+    test_step.dependOn(sel_info_stdout_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},
