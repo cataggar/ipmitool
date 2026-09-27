@@ -524,7 +524,21 @@ fn chassisPoh(intf: *Intf) c_int {
 // ---------------------------------------------------------------------------
 
 /// `ipmi_chassis_restart_cause()`.
-fn chassisRestartCause(intf: *Intf) c_int {
+const RestartCauseOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeChassisRestartCause(writer: *std.Io.Writer, cause: u8) std.Io.Writer.Error!void {
+    try writer.print("System restart cause: {s}\n", .{
+        std.mem.span(c.val2str(cause & 0x0f, c.ipmi_chassis_restart_cause_vals)),
+    });
+}
+
+fn emitChassisRestartCause(writer: *std.Io.Writer, cause: u8, preflush: anytype) RestartCauseOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisRestartCause(writer, cause) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisRestartCauseTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) RestartCauseOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_chassis;
     req.msg.cmd = 0x7;
@@ -538,11 +552,123 @@ fn chassisRestartCause(intf: *Intf) c_int {
         return -1;
     }
 
-    _ = c.printf(
-        "System restart cause: %s\n",
-        c.val2str(rsp.data[0] & 0xf, c.ipmi_chassis_restart_cause_vals),
-    );
+    try emitChassisRestartCause(writer, rsp.data[0], preflush);
     return 0;
+}
+
+/// `ipmi_chassis_restart_cause()`.
+fn chassisRestartCause(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisRestartCauseTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis restart cause stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis restart cause stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis restart cause stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis restart cause stdout matches C masked, known and unknown codes" {
+    for (0..256) |value| {
+        const cause: u8 = @intCast(value);
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(
+            &expected,
+            expected.len,
+            "System restart cause: %s\n",
+            c.val2str(cause & 0x0f, c.ipmi_chassis_restart_cause_vals),
+        );
+        try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeChassisRestartCause(&writer, cause);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "chassis restart cause stdout reports preflush, write and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisRestartCause(&writer, 0, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisRestartCause(&early, 0, Stub.preflushOk));
+    var short: [22]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisRestartCause(&late, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("System restart cause: ", late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisRestartCause(&writer, 0, Stub.preflushOk));
+    try std.testing.expect(std.mem.startsWith(u8, writer.buffered(), "System restart cause: "));
+}
+
+test "chassis restart cause stdout orders buffered C and Zig output" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisRestartCause(&stdout.interface, 0x05, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [128]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    try writeChassisRestartCause(&expected, 0x05);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualStrings(expected.buffered(), captured[0..@intCast(length)]);
+}
+
+test "chassis restart cause preserves request errors without stdout" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = false;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0x7);
+            return if (present) &response else null;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.requests = 0;
+        Stub.response = std.mem.zeroes(Response);
+        Stub.response.ccode = 0xc1;
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisRestartCauseTo(&intf, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
 }
 
 /// `ipmi_chassis_status()`.

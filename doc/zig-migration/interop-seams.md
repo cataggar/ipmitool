@@ -505,7 +505,15 @@ or final-flush failures log their phase and return `-1`. `zig build
 test-chassis-status-stdout` compares libc bytes across flag and length
 boundaries, mixed C/Zig output and injected I/O failures. The existing
 `chassis_status*` original-C and selected-Zig CLI goldens retain the wire and
-output oracle. Other chassis output remains on its original path.
+output oracle.
+
+The selected `chassis restart_cause` result likewise pre-flushes buffered C
+stdout before checked Zig writes and final flush, preserving all masked
+codes, table lookups, newline and request status. Output errors log their
+phase and return `-1`. `zig build test-chassis-restart-stdout` compares C
+bytes across all cause bytes and checks buffered ordering and failure
+injection; the existing `chassis_restart_cause*` C/selected-Zig CLI goldens
+keep the oracle. Other chassis output remains on its original path.
 
 The selected MC warm/cold reset acknowledgement also streams through checked
 Zig stdout after a libc pre-flush. Its words, newline and command status
