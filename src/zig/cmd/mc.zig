@@ -140,6 +140,18 @@ fn sendrecv(intf: *Intf, req: *Request) ?*Response {
 // ---------------------------------------------------------------------------
 
 /// `ipmi_mc_reset()`.
+const McOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeMcReset(writer: *std.Io.Writer, warm: bool) std.Io.Writer.Error!void {
+    try writer.print("Sent {s} reset command to MC\n", .{if (warm) "warm" else "cold"});
+}
+
+fn emitMcReset(writer: *std.Io.Writer, warm: bool, preflush: anytype) McOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcReset(writer, warm) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
 fn mcReset(intf: *Intf, cmd: c_int) c_int {
     if (intf.opened == 0) _ = intf.open.?(intf);
 
@@ -164,12 +176,85 @@ fn mcReset(intf: *Intf, cmd: c_int) c_int {
         return -1;
     }
 
-    _ = c.printf(
-        "Sent %s reset command to MC\n",
-        pick(cmd == BMC_WARM_RESET, "warm", "cold"),
-    );
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitMcReset(&stdout.interface, cmd == BMC_WARM_RESET, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "MC reset stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "MC reset stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "MC reset stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
 
     return 0;
+}
+
+test "reset stdout matches C warm and cold formatting" {
+    for ([_]bool{ false, true }) |warm| {
+        var expected: [64]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "Sent %s reset command to MC\n", pick(warm, "warm", "cold"));
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [64]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try writeMcReset(&writer, warm);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "reset stdout propagates preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcReset(&writer, true, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcReset(&early, true, Stub.preflushOk));
+    const prefix = "Sent warm ";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcReset(&late, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcReset(&writer, true, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Sent warm reset command to MC\n", writer.buffered());
+}
+
+test "reset stdout preserves buffered C output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitMcReset(&stdout.interface, false, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [96]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|Sent cold reset command to MC\n|after\n", captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -743,8 +828,6 @@ fn mcPrintGuid(intf: *Intf, guid_mode: c.ipmi_guid_mode_t) c_int {
 // ---------------------------------------------------------------------------
 
 /// `ipmi_mc_get_selftest()`.
-const SelftestOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
-
 fn writeMcSelftest(writer: *std.Io.Writer, code: u8, test_byte: u8) std.Io.Writer.Error!c_int {
     switch (code) {
         IPM_SFT_CODE_OK => {
@@ -775,7 +858,7 @@ fn writeMcSelftest(writer: *std.Io.Writer, code: u8, test_byte: u8) std.Io.Write
     return -1;
 }
 
-fn emitMcSelftest(writer: *std.Io.Writer, code: u8, test_byte: u8, preflush: anytype) SelftestOutputError!c_int {
+fn emitMcSelftest(writer: *std.Io.Writer, code: u8, test_byte: u8, preflush: anytype) McOutputError!c_int {
     preflush() catch return error.CStdoutFlushFailed;
     const result = writeMcSelftest(writer, code, test_byte) catch return error.StdoutWriteFailed;
     writer.flush() catch return error.StdoutFlushFailed;

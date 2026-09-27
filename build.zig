@@ -1175,6 +1175,14 @@ pub fn build(b: *std.Build) void {
     mc_selftest_step.dependOn(&b.addRunArtifact(mc_selftest_unit).step);
     test_step.dependOn(mc_selftest_step);
 
+    const mc_reset_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.reset stdout"},
+    });
+    const mc_reset_step = b.step("test-mc-reset-stdout", "Compare MC reset C bytes and test writer failures");
+    mc_reset_step.dependOn(&b.addRunArtifact(mc_reset_unit).step);
+    test_step.dependOn(mc_reset_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},
