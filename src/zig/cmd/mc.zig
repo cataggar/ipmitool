@@ -1319,6 +1319,115 @@ fn mcSetWatchdog(intf: *Intf, argc: c_int, argv: [*][*:0]u8) c_int {
     return rc;
 }
 
+fn writeMcWatchdogAck(writer: *std.Io.Writer, reset: bool) std.Io.Writer.Error!void {
+    try writer.print("{s}\n", .{if (reset)
+        "IPMI Watchdog Timer Reset -  countdown restarted!"
+    else
+        "Watchdog Timer Shutoff successful -- timer stopped"});
+}
+
+fn emitMcWatchdogAck(writer: *std.Io.Writer, reset: bool, preflush: anytype) McOutputError!c_int {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeMcWatchdogAck(writer, reset) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+    return 0;
+}
+
+fn printMcWatchdogAck(reset: bool) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return emitMcWatchdogAck(&stdout.interface, reset, stdout_io.trySyncC) catch |err| {
+        const action: [*:0]const u8 = if (reset) "reset" else "off";
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "MC watchdog %s stdout C preflush failed (errno %d)", .{ action, std.c._errno().* }),
+            error.StdoutWriteFailed => log.print(log.Level.err, "MC watchdog %s stdout write failed: %s", .{ action, @errorName(stdout.err orelse error.WriteFailed).ptr }),
+            error.StdoutFlushFailed => log.print(log.Level.err, "MC watchdog %s stdout final flush failed: %s", .{ action, @errorName(stdout.err orelse error.WriteFailed).ptr }),
+        }
+        return -1;
+    };
+}
+
+test "watchdog ack stdout matches C off and reset bytes" {
+    for ([_]bool{ false, true }) |reset| {
+        var expected: [96]u8 = undefined;
+        const n = c.snprintf(&expected, expected.len, "%s", pick(
+            reset,
+            "IPMI Watchdog Timer Reset -  countdown restarted!\n",
+            "Watchdog Timer Shutoff successful -- timer stopped\n",
+        ));
+        try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, 0), try emitMcWatchdogAck(&writer, reset, stdout_io.trySyncC));
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+    }
+}
+
+test "watchdog ack stdout propagates preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    for ([_]bool{ false, true }) |reset| {
+        var storage: [96]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectError(error.CStdoutFlushFailed, emitMcWatchdogAck(&writer, reset, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+        var early: std.Io.Writer = .failing;
+        try std.testing.expectError(error.StdoutWriteFailed, emitMcWatchdogAck(&early, reset, Stub.preflushOk));
+        var short: [16]u8 = undefined;
+        var late = std.Io.Writer.fixed(&short);
+        try std.testing.expectError(error.StdoutWriteFailed, emitMcWatchdogAck(&late, reset, Stub.preflushOk));
+        try std.testing.expectEqualStrings(if (reset) "IPMI Watchdog Ti" else "Watchdog Timer S", late.buffered());
+
+        writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        try std.testing.expectError(error.StdoutFlushFailed, emitMcWatchdogAck(&writer, reset, Stub.preflushOk));
+        try std.testing.expectEqualStrings(
+            if (reset) "IPMI Watchdog Timer Reset -  countdown restarted!\n" else "Watchdog Timer Shutoff successful -- timer stopped\n",
+            writer.buffered(),
+        );
+    }
+}
+
+test "watchdog ack stdout preserves buffered C output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expectEqual(@as(c_int, 0), try emitMcWatchdogAck(&stdout.interface, false, stdout_io.trySyncC));
+    _ = c.printf("|between|");
+    try std.testing.expectEqual(@as(c_int, 0), try emitMcWatchdogAck(&stdout.interface, true, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [192]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Watchdog Timer Shutoff successful -- timer stopped\n" ++
+            "|between|IPMI Watchdog Timer Reset -  countdown restarted!\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
 /// `ipmi_mc_shutoff_watchdog()`.
 fn mcShutoffWatchdog(intf: *Intf) c_int {
     var msg_data: [6]u8 = undefined;
@@ -1348,8 +1457,7 @@ fn mcShutoffWatchdog(intf: *Intf) c_int {
         return -1;
     }
 
-    _ = c.printf("Watchdog Timer Shutoff successful -- timer stopped\n");
-    return 0;
+    return printMcWatchdogAck(false);
 }
 
 /// `ipmi_mc_rst_watchdog()`.
@@ -1378,8 +1486,7 @@ fn mcRstWatchdog(intf: *Intf) c_int {
         return -1;
     }
 
-    _ = c.printf("IPMI Watchdog Timer Reset -  countdown restarted!\n");
-    return 0;
+    return printMcWatchdogAck(true);
 }
 
 // ---------------------------------------------------------------------------
