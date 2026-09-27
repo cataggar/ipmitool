@@ -11,7 +11,7 @@
 //!
 //! Three things are worth knowing before reading on:
 //!
-//! * **Formatting stays in libc.** `printf` and `sprintf` still use `ipmi_c`;
+//! * **Most formatting stays in libc.** Other `printf` and `sprintf` calls use `ipmi_c`;
 //!   diagnostics use `log.print()` from the same selected archive as the
 //!   logger exports (falling back to C `lprintf` when `log` is not selected).
 //!   libc still renders `%0.1f`, `%02Xh`, `%-40s` and `%08x` with the same
@@ -32,6 +32,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
@@ -742,9 +743,46 @@ fn mcPrintGuid(intf: *Intf, guid_mode: c.ipmi_guid_mode_t) c_int {
 // ---------------------------------------------------------------------------
 
 /// `ipmi_mc_get_selftest()`.
-fn mcGetSelftest(intf: *Intf) c_int {
-    var rv: c_int = 0;
+const SelftestOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
 
+fn writeMcSelftest(writer: *std.Io.Writer, code: u8, test_byte: u8) std.Io.Writer.Error!c_int {
+    switch (code) {
+        IPM_SFT_CODE_OK => {
+            try writer.writeAll("Selftest: passed\n");
+            return 0;
+        },
+        IPM_SFT_CODE_NOT_IMPLEMENTED => try writer.writeAll("Selftest: not implemented\n"),
+        IPM_SFT_CODE_DEV_CORRUPTED => {
+            try writer.writeAll("Selftest: device corrupted\n");
+            if (test_byte & 0x80 != 0) try writer.writeAll(" -> SEL device not accessible\n");
+            if (test_byte & 0x40 != 0) try writer.writeAll(" -> SDR repository not accessible\n");
+            if (test_byte & 0x20 != 0) try writer.writeAll("FRU device not accessible\n");
+            if (test_byte & 0x10 != 0) try writer.writeAll("IPMB signal lines do not respond\n");
+            if (test_byte & 0x08 != 0) try writer.writeAll("SDR repository empty\n");
+            if (test_byte & 0x04 != 0) try writer.writeAll("Internal Use Area corrupted\n");
+            if (test_byte & 0x02 != 0) try writer.writeAll("Controller update boot block corrupted\n");
+            if (test_byte & 0x01 != 0) try writer.writeAll("controller operational firmware corrupted\n");
+        },
+        IPM_SFT_CODE_FATAL_ERROR => {
+            try writer.print("Selftest     : fatal error\nFailure code : {x:0>2}\n", .{test_byte});
+        },
+        IPM_SFT_CODE_RESERVED => try writer.writeAll("Selftest: N/A"),
+        else => {
+            try writer.print("Selftest     : device specific ({X:0>2}h)\nFailure code : {X:0>2}h\n", .{ code, test_byte });
+            return 0;
+        },
+    }
+    return -1;
+}
+
+fn emitMcSelftest(writer: *std.Io.Writer, code: u8, test_byte: u8, preflush: anytype) SelftestOutputError!c_int {
+    preflush() catch return error.CStdoutFlushFailed;
+    const result = writeMcSelftest(writer, code, test_byte) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+    return result;
+}
+
+fn mcGetSelftest(intf: *Intf) c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_app;
     req.msg.cmd = BMC_GET_SELF_TEST;
@@ -763,38 +801,99 @@ fn mcGetSelftest(intf: *Intf) c_int {
     const code = rsp.data[0];
     const test_byte = rsp.data[1];
 
-    if (code == IPM_SFT_CODE_OK) {
-        _ = c.printf("Selftest: passed\n");
-        rv = 0;
-    } else if (code == IPM_SFT_CODE_NOT_IMPLEMENTED) {
-        _ = c.printf("Selftest: not implemented\n");
-        rv = -1;
-    } else if (code == IPM_SFT_CODE_DEV_CORRUPTED) {
-        _ = c.printf("Selftest: device corrupted\n");
-        rv = -1;
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return emitMcSelftest(&stdout.interface, code, test_byte, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "MC selftest stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "MC selftest stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "MC selftest stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
 
-        if (test_byte & 0x80 != 0) _ = c.printf(" -> SEL device not accessible\n");
-        if (test_byte & 0x40 != 0) _ = c.printf(" -> SDR repository not accessible\n");
-        if (test_byte & 0x20 != 0) _ = c.printf("FRU device not accessible\n");
-        if (test_byte & 0x10 != 0) _ = c.printf("IPMB signal lines do not respond\n");
-        if (test_byte & 0x08 != 0) _ = c.printf("SDR repository empty\n");
-        if (test_byte & 0x04 != 0) _ = c.printf("Internal Use Area corrupted\n");
-        if (test_byte & 0x02 != 0) _ = c.printf("Controller update boot block corrupted\n");
-        if (test_byte & 0x01 != 0) _ = c.printf("controller operational firmware corrupted\n");
-    } else if (code == IPM_SFT_CODE_FATAL_ERROR) {
-        _ = c.printf("Selftest     : fatal error\n");
-        _ = c.printf("Failure code : %02x\n", @as(c_uint, test_byte));
-        rv = -1;
-    } else if (code == IPM_SFT_CODE_RESERVED) {
-        _ = c.printf("Selftest: N/A");
-        rv = -1;
-    } else {
-        _ = c.printf("Selftest     : device specific (%02Xh)\n", @as(c_uint, code));
-        _ = c.printf("Failure code : %02Xh\n", @as(c_uint, test_byte));
-        rv = 0;
+test "selftest stdout preserves C result bytes and status" {
+    const cases = [_]struct { code: u8, failure: u8, text: []const u8, status: c_int }{
+        .{ .code = 0x55, .failure = 0, .text = "Selftest: passed\n", .status = 0 },
+        .{ .code = 0x56, .failure = 0, .text = "Selftest: not implemented\n", .status = -1 },
+        .{ .code = 0x57, .failure = 0, .text = "Selftest: device corrupted\n", .status = -1 },
+        .{ .code = 0x57, .failure = 0x81, .text = "Selftest: device corrupted\n -> SEL device not accessible\ncontroller operational firmware corrupted\n", .status = -1 },
+        .{ .code = 0xff, .failure = 0, .text = "Selftest: N/A", .status = -1 },
+    };
+    for (cases) |case| {
+        var storage: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(case.status, try writeMcSelftest(&writer, case.code, case.failure));
+        try std.testing.expectEqualStrings(case.text, writer.buffered());
     }
+    for ([_]u8{ 0, 1, 15, 16, 255 }) |value| {
+        var expected: [128]u8 = undefined;
+        for ([_]u8{ 0x58, 0x80 }) |code| {
+            const n = if (code == 0x58)
+                c.snprintf(&expected, expected.len, "Selftest     : fatal error\nFailure code : %02x\n", @as(c_uint, value))
+            else
+                c.snprintf(&expected, expected.len, "Selftest     : device specific (%02Xh)\nFailure code : %02Xh\n", @as(c_uint, code), @as(c_uint, value));
+            try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < expected.len);
+            var storage: [128]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try std.testing.expectEqual(@as(c_int, if (code == 0x58) -1 else 0), try writeMcSelftest(&writer, code, value));
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
 
-    return rv;
+test "selftest stdout reports preflush, early, late and final flush errors" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [80]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitMcSelftest(&writer, 0x58, 0xff, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcSelftest(&early, 0x58, 0xff, Stub.preflushOk));
+    const prefix = "Selftest: device corrupted\n";
+    var short: [prefix.len]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitMcSelftest(&late, 0x57, 0x80, Stub.preflushOk));
+    try std.testing.expectEqualStrings(prefix, late.buffered());
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitMcSelftest(&writer, 0x55, 0, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Selftest: passed\n", writer.buffered());
+}
+
+test "selftest stdout orders buffered C output around Zig output" {
+    const stdout_fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved_fd = c.dup(stdout_fd);
+    try std.testing.expect(saved_fd >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved_fd, stdout_fd);
+        _ = c.close(saved_fd);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(stdout_fd, c.dup2(fds[1], stdout_fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expectEqual(@as(c_int, -1), try emitMcSelftest(&stdout.interface, 0x57, 0x80, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(stdout_fd, c.dup2(saved_fd, stdout_fd));
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings("before|Selftest: device corrupted\n -> SEL device not accessible\n|after\n", captured[0..@intCast(length)]);
 }
 
 // ---------------------------------------------------------------------------
