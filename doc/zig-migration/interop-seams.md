@@ -454,6 +454,16 @@ late and final-flush failures. Output errors log a diagnostic and return
 `-1` without sending the event. Other event and sensor output stays on its
 existing C path.
 
+The selected `sol payload status` result now uses checked Zig stdout for
+both enabled and disabled lines, retaining the C decimal fields and newline.
+The C stdout pre-flush preserves buffered output from earlier code; write
+or final-flush failures log and return `-1` rather than reporting success.
+The C implementation and `sol_payload_status` golden remain the reference.
+`zig build test-sol-payload-stdout` compares enabled/disabled boundary values
+with libc formatting, checks mixed C/Zig ordering and injects pre-flush,
+early, late and final-flush failures. Other SOL output and the interactive
+session are unchanged.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print
