@@ -426,6 +426,25 @@ write and flush failures; the
 `user_summary_*` CLI goldens compare the original C command and selected Zig
 on both CSV and human output with real dummy-interface responses.
 
+The selected LAN v1.5 Activate Session completion-code path now writes only
+the `Activate Session error:` prefix with Zig stderr I/O. It deliberately
+has no newline: the immediately following `lprintf` starts with a tab on
+the same line. A checked libc `fflush(stderr)` drains earlier buffered C
+logging before the Zig write; the Zig write and final flush are checked
+before logging resumes. Any I/O failure terminates explicitly, rather than
+silently returning the usual `-1`. The completion-code switch, return
+status, C ABI, and original C transport remain unchanged.
+`zig build test-lan-activate-stderr` compares the prefix with C bytes, checks
+early/late writer failures and buffered C-output ordering. The
+`lan/activate-error` transport case compares the original C and selected
+Zig responses, including the tab-joined error line and exit status. Run
+`zig build test-transport -Dipmishell=false -Dopenssl=false
+-Dinternal-md5=true -Dintf-lan=true -Dintf-lanplus=true
+-Dzig-modules=lanplus,lanplus-crypt,lanplus-crypt-impl --
+--filter lan/activate-error` for the C LAN oracle and all-selected Zig
+candidate, then include `lan` in `-Dzig-modules` to check the selected LAN
+path in the main binary as well.
+
 LAN+ RMCP pong responses also use that checked pre-flush before Zig stdout.
 At verbosity zero they produce no output; at one (or negative verbosity)
 they print only the supported/unsupported line, and above one they also print

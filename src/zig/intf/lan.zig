@@ -1462,6 +1462,20 @@ fn getSessionChallengeCmd(intf: *Intf) c_int {
     return 0;
 }
 
+fn writeActivateErrorPrefix(writer: *std.Io.Writer) std.Io.Writer.Error!void {
+    try writer.writeAll("Activate Session error:");
+}
+
+fn emitActivateErrorPrefix() void {
+    if (c.fflush(c.stderr) != 0)
+        std.debug.panic("Activate Session: libc stderr flush failed: {d}", .{std.c._errno().*});
+    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
+    writeActivateErrorPrefix(&stderr.interface) catch |err|
+        std.debug.panic("Activate Session: stderr write failed: {t}", .{stderr.err orelse err});
+    stderr.interface.flush() catch |err|
+        std.debug.panic("Activate Session: stderr flush failed: {t}", .{stderr.err orelse err});
+}
+
 fn activateSessionCmd(intf: *Intf) c_int {
     const s = intf.session.?;
     var msg_data: [22]u8 = undefined;
@@ -1510,7 +1524,7 @@ fn activateSessionCmd(intf: *Intf) c_int {
     if (c.verbose > 2) c.printbuf(&rsp.data, rsp.data_len, "activate_session");
 
     if (rsp.ccode != 0) {
-        _ = c.fprintf(c.stderr, "Activate Session error:");
+        emitActivateErrorPrefix();
         switch (rsp.ccode) {
             0x81 => log.print(log.Level.err, "\tNo session slot available", .{}),
             0x82 => log.print(
@@ -1849,6 +1863,59 @@ pub fn exportSymbols() void {
 // hide byte-order and shift mistakes.
 
 const testing = std.testing;
+
+test "activate session stderr prefix matches C bytes and detects write failures" {
+    const prefix = "Activate Session error:";
+    var oracle: [64]u8 = undefined;
+    const len = c.snprintf(&oracle, oracle.len, "Activate Session error:");
+    try testing.expectEqual(@as(c_int, prefix.len), len);
+
+    var storage: [prefix.len]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try writeActivateErrorPrefix(&writer);
+    try testing.expectEqualSlices(u8, oracle[0..@intCast(len)], writer.buffered());
+    try testing.expectEqualStrings(prefix, writer.buffered());
+
+    var failing: std.Io.Writer = .failing;
+    try testing.expectError(error.WriteFailed, writeActivateErrorPrefix(&failing));
+
+    var short_storage: [prefix.len - 1]u8 = undefined;
+    var short = std.Io.Writer.fixed(&short_storage);
+    try testing.expectError(error.WriteFailed, writeActivateErrorPrefix(&short));
+    try testing.expectEqualStrings(prefix[0 .. prefix.len - 1], short.buffered());
+}
+
+test "activate session stderr prefix preserves buffered C logging order" {
+    try testing.expectEqual(@as(c_int, 0), c.fflush(c.stderr));
+    var fds: [2]c_int = undefined;
+    try testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    defer _ = c.close(fds[1]);
+
+    const saved = c.dup(2);
+    try testing.expect(saved >= 0);
+    defer _ = c.close(saved);
+    try testing.expectEqual(@as(c_int, 2), c.dup2(fds[1], 2));
+    defer {
+        _ = c.fflush(c.stderr);
+        _ = c.setvbuf(c.stderr, null, c._IONBF, 0);
+        _ = c.dup2(saved, 2);
+    }
+    try testing.expectEqual(@as(c_int, 0), c.setvbuf(c.stderr, null, c._IOFBF, 4096));
+
+    _ = c.fprintf(c.stderr, "before|");
+    emitActivateErrorPrefix();
+    _ = c.fprintf(c.stderr, "\tNo session slot available\n|after\n");
+    try testing.expectEqual(@as(c_int, 0), c.fflush(c.stderr));
+
+    var output: [128]u8 = undefined;
+    const count = c.read(fds[0], &output, output.len);
+    try testing.expect(count >= 0);
+    try testing.expectEqualStrings(
+        "before|Activate Session error:\tNo session slot available\n|after\n",
+        output[0..@intCast(count)],
+    );
+}
 
 comptime {
     // `val2str()` and the rest of the C the transport reaches for are supplied
