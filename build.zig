@@ -1342,6 +1342,14 @@ pub fn build(b: *std.Build) void {
     mc_sysinfo_step.dependOn(&b.addRunArtifact(mc_sysinfo_unit).step);
     test_step.dependOn(mc_sysinfo_step);
 
+    const sel_time_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sel.test.sel time stdout"},
+    });
+    const sel_time_stdout_step = b.step("test-sel-time-stdout", "Compare SEL time C bytes, request statuses, buffered output order, and I/O failures");
+    sel_time_stdout_step.dependOn(&b.addRunArtifact(sel_time_stdout_unit).step);
+    test_step.dependOn(sel_time_stdout_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},

@@ -45,6 +45,9 @@
 //!   through the selected Zig logger when `log` is selected, and forwards to
 //!   the C logger when it is not.  Its `printf` formats and argument widths
 //!   match the original C calls.
+//! * **SEL time GET/readback stdout is checked.**  It retains the C timestamp
+//!   formatter, pre-flushes libc stdout before Zig writes, and distinguishes
+//!   output failures from the intentionally ignored readback request status.
 //!
 //! Allocation: `malloc`/`calloc`/`free` through the bridge, because the
 //! description strings and the OEM message table cross the C ABI and are freed
@@ -55,6 +58,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const intf_mod = @import("../intf/intf.zig");
 
@@ -2889,8 +2893,26 @@ fn selReserve(intf: *Intf) u16 {
     return @as(u16, rsp.data[0]) | (@as(u16, rsp.data[1]) << 8);
 }
 
-/// `ipmi_sel_get_time()`.
-fn selGetTime(intf: *Intf) c_int {
+const SelTimeOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn emitSelTime(writer: *std.Io.Writer, stamp: u32, preflush: anytype) SelTimeOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    const text = std.mem.span(c.ipmi_timestamp_numeric(stamp));
+    writer.writeAll(text) catch return error.StdoutWriteFailed;
+    writer.writeAll("\n") catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn logSelTimeOutputError(err: SelTimeOutputError, write_error: anyerror) void {
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(log.Level.err, "SEL time stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+        error.StdoutWriteFailed => log.print(log.Level.err, "SEL time stdout write failed: %s", .{@errorName(write_error).ptr}),
+        error.StdoutFlushFailed => log.print(log.Level.err, "SEL time stdout final flush failed: %s", .{@errorName(write_error).ptr}),
+    }
+}
+
+/// `ipmi_sel_get_time()`: the request status remains distinct from stdout errors.
+fn selGetTimeTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) SelTimeOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_storage;
     req.msg.cmd = cmd_get_sel_time;
@@ -2915,13 +2937,19 @@ fn selGetTime(intf: *Intf) c_int {
     }
 
     const t: c.time_t = c.ipmi32toh(&rsp.?.data);
-    _ = c.printf("%s\n", c.ipmi_timestamp_numeric(@intCast(t)));
+    try emitSelTime(writer, @intCast(t), preflush);
 
     return 0;
 }
 
+// The C dispatch ignores the GET request status, but must not ignore an I/O error.
+fn selTimeGetCommand(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) SelTimeOutputError!c_int {
+    _ = try selGetTimeTo(intf, writer, preflush);
+    return 0;
+}
+
 /// `ipmi_sel_set_time()`.
-fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
+fn selSetTimeTo(intf: *Intf, time_string: [*c]const u8, writer: *std.Io.Writer, preflush: anytype) SelTimeOutputError!c_int {
     var tm = std.mem.zeroes(c.struct_tm);
     var msg_data: [4]u8 = @splat(0);
     var t: c.time_t = undefined;
@@ -2968,9 +2996,320 @@ fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
         return -1;
     }
 
-    _ = selGetTime(intf);
+    _ = try selGetTimeTo(intf, writer, preflush);
 
     return 0;
+}
+
+fn selSetTime(intf: *Intf, time_string: [*c]const u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return selSetTimeTo(intf, time_string, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        logSelTimeOutputError(err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
+test "sel time stdout matches libc bytes for special timestamps, timezones and DST" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    const previous_tz = c.getenv("TZ");
+    const saved_tz = if (previous_tz != null)
+        try std.testing.allocator.dupeZ(u8, std.mem.span(previous_tz))
+    else
+        null;
+    const saved_utc = c.time_in_utc;
+    defer {
+        c.time_in_utc = saved_utc;
+        if (saved_tz) |tz| {
+            _ = c.setenv("TZ", tz.ptr, 1);
+            std.testing.allocator.free(tz);
+        } else {
+            _ = c.unsetenv("TZ");
+        }
+        c.tzset();
+    }
+
+    for ([_][*:0]const u8{ "UTC0", "XYZ5", "EST5EDT,M3.2.0/2,M11.1.0/2" }) |tz| {
+        try std.testing.expectEqual(@as(c_int, 0), c.setenv("TZ", tz, 1));
+        c.tzset();
+        for ([_]bool{ false, true }) |utc| {
+            c.time_in_utc = utc;
+            for ([_]u32{
+                0,
+                1,
+                86399,
+                86400,
+                @intCast(c.IPMI_TIME_INIT_DONE - 1),
+                @intCast(c.IPMI_TIME_INIT_DONE),
+                1530395348,
+                1615705199,
+                1615705200,
+                1636264799,
+                1636264800,
+                0xffffffff,
+            }) |stamp| {
+                var expected: [128]u8 = undefined;
+                const len = c.snprintf(&expected, expected.len, "%s\n", c.ipmi_timestamp_numeric(stamp));
+                try std.testing.expect(len >= 0 and @as(usize, @intCast(len)) < expected.len);
+                var storage: [128]u8 = undefined;
+                var writer = std.Io.Writer.fixed(&storage);
+                try emitSelTime(&writer, stamp, Stub.preflushOk);
+                try std.testing.expectEqualSlices(u8, expected[0..@intCast(len)], writer.buffered());
+            }
+        }
+    }
+}
+
+test "sel time stdout GET preserves BMC status and four-byte validation" {
+    const Stub = struct {
+        const Outcome = enum { ok, missing, ccode, short, long };
+        var outcome: Outcome = .ok;
+        var response = std.mem.zeroes(Response);
+        var calls: usize = 0;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage);
+            std.debug.assert(req.msg.cmd == cmd_get_sel_time and req.msg.data_len == 0);
+            if (outcome == .missing) return null;
+            response.ccode = if (outcome == .ccode) 0xc1 else 0;
+            response.data_len = switch (outcome) {
+                .short => 3,
+                .long => 5,
+                else => 4,
+            };
+            @memset(response.data[0..4], 0xff);
+            return &response;
+        }
+
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+
+    for ([_]Stub.Outcome{ .missing, .ccode, .short, .long }) |outcome| {
+        Stub.outcome = outcome;
+        Stub.calls = 0;
+        var storage: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try selGetTimeTo(&intf, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(c_int, 0), try selTimeGetCommand(&intf, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 2), Stub.calls);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+
+    Stub.outcome = .ok;
+    Stub.calls = 0;
+    var storage: [32]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try selTimeGetCommand(&intf, &writer, Stub.preflushOk));
+    try std.testing.expectEqualStrings("Unspecified\n", writer.buffered());
+    try std.testing.expectEqual(@as(usize, 1), Stub.calls);
+    try std.testing.expectError(error.CStdoutFlushFailed, selTimeGetCommand(&intf, &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 2), Stub.calls);
+}
+
+test "sel time stdout SET ignores request readback failures but not output failures" {
+    const Stub = struct {
+        const Outcome = enum { ok, missing, ccode, short, long };
+        var set_outcome: Outcome = .ok;
+        var get_outcome: Outcome = .ok;
+        var response = std.mem.zeroes(Response);
+        var calls: usize = 0;
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage);
+            if (req.msg.cmd == cmd_set_sel_time) {
+                std.debug.assert(req.msg.data_len == 4 and req.msg.data != null);
+                std.debug.assert(c.ipmi32toh(req.msg.data.?) == 0);
+                if (set_outcome == .missing) return null;
+                response.ccode = if (set_outcome == .ccode) 0xc1 else 0;
+                response.data_len = 0;
+                return &response;
+            }
+            std.debug.assert(req.msg.cmd == cmd_get_sel_time and req.msg.data_len == 0);
+            if (get_outcome == .missing) return null;
+            response.ccode = if (get_outcome == .ccode) 0xc1 else 0;
+            response.data_len = switch (get_outcome) {
+                .short => 3,
+                .long => 5,
+                else => 4,
+            };
+            @memset(response.data[0..4], 0xff);
+            return &response;
+        }
+
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    const saved_utc = c.time_in_utc;
+    c.time_in_utc = true;
+    defer c.time_in_utc = saved_utc;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    const input = "01/01/70 00:00:00";
+
+    Stub.calls = 0;
+    var storage: [32]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, -1), try selSetTimeTo(&intf, "not a date", &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), Stub.calls);
+
+    for ([_]Stub.Outcome{ .missing, .ccode }) |outcome| {
+        Stub.set_outcome = outcome;
+        Stub.calls = 0;
+        try std.testing.expectEqual(@as(c_int, -1), try selSetTimeTo(&intf, input, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 1), Stub.calls);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+
+    Stub.set_outcome = .ok;
+    for ([_]Stub.Outcome{ .missing, .ccode, .short, .long }) |outcome| {
+        Stub.get_outcome = outcome;
+        Stub.calls = 0;
+        try std.testing.expectEqual(@as(c_int, 0), try selSetTimeTo(&intf, input, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 2), Stub.calls);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+
+    Stub.get_outcome = .ok;
+    Stub.calls = 0;
+    try std.testing.expectError(error.CStdoutFlushFailed, selSetTimeTo(&intf, input, &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 2), Stub.calls);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    Stub.calls = 0;
+    try std.testing.expectEqual(@as(c_int, 0), try selSetTimeTo(&intf, input, &writer, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 2), Stub.calls);
+    try std.testing.expectEqualStrings("Unspecified\n", writer.buffered());
+}
+
+test "sel time stdout propagates early and late writes and final flush through GET and SET" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var calls: usize = 0;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage);
+            if (req.msg.cmd == cmd_set_sel_time) {
+                std.debug.assert(req.msg.data_len == 4);
+            } else {
+                std.debug.assert(req.msg.cmd == cmd_get_sel_time and req.msg.data_len == 0);
+            }
+            response.ccode = 0;
+            response.data_len = 4;
+            @memset(response.data[0..4], 0xff);
+            return &response;
+        }
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const saved_utc = c.time_in_utc;
+    c.time_in_utc = true;
+    defer c.time_in_utc = saved_utc;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]bool{ false, true }) |set| {
+        const request_count: usize = if (set) 2 else 1;
+        Stub.calls = 0;
+        var early: std.Io.Writer = .failing;
+        if (set) {
+            try std.testing.expectError(error.StdoutWriteFailed, selSetTimeTo(&intf, "01/01/70 00:00:00", &early, Stub.preflushOk));
+        } else {
+            try std.testing.expectError(error.StdoutWriteFailed, selTimeGetCommand(&intf, &early, Stub.preflushOk));
+        }
+        try std.testing.expectEqual(request_count, Stub.calls);
+
+        Stub.calls = 0;
+        var short: [11]u8 = undefined;
+        var late = std.Io.Writer.fixed(&short);
+        if (set) {
+            try std.testing.expectError(error.StdoutWriteFailed, selSetTimeTo(&intf, "01/01/70 00:00:00", &late, Stub.preflushOk));
+        } else {
+            try std.testing.expectError(error.StdoutWriteFailed, selTimeGetCommand(&intf, &late, Stub.preflushOk));
+        }
+        try std.testing.expectEqualStrings("Unspecified", late.buffered());
+        try std.testing.expectEqual(request_count, Stub.calls);
+
+        Stub.calls = 0;
+        var storage: [32]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        if (set) {
+            try std.testing.expectError(error.StdoutFlushFailed, selSetTimeTo(&intf, "01/01/70 00:00:00", &writer, Stub.preflushOk));
+        } else {
+            try std.testing.expectError(error.StdoutFlushFailed, selTimeGetCommand(&intf, &writer, Stub.preflushOk));
+        }
+        try std.testing.expectEqualStrings("Unspecified\n", writer.buffered());
+        try std.testing.expectEqual(request_count, Stub.calls);
+    }
+}
+
+test "sel time stdout preserves buffered C and Zig order across GET and SET readback" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var calls: usize = 0;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_storage);
+            if (req.msg.cmd == cmd_set_sel_time) {
+                std.debug.assert(req.msg.data_len == 4);
+            } else {
+                std.debug.assert(req.msg.cmd == cmd_get_sel_time and req.msg.data_len == 0);
+            }
+            response.ccode = 0;
+            response.data_len = 4;
+            @memset(response.data[0..4], 0xff);
+            return &response;
+        }
+    };
+    const saved_utc = c.time_in_utc;
+    c.time_in_utc = true;
+    defer c.time_in_utc = saved_utc;
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.calls = 0;
+
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expectEqual(@as(c_int, 0), try selTimeGetCommand(&intf, &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|between|");
+    try std.testing.expectEqual(@as(c_int, 0), try selSetTimeTo(&intf, "01/01/70 00:00:00", &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Unspecified\n|between|Unspecified\n|after\n",
+        captured[0..@intCast(length)],
+    );
+    try std.testing.expectEqual(@as(usize, 3), Stub.calls);
 }
 
 /// `ipmi_sel_clear()`.
@@ -3286,7 +3625,11 @@ fn selMain(intf: ?*Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
         if (argc < 2) {
             log.print(log.Level.err, "sel time commands: get set", .{});
         } else if (eql(@ptrCast(argv[1]), "get")) {
-            _ = selGetTime(in);
+            var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+            rc = selTimeGetCommand(in, &stdout.interface, stdout_io.trySyncC) catch |err| {
+                logSelTimeOutputError(err, stdout.err orelse error.WriteFailed);
+                return -1;
+            };
         } else if (eql(@ptrCast(argv[1]), "set")) {
             if (argc < 3) {
                 log.print(log.Level.err, "usage: sel time set \"mm/dd/yyyy hh:mm:ss\"", .{});

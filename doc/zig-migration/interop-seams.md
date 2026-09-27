@@ -717,6 +717,20 @@ late and final-flush failures. Output errors log a diagnostic and return
 `-1` without sending the event. Other event and sensor output stays on its
 existing C path.
 
+Selected `sel time get` and the readback after a successful `sel time set`
+stream the original `ipmi_timestamp_numeric()` bytes plus newline through
+checked Zig stdout. The C formatter still controls special timestamps,
+timezone, locale, and DST; its static string is consumed before another
+formatting call. A checked libc stdout pre-flush preserves buffered C/Zig
+order, and write/final-flush errors log their phase and return `-1`.
+The GET command still ignores BMC/request/length errors for its exit status;
+SET still succeeds if its readback has such an error, but neither path
+silently ignores a readback *output* failure. `zig build
+test-sel-time-stdout` compares C bytes, mixed buffering, exact request
+counts/statuses, and injected pre-flush/write/final-flush failures. The
+`sl_time_*` and `sel_time_*` original-C/selected-Zig goldens cover the CLI
+including fixed timezones and DST; unrelated SEL record output is unchanged.
+
 The selected `sol payload status` result now uses checked Zig stdout for
 both enabled and disabled lines, retaining the C decimal fields and newline.
 The C stdout pre-flush preserves buffered output from earlier code; write
