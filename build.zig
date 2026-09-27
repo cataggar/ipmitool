@@ -1246,6 +1246,14 @@ pub fn build(b: *std.Build) void {
     chassis_power_status_stdout_step.dependOn(&b.addRunArtifact(chassis_power_status_stdout_unit).step);
     test_step.dependOn(chassis_power_status_stdout_step);
 
+    const chassis_poh_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis poh stdout"},
+    });
+    const chassis_poh_stdout_step = b.step("test-chassis-poh-stdout", "Compare chassis power-on-hours C bytes, requests, output order and I/O failures");
+    chassis_poh_stdout_step.dependOn(&b.addRunArtifact(chassis_poh_stdout_unit).step);
+    test_step.dependOn(chassis_poh_stdout_step);
+
     const chassis_restart_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.chassis.test.chassis restart cause stdout"},
@@ -2145,10 +2153,37 @@ pub fn build(b: *std.Build) void {
             b.pathFromRoot("tests/shell/pty.py"),
         });
         shell_pty.setEnvironmentVariable("IPMITOOL_TEST_ZIG_MC_RESET", if (replacedByZig("lib/ipmi_mc.c", zig_selection)) "1" else "0");
+        shell_pty.setEnvironmentVariable("IPMITOOL_TEST_C_BUFFERED_POH", if (replacedByZig("lib/ipmi_chassis.c", zig_selection)) "0" else "1");
         shell_pty.addArtifactArg(ipmitool);
         const shell_test = b.step("test-shell", "Run native shell PTY and CLI tests");
         shell_test.dependOn(&shell_pty.step);
         test_step.dependOn(&shell_pty.step);
+
+        if (replacedByZig("lib/ipmi_chassis.c", zig_selection)) {
+            const hybrid_selection = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+            hybrid_selection[moduleIndex("chassis")] = false;
+            const hybrid = addSelectedTool(b, .{
+                .target = target,
+                .optimize = optimize,
+                .sanitize_c = sanitize_c,
+                .config_h = config_h,
+                .default_intf = default_intf,
+                .flags = flags,
+                .plugins_enabled = &enabled,
+                .bridge_mod = bridge_mod,
+                .have_crypto_sha256 = openssl,
+                .system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, hybrid_selection),
+            }, hybrid_selection, "ipmitool-shell-c-chassis");
+            const hybrid_pty = b.addSystemCommand(&.{
+                "python3",
+                b.pathFromRoot("tests/shell/pty.py"),
+            });
+            hybrid_pty.setEnvironmentVariable("IPMITOOL_TEST_ZIG_MC_RESET", if (replacedByZig("lib/ipmi_mc.c", hybrid_selection)) "1" else "0");
+            hybrid_pty.setEnvironmentVariable("IPMITOOL_TEST_C_BUFFERED_POH", "1");
+            hybrid_pty.addArtifactArg(hybrid);
+            shell_test.dependOn(&hybrid_pty.step);
+            test_step.dependOn(&hybrid_pty.step);
+        }
     }
 
     const dell_test_mod = b.createModule(.{

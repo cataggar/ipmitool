@@ -371,12 +371,12 @@ class ShellTests(unittest.TestCase):
                 self.assertNotEqual(run.returncode, 0, run.stderr)
                 self.assertIn(b": stdout WriteFailed", run.stderr)
 
-    def test_shell_stdout_libc_flush_failure_is_not_success(self):
+    def test_shell_poh_stdout_failure_is_not_success(self):
         self.bmc.poh_success.set()
         self.bmc.warm_reset_success.set()
         try:
-            # POH is libc-buffered even with Zig chassis; the selected MC reset
-            # must preflush it. Echo covers builds with only Zig shell selected.
+            # Only the C chassis variant seeds libc-buffered POH. The Zig
+            # chassis variant must instead report its own failed write.
             SCRIPT.write_text("chassis poh\nmc reset warm\necho after\n", encoding="utf-8")
             normal = cli(ZIG, "exec", str(SCRIPT))
             self.assertEqual(normal.returncode, 0, normal.stderr)
@@ -391,12 +391,15 @@ class ShellTests(unittest.TestCase):
                     stderr=subprocess.PIPE, env=env(), timeout=5, check=False,
                 )
             self.assertNotEqual(run.returncode, 0, run.stderr)
-            self.assertIn(
-                b"MC reset stdout C preflush failed"
-                if os.environ.get("IPMITOOL_TEST_ZIG_MC_RESET") == "1"
-                else b"echo: stdout CStdoutFlushFailed",
-                run.stderr,
-            )
+            if os.environ.get("IPMITOOL_TEST_C_BUFFERED_POH") == "1":
+                self.assertIn(
+                    b"MC reset stdout C preflush failed"
+                    if os.environ.get("IPMITOOL_TEST_ZIG_MC_RESET") == "1"
+                    else b"echo: stdout CStdoutFlushFailed",
+                    run.stderr,
+                )
+            else:
+                self.assertIn(b"Chassis POH stdout write failed", run.stderr)
         finally:
             self.bmc.poh_success.clear()
             self.bmc.warm_reset_success.clear()

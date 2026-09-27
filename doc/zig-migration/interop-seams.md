@@ -515,9 +515,16 @@ errors log their phase and return `-1`. `zig build
 test-chassis-power-status-stdout` compares C bytes, response statuses,
 buffered C/Zig order and injected output failures; the `chassis_power_status*`
 and `power_status*` original-C/selected-Zig goldens check both command routes.
-The shell's C-preflush probe instead uses the still-libc `chassis poh` output,
-followed by a selected Zig MC warm reset (or Zig echo when MC is still C), so
-it covers the buffered-C-to-Zig transition even with all modules selected.
+The selected `chassis poh` result also streams checked Zig stdout with a
+libc pre-flush. Its existing single-precision count arithmetic, C wording,
+minutes-field threshold and request behavior stay unchanged; output failures
+log their phase and return `-1`. `zig build test-chassis-poh-stdout` checks C
+bytes, request statuses, buffered output order and injected failures; the
+`chassis_poh*` C/selected-Zig goldens cover the float precision boundaries.
+When chassis is Zig, `test-shell` additionally builds a test-only hybrid with
+**C chassis** and Zig shell/MC to retain a genuinely C-buffered POH pre-flush
+probe. The selected-chassis shell separately checks that a Zig POH write
+failure on `/dev/full` is not reported as success.
 
 The selected `chassis restart_cause` result likewise pre-flushes buffered C
 stdout before checked Zig writes and final flush, preserving all masked
@@ -555,8 +562,8 @@ trailing spaces match C, including an empty support mask; it preserves the
 request and completion-code statuses and logs/returns `-1` on output errors.
 `zig build test-chassis-policy-stdout` compares C bytes for every support
 mask and policy byte, buffered C/Zig order, statuses and injected failures;
-the `chassis_policy_*` C/selected-Zig goldens keep the CLI oracle. Other
-chassis output remains on its original path.
+the `chassis_policy_*` C/selected-Zig goldens keep the CLI oracle. Chassis help
+and diagnostics remain on their existing logger path.
 
 The selected MC warm/cold reset acknowledgement also streams through checked
 Zig stdout after a libc pre-flush. Its words, newline and command status

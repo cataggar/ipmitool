@@ -12,15 +12,12 @@
 //!
 //! Four things are worth knowing before reading on:
 //!
-//! * **Most formatting stays in libc.** `printf` and `snprintf` still use `ipmi_c`;
-//!   diagnostics use `log.print()` from the selected logger archive, with the
-//!   C `lprintf` fallback when `log` is not selected. libc still renders
-//!   remaining C output formats. `strcmp`, `strncmp`, `strtok_r` and
-//!   `str2uchar` receive the same pointers as C,
-//!   including writable `argv` strings that `strtok_r()` splits in place.
-//!   The `power_usage` format is a compile-time constant, never user input.
-//!   Chassis boot options, power status/control, restore policy, identify,
-//!   restart cause, status and self-test results use checked Zig stdout.
+//! * **Command results use checked Zig stdout.** Diagnostics use `log.print()`
+//!   from the selected logger archive (or its C fallback). libc `snprintf`
+//!   still builds mailbox request strings; `printf` remains in tests to seed
+//!   buffered C output. `strcmp`, `strncmp`, `strtok_r` and `str2uchar` keep
+//!   their C arguments, including writable strings split in place by
+//!   `strtok_r`. The `power_usage` format is a constant, never user input.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -760,12 +757,36 @@ test "chassis identify preserves request lengths and statuses" {
 // POH counter
 // ---------------------------------------------------------------------------
 
-/// `ipmi_chassis_poh()`.
-///
-/// The arithmetic is single precision on purpose, and the two subtractions
-/// are not symmetrical in C either: the first converts `days` to `float`
-/// before multiplying, the second multiplies `hours` as an integer.
-fn chassisPoh(intf: *Intf) c_int {
+const PohCounts = struct { days: u32, hours: u32, minutes: c_long };
+const PohOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+/// The C arithmetic uses float and subtracts a float product before an
+/// integer product; changing either rounding step changes large counters.
+fn pohCounts(mins_per_count: u8, count: u32) PohCounts {
+    var minutes: f32 = @as(f32, @floatFromInt(count)) * @as(f32, @floatFromInt(mins_per_count));
+    const days: u32 = @intFromFloat(minutes / 1440);
+    minutes -= @as(f32, @floatFromInt(days)) * 1440;
+    const hours: u32 = @intFromFloat(minutes / 60);
+    minutes -= @floatFromInt(hours *% 60);
+    return .{ .days = days, .hours = hours, .minutes = @intFromFloat(minutes) };
+}
+
+fn writeChassisPoh(writer: *std.Io.Writer, mins_per_count: u8, count: u32) std.Io.Writer.Error!void {
+    const poh = pohCounts(mins_per_count, count);
+    try writer.print("POH Counter  : {d} days, {d} hours", .{ poh.days, poh.hours });
+    if (mins_per_count < 60)
+        try writer.print(", {d} minutes\n", .{poh.minutes})
+    else
+        try writer.writeByte('\n');
+}
+
+fn emitChassisPoh(writer: *std.Io.Writer, mins_per_count: u8, count: u32, preflush: anytype) PohOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeChassisPoh(writer, mins_per_count, count) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn chassisPohTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) PohOutputError!c_int {
     var req = std.mem.zeroes(Request);
     req.msg.netfn_lun.netfn = netfn_chassis;
     req.msg.cmd = 0xf;
@@ -782,24 +803,134 @@ fn chassisPoh(intf: *Intf) c_int {
     const mins_per_count: u8 = rsp.data[0];
     const count = std.mem.readInt(u32, rsp.data[1..5], .little);
 
-    var minutes: f32 = @as(f32, @floatFromInt(count)) * @as(f32, @floatFromInt(mins_per_count));
-    const days: u32 = @intFromFloat(minutes / 1440);
-    minutes -= @as(f32, @floatFromInt(days)) * 1440;
-    const hours: u32 = @intFromFloat(minutes / 60);
-    minutes -= @floatFromInt(hours *% 60);
-
-    if (mins_per_count < 60) {
-        _ = c.printf(
-            "POH Counter  : %i days, %i hours, %li minutes\n",
-            days,
-            hours,
-            @as(c_long, @intFromFloat(minutes)),
-        );
-    } else {
-        _ = c.printf("POH Counter  : %i days, %i hours\n", days, hours);
-    }
-
+    try emitChassisPoh(writer, mins_per_count, count, preflush);
     return 0;
+}
+
+/// `ipmi_chassis_poh()`.
+fn chassisPoh(intf: *Intf) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return chassisPohTo(intf, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Chassis POH stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Chassis POH stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Chassis POH stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "chassis poh stdout matches libc output for count and minute boundaries" {
+    for ([_]u8{ 0, 1, 5, 59, 60, 61, 255 }) |mins_per_count| {
+        for ([_]u32{ 0, 1, 60, 1440, 0x01020304, 0xffffffff }) |count| {
+            const poh = pohCounts(mins_per_count, count);
+            var expected: [96]u8 = undefined;
+            const n = if (mins_per_count < 60)
+                c.snprintf(&expected, expected.len, "POH Counter  : %i days, %i hours, %li minutes\n", poh.days, poh.hours, poh.minutes)
+            else
+                c.snprintf(&expected, expected.len, "POH Counter  : %i days, %i hours\n", poh.days, poh.hours);
+            try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+            var storage: [96]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeChassisPoh(&writer, mins_per_count, count);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
+
+test "chassis poh stdout propagates preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitChassisPoh(&writer, 1, 5, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPoh(&early, 1, 5, Stub.preflushOk));
+    var short: [30]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitChassisPoh(&late, 1, 5, Stub.preflushOk));
+    try std.testing.expect(std.mem.startsWith(u8, late.buffered(), "POH Counter  : 0 days, "));
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitChassisPoh(&writer, 60, 1, Stub.preflushOk));
+    try std.testing.expectEqualStrings("POH Counter  : 0 days, 1 hours\n", writer.buffered());
+}
+
+test "chassis poh stdout orders buffered C around Zig results" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitChassisPoh(&stdout.interface, 1, 5, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitChassisPoh(&stdout.interface, 60, 1, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [160]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|POH Counter  : 0 days, 0 hours, 5 minutes\n|between|POH Counter  : 0 days, 1 hours\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "chassis poh stdout retains request and response statuses" {
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_chassis and req.msg.cmd == 0xf and req.msg.data_len == 0);
+            return if (present) &response else null;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    Stub.response = std.mem.zeroes(Response);
+    Stub.response.data[0] = 1;
+    Stub.response.data[1] = 5;
+    var storage: [96]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try chassisPohTo(&intf, &writer, stdout_io.trySyncC));
+    try std.testing.expectEqualStrings("POH Counter  : 0 days, 0 hours, 5 minutes\n", writer.buffered());
+    for ([_]bool{ false, true }) |present| {
+        Stub.present = present;
+        Stub.response.ccode = 0xc1;
+        var empty: [96]u8 = undefined;
+        var silent = std.Io.Writer.fixed(&empty);
+        try std.testing.expectEqual(@as(c_int, -1), try chassisPohTo(&intf, &silent, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 0), silent.buffered().len);
+    }
+    Stub.present = true;
+    Stub.response.ccode = 0;
+    var silent = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, chassisPohTo(&intf, &silent, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 4), Stub.requests);
 }
 
 // ---------------------------------------------------------------------------
