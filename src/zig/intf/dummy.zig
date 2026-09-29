@@ -24,9 +24,10 @@
 //!    mid-message.
 //! 3. `data_write()` reports failures as `perror("dummy failed on read(): ")` —
 //!    the message is a copy-paste from `data_read()`.
-//! 4. `ipmi_dummyipmi_open()` copies the socket path with `strcpy()` into
-//!    `sun_path`, which is 108 bytes.  A longer `IPMI_DUMMY_SOCK` overflows the
-//!    stack frame.
+//! 4. `ipmi_dummyipmi_open()` previously copied the socket path with
+//!    `strcpy()` into the 108-byte `sun_path`. A 108-byte pathname still works
+//!    with the full sockaddr length; Zig rejects longer paths rather than
+//!    reproducing the C stack overflow.
 //! 5. `ipmi_dummyipmi_open()` leaks the socket when `connect()` fails: it
 //!    returns -1 without closing `intf->fd` or clearing `intf->opened`.
 //! 6. `ipmi_dummyipmi_send_cmd()` reads `rsp_dummy.data_len` bytes into
@@ -40,6 +41,7 @@
 
 const builtin = @import("builtin");
 const std = @import("std");
+const linux = std.os.linux;
 
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
@@ -92,74 +94,64 @@ pub const DummyRs = extern struct {
 // Socket I/O
 // ---------------------------------------------------------------------------
 
-/// `data_read()`: read `data_len` bytes from `fd`, 0 on success and -1 on error.
-fn dataRead(fd: c_int, data_ptr: ?*anyopaque, data_len: c_int) callconv(.c) c_int {
+fn rawRead(fd: c_int, data_ptr: ?*anyopaque, len: usize) usize {
+    return linux.read(fd, @ptrCast(data_ptr), len);
+}
+
+fn rawWrite(fd: c_int, data_ptr: ?*anyopaque, len: usize) usize {
+    return linux.write(fd, @ptrCast(data_ptr), len);
+}
+
+fn pauseRetry() void {
+    _ = c.sleep(2);
+}
+
+fn socketAddress(path: [*:0]const u8) error{SocketPathTooLong}!linux.sockaddr.un {
+    const bytes = std.mem.span(path);
+    var address = std.mem.zeroes(linux.sockaddr.un);
+    address.family = linux.AF.UNIX;
+    if (bytes.len > address.path.len) return error.SocketPathTooLong;
+    @memcpy(address.path[0..bytes.len], bytes);
+    return address;
+}
+
+fn dataIo(fd: c_int, data_ptr: ?*anyopaque, data_len: c_int, comptime io: anytype, comptime pause: anytype) c_int {
     var rc: c_int = 0;
     var data_total: c_int = 0;
     var tries: c_int = 1;
-    if (data_len < 0) {
-        return -1;
-    }
+    if (data_len < 0) return -1;
     while (data_total < data_len and tries < 4) {
         std.c._errno().* = 0;
-        // `data_ptr` is deliberately not advanced; see note 1 above.
-        const n: c_int = @truncate(c.read(fd, data_ptr, @intCast(data_len)));
-        const errno_save = std.c._errno().*;
-        if (n > 0) {
-            data_total +%= n;
-        }
-        if (errno_save != 0) {
-            if (errno_save == c.EINTR or errno_save == c.EAGAIN) {
+        // The pointer deliberately stays at the beginning after short I/O.
+        const result = io(fd, data_ptr, @intCast(data_len));
+        const code = linux.errno(result);
+        const errno_save: c_int = @intFromEnum(code);
+        std.c._errno().* = errno_save;
+        if (code == .SUCCESS and result > 0) data_total +%= @intCast(result);
+        if (code != .SUCCESS) {
+            if (code == .INTR or code == .AGAIN) {
                 tries += 1;
-                _ = c.sleep(2);
+                pause();
                 continue;
-            } else {
-                std.c._errno().* = errno_save;
-                c.perror("dummy failed on read(): ");
-                rc = -1;
-                break;
             }
+            // The C writer also calls perror with the "read" prefix.
+            c.perror("dummy failed on read(): ");
+            rc = -1;
+            break;
         }
     }
-    if (tries > 3 and data_total != data_len) {
-        rc = -1;
-    }
+    if (tries > 3 and data_total != data_len) rc = -1;
     return rc;
+}
+
+/// `data_read()`: read `data_len` bytes from `fd`, 0 on success and -1 on error.
+fn dataRead(fd: c_int, data_ptr: ?*anyopaque, data_len: c_int) callconv(.c) c_int {
+    return dataIo(fd, data_ptr, data_len, rawRead, pauseRetry);
 }
 
 /// `data_write()`: write `data_len` bytes to `fd`, 0 on success and -1 on error.
 fn dataWrite(fd: c_int, data_ptr: ?*anyopaque, data_len: c_int) callconv(.c) c_int {
-    var rc: c_int = 0;
-    var data_total: c_int = 0;
-    var tries: c_int = 1;
-    if (data_len < 0) {
-        return -1;
-    }
-    while (data_total < data_len and tries < 4) {
-        std.c._errno().* = 0;
-        const n: c_int = @truncate(c.write(fd, data_ptr, @intCast(data_len)));
-        const errno_save = std.c._errno().*;
-        if (n > 0) {
-            data_total +%= n;
-        }
-        if (errno_save != 0) {
-            if (errno_save == c.EINTR or errno_save == c.EAGAIN) {
-                tries += 1;
-                _ = c.sleep(2);
-                continue;
-            } else {
-                std.c._errno().* = errno_save;
-                // Says "read" on the write path; see note 3 above.
-                c.perror("dummy failed on read(): ");
-                rc = -1;
-                break;
-            }
-        }
-    }
-    if (tries > 3 and data_total != data_len) {
-        rc = -1;
-    }
-    return rc;
+    return dataIo(fd, data_ptr, data_len, rawWrite, pauseRetry);
 }
 
 // ---------------------------------------------------------------------------
@@ -178,16 +170,15 @@ fn close(intf: *Intf) callconv(.c) void {
     if (dataWrite(intf.fd, &req, @sizeOf(DummyRq)) != 0) {
         log.print(log.Level.err, "dummy failed to send 'BYE'", .{});
     }
-    _ = c.close(intf.fd);
+    const result = linux.close(intf.fd);
+    if (linux.errno(result) != .SUCCESS) std.c._errno().* = @intFromEnum(linux.errno(result));
     intf.fd = -1;
     intf.opened = 0;
 }
 
 /// `ipmi_dummyipmi_open()`: connect the socket and mark the interface open.
 fn open(intf: *Intf) callconv(.c) c_int {
-    var address: c.struct_sockaddr_un = undefined;
-
-    var dummy_sock_path = c.getenv("IPMI_DUMMY_SOCK");
+    var dummy_sock_path = std.c.getenv("IPMI_DUMMY_SOCK");
     if (dummy_sock_path == null) {
         log.print(
             log.Level.debug,
@@ -200,27 +191,34 @@ fn open(intf: *Intf) callconv(.c) c_int {
     if (intf.opened == 1) {
         return intf.fd;
     }
-    intf.fd = c.socket(c.AF_UNIX, c.SOCK_STREAM, 0);
-    if (intf.fd == -1) {
+    const socket_result = linux.socket(linux.AF.UNIX, linux.SOCK.STREAM, 0);
+    if (linux.errno(socket_result) != .SUCCESS) {
+        std.c._errno().* = @intFromEnum(linux.errno(socket_result));
+        intf.fd = -1;
         log.print(log.Level.err, "dummy failed on socket()", .{});
         return -1;
     }
-    address.sun_family = @intCast(c.AF_UNIX);
-    // Unbounded, exactly as upstream; see note 4 above.
-    _ = c.strcpy(&address.sun_path, dummy_sock_path);
-    const len: c_int = @sizeOf(c.struct_sockaddr_un);
-    const rc = c.connect(intf.fd, @ptrCast(&address), @intCast(len));
-    if (rc != 0) {
+    intf.fd = @intCast(socket_result);
+    const address = socketAddress(@ptrCast(dummy_sock_path)) catch {
+        _ = linux.close(intf.fd);
+        intf.fd = -1;
+        std.c._errno().* = @intFromEnum(linux.E.NAMETOOLONG);
+        c.perror("dummy failed on connect(): ");
+        return -1;
+    };
+    const connect_result = linux.connect(intf.fd, &address, @sizeOf(linux.sockaddr.un));
+    if (linux.errno(connect_result) != .SUCCESS) {
+        std.c._errno().* = @intFromEnum(linux.errno(connect_result));
         c.perror("dummy failed on connect(): ");
         // The socket is neither closed nor un-opened; see note 5 above.
         return -1;
     }
-    if (c.getenv("IPMI_DUMMY_SOL_SESSION") != null) {
+    if (std.c.getenv("IPMI_DUMMY_SOL_SESSION") != null) {
         intf.session = &isol_session;
     }
     intf.opened = 1;
-    if (c.getenv("IPMI_DUMMY_EMULATE_OPEN")) |flag| {
-        if (c.strcmp(flag, "1") == 0) {
+    if (std.c.getenv("IPMI_DUMMY_EMULATE_OPEN")) |flag| {
+        if (std.mem.eql(u8, std.mem.span(flag), "1")) {
             @memset(&intf.name, 0);
             @memcpy(intf.name[0..4], "open");
         }
@@ -319,6 +317,11 @@ var dummy_intf: Intf = blk: {
 // ---------------------------------------------------------------------------
 
 comptime {
+    if (@sizeOf(linux.sockaddr.un) != @sizeOf(c.struct_sockaddr_un) or
+        @sizeOf(@FieldType(linux.sockaddr.un, "path")) != @sizeOf(@FieldType(c.struct_sockaddr_un, "sun_path")) or
+        @offsetOf(linux.sockaddr.un, "family") != @offsetOf(c.struct_sockaddr_un, "sun_family") or
+        @offsetOf(linux.sockaddr.un, "path") != @offsetOf(c.struct_sockaddr_un, "sun_path"))
+        @compileError("dummy AF_UNIX sockaddr layout differs from C");
     abi.assertLayout(DummyRq, c.struct_dummy_rq);
     abi.assertLayout(DummyRq.Msg, @FieldType(c.struct_dummy_rq, "msg"));
     abi.assertLayout(DummyRs, c.struct_dummy_rs);
@@ -376,6 +379,122 @@ test "the fallback socket path is the one dummy.h names" {
     );
 }
 
+test "socket paths match bounded libc sockaddr bytes" {
+    var name: [109:0]u8 = @splat('x');
+    for ([_]usize{ 0, 1, 16, 106, 107 }) |length| {
+        name[length] = 0;
+        const address = try socketAddress(&name);
+        var original = std.mem.zeroes(c.struct_sockaddr_un);
+        original.sun_family = c.AF_UNIX;
+        _ = c.strcpy(&original.sun_path, &name);
+        try std.testing.expectEqualSlices(u8, std.mem.asBytes(&original), std.mem.asBytes(&address));
+        name[length] = 'x';
+    }
+    name[108] = 0;
+    const full = try socketAddress(&name);
+    try std.testing.expectEqualSlices(u8, name[0..108], &full.path);
+    name[108] = 'x';
+    try std.testing.expectError(error.SocketPathTooLong, socketAddress(&name));
+    const embedded = [_:0]u8{ 'a', 'b', 0, 'c' };
+    const address = try socketAddress(&embedded);
+    try std.testing.expectEqualSlices(u8, &.{ 'a', 'b', 0, 0 }, address.path[0..4]);
+}
+
+test "connect syscall errors match libc without changing process environment" {
+    const address = try socketAddress("/dev/null/ipmi-dummy-test");
+    const c_fd = c.socket(c.AF_UNIX, c.SOCK_STREAM, 0);
+    try std.testing.expect(c_fd >= 0);
+    defer _ = c.close(c_fd);
+    const zig_fd_result = linux.socket(linux.AF.UNIX, linux.SOCK.STREAM, 0);
+    try std.testing.expectEqual(linux.E.SUCCESS, linux.errno(zig_fd_result));
+    const zig_fd: c_int = @intCast(zig_fd_result);
+    defer _ = linux.close(zig_fd);
+    try std.testing.expectEqual(@as(c_int, -1), c.connect(c_fd, @ptrCast(&address), @sizeOf(linux.sockaddr.un)));
+    const c_errno = std.c._errno().*;
+    const zig_result = linux.connect(zig_fd, &address, @sizeOf(linux.sockaddr.un));
+    try std.testing.expectEqual(c_errno, @as(c_int, @intFromEnum(linux.errno(zig_result))));
+}
+
+test "injected short I/O and EINTR EAGAIN preserve pointer restart and retry budget" {
+    const Stub = struct {
+        var calls: usize = 0;
+        var pauses: usize = 0;
+        var first_ptr: usize = 0;
+        var lengths_ok = true;
+        var pointer_ok = true;
+        var fail_only = false;
+
+        fn io(_: c_int, pointer: ?*anyopaque, len: usize) usize {
+            const index = calls;
+            calls += 1;
+            if (index == 0) first_ptr = @intFromPtr(pointer);
+            pointer_ok = pointer_ok and first_ptr == @intFromPtr(pointer);
+            lengths_ok = lengths_ok and len == 5;
+            if (fail_only or index == 0)
+                return @bitCast(-@as(isize, @intFromEnum(linux.E.INTR)));
+            if (index == 1)
+                return @bitCast(-@as(isize, @intFromEnum(linux.E.AGAIN)));
+            const bytes: [*]u8 = @ptrCast(pointer);
+            @memcpy(bytes[0..3], "xyz");
+            return 3;
+        }
+
+        fn pause() void {
+            pauses += 1;
+        }
+    };
+    var buffer = [_]u8{0xee} ** 5;
+    Stub.calls = 0;
+    Stub.pauses = 0;
+    Stub.pointer_ok = true;
+    Stub.lengths_ok = true;
+    Stub.fail_only = false;
+    try std.testing.expectEqual(@as(c_int, 0), dataIo(7, &buffer, buffer.len, Stub.io, Stub.pause));
+    try std.testing.expectEqual(@as(usize, 4), Stub.calls);
+    try std.testing.expectEqual(@as(usize, 2), Stub.pauses);
+    try std.testing.expect(Stub.pointer_ok and Stub.lengths_ok);
+    try std.testing.expectEqualSlices(u8, &.{ 'x', 'y', 'z', 0xee, 0xee }, &buffer);
+    try std.testing.expectEqual(@as(c_int, 0), std.c._errno().*);
+
+    Stub.calls = 0;
+    Stub.pauses = 0;
+    Stub.fail_only = true;
+    try std.testing.expectEqual(@as(c_int, -1), dataIo(7, &buffer, buffer.len, Stub.io, Stub.pause));
+    try std.testing.expectEqual(@as(usize, 3), Stub.calls);
+    try std.testing.expectEqual(@as(usize, 3), Stub.pauses);
+    try std.testing.expectEqual(@as(c_int, c.EINTR), std.c._errno().*);
+}
+
+test "closed peer zero read preserves the original no-progress retry behavior" {
+    const pair = try Pair.open();
+    defer pair.close();
+    try std.testing.expectEqual(@as(c_int, 0), c.shutdown(pair.peer, c.SHUT_WR));
+    var byte: u8 = 0;
+    try std.testing.expectEqual(@as(isize, 0), c.read(pair.intf_end, &byte, 1));
+    try std.testing.expectEqual(linux.E.SUCCESS, linux.errno(rawRead(pair.intf_end, &byte, 1)));
+
+    const Stub = struct {
+        var calls: usize = 0;
+        var pauses: usize = 0;
+        fn io(_: c_int, pointer: ?*anyopaque, len: usize) usize {
+            calls += 1;
+            if (calls < 3) return 0;
+            const bytes: [*]u8 = @ptrCast(pointer);
+            @memset(bytes[0..len], 0x42);
+            return len;
+        }
+        fn pause() void {
+            pauses += 1;
+        }
+    };
+    Stub.calls = 0;
+    Stub.pauses = 0;
+    try std.testing.expectEqual(@as(c_int, 0), dataIo(pair.intf_end, &byte, 1, Stub.io, Stub.pause));
+    try std.testing.expectEqual(@as(usize, 3), Stub.calls);
+    try std.testing.expectEqual(@as(usize, 0), Stub.pauses);
+    try std.testing.expectEqual(@as(u8, 0x42), byte);
+}
+
 test "the wire structs are the sizes the golden BMC assumes" {
     // tests/golden/DummyBmc.zig hard-codes these; they are the framing.
     try std.testing.expectEqual(@as(usize, 16), @sizeOf(DummyRq));
@@ -423,7 +542,13 @@ test "a hard error is reported as -1" {
     defer _ = c.dup2(saved, 2);
 
     var byte: u8 = 0;
+    try std.testing.expectEqual(@as(isize, -1), c.read(-1, &byte, 1));
+    const read_errno = std.c._errno().*;
+    try std.testing.expectEqual(read_errno, @as(c_int, @intFromEnum(linux.errno(rawRead(-1, &byte, 1)))));
     try std.testing.expectEqual(@as(c_int, -1), dataRead(-1, &byte, 1));
+    try std.testing.expectEqual(@as(isize, -1), c.write(-1, &byte, 1));
+    const write_errno = std.c._errno().*;
+    try std.testing.expectEqual(write_errno, @as(c_int, @intFromEnum(linux.errno(rawWrite(-1, &byte, 1)))));
     try std.testing.expectEqual(@as(c_int, -1), dataWrite(-1, &byte, 1));
 }
 

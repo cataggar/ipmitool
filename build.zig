@@ -1093,6 +1093,14 @@ pub fn build(b: *std.Build) void {
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
 
+    const dummy_posix_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.dummy.test."},
+    });
+    const dummy_posix_step = b.step("test-dummy-posix", "Run dummy AF_UNIX syscall, framing, retry and path parity tests");
+    dummy_posix_step.dependOn(&b.addRunArtifact(dummy_posix_unit).step);
+    test_step.dependOn(dummy_posix_step);
+
     const stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"util.stdout.test."},
@@ -2356,6 +2364,43 @@ pub fn build(b: *std.Build) void {
     if (enabled[pluginIndex("dummy")] and target.result.os.tag == b.graph.host.result.os.tag and
         target.result.cpu.arch == b.graph.host.result.cpu.arch)
     {
+        const dummy_c = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+        const dummy_zig = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
+        dummy_c[moduleIndex("dummy")] = false;
+        dummy_zig[moduleIndex("dummy")] = true;
+        var dummy_options: SwappedOptions = .{
+            .target = target,
+            .optimize = optimize,
+            .sanitize_c = sanitize_c,
+            .config_h = config_h,
+            .default_intf = default_intf,
+            .flags = flags,
+            .plugins_enabled = &enabled,
+            .bridge_mod = bridge_mod,
+            .have_crypto_sha256 = openssl,
+            .system_libs = undefined,
+        };
+        const dummy_oracle = if (!zig_selection[moduleIndex("dummy")]) ipmitool else blk: {
+            dummy_options.system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, dummy_c);
+            break :blk addSelectedTool(b, dummy_options, dummy_c, "ipmitool-dummy-c");
+        };
+        const dummy_selected = if (zig_selection[moduleIndex("dummy")]) ipmitool else blk: {
+            dummy_options.system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, dummy_zig);
+            break :blk addSelectedTool(b, dummy_options, dummy_zig, "ipmitool-dummy-zig");
+        };
+        const dummy_compare = b.addRunArtifact(golden_exe);
+        dummy_compare.addArg("--tests-dir");
+        dummy_compare.addDirectoryArg(b.path("tests"));
+        dummy_compare.addArgs(&.{ "--repo", b.build_root.path orelse ".", "--binary" });
+        dummy_compare.addFileArg(dummy_oracle.getEmittedBin());
+        dummy_compare.addArg("--candidate");
+        dummy_compare.addFileArg(dummy_selected.getEmittedBin());
+        dummy_compare.addArgs(&.{ "--allow-uncovered", "--work-dir" });
+        dummy_compare.addDirectoryArg(b.tmpPath());
+        if (b.args) |args| dummy_compare.addArgs(args);
+        b.step("test-dummy-posix-cli", "Compare same-feature C and Zig dummy CLI output, status and wire")
+            .dependOn(&dummy_compare.step);
+
         const session_c = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
         const session_zig = b.allocator.dupe(bool, zig_selection) catch @panic("OOM");
         session_c[moduleIndex("session")] = false;

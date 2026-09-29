@@ -7,6 +7,27 @@ built to close the coverage boundary reported in issue #26.
 `ipmitool` binary against a **model BMC** over loopback UDP and byte-compares
 every datagram in both directions against a checked-in transcript.
 
+The selected Zig `dummy` client uses Zig 0.16 Linux socket, connect, read,
+write and close syscalls. It retains the C native-ABI request/reply framing,
+including restarting at the original buffer pointer on short I/O, retrying
+only `EINTR`/`EAGAIN` three times with a two-second pause, and the original
+closed-peer read spin. The fixed-size `sockaddr_un` is byte-checked against
+the C layout and still passed at its full native size. Linux accepts a
+108-byte path with no terminator inside `sun_path`, just as the C transport
+does despite its one-byte `strcpy` overrun. Unlike the C stack overflow for
+longer paths, a path over 108 bytes now fails with `ENAMETOOLONG` and closes
+its newly opened descriptor;
+ordinary `connect` failure still leaves the descriptor open as in C.
+`getenv` remains libc-backed to observe runtime environment updates without
+a process-wide environment snapshot, and libc `sleep`/`perror` retain their
+existing interruption and diagnostic behavior. `zig build test-dummy-posix`
+checks sockaddr bytes, syscall errors, short-I/O/retry and closed-peer
+behavior, framing and close handling. `zig build test-dummy-posix-cli
+-Dzig-modules=dummy` differentially runs every CLI fixture against
+same-feature C and Zig dummy binaries, including real 108-byte socket paths,
+wire bytes, diagnostics and statuses. The LAN transport fixtures exercise
+the independent UDP transports and still require OpenSSL-backed LAN+.
+
 ## Why this exists
 
 The golden suite (`tests/golden/`, see `golden-harness.md`) drives
