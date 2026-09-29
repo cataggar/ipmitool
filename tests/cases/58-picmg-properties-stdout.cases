@@ -1,0 +1,19 @@
+# PICMG get-properties C stdout oracle: bytes, status and requests.
+
+[picmg_properties_stdout_zero]
+desc: four zero response bytes, including extension version 0.0
+args: -I dummy picmg properties
+transcript: picmg_properties_stdout_zero.tr
+covers: picmg
+
+[picmg_properties_stdout_high]
+desc: high-bit fields, hex padding and extension version 15.15
+args: -I dummy picmg properties
+transcript: picmg_properties_stdout_high.tr
+covers: picmg
+
+[picmg_properties_stdout_ccode]
+desc: failed Get PICMG Properties yields no stdout
+args: -I dummy picmg properties
+transcript: picmg_properties_stdout_ccode.tr
+covers: picmg

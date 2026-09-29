@@ -697,6 +697,21 @@ return codes, and `errno` with libc across all first-byte inputs and
 overflow/prefix boundaries. Non-ASCII locale-specific numeric alphabets
 remain a documented difference; `str2double` still uses libc.
 
+The selected `picmg properties` success result now streams its four lines
+through checked Zig stdout: a libc stdout pre-flush preserves prior buffered
+output, and writes and the final flush are checked. The identifier, extension
+version nibbles, maximum FRU ID and FRU ID retain C's exact `%02x` and `%i`
+bytes, labels, order and newlines. Discovery and other PICMG subcommands still
+make their original properties requests silently, and failed/short responses
+return `-1` without stdout. Output failures log the phase and return `-1`.
+`zig build test-picmg-properties-stdout` compares libc bytes for each response
+field across all 256 values, silent and error statuses, buffered C/Zig ordering
+and injected writer failures. The `picmg_properties_stdout_*` cases in
+`tests/cases/58-picmg-properties-stdout.cases` pin original-C snapshots for
+success boundaries and completion-code failure, including request bytes.
+Unlike the C oracle's unchecked short-response read, the existing Zig
+length guard still rejects replies shorter than four bytes.
+
 Watchdog option splitting now scans the NUL-terminated argument in Zig
 instead of calling libc `strchr`. It still selects the first `=`, returns a
 pointer immediately after it (including an empty value), and ignores bytes

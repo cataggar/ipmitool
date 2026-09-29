@@ -1215,6 +1215,14 @@ pub fn build(b: *std.Build) void {
     user_list_step.dependOn(&b.addRunArtifact(user_list_unit).step);
     test_step.dependOn(user_list_step);
 
+    const picmg_properties_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.picmg.test.properties stdout"},
+    });
+    const picmg_properties_step = b.step("test-picmg-properties-stdout", "Compare PICMG properties C bytes, request statuses, output order and I/O failures");
+    picmg_properties_step.dependOn(&b.addRunArtifact(picmg_properties_unit).step);
+    test_step.dependOn(picmg_properties_step);
+
     const mc_selftest_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.selftest stdout"},

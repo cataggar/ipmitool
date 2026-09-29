@@ -10,6 +10,7 @@ const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 
 const Args = [*c][*c]u8;
 const query = 0;
@@ -190,7 +191,22 @@ fn response(intf: *Intf, cmd: u8, data: []u8, comptime name: [*:0]const u8, min_
     return rsp;
 }
 
-fn properties(intf: *Intf, show: c_int) callconv(.c) c_int {
+const PropertiesOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeProperties(writer: *std.Io.Writer, data: []const u8) std.Io.Writer.Error!void {
+    try writer.print("PICMG identifier\t: 0x{x:0>2}\n", .{data[0]});
+    try writer.print("PICMG Ext. Version : {d}.{d}\n", .{ data[1] & 0xf, data[1] >> 4 });
+    try writer.print("Max FRU Device ID\t: 0x{x:0>2}\n", .{data[2]});
+    try writer.print("FRU Device ID\t\t: 0x{x:0>2}\n", .{data[3]});
+}
+
+fn emitProperties(writer: *std.Io.Writer, data: []const u8, preflush: anytype) PropertiesOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeProperties(writer, data) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn propertiesTo(intf: *Intf, show: c_int, writer: *std.Io.Writer, preflush: anytype) PropertiesOutputError!c_int {
     var data = [_]u8{0};
     const rsp = send(intf, c.PICMG_GET_PICMG_PROPERTIES_CMD, &data) orelse {
         log.print(log.Level.err, "Error getting address information.", .{});
@@ -201,16 +217,200 @@ fn properties(intf: *Intf, show: c_int) callconv(.c) c_int {
         return -1;
     }
     if (show != 0) {
-        _ = c.printf("PICMG identifier\t: 0x%02x\n", @as(c_uint, rsp.data[0]));
-        _ = c.printf("PICMG Ext. Version : %i.%i\n", @as(c_int, rsp.data[1] & 0xf), @as(c_int, rsp.data[1] >> 4));
-        _ = c.printf("Max FRU Device ID\t: 0x%02x\n", @as(c_uint, rsp.data[2]));
-        _ = c.printf("FRU Device ID\t\t: 0x%02x\n", @as(c_uint, rsp.data[3]));
+        try emitProperties(writer, rsp.data[0..4], preflush);
     }
     switch (rsp.data[1] & 0xf) {
         1, 2, 4 => card_type = rsp.data[1] & 0xf,
         else => {},
     }
     return 0;
+}
+
+fn properties(intf: *Intf, show: c_int) callconv(.c) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return propertiesTo(intf, show, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "PICMG properties stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "PICMG properties stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "PICMG properties stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+}
+
+test "properties stdout matches libc for every response byte in every field" {
+    const base = [4]u8{ 0, 0x32, 0x0f, 0xff };
+    for (0..4) |field| {
+        for (0..256) |value| {
+            var data = base;
+            data[field] = @intCast(value);
+            var expected: [128]u8 = undefined;
+            const n = c.snprintf(
+                &expected,
+                expected.len,
+                "PICMG identifier\t: 0x%02x\n" ++
+                    "PICMG Ext. Version : %i.%i\n" ++
+                    "Max FRU Device ID\t: 0x%02x\n" ++
+                    "FRU Device ID\t\t: 0x%02x\n",
+                @as(c_uint, data[0]),
+                @as(c_int, data[1] & 0xf),
+                @as(c_int, data[1] >> 4),
+                @as(c_uint, data[2]),
+                @as(c_uint, data[3]),
+            );
+            try std.testing.expect(n > 0 and n < expected.len);
+            var storage: [128]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeProperties(&writer, &data);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+        }
+    }
+}
+
+test "properties stdout reports preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const data = [4]u8{ 0xff, 0xfe, 0x01, 0x80 };
+    var storage: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitProperties(&writer, &data, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitProperties(&early, &data, Stub.preflushOk));
+
+    try writeProperties(&writer, &data);
+    const expected = writer.buffered();
+    var short: [128]u8 = undefined;
+    var late = std.Io.Writer.fixed(short[0 .. expected.len - 1]);
+    try std.testing.expectError(error.StdoutWriteFailed, emitProperties(&late, &data, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected[0 .. expected.len - 1], late.buffered());
+
+    var final_storage: [128]u8 = undefined;
+    var final = std.Io.Writer.fixed(&final_storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitProperties(&final, &data, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected, final.buffered());
+}
+
+test "properties stdout preserves buffered C output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitProperties(&stdout.interface, &.{ 0, 0x32, 0x0f, 0x80 }, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [160]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|PICMG identifier\t: 0x00\n" ++
+            "PICMG Ext. Version : 2.3\n" ++
+            "Max FRU Device ID\t: 0x0f\n" ++
+            "FRU Device ID\t\t: 0x80\n|after\n",
+        captured[0..@intCast(length)],
+    );
+}
+
+test "properties stdout preserves request statuses and silent discovery" {
+    const Stub = struct {
+        var reply = std.mem.zeroes(Response);
+        var requests: usize = 0;
+        var present = true;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == ipmi.NetFn.picmg);
+            std.debug.assert(req.msg.cmd == c.PICMG_GET_PICMG_PROPERTIES_CMD);
+            std.debug.assert(req.msg.data_len == 1 and req.msg.data.?[0] == 0);
+            return if (present) &reply else null;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]u8{ 0, 1, 2, 4, 5, 0xff }) |version| {
+        Stub.reply = std.mem.zeroes(Response);
+        Stub.reply.data_len = 4;
+        Stub.reply.data[1] = version;
+        Stub.requests = 0;
+        Stub.present = true;
+        card_type = 0xff;
+        var storage: [128]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, 0), try propertiesTo(&intf, 0, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+        try std.testing.expectEqual(if (version == 1 or version == 2 or version == 4) version else @as(u8, 0xff), card_type);
+    }
+    for ([_]struct { present: bool, ccode: u8, len: c_int }{
+        .{ .present = false, .ccode = 0, .len = 4 },
+        .{ .present = true, .ccode = 0xc1, .len = 4 },
+        .{ .present = true, .ccode = 0xff, .len = 4 },
+        .{ .present = true, .ccode = 0, .len = 0 },
+        .{ .present = true, .ccode = 0, .len = 1 },
+        .{ .present = true, .ccode = 0, .len = 2 },
+        .{ .present = true, .ccode = 0, .len = 3 },
+    }) |case| {
+        Stub.reply = std.mem.zeroes(Response);
+        Stub.reply.ccode = case.ccode;
+        Stub.reply.data_len = case.len;
+        Stub.present = case.present;
+        Stub.requests = 0;
+        card_type = 0xff;
+        var storage: [128]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try propertiesTo(&intf, 1, &writer, Stub.preflushFail));
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+        try std.testing.expectEqual(@as(u8, 0xff), card_type);
+    }
+    Stub.reply.data_len = 4;
+    Stub.reply.data[1] = 2;
+    Stub.requests = 0;
+    var storage: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, propertiesTo(&intf, 1, &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    const Flush = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn fail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, propertiesTo(&intf, 1, &early, Flush.preflushOk));
+    try std.testing.expectEqual(@as(usize, 2), Stub.requests);
+    var final_storage: [128]u8 = undefined;
+    var final = std.Io.Writer.fixed(&final_storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Flush.fail };
+    try std.testing.expectError(error.StdoutFlushFailed, propertiesTo(&intf, 1, &final, Flush.preflushOk));
+    try std.testing.expectEqual(@as(usize, 3), Stub.requests);
+    try std.testing.expectEqual(@as(u8, 0xff), card_type);
 }
 
 fn discover(intf: *Intf) callconv(.c) u8 {
