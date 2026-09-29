@@ -954,6 +954,21 @@ Write and final-flush failures terminate explicitly; `zig build
 test-lanplus-data-stderr` compares all byte values with libc's `%02x` and
 checks early and late writer failures. The existing `lanplus/pong-details`
 C/Zig transport fixture checks its place among adjacent C logging output.
+RAKP 1 now measures the fixed 17-byte username in Zig, preserving the
+16-character limit, error diagnostic and framing for NUL-terminated names.
+Unlike unbounded C `strlen`, an unterminated username is safely rejected as
+17 bytes. The optional hostname guard checks only the first byte, retaining
+the null/empty failure path; `test_crypt2` uses the exact eight-byte input
+length instead of reading past its nonterminated array as C `strlen` does.
+`zig build test-lanplus-lengths` compares terminated and embedded-NUL lengths
+with libc, checks the username boundary and unterminated input, and checks
+null/empty hostnames. The LAN+ transport fixtures pin valid-input wire parity.
+For the complete cipher-17 and auto-cipher suite without local OpenSSL
+headers, use `-Dipmishell=false -Dopenssl=true -Dinternal-md5=true
+-Dintf-lanplus=true -Dzig-modules=lanplus-crypt,lanplus-crypt-impl` with
+`zig build test-transport -- --filter lanplus`: Zig crypto supplies the
+algorithms while the feature flag keeps SHA-256 cipher selection enabled.
+`-Dopenssl=false` disables SHA-256 and cannot match three existing fixtures.
 Without local OpenSSL headers, run the pong unit with
 `-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`
 (the unit runs independently of the transport). The transport comparison
