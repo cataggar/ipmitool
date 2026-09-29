@@ -366,6 +366,12 @@ NUL-terminated paths with libc at decimal-width boundaries, checks this
 bound and exercises the maximum ABI value through the model driver.
 `test-fdset` exercises the remaining model-driver fallback.
 
+The selected AMI USB SCSI transport formats `/dev/sgN` paths with bounded
+Zig formatting rather than libc `sprintf`. `zig build test-usb
+-Dzig-modules=usb` compares path bytes with libc across signed `c_int`
+boundaries, rejects a short destination, and retains the model SCSI device's
+discovery and descriptor-lifetime checks. The C USB transport is unchanged.
+
 For `loglevel < 0`, the selected `print_valstr` and `print_valstr_2col` write
 through Zig's streaming stdout writer. They first check `fflush(stdout)` to
 drain any preceding libc `printf` output, then check both Zig writes and the
