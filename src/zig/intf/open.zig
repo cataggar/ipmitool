@@ -226,33 +226,42 @@ fn sysSelect(nfds: c_int, readfds: *c.fd_set, timeout: *c.struct_timeval) c_int 
 // Interface
 // ---------------------------------------------------------------------------
 
+const DevicePaths = struct {
+    ipmi: [16]u8,
+    ipmi_devfs: [16]u8,
+    ipmidev: [17]u8,
+};
+
+fn formatDevicePaths(devnum: c_int) error{NoSpaceLeft}!DevicePaths {
+    var paths: DevicePaths = undefined;
+    _ = std.fmt.bufPrintSentinel(&paths.ipmi, "/dev/ipmi{d}", .{devnum}, 0) catch return error.NoSpaceLeft;
+    _ = std.fmt.bufPrintSentinel(&paths.ipmi_devfs, "/dev/ipmi/{d}", .{devnum}, 0) catch return error.NoSpaceLeft;
+    _ = std.fmt.bufPrintSentinel(&paths.ipmidev, "/dev/ipmidev/{d}", .{devnum}, 0) catch return error.NoSpaceLeft;
+    return paths;
+}
+
 /// `ipmi_openipmi_open()`: find the device node, enable the event receiver and
 /// announce our IPMB address.
 fn open(intf: *Intf) callconv(.c) c_int {
-    var ipmi_dev: [16]u8 = undefined;
-    var ipmi_devfs: [16]u8 = undefined;
-    var ipmi_devfs2: [17]u8 = undefined;
-    var devnum: c_int = 0;
-
-    devnum = intf.devnum;
-
-    _ = c.sprintf(&ipmi_dev, "/dev/ipmi%d", devnum);
-    _ = c.sprintf(&ipmi_devfs, "/dev/ipmi/%d", devnum);
-    _ = c.sprintf(&ipmi_devfs2, "/dev/ipmidev/%d", devnum);
+    const devnum: c_int = intf.devnum;
+    var paths = formatDevicePaths(devnum) catch {
+        log.print(log.Level.err, "OpenIPMI device number %d exceeds device path capacity", .{devnum});
+        return -1;
+    };
     log.print(log.Level.debug, "Using ipmi device %d", .{devnum});
 
-    intf.fd = sysOpen(@ptrCast(&ipmi_dev), c.O_RDWR);
+    intf.fd = sysOpen(@ptrCast(&paths.ipmi), c.O_RDWR);
 
     if (intf.fd < 0) {
-        intf.fd = sysOpen(@ptrCast(&ipmi_devfs), c.O_RDWR);
+        intf.fd = sysOpen(@ptrCast(&paths.ipmi_devfs), c.O_RDWR);
         if (intf.fd < 0) {
-            intf.fd = sysOpen(@ptrCast(&ipmi_devfs2), c.O_RDWR);
+            intf.fd = sysOpen(@ptrCast(&paths.ipmidev), c.O_RDWR);
         }
         if (intf.fd < 0) {
             log.perror(
                 log.Level.err,
                 "Could not open device at %s or %s or %s",
-                .{ &ipmi_dev, &ipmi_devfs, &ipmi_devfs2 },
+                .{ &paths.ipmi, &paths.ipmi_devfs, &paths.ipmidev },
             );
             return -1;
         }
@@ -1190,6 +1199,35 @@ test "open tries the three device names in order and gives up" {
     for (ModelDriver.attempt_flags[0..3]) |flags| {
         try std.testing.expectEqual(@as(c_int, c.O_RDWR), flags);
     }
+    try std.testing.expectEqual(@as(c_int, 0), intf.opened);
+}
+
+test "open device paths match libc bytes at the decimal-width boundaries" {
+    for ([_]c_int{ -99, -10, -1, 0, 9, 10, 99, 100, 999 }) |devnum| {
+        const paths = try formatDevicePaths(devnum);
+        inline for (.{
+            .{ .format = "/dev/ipmi%d", .field = "ipmi" },
+            .{ .format = "/dev/ipmi/%d", .field = "ipmi_devfs" },
+            .{ .format = "/dev/ipmidev/%d", .field = "ipmidev" },
+        }) |entry| {
+            var expected: [32]u8 = undefined;
+            const n = c.snprintf(&expected, expected.len, entry.format, devnum);
+            const actual = @field(paths, entry.field);
+            try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < actual.len);
+            try std.testing.expectEqualSlices(u8, expected[0 .. @as(usize, @intCast(n)) + 1], actual[0 .. @as(usize, @intCast(n)) + 1]);
+        }
+    }
+
+    for ([_]c_int{ -100, 1000, std.math.minInt(c_int), std.math.maxInt(c_int) }) |devnum| {
+        try std.testing.expectError(error.NoSpaceLeft, formatDevicePaths(devnum));
+    }
+    ModelDriver.reset();
+    defer ModelDriver.reset();
+    var intf = testIntf();
+    intf.devnum = std.math.maxInt(@TypeOf(intf.devnum));
+    try std.testing.expectEqual(@as(c_int, -1), open(&intf));
+    try std.testing.expectEqual(@as(usize, 3), ModelDriver.attempt_count);
+    try std.testing.expectEqualStrings("/dev/ipmidev/255", std.mem.sliceTo(&ModelDriver.attempts[2], 0));
     try std.testing.expectEqual(@as(c_int, 0), intf.opened);
 }
 
