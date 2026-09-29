@@ -16,9 +16,9 @@
 //!   from the selected logger archive (or its C fallback). Boot mailbox
 //!   request selectors use bounded, NUL-terminated Zig formatting; `printf`
 //!   remains in tests to seed buffered C output. `strcmp`, `strncmp`,
-//!   `strtok_r` and `str2uchar` keep their C arguments, including writable
-//!   strings split in place by `strtok_r`. The `power_usage` format is a
-//!   constant, never user input.
+//!   and `str2uchar` keep their C arguments. Boot options split writable
+//!   strings in place in Zig, matching `strtok_r`. The `power_usage` format
+//!   is a constant, never user input.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -2193,14 +2193,76 @@ const bootparam_options = [_]BootparamOption{
     .{ .name = "power", .value = 0x01, .desc = "Clear valid bit on power up via power push button or wake event" },
 };
 
+const CommaTokens = struct {
+    remaining: ?[*:0]u8,
+
+    fn init(input: [*:0]u8) CommaTokens {
+        return .{ .remaining = input };
+    }
+
+    fn next(self: *CommaTokens) ?[*:0]u8 {
+        var cursor = self.remaining orelse return null;
+        while (cursor[0] == ',') : (cursor += 1) {}
+        if (cursor[0] == 0) {
+            self.remaining = null;
+            return null;
+        }
+        const token = cursor;
+        while (cursor[0] != 0 and cursor[0] != ',') : (cursor += 1) {}
+        if (cursor[0] == ',') {
+            cursor[0] = 0;
+            self.remaining = cursor + 1;
+        } else {
+            self.remaining = null;
+        }
+        return token;
+    }
+};
+
+test "chassis comma tokens match libc token pointers and input mutations" {
+    const Oracle = struct {
+        fn check(input: []const u8) !void {
+            var actual_bytes = [_]u8{0xa5} ** 128;
+            try std.testing.expect(input.len < actual_bytes.len);
+            @memcpy(actual_bytes[0..input.len], input);
+            actual_bytes[input.len] = 0;
+            var expected_bytes = actual_bytes;
+            var tokens = CommaTokens.init(@ptrCast(&actual_bytes));
+            var saveptr: [*c]u8 = null;
+            var first = true;
+            while (true) {
+                const expected = c.strtok_r(if (first) @ptrCast(&expected_bytes) else null, ",", &saveptr);
+                first = false;
+                const actual = tokens.next();
+                try std.testing.expectEqual(expected == null, actual == null);
+                try std.testing.expectEqualSlices(u8, &expected_bytes, &actual_bytes);
+                if (expected == null) break;
+                try std.testing.expectEqual(
+                    @intFromPtr(expected) - @intFromPtr(&expected_bytes),
+                    @intFromPtr(actual.?) - @intFromPtr(&actual_bytes),
+                );
+                try std.testing.expectEqualStrings(std.mem.span(expected), std.mem.span(actual.?));
+            }
+        }
+    };
+
+    for ([_][]const u8{
+        "",        ",",        ",,,",              "help",                           "a,", ",a", "a,,b", ",a,b,,c,", "options=,,PEF,no-watchdog,",
+        "a\x00,b", "a,\x00,b", "a,,help,,ignored", "verbose=yes,cons_redirect=skip",
+    }) |input| try Oracle.check(input);
+    for (0..256) |byte| {
+        const input = [_]u8{ 'a', @intCast(byte), ',', 'b', ',', 'c' };
+        try Oracle.check(&input);
+    }
+}
+
 /// `get_bootparam_options()`.
 ///
-/// `optstring` must be writable: `strtok_r()` chops it up in place, exactly as
+/// `optstring` must be writable: option commas are split in place, exactly as
 /// in C.  The only caller that passes a literal is
 /// `ipmi_chassis_set_bootflag_help()`, whose "options=help" contains no comma
 /// and so is never written to.
 fn getBootparamOptions(optstring: [*:0]u8, set_flag: *u8, clr_flag: *u8) c_int {
-    var saveptr: [*c]u8 = null;
     var option_error = false;
     set_flag.* = 0;
     clr_flag.* = 0;
@@ -2211,10 +2273,10 @@ fn getBootparamOptions(optstring: [*:0]u8, set_flag: *u8, clr_flag: *u8) c_int {
         return -1;
     }
 
-    var token: [*c]u8 = c.strtok_r(optstring + 8, ",", &saveptr);
-    while (token != null) : (token = c.strtok_r(null, ",", &saveptr)) {
+    var tokens = CommaTokens.init(optstring + 8);
+    while (tokens.next()) |token| {
         var setbit = false;
-        var name: [*c]u8 = token;
+        var name: [*:0]u8 = token;
         if (c.strcmp(name, "help") == 0) {
             option_error = true;
             break;
@@ -3256,15 +3318,14 @@ const bootdev_options = [_]BootdevOption{
 
 /// `bootdev_parse_options()` - a helper for `ipmi_chassis_main()`.
 ///
-/// `optstring` must be writable; `strtok_r()` chops it up in place.
+/// `optstring` must be writable; commas are split in place.
 fn bootdevParseOptions(optstring: [*:0]u8, flags: *[BF_BYTE_COUNT]u8) bool {
-    var saveptr: [*c]u8 = null;
     var option_error = false;
 
     @memset(flags, 0);
 
-    var token: [*c]u8 = c.strtok_r(optstring, ",", &saveptr);
-    while (token != null) : (token = c.strtok_r(null, ",", &saveptr)) {
+    var tokens = CommaTokens.init(optstring);
+    while (tokens.next()) |token| {
         if (c.strcmp(token, "help") == 0) {
             option_error = true;
             break;
@@ -3302,6 +3363,34 @@ fn bootdevParseOptions(optstring: [*:0]u8, flags: *[BF_BYTE_COUNT]u8) bool {
     }
 
     return true;
+}
+
+test "chassis comma tokens retain bootflag and bootdev option masks" {
+    const bootflag = try std.testing.allocator.dupeZ(u8, "options=,PEF,,no-watchdog,reset,");
+    defer std.testing.allocator.free(bootflag);
+    var set_flag: u8 = undefined;
+    var clr_flag: u8 = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), getBootparamOptions(bootflag.ptr, &set_flag, &clr_flag));
+    try std.testing.expectEqual(@as(u8, 0x04), set_flag);
+    try std.testing.expectEqual(@as(u8, 0x12), clr_flag);
+
+    const empty = try std.testing.allocator.dupeZ(u8, "options=,,,");
+    defer std.testing.allocator.free(empty);
+    try std.testing.expectEqual(@as(c_int, 0), getBootparamOptions(empty.ptr, &set_flag, &clr_flag));
+    try std.testing.expectEqual(@as(u8, 0), set_flag);
+    try std.testing.expectEqual(@as(u8, 0), clr_flag);
+
+    const bootdev = try std.testing.allocator.dupeZ(u8, ",persistent,,efiboot,verbose=default,verbose=yes,");
+    defer std.testing.allocator.free(bootdev);
+    var flags: [BF_BYTE_COUNT]u8 = undefined;
+    try std.testing.expect(bootdevParseOptions(bootdev.ptr, &flags));
+    try std.testing.expectEqual(BF1_PERSIST | BF1_BOOT_TYPE_EFI, flags[BF1_OFFSET]);
+    try std.testing.expectEqual(BF3_VERBOSITY_VERBOSE, flags[BF3_OFFSET] & BF3_VERBOSITY_MASK);
+
+    const invalid = try std.testing.allocator.dupeZ(u8, "persistent,,unknown");
+    defer std.testing.allocator.free(invalid);
+    try std.testing.expect(!bootdevParseOptions(invalid.ptr, &flags));
+    try std.testing.expectEqual(BF1_PERSIST, flags[BF1_OFFSET]);
 }
 
 /// `ipmi_chassis_main()`.

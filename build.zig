@@ -1270,6 +1270,14 @@ pub fn build(b: *std.Build) void {
     chassis_bootparam_stdout_step.dependOn(&b.addRunArtifact(chassis_bootparam_stdout_unit).step);
     test_step.dependOn(chassis_bootparam_stdout_step);
 
+    const chassis_comma_tokens_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis comma tokens"},
+    });
+    const chassis_comma_tokens_step = b.step("test-chassis-comma-tokens", "Compare boot option tokenization and mutated arguments with libc");
+    chassis_comma_tokens_step.dependOn(&b.addRunArtifact(chassis_comma_tokens_unit).step);
+    test_step.dependOn(chassis_comma_tokens_step);
+
     const chassis_mailbox_requests_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.chassis.test.chassis mailbox request"},
