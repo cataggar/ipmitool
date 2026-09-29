@@ -177,6 +177,24 @@ fn isG2Drive(fd: c_int) callconv(.c) c_int {
     return 0;
 }
 
+fn scsiDevicePath(buffer: []u8, number: c_int) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(buffer, "/dev/sg{d}", .{number}, 0);
+}
+
+test "USB device paths match libc formatting and reject short buffers" {
+    for ([_]c_int{ std.math.minInt(c_int), -1234, -1, 0, 1, 9, 10, 255, 1_000_000, std.math.maxInt(c_int) }) |number| {
+        var actual: [256]u8 = undefined;
+        var expected: [256]u8 = undefined;
+        const count = c.snprintf(&expected, expected.len, "/dev/sg%d", number);
+        try std.testing.expect(count > 0);
+        const path = try scsiDevicePath(&actual, number);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(count)], path);
+        try std.testing.expectEqual(@as(u8, 0), actual[path.len]);
+    }
+    var short: [7]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, scsiDevicePath(&short, 0));
+}
+
 fn findG2CDROM(intf: *Intf) callconv(.c) c_int {
     var devices: [16]c_int = undefined;
     var count: c_int = devices.len;
@@ -186,8 +204,11 @@ fn findG2CDROM(intf: *Intf) callconv(.c) c_int {
     }
     for (devices[0..@intCast(count)]) |number| {
         var name: [256]u8 = undefined;
-        _ = c.sprintf(&name, "/dev/sg%d", number);
-        if (openCD(intf, &name) != 0) continue;
+        const path = scsiDevicePath(&name, number) catch {
+            log.print(log.Level.err, "Unable to format USB device path", .{});
+            return 0;
+        };
+        if (openCD(intf, path.ptr) != 0) continue;
         if (isG2Drive(intf.fd) == 0) {
             log.print(log.Level.debug, "USB Device found", .{});
             return 1;
