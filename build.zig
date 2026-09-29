@@ -2845,6 +2845,7 @@ pub fn build(b: *std.Build) void {
         run.addFileArg(b.path("tests/shell/pty.py"));
         run.addFileArg(candidate.getEmittedBin());
         run.addFileArg(oracle.getEmittedBin());
+        run.setEnvironmentVariable("IPMITOOL_TEST_C_BUFFERED_POH", "1");
         cutover_step.dependOn(&run.step);
 
         const shell_and_log: [zig_modules.len]bool = blk: {
