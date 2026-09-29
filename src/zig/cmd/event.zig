@@ -27,11 +27,11 @@
 //!   `ipmi_get_next_event_sensor_type()` exactly as C does.
 //! * **Formatting and string handling keep libc behavior.** Apart from the
 //!   checked Zig stdout announcements for the three sample events, `printf`,
-//!   `strcasecmp`, `strtok`, `isspace`, `fgets` and `str2uchar` use the
-//!   `ipmi_c` bridge. Equality, comment scanning and string lengths use
-//!   NUL-aware Zig operations. Diagnostics use the typed logger
+//!   `strcasecmp`, `isspace`, `fgets` and `str2uchar` use the `ipmi_c` bridge.
+//!   Equality, comment scanning, space-only tokenization and string lengths
+//!   use bounded Zig operations. Diagnostics use the typed logger
 //!   (libc `snprintf` when selected, C `lprintf` otherwise); `%-9s` padding,
-//!   the `(null)` a NULL `%s` prints and `strtok`'s in-place chopping are all
+//!   the `(null)` a NULL `%s` prints and in-place token chopping are all
 //!   observable in the golden snapshots.
 //! * **File errors are sticky.**  As in C, a bad token rejects only its line:
 //!   subsequent valid lines are still sent, but the command returns failure
@@ -736,6 +736,117 @@ fn eventFromSensor(
 // Reading events from a file
 // ---------------------------------------------------------------------------
 
+const SpaceTokens = struct {
+    bytes: [:0]u8,
+    cursor: usize = 0,
+
+    fn init(line: [:0]u8) SpaceTokens {
+        return .{ .bytes = line };
+    }
+
+    fn next(self: *SpaceTokens) ?[*:0]u8 {
+        while (self.cursor < self.bytes.len and self.bytes[self.cursor] == ' ') : (self.cursor += 1) {}
+        if (self.cursor == self.bytes.len) return null;
+
+        const start = self.cursor;
+        while (self.cursor < self.bytes.len and self.bytes[self.cursor] != ' ') : (self.cursor += 1) {}
+        if (self.cursor < self.bytes.len) {
+            self.bytes[self.cursor] = 0;
+            self.cursor += 1;
+        }
+        return @ptrCast(&self.bytes[start]);
+    }
+};
+
+test "event space tokens match libc offsets and whole-buffer mutations" {
+    const Oracle = struct {
+        fn check(input: []const u8) !void {
+            var actual_bytes = [_]u8{0xa5} ** 1025;
+            try std.testing.expect(input.len <= 1023);
+            @memcpy(actual_bytes[0..input.len], input);
+            actual_bytes[input.len] = 0;
+            var expected_bytes = actual_bytes;
+            var tokens = SpaceTokens.init(std.mem.span(@as([*:0]u8, @ptrCast(&actual_bytes))));
+            var saveptr: [*c]u8 = null;
+            var first = true;
+            while (true) {
+                const expected = c.strtok_r(if (first) @ptrCast(&expected_bytes) else null, " ", &saveptr);
+                first = false;
+                const actual = tokens.next();
+                try std.testing.expectEqual(expected == null, actual == null);
+                try std.testing.expectEqualSlices(u8, &expected_bytes, &actual_bytes);
+                if (expected == null) break;
+                try std.testing.expectEqual(
+                    @intFromPtr(expected) - @intFromPtr(&expected_bytes),
+                    @intFromPtr(actual.?) - @intFromPtr(&actual_bytes),
+                );
+                try std.testing.expectEqualStrings(std.mem.span(expected), std.mem.span(actual.?));
+            }
+        }
+    };
+
+    for ([_][]const u8{
+        "",
+        " ",
+        "   ",
+        "0x04",
+        " 0x04 ",
+        "  0x04  0x01   0x30  ",
+        "\t0x04\t0x01 0x30",
+        "0x04\n0x01 0x30",
+        "0x04\r0x01 0x30",
+        "0x04 # comment",
+        "0x04 0x100 0xgg",
+        "0x04 0x01\x00 0x30",
+        "0x04\x00 0x01",
+        "0x04 0x01 0x30 0x01 0x09 0xff 0xff 0x100 0xgg",
+        "0x04" ++ (" " ** 1019),
+        "0x04" ++ (" " ** 1018) ++ "0",
+    }) |input| try Oracle.check(input);
+    for (0..256) |byte| {
+        const input = [_]u8{ '0', 'x', @intCast(byte), ' ', '0', 'x', '0', '1', ' ', '0', 'x', 'f', 'f' };
+        try Oracle.check(&input);
+    }
+}
+
+test "event space tokens retain independent cursors across lines" {
+    const first_line = " 0x04  0x01 ";
+    const second_line = "0x02 0x60";
+    var first = [_]u8{0xa5} ** 32;
+    var second = [_]u8{0xa5} ** 32;
+    @memcpy(first[0..first_line.len], first_line);
+    first[first_line.len] = 0;
+    @memcpy(second[0..second_line.len], second_line);
+    second[second_line.len] = 0;
+    var expected_first = first;
+    var expected_second = second;
+    var first_tokens = SpaceTokens.init(std.mem.span(@as([*:0]u8, @ptrCast(&first))));
+    var second_tokens = SpaceTokens.init(std.mem.span(@as([*:0]u8, @ptrCast(&second))));
+    var first_save: [*c]u8 = null;
+    var second_save: [*c]u8 = null;
+    var first_start = true;
+    var second_start = true;
+
+    for ([_]bool{ true, false, true, false, true, false }) |select_first| {
+        const expected_bytes = if (select_first) &expected_first else &expected_second;
+        const actual_bytes = if (select_first) &first else &second;
+        const saveptr = if (select_first) &first_save else &second_save;
+        const start = if (select_first) &first_start else &second_start;
+        const expected = c.strtok_r(if (start.*) @ptrCast(expected_bytes) else null, " ", saveptr);
+        start.* = false;
+        const actual = if (select_first) first_tokens.next() else second_tokens.next();
+        try std.testing.expectEqual(expected == null, actual == null);
+        try std.testing.expectEqualSlices(u8, expected_bytes, actual_bytes);
+        if (expected) |token| {
+            try std.testing.expectEqual(
+                @intFromPtr(token) - @intFromPtr(expected_bytes),
+                @intFromPtr(actual.?) - @intFromPtr(actual_bytes),
+            );
+            try std.testing.expectEqualStrings(std.mem.span(token), std.mem.span(actual.?));
+        }
+    }
+}
+
 /// `ipmi_event_fromfile()`.
 fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
     const name = file orelse return -1;
@@ -762,21 +873,22 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
             end -= 1;
             buf[end] = 0;
         }
-        var ptr: [*c]u8 = &buf;
-        while (c.isspace(ptr[0]) != 0) ptr += 1;
-        if (ptr[0] == 0) continue;
+        var start: usize = 0;
+        while (start < end and c.isspace(buf[start]) != 0) start += 1;
+        if (start == end) continue;
 
         // parse the event, 7 bytes with optional comment
         // 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event
-        var tok: [*c]u8 = c.strtok(ptr, " ");
-        while (tok != null) {
+        var tokens = SpaceTokens.init(buf[start..end :0]);
+        var tok = tokens.next();
+        while (tok) |token| {
             if (count == @sizeOf(PlatformEventMsg)) break;
-            if (0 > c.str2uchar(tok, &rqdata[count])) {
-                log.print(log.Level.err, "Invalid token in file: [%s]", .{tok});
+            if (0 > c.str2uchar(token, &rqdata[count])) {
+                log.print(log.Level.err, "Invalid token in file: [%s]", .{token});
                 rc = -1;
                 break;
             }
-            tok = c.strtok(null, " ");
+            tok = tokens.next();
             count += 1;
         }
         if (count < @sizeOf(PlatformEventMsg)) {

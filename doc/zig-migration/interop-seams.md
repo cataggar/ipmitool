@@ -827,10 +827,21 @@ existing C path.
 The selected event command now compares command/shortcut names and measures
 argument/file-line text with NUL-aware Zig operations. It finds the first `#`
 in a file line without libc `strchr`, still truncating that writable line in
-place before libc whitespace classification and `strtok` tokenization.
+place before libc whitespace classification and bounded Zig tokenization.
 `zig build test-event-cstrings` compares equality, comment pointer offsets
 and lengths with libc across every first byte and embedded NULs. The
 `event_` CLI goldens preserve comments, whitespace, requests and failures.
+
+The selected `event file` parser now splits the at-most-1023-byte input line
+on ASCII spaces using per-line Zig state instead of libc's global `strtok`
+state. It skips repeated spaces and chops reached delimiters in place, but
+does not split on tabs; leading/trailing libc whitespace stripping, comments,
+seven-byte limit, `str2uchar` conversions, diagnostics and sticky file errors
+remain unchanged. `zig build test-event-space-tokens` compares token offsets,
+whole-buffer mutations, every byte value and interleaved lines with the
+test-only libc `strtok_r` oracle. The `event_file_` C/selected/all-selected
+CLI goldens compare outputs, exit statuses and request bytes for whitespace,
+invalid and overflow tokens, ignored extra tokens and later valid lines.
 
 Selected `sel time get` and the readback after a successful `sel time set`
 stream the original `ipmi_timestamp_numeric()` bytes plus newline through
