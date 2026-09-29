@@ -1,0 +1,19 @@
+respond length
+  netfn 0x2c
+  cmd 0x09
+  match dc 00 01
+  data dc 11 30
+end
+respond first
+  netfn 0x2c
+  cmd 0x09
+  match dc 00 10
+  data dc 11 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66
+end
+respond failed_tail
+  netfn 0x2c
+  cmd 0x09
+  match dc 10 01
+  ccode 0xc7
+  data dc
+end

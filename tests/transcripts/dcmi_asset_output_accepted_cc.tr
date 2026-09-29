@@ -1,0 +1,13 @@
+respond length
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 00
+  data dc 01
+end
+respond accepted
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 01
+  ccode 0x80
+  data dc 01 ff
+end

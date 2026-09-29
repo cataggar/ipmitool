@@ -9,6 +9,7 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const dcmi_strings = @import("dcmi_strings.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
@@ -337,37 +338,77 @@ fn discover(intf: *Intf) c_int {
     return 0;
 }
 
-fn getString(intf: *Intf, mc: bool) c_int {
+const StringOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn stringLabel(writer: *std.Io.Writer, mc: bool, set: bool, preflush: anytype) StringOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    const label = if (set)
+        (if (mc) "\n Set Management Controller Identifier String Command: " else "\n Set Asset Tag: ")
+    else
+        (if (mc) "\n Get Management Controller Identifier String: " else "\n Asset tag: ");
+    writer.writeAll(label) catch return error.StdoutWriteFailed;
+}
+
+fn stringBytes(writer: *std.Io.Writer, bytes: []const u8) StringOutputError!void {
+    writer.writeAll(bytes) catch return error.StdoutWriteFailed;
+}
+
+fn stringEnd(writer: *std.Io.Writer) StringOutputError!void {
+    writer.writeByte('\n') catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn stringOutputError(action: [*:0]const u8, err: StringOutputError, write_error: anyerror) void {
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(err_level, "DCMI %s stdout C preflush failed (errno %d)", .{ action, std.c._errno().* }),
+        error.StdoutWriteFailed => log.print(err_level, "DCMI %s stdout write failed: %s", .{ action, @errorName(write_error).ptr }),
+        error.StdoutFlushFailed => log.print(err_level, "DCMI %s stdout flush failed: %s", .{ action, @errorName(write_error).ptr }),
+    }
+}
+
+fn getStringTo(intf: *Intf, mc: bool, writer: *std.Io.Writer, preflush: anytype) StringOutputError!c_int {
     const cmd: u8 = if (mc) 9 else 6;
     var initial = [3]u8{ group, 0, @intFromBool(mc) };
     const first = req(intf, cmd, &initial);
     if (!valid(first, 2)) return -1;
     var remaining: usize = first.?.data[1];
     var offset: usize = 0;
-    _ = c.printf(if (mc) "\n Get Management Controller Identifier String: " else "\n Asset tag: ");
+    try stringLabel(writer, mc, false, preflush);
     while (remaining > 0) {
         const count = @min(remaining, 16);
         var msg = [3]u8{ group, @intCast(offset), @intCast(count) };
         const rsp = req(intf, cmd, &msg);
         if (rsp) |r| {
             if (!mc and r.ccode >= 0x80 and r.ccode <= 0x83) r.ccode = 0;
+            if (r.ccode == 0 and length(r) > 0 and r.data[0] != group)
+                writer.flush() catch return error.StdoutFlushFailed;
         }
-        if (!valid(rsp, count + 2)) return -1;
-        for (rsp.?.data[2 .. count + 2]) |byte| _ = c.printf("%c", @as(c_int, byte));
+        if (!valid(rsp, count + 2)) {
+            writer.flush() catch return error.StdoutFlushFailed;
+            return -1;
+        }
+        try stringBytes(writer, rsp.?.data[2 .. count + 2]);
         remaining -= count;
         offset += count;
     }
-    _ = c.printf("\n");
+    try stringEnd(writer);
     return 0;
 }
-fn setString(intf: *Intf, mc: bool, arg: [*:0]u8) c_int {
+fn getString(intf: *Intf, mc: bool) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return getStringTo(intf, mc, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        stringOutputError(if (mc) "get MC ID" else "get asset tag", err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+fn setStringTo(intf: *Intf, mc: bool, arg: [*:0]u8, writer: *std.Io.Writer, preflush: anytype) StringOutputError!c_int {
     const text = std.mem.span(arg);
     const size = text.len + @intFromBool(mc);
     if (size > 64) {
         log.print(err_level, "\nValue is too long.", .{});
         return -1;
     }
-    _ = c.printf(if (mc) "\n Set Management Controller Identifier String Command: " else "\n Set Asset Tag: ");
+    try stringLabel(writer, mc, true, preflush);
     var offset: usize = 0;
     while (offset < size) {
         const count = @min(size - offset, 16);
@@ -379,12 +420,344 @@ fn setString(intf: *Intf, mc: bool, arg: [*:0]u8) c_int {
             msg[3 + i] = if (offset + i == text.len) 0 else text[offset + i];
         }
         const rsp = req(intf, if (mc) 10 else 8, msg[0 .. count + 3]);
-        if (!(mc and std.mem.eql(u8, std.mem.sliceTo(&intf.name, 0), "lanplus")) and !valid(rsp, 1)) return -1;
-        for (msg[3 .. count + 3]) |byte| _ = c.printf("%c", @as(c_int, byte));
+        if (!(mc and std.mem.eql(u8, std.mem.sliceTo(&intf.name, 0), "lanplus"))) {
+            if (rsp) |r| if (r.ccode == 0 and length(r) > 0 and r.data[0] != group) {
+                writer.flush() catch return error.StdoutFlushFailed;
+            };
+            if (!valid(rsp, 1)) {
+                writer.flush() catch return error.StdoutFlushFailed;
+                return -1;
+            }
+        }
+        try stringBytes(writer, msg[3 .. count + 3]);
         offset += count;
     }
-    _ = c.printf("\n");
+    try stringEnd(writer);
     return 0;
+}
+fn setString(intf: *Intf, mc: bool, arg: [*:0]u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return setStringTo(intf, mc, arg, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        stringOutputError(if (mc) "set MC ID" else "set asset tag", err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
+}
+
+const StringTestBmc = struct {
+    const Failure = enum { none, no_reply, ccode, short_reply, wrong_group };
+    const Record = struct {
+        cmd: u8,
+        data: [19]u8,
+        len: usize,
+    };
+    var response = std.mem.zeroes(Response);
+    var bytes: []const u8 = "";
+    var records: [18]Record = undefined;
+    var requests: usize = 0;
+    var fail_at: usize = 0;
+    var failure: Failure = .none;
+    var completion: u8 = 0xc1;
+
+    fn reset(payload: []const u8) void {
+        bytes = payload;
+        requests = 0;
+        fail_at = 0;
+        failure = .none;
+        completion = 0xc1;
+    }
+    fn send(_: *Intf, request: *Request) callconv(.c) ?*Response {
+        const msg = request.msg;
+        std.debug.assert(msg.netfn_lun.netfn == ipmi.NetFn.dcgrp);
+        const len: usize = @intCast(msg.data_len);
+        std.debug.assert(len <= 19 and requests < records.len);
+        var record = Record{ .cmd = msg.cmd, .data = @splat(0), .len = len };
+        @memcpy(record.data[0..len], msg.data.?[0..len]);
+        records[requests] = record;
+        requests += 1;
+        if (requests == fail_at and failure == .no_reply) return null;
+
+        response = std.mem.zeroes(Response);
+        response.data[0] = group;
+        response.data_len = 1;
+        if (msg.cmd == 6 or msg.cmd == 9) {
+            const offset = record.data[1];
+            const count = record.data[2];
+            response.data[1] = @intCast(bytes.len);
+            response.data_len = 2;
+            if (count != 0 and offset + count <= bytes.len) {
+                @memcpy(response.data[2 .. 2 + count], bytes[offset .. offset + count]);
+                response.data_len += count;
+            }
+        }
+        if (requests == fail_at) switch (failure) {
+            .none, .no_reply => {},
+            .ccode => response.ccode = completion,
+            .short_reply => response.data_len = if (msg.cmd == 8 or msg.cmd == 10) 0 else 1,
+            .wrong_group => response.data[0] = 0xee,
+        };
+        return &response;
+    }
+    fn expectGet(mc: bool, total: usize) !void {
+        try std.testing.expectEqual(1 + (total + 15) / 16, requests);
+        try std.testing.expectEqual(@as(u8, if (mc) 9 else 6), records[0].cmd);
+        try std.testing.expectEqual(@as(usize, 3), records[0].len);
+        try std.testing.expectEqualSlices(u8, if (mc) &.{ group, 0, 1 } else &.{ group, 0, 0 }, records[0].data[0..3]);
+        for (records[1..requests], 0..) |record, i| {
+            try std.testing.expectEqual(@as(u8, if (mc) 9 else 6), record.cmd);
+            try std.testing.expectEqual(@as(usize, 3), record.len);
+            try std.testing.expectEqualSlices(u8, &.{ group, @intCast(i * 16), @intCast(@min(16, total - i * 16)) }, record.data[0..3]);
+        }
+    }
+    fn expectSet(mc: bool, payload: []const u8) !void {
+        try std.testing.expectEqual((payload.len + 15) / 16, requests);
+        for (records[0..requests], 0..) |record, i| {
+            const offset = i * 16;
+            const count = @min(16, payload.len - offset);
+            try std.testing.expectEqual(@as(u8, if (mc) 10 else 8), record.cmd);
+            try std.testing.expectEqual(count + 3, record.len);
+            try std.testing.expectEqualSlices(u8, &.{ group, @intCast(offset), @intCast(count) }, record.data[0..3]);
+            try std.testing.expectEqualSlices(u8, payload[offset .. offset + count], record.data[3..record.len]);
+        }
+    }
+};
+
+fn cStringOutput(mc: bool, set: bool, bytes: []const u8, newline: bool, output: []u8) ![]const u8 {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf(if (set)
+        (if (mc) "\n Set Management Controller Identifier String Command: " else "\n Set Asset Tag: ")
+    else
+        (if (mc) "\n Get Management Controller Identifier String: " else "\n Asset tag: "));
+    for (bytes) |byte| _ = c.printf("%c", @as(c_int, byte));
+    if (newline) _ = c.printf("\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    const n = c.read(fds[0], output.ptr, output.len);
+    try std.testing.expect(n >= 0);
+    return output[0..@intCast(n)];
+}
+
+test "DCMI asset stdout matches C raw bytes and request chunks" {
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = StringTestBmc.send;
+    const get_bytes = [_]u8{ 0, 0xff, 'a', 0, 'b', '\n', 0x80, 0x7f, '0', '1', '2', '3', '4', '5', '6', '7', '8', 0, 0xfe, '9', 'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6' };
+    for ([_]usize{ 0, 1, 15, 16, 17, 20, 32, 33 }) |size| {
+        for ([_]bool{ false, true }) |mc| {
+            StringTestBmc.reset(get_bytes[0..size]);
+            var storage: [256]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try std.testing.expectEqual(@as(c_int, 0), try getStringTo(&intf, mc, &writer, stdout_io.trySyncC));
+            try StringTestBmc.expectGet(mc, size);
+            var expected: [256]u8 = undefined;
+            try std.testing.expectEqualSlices(u8, try cStringOutput(mc, false, get_bytes[0..size], true, &expected), writer.buffered());
+        }
+    }
+    for ([_][]const u8{
+        "",                                 "a",                                                               "0123456789abcdef",                                                 "0123456789abcdefMORE",
+        "0123456789abcdef0123456789abcdef", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    }) |text| {
+        for ([_]bool{ false, true }) |mc| {
+            StringTestBmc.reset("");
+            var arg: [70:0]u8 = @splat(0);
+            @memcpy(arg[0..text.len], text);
+            var storage: [256]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            if (mc and text.len == 64) {
+                try std.testing.expectEqual(@as(c_int, -1), try setStringTo(&intf, mc, &arg, &writer, stdout_io.trySyncC));
+                try std.testing.expectEqual(@as(usize, 0), StringTestBmc.requests);
+                try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+                continue;
+            }
+            try std.testing.expectEqual(@as(c_int, 0), try setStringTo(&intf, mc, &arg, &writer, stdout_io.trySyncC));
+            var payload: [70]u8 = undefined;
+            @memcpy(payload[0..text.len], text);
+            if (mc) payload[text.len] = 0;
+            try StringTestBmc.expectSet(mc, payload[0 .. text.len + @intFromBool(mc)]);
+            var expected: [256]u8 = undefined;
+            try std.testing.expectEqualSlices(u8, try cStringOutput(mc, true, payload[0 .. text.len + @intFromBool(mc)], true, &expected), writer.buffered());
+        }
+    }
+}
+
+test "DCMI asset stdout keeps partial C bytes on later response failure" {
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = StringTestBmc.send;
+    const payload = "0123456789abcdefMORE";
+    for ([_]bool{ false, true }) |mc| {
+        for ([_]StringTestBmc.Failure{ .no_reply, .ccode, .short_reply }) |failure| {
+            StringTestBmc.reset(payload);
+            StringTestBmc.fail_at = 3;
+            StringTestBmc.failure = failure;
+            var storage: [256]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try std.testing.expectEqual(@as(c_int, -1), try getStringTo(&intf, mc, &writer, stdout_io.trySyncC));
+            try StringTestBmc.expectGet(mc, payload.len);
+            var expected: [256]u8 = undefined;
+            try std.testing.expectEqualSlices(u8, try cStringOutput(mc, false, payload[0..16], false, &expected), writer.buffered());
+        }
+        if (!mc) for ([_]u8{ 0x80, 0x81, 0x82, 0x83 }) |ccode| {
+            StringTestBmc.reset(payload);
+            StringTestBmc.fail_at = 2;
+            StringTestBmc.failure = .ccode;
+            StringTestBmc.completion = ccode;
+            var storage: [256]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try std.testing.expectEqual(@as(c_int, 0), try getStringTo(&intf, false, &writer, stdout_io.trySyncC));
+            try std.testing.expectEqual(@as(u8, 0), StringTestBmc.response.ccode);
+            try StringTestBmc.expectGet(false, payload.len);
+        };
+        StringTestBmc.reset("");
+        StringTestBmc.fail_at = 1;
+        StringTestBmc.failure = .ccode;
+        var storage: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        try std.testing.expectEqual(@as(c_int, -1), try getStringTo(&intf, mc, &writer, stdout_io.trySyncC));
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+
+    for ([_]bool{ false, true }) |mc| {
+        for ([_]StringTestBmc.Failure{ .no_reply, .ccode, .short_reply }) |failure| {
+            StringTestBmc.reset("");
+            StringTestBmc.fail_at = 2;
+            StringTestBmc.failure = failure;
+            var arg = [_:0]u8{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'M', 'O', 'R', 'E' };
+            var storage: [256]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try std.testing.expectEqual(@as(c_int, -1), try setStringTo(&intf, mc, &arg, &writer, stdout_io.trySyncC));
+            try std.testing.expectEqual(@as(usize, 2), StringTestBmc.requests);
+            try std.testing.expectEqualSlices(u8, payload[0..16], StringTestBmc.records[0].data[3..19]);
+            var expected: [256]u8 = undefined;
+            const first_chunk = try cStringOutput(mc, true, payload[0..16], false, &expected);
+            try std.testing.expectEqualSlices(u8, first_chunk, writer.buffered());
+        }
+    }
+    StringTestBmc.reset("");
+    StringTestBmc.fail_at = 1;
+    StringTestBmc.failure = .no_reply;
+    @memcpy(intf.name[0..7], "lanplus");
+    var arg = [_:0]u8{'x'};
+    var storage: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try setStringTo(&intf, true, &arg, &writer, stdout_io.trySyncC));
+    try StringTestBmc.expectSet(true, "x\x00");
+    var expected: [256]u8 = undefined;
+    try std.testing.expectEqualSlices(u8, try cStringOutput(true, true, "x\x00", true, &expected), writer.buffered());
+    StringTestBmc.reset("");
+    StringTestBmc.fail_at = 1;
+    StringTestBmc.failure = .ccode;
+    var ignored = std.Io.Writer.fixed(&storage);
+    try std.testing.expectEqual(@as(c_int, 0), try setStringTo(&intf, true, &arg, &ignored, stdout_io.trySyncC));
+    try std.testing.expectEqual(@as(u8, 0xc1), StringTestBmc.response.ccode);
+}
+
+test "DCMI asset stdout reports preflush early late and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = StringTestBmc.send;
+    StringTestBmc.reset("0123456789abcdefMORE");
+    var storage: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, getStringTo(&intf, false, &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 1), StringTestBmc.requests);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var arg = [_:0]u8{'x'};
+    try std.testing.expectError(error.CStdoutFlushFailed, setStringTo(&intf, false, &arg, &writer, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 1), StringTestBmc.requests);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, getStringTo(&intf, false, &early, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 2), StringTestBmc.requests);
+    try std.testing.expectError(error.StdoutWriteFailed, setStringTo(&intf, false, &arg, &early, Stub.preflushOk));
+    try std.testing.expectEqual(@as(usize, 2), StringTestBmc.requests);
+
+    var short: [16]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, getStringTo(&intf, false, &late, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, "\n Asset tag: 012", late.buffered());
+    var set_short: [17]u8 = undefined;
+    var late_set = std.Io.Writer.fixed(&set_short);
+    try std.testing.expectError(error.StdoutWriteFailed, setStringTo(&intf, false, &arg, &late_set, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, "\n Set Asset Tag: ", late_set.buffered());
+
+    var final = std.Io.Writer.fixed(&storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    StringTestBmc.reset("");
+    try std.testing.expectError(error.StdoutFlushFailed, getStringTo(&intf, false, &final, Stub.preflushOk));
+    try std.testing.expectEqualStrings("\n Asset tag: \n", final.buffered());
+    var final_set = std.Io.Writer.fixed(&storage);
+    final_set.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, setStringTo(&intf, false, &arg, &final_set, Stub.preflushOk));
+    try std.testing.expectEqualStrings("\n Set Asset Tag: x\n", final_set.buffered());
+}
+
+test "DCMI asset stdout preserves buffered C output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = StringTestBmc.send;
+    StringTestBmc.reset(&.{ 0xff, 0, 'X' });
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expectEqual(@as(c_int, 0), try getStringTo(&intf, false, &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|between|");
+    var arg = [_:0]u8{'y'};
+    try std.testing.expectEqual(@as(c_int, 0), try setStringTo(&intf, false, &arg, &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    StringTestBmc.reset("0123456789abcdefMORE");
+    StringTestBmc.fail_at = 3;
+    StringTestBmc.failure = .wrong_group;
+    try std.testing.expectEqual(@as(c_int, -1), try getStringTo(&intf, false, &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|invalid\n");
+    StringTestBmc.reset("");
+    StringTestBmc.fail_at = 1;
+    StringTestBmc.failure = .wrong_group;
+    try std.testing.expectEqual(@as(c_int, -1), try setStringTo(&intf, false, &arg, &stdout.interface, stdout_io.trySyncC));
+    _ = c.printf("|invalid-set\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [256]u8 = undefined;
+    const n = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(n >= 0);
+    try std.testing.expectEqualSlices(
+        u8,
+        "before|\n Asset tag: \xff\x00X\n|between|\n Set Asset Tag: y\n|after\n" ++
+            "\n Asset tag: 0123456789abcdef\n    A valid DCMI command was not returned! (ee)|invalid\n" ++
+            "\n Set Asset Tag: \n    A valid DCMI command was not returned! (ee)|invalid-set\n",
+        captured[0..@intCast(n)],
+    );
 }
 
 fn powerReading(intf: *Intf, sample: u8) c_int {

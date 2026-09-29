@@ -1,0 +1,18 @@
+respond length
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 00
+  data dc 11
+end
+respond first
+  netfn 0x2c
+  cmd 0x06
+  match dc 00 10
+  data dc 11 00 ff 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e
+end
+respond last
+  netfn 0x2c
+  cmd 0x06
+  match dc 10 01
+  data dc 11 80
+end

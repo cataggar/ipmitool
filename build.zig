@@ -1463,6 +1463,14 @@ pub fn build(b: *std.Build) void {
     dcmi_strings_step.dependOn(&b.addRunArtifact(dcmi_strings_unit).step);
     test_step.dependOn(dcmi_strings_step);
 
+    const dcmi_asset_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.dcmi.test.DCMI asset stdout"},
+    });
+    const dcmi_asset_step = b.step("test-dcmi-asset-stdout", "Compare DCMI asset and MC ID raw C bytes, requests, partial output, ordering and failures");
+    dcmi_asset_step.dependOn(&b.addRunArtifact(dcmi_asset_unit).step);
+    test_step.dependOn(dcmi_asset_step);
+
     const firewall_matrix_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.firewall.test.firewall command matrix"},

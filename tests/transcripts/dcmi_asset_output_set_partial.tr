@@ -1,0 +1,13 @@
+respond first
+  netfn 0x2c
+  cmd 0x08
+  match dc 00 10
+  data dc
+end
+respond failed_tail
+  netfn 0x2c
+  cmd 0x08
+  match dc 10 04
+  ccode 0xc7
+  data dc
+end

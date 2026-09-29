@@ -1,0 +1,24 @@
+#!golden 1
+#!case dcmi_asset_output_mc_partial
+#!section exit
+1
+#!section stdout no-final-newline
+
+ Get Management Controller Identifier String: 0123456789abcdef
+#!section stderr
+
+    DCMI request failed because: Request data length invalid (c7)
+Error getting management controller identifier string!
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x09 target_cmd=0x00 data=dc 00 01
+< rule=length ccode=0x00 len=3 data=dc 11 30
+> netfn=0x2c lun=0x00 cmd=0x09 target_cmd=0x00 data=dc 00 10
+< rule=first ccode=0x00 len=18 data=dc 11 30 31 32 33 34 35 36 37 38 39 61 62 63 64 65 66
+> netfn=0x2c lun=0x00 cmd=0x09 target_cmd=0x00 data=dc 10 01
+< rule=failed_tail ccode=0xc7 len=1 data=dc
+bye
+#!section files
