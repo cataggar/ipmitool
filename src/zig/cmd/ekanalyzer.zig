@@ -6,6 +6,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const ValStr = @import("../util/helper.zig").ValStr;
 
@@ -223,20 +224,161 @@ fn parseRecords(gpa: Allocator, file: *File) bool {
     return true;
 }
 
-fn header(data: []const u8) bool {
-    if (data.len < 8) {
-        log.print(log.Level.err, "Failed to read FRU header!", .{});
-        return false;
-    }
-    _ = c.printf("%s\nFRU Header Info\n%s\n", equal, equal);
-    _ = c.printf("Format Version          :0x%02x %s\n", @as(c_uint, data[0] & 15), @as([*:0]const u8, if (data[0] & 15 == 1) "" else "{unsupported}"));
-    _ = c.printf("Internal Use Offset     :0x%02x\n", @as(c_uint, data[1]));
-    _ = c.printf("Chassis Info Offset     :0x%02x\n", @as(c_uint, data[2]));
-    _ = c.printf("Board Info Offset       :0x%02x\n", @as(c_uint, data[3]));
-    _ = c.printf("Product Info Offset     :0x%02x\n", @as(c_uint, data[4]));
-    _ = c.printf("MultiRecord Offset      :0x%02x\n", @as(c_uint, data[5]));
-    _ = c.printf("Common header Checksum  :0x%02x\n", @as(c_uint, data[7]));
+const HeaderOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeHeader(writer: *std.Io.Writer, data: []const u8) std.Io.Writer.Error!void {
+    try writer.print("{s}\nFRU Header Info\n{s}\n", .{ equal, equal });
+    try writer.print("Format Version          :0x{x:0>2} {s}\n", .{
+        data[0] & 15,
+        if (data[0] & 15 == 1) "" else "{unsupported}",
+    });
+    try writer.print("Internal Use Offset     :0x{x:0>2}\n", .{data[1]});
+    try writer.print("Chassis Info Offset     :0x{x:0>2}\n", .{data[2]});
+    try writer.print("Board Info Offset       :0x{x:0>2}\n", .{data[3]});
+    try writer.print("Product Info Offset     :0x{x:0>2}\n", .{data[4]});
+    try writer.print("MultiRecord Offset      :0x{x:0>2}\n", .{data[5]});
+    try writer.print("Common header Checksum  :0x{x:0>2}\n", .{data[7]});
+}
+
+fn emitHeader(writer: *std.Io.Writer, data: []const u8, preflush: anytype) HeaderOutputError!bool {
+    if (data.len < 8) return false;
+    preflush() catch return error.CStdoutFlushFailed;
+    writeHeader(writer, data) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
     return true;
+}
+
+fn header(data: []const u8) bool {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    const ok = emitHeader(&stdout.interface, data, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "EKey header stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "EKey header stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "EKey header stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return false;
+    };
+    if (!ok) log.print(log.Level.err, "Failed to read FRU header!", .{});
+    return ok;
+}
+
+test "header stdout matches original C for every byte in every header field" {
+    const base = [8]u8{ 0xa1, 0x00, 0x02, 0x10, 0x80, 0xff, 0xa5, 0xfe };
+    for (0..base.len) |field_index| {
+        for (0..256) |value_byte| {
+            var data = base;
+            data[field_index] = @intCast(value_byte);
+            var expected: [512]u8 = undefined;
+            const length = c.snprintf(
+                &expected,
+                expected.len,
+                "%s\nFRU Header Info\n%s\n" ++
+                    "Format Version          :0x%02x %s\n" ++
+                    "Internal Use Offset     :0x%02x\n" ++
+                    "Chassis Info Offset     :0x%02x\n" ++
+                    "Board Info Offset       :0x%02x\n" ++
+                    "Product Info Offset     :0x%02x\n" ++
+                    "MultiRecord Offset      :0x%02x\n" ++
+                    "Common header Checksum  :0x%02x\n",
+                @as([*:0]const u8, equal),
+                @as([*:0]const u8, equal),
+                @as(c_uint, data[0] & 15),
+                @as([*:0]const u8, if (data[0] & 15 == 1) "" else "{unsupported}"),
+                @as(c_uint, data[1]),
+                @as(c_uint, data[2]),
+                @as(c_uint, data[3]),
+                @as(c_uint, data[4]),
+                @as(c_uint, data[5]),
+                @as(c_uint, data[7]),
+            );
+            try std.testing.expect(length > 0 and length < expected.len);
+            var storage: [512]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try writeHeader(&writer, &data);
+            try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], writer.buffered());
+        }
+    }
+}
+
+test "header stdout rejects short buffers and propagates preflush write and final flush failures" {
+    const Stub = struct {
+        var preflushes: usize = 0;
+        fn preflushOk() error{CStdoutFlushFailed}!void {
+            preflushes += 1;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const data = [9]u8{ 0xff, 0, 1, 2, 3, 4, 0xa5, 0xff, 0x42 };
+    for (0..8) |len| {
+        var storage: [512]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&storage);
+        Stub.preflushes = 0;
+        try std.testing.expect(!try emitHeader(&writer, data[0..len], Stub.preflushOk));
+        try std.testing.expectEqual(@as(usize, 0), Stub.preflushes);
+        try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    }
+
+    var storage: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitHeader(&writer, &data, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitHeader(&early, &data, Stub.preflushOk));
+
+    try writeHeader(&writer, &data);
+    const expected = writer.buffered();
+    var short: [512]u8 = undefined;
+    var late = std.Io.Writer.fixed(short[0 .. expected.len - 1]);
+    try std.testing.expectError(error.StdoutWriteFailed, emitHeader(&late, &data, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected[0 .. expected.len - 1], late.buffered());
+
+    var final_storage: [512]u8 = undefined;
+    var final = std.Io.Writer.fixed(&final_storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitHeader(&final, &data, Stub.preflushOk));
+    try std.testing.expectEqualSlices(u8, expected, final.buffered());
+    var success = std.Io.Writer.fixed(&storage);
+    try std.testing.expect(try emitHeader(&success, data[0..8], Stub.preflushOk));
+}
+
+test "header stdout preserves preceding and following buffered C output order" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    const data = [8]u8{ 0xa5, 0, 0, 0, 0, 0, 0, 0x5b };
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try std.testing.expect(try emitHeader(&stdout.interface, &data, stdout_io.trySyncC));
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+
+    var captured: [512]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [512]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    try writeHeader(&expected, &data);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualSlices(u8, expected.buffered(), captured[0..@intCast(length)]);
 }
 
 fn field(area: []const u8, offset: *usize, title: [*:0]const u8, remaining: *usize) bool {

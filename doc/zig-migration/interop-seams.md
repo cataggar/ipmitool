@@ -1250,17 +1250,28 @@ analyzer, it reports the stored FRU and multirecord checksum bytes without
 rejecting corrupt checksums; the C-oracle CRC snapshots document this
 compatibility decision.
 
-The decoder uses the FRU on-disk format itself and calls only the stable C
-ABI for `get_fru_area_str()`, `ipmi_timestamp_numeric()`, `val2str()`, and
-logging/stdio. It does not import the FRU or PICMG command implementations;
-their independent Zig migrations can therefore replace their C translation
-units without changing this module. The original C analyzer stays available
-in the default build as the oracle until the final C removal.
+The common-header display uses checked Zig stdout writes. It preflushes
+buffered libc stdout (including the preceding `Start converting` line) and
+checks the final Zig flush before returning success. Shorter-than-eight-byte
+headers retain the original error and print no header fields. The header
+unit test compares every byte of every field with libc formatting and injects
+preflush, write and final-flush failures; `ek_header_*` original-C snapshots
+also cover unsupported versions and zero/seven-byte files.
 
-Run `zig build test-ekanalyzer` for isolated malformed-descriptor bounds
-tests, or `zig build test-golden -Dzig-modules=ekanalyzer -- --filter ek_`
-for C-oracle output, exit-status, and CLI-wire parity (including OEM GUID
-matching and PICMG multirecord rendering).
+The decoder uses the FRU on-disk format itself and calls only the stable C
+ABI for `get_fru_area_str()`, `ipmi_timestamp_numeric()`, `val2str()`,
+logging and its remaining stdio output. It does not import the FRU or PICMG
+command implementations; their independent Zig migrations can therefore
+replace their C translation units without changing this module. The original
+C analyzer stays available in the default build as the oracle until the final
+C removal.
+
+Run `zig build test-ekanalyzer-header-stdout` for header output parity and
+injected I/O failures, or `zig build test-ekanalyzer` for malformed-descriptor
+bounds tests. Run
+`zig build test-golden -Dzig-modules=ekanalyzer -- --filter ek_` for C-oracle
+output, exit-status, and CLI-wire parity (including OEM GUID matching and
+PICMG multirecord rendering).
 
 The PEF replacement preserves all 18 externally visible symbols, including
 the public flag/field printers and configuration getters. Its filter/policy

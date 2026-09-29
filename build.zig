@@ -2422,6 +2422,13 @@ pub fn build(b: *std.Build) void {
     const ekanalyzer_step = b.step("test-ekanalyzer", "Run offline FRU/PICMG bounds tests");
     ekanalyzer_step.dependOn(&ekanalyzer_tests.step);
     test_step.dependOn(ekanalyzer_step);
+    const ekanalyzer_header_unit = b.addTest(.{
+        .root_module = ekanalyzer_mod,
+        .filters = &.{"cmd.ekanalyzer.test.header stdout"},
+    });
+    const ekanalyzer_header_step = b.step("test-ekanalyzer-header-stdout", "Compare EKey FRU header C bytes, output order and I/O failures");
+    ekanalyzer_header_step.dependOn(&b.addRunArtifact(ekanalyzer_header_unit).step);
+    test_step.dependOn(ekanalyzer_header_step);
 
     if (replacedByZig("src/ipmishell.c", zig_selection)) {
         const shell_pty = b.addSystemCommand(&.{
