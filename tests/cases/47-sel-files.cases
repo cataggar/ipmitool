@@ -85,6 +85,13 @@ transcript: sel_file.tr
 text: ev.txt sel/add_comments.txt
 covers: sel
 
+[sl_add_spacing]
+desc: sel add: only spaces split bytes, with trimmed tabs, comments and extra tokens
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+text: ev.txt sel/add_spacing.txt
+covers: sel
+
 [sl_add_badtok]
 desc: sel add: reject an unparseable seventh byte without sending it
 args: -I dummy sel add {work}/ev.txt
