@@ -1462,6 +1462,14 @@ pub fn build(b: *std.Build) void {
     session_info_step.dependOn(&b.addRunArtifact(session_info_unit).step);
     test_step.dependOn(session_info_step);
 
+    const session_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.session.test.session command and interface names"},
+    });
+    const session_strings_step = b.step("test-session-strings", "Compare session command and bounded interface names with libc");
+    session_strings_step.dependOn(&b.addRunArtifact(session_strings_unit).step);
+    test_step.dependOn(session_strings_step);
+
     const password_test_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.user.test.password test stdout"},
