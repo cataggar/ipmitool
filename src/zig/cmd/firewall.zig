@@ -10,6 +10,7 @@ const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 
 const Request = ipmi.Request;
 const Response = ipmi.Response;
@@ -91,19 +92,10 @@ fn bitSet(bf: []u8, index: usize, value: bool) void {
 fn printBitfield(bf: []const u8, invert: bool, level: c_int) void {
     for (bf, 0..) |byte, i| {
         const value: u8 = if (invert) ~byte else byte;
-        if (level < 0) {
-            _ = c.printf("%02x", @as(c_uint, value));
-            if ((i + 1) % 4 == 0) _ = c.printf(" ");
-        } else {
-            log.print(level, "%02x", .{@as(c_uint, value)});
-            if ((i + 1) % 4 == 0) log.print(level, " ", .{});
-        }
+        log.print(level, "%02x", .{@as(c_uint, value)});
+        if ((i + 1) % 4 == 0) log.print(level, " ", .{});
     }
-    if (level < 0) {
-        _ = c.printf("\n");
-    } else {
-        log.print(level, "\n", .{});
-    }
+    log.print(level, "\n", .{});
 }
 
 fn usage() void {
@@ -464,6 +456,252 @@ fn newBmc() ?*Bmc {
     return bmc;
 }
 
+const MatrixOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeCommandMask(writer: *std.Io.Writer, bf: []const u8, invert: bool) std.Io.Writer.Error!void {
+    const hex = "0123456789abcdef";
+    for (bf, 0..) |byte, i| {
+        const value: u8 = if (invert) ~byte else byte;
+        try writer.writeAll(&.{ hex[value >> 4], hex[value & 0xf] });
+        if ((i + 1) % 4 == 0) try writer.writeByte(' ');
+    }
+    try writer.writeByte('\n');
+}
+
+fn writePairMatrix(writer: *std.Io.Writer, pair: *const Pair, lun: usize, netfn: usize, listed: bool) std.Io.Writer.Error!void {
+    if (!listed) try writer.print("Commands on LUN 0x{x:0>2}, NetFn 0x{x:0>2}\n", .{ lun, netfn });
+
+    if (listed) try writer.print("{x:0>2},{x:0>2} ", .{ lun, netfn });
+    try writer.writeAll("support:      ");
+    try writeCommandMask(writer, &pair.command_mask, true);
+
+    if (listed) try writer.print("{x:0>2},{x:0>2} ", .{ lun, netfn });
+    try writer.writeAll("configurable: ");
+    try writeCommandMask(writer, &pair.config_mask, false);
+
+    if (listed) try writer.print("{x:0>2},{x:0>2} ", .{ lun, netfn });
+    try writer.writeAll("enabled:      ");
+    try writeCommandMask(writer, &pair.enable_mask, false);
+}
+
+fn emitCommandMatrix(writer: *std.Io.Writer, bmc: *const Bmc, p: *const Params, preflush: anytype) MatrixOutputError!void {
+    if (p.netfn >= 0) {
+        preflush() catch return error.CStdoutFlushFailed;
+        writePairMatrix(writer, &bmc.lun[@intCast(p.lun)].netfn[@intCast(@divTrunc(p.netfn, 2))], @intCast(p.lun), @intCast(p.netfn), false) catch return error.StdoutWriteFailed;
+    } else {
+        var started = false;
+        for (0..max_lun) |l| {
+            if (bmc.lun[l].support == 0) continue;
+            for (0..max_netfn_pair) |n| {
+                const pair = &bmc.lun[l].netfn[n];
+                if (pair.support == 0) continue;
+                if (!started) {
+                    preflush() catch return error.CStdoutFlushFailed;
+                    started = true;
+                }
+                writePairMatrix(writer, pair, l, n * 2, true) catch return error.StdoutWriteFailed;
+            }
+        }
+        if (!started) return;
+    }
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn printCommandMatrix(bmc: *const Bmc, p: *const Params) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitCommandMatrix(&stdout.interface, bmc, p, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(log.Level.err, "Firewall command matrix stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "Firewall command matrix stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "Firewall command matrix stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+    return 0;
+}
+
+fn cMaskOracle(writer: *std.Io.Writer, bf: []const u8, invert: bool) !void {
+    var hex: [3]u8 = undefined;
+    for (bf, 0..) |byte, i| {
+        const value: u8 = if (invert) ~byte else byte;
+        try std.testing.expectEqual(@as(c_int, 2), c.snprintf(&hex, hex.len, "%02x", @as(c_uint, value)));
+        try writer.writeAll(hex[0..2]);
+        if ((i + 1) % 4 == 0) try writer.writeByte(' ');
+    }
+    try writer.writeByte('\n');
+}
+
+fn cPairOracle(writer: *std.Io.Writer, pair: *const Pair, lun: usize, netfn: usize, listed: bool) !void {
+    var text: [80]u8 = undefined;
+    if (!listed) {
+        const length = c.snprintf(&text, text.len, "Commands on LUN 0x%02x, NetFn 0x%02x\n", @as(c_uint, @intCast(lun)), @as(c_uint, @intCast(netfn)));
+        try writer.writeAll(text[0..@intCast(length)]);
+    }
+    const labels = [_][:0]const u8{ "support:      ", "configurable: ", "enabled:      " };
+    const masks = [_]*const [command_bytes]u8{ &pair.command_mask, &pair.config_mask, &pair.enable_mask };
+    for (labels, masks, 0..) |label, mask, index| {
+        if (listed) {
+            const length = c.snprintf(&text, text.len, "%02x,%02x %s", @as(c_uint, @intCast(lun)), @as(c_uint, @intCast(netfn)), label.ptr);
+            try writer.writeAll(text[0..@intCast(length)]);
+        } else {
+            try writer.writeAll(label);
+        }
+        try cMaskOracle(writer, mask, index == 0);
+    }
+}
+
+test "firewall command matrix bitfield groups and inverts C bytes at boundaries" {
+    const values = [_]u8{ 0, 0xff, 0x08, 0x80, 0x1f, 0xa5, 0x55, 0xfe };
+    var mask: [command_bytes + 1]u8 = undefined;
+    for (&mask, 0..) |*byte, i| byte.* = values[i % values.len];
+    for ([_]usize{ 0, 1, 3, 4, 5, 15, 16, 31, 32, 33 }) |length| {
+        for ([_]bool{ false, true }) |invert| {
+            var expected_storage: [128]u8 = undefined;
+            var expected = std.Io.Writer.fixed(&expected_storage);
+            try cMaskOracle(&expected, mask[0..length], invert);
+            var actual_storage: [128]u8 = undefined;
+            var actual = std.Io.Writer.fixed(&actual_storage);
+            try writeCommandMask(&actual, mask[0..length], invert);
+            try std.testing.expectEqualSlices(u8, expected.buffered(), actual.buffered());
+        }
+    }
+}
+
+test "firewall command matrix selected and discovered pairs match C bytes" {
+    const bmc = try std.testing.allocator.create(Bmc);
+    defer std.testing.allocator.destroy(bmc);
+    bmc.* = .{};
+    bmc.lun[0].support = 1;
+    bmc.lun[0].netfn[2].support = 1;
+    bmc.lun[3].support = 1;
+    bmc.lun[3].netfn[31].support = 1;
+    bmc.lun[0].netfn[2].command_mask[0] = 0xde;
+    bmc.lun[0].netfn[2].command_mask[16] = 0xf7;
+    bmc.lun[0].netfn[2].command_mask[31] = 0x80;
+    bmc.lun[0].netfn[2].config_mask[0] = 0x21;
+    bmc.lun[0].netfn[2].enable_mask[4] = 0x10;
+    bmc.lun[3].netfn[31].command_mask[15] = 0x00;
+    bmc.lun[3].netfn[31].config_mask[31] = 0xfe;
+    bmc.lun[3].netfn[31].enable_mask[0] = 0xff;
+
+    for ([_]Params{ .{ .lun = 0, .netfn = 5 }, .{} }) |p| {
+        var expected_storage: [1024]u8 = undefined;
+        var expected = std.Io.Writer.fixed(&expected_storage);
+        if (p.netfn >= 0) {
+            try cPairOracle(&expected, &bmc.lun[0].netfn[2], 0, 5, false);
+        } else {
+            try cPairOracle(&expected, &bmc.lun[0].netfn[2], 0, 4, true);
+            try cPairOracle(&expected, &bmc.lun[3].netfn[31], 3, 62, true);
+        }
+        var actual_storage: [1024]u8 = undefined;
+        var actual = std.Io.Writer.fixed(&actual_storage);
+        const Stub = struct {
+            fn preflushOk() error{CStdoutFlushFailed}!void {}
+        };
+        try emitCommandMatrix(&actual, bmc, &p, Stub.preflushOk);
+        try std.testing.expectEqualSlices(u8, expected.buffered(), actual.buffered());
+    }
+}
+
+test "firewall command matrix preflushes once and reports preflush, write, final flush failures" {
+    const Stub = struct {
+        var preflushes: usize = 0;
+        var flushes: usize = 0;
+        fn preflushCount() error{CStdoutFlushFailed}!void {
+            preflushes += 1;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushCount(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            flushes += 1;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const bmc = try std.testing.allocator.create(Bmc);
+    defer std.testing.allocator.destroy(bmc);
+    bmc.* = .{};
+    const all = Params{};
+    var storage: [1024]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushCount };
+    try emitCommandMatrix(&writer, bmc, &all, Stub.preflushCount);
+    try std.testing.expectEqual(@as(usize, 0), Stub.preflushes);
+    try std.testing.expectEqual(@as(usize, 0), Stub.flushes);
+
+    bmc.lun[0].support = 1;
+    bmc.lun[0].netfn[2].support = 1;
+    bmc.lun[2].support = 1;
+    bmc.lun[2].netfn[3].support = 1;
+    try std.testing.expectError(error.CStdoutFlushFailed, emitCommandMatrix(&writer, bmc, &all, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitCommandMatrix(&early, bmc, &all, Stub.preflushCount));
+    var short: [32]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitCommandMatrix(&late, bmc, &all, Stub.preflushCount));
+    try std.testing.expect(std.mem.startsWith(u8, late.buffered(), "00,04 support:"));
+
+    try emitCommandMatrix(&writer, bmc, &all, Stub.preflushCount);
+    try std.testing.expectEqual(@as(usize, 3), Stub.preflushes);
+    try std.testing.expectEqual(@as(usize, 1), Stub.flushes);
+    var final = std.Io.Writer.fixed(&storage);
+    final.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitCommandMatrix(&final, bmc, &all, Stub.preflushCount));
+    try std.testing.expect(final.buffered().len > 0);
+
+    const selected = Params{ .lun = 0, .netfn = 5 };
+    var pair_writer = std.Io.Writer.fixed(&storage);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitCommandMatrix(&pair_writer, bmc, &selected, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 0), pair_writer.buffered().len);
+    try std.testing.expectError(error.StdoutWriteFailed, emitCommandMatrix(&early, bmc, &selected, Stub.preflushCount));
+    pair_writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitCommandMatrix(&pair_writer, bmc, &selected, Stub.preflushCount));
+}
+
+test "firewall command matrix preserves buffered C and Zig stdout order" {
+    const bmc = try std.testing.allocator.create(Bmc);
+    defer std.testing.allocator.destroy(bmc);
+    bmc.* = .{};
+    bmc.lun[0].support = 1;
+    bmc.lun[0].netfn[2].support = 1;
+    const p = Params{ .lun = 0, .netfn = 4 };
+
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitCommandMatrix(&stdout.interface, bmc, &p, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [1024]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    var expected_storage: [1024]u8 = undefined;
+    var expected = std.Io.Writer.fixed(&expected_storage);
+    try expected.writeAll("before|");
+    try cPairOracle(&expected, &bmc.lun[0].netfn[2], 0, 4, false);
+    try expected.writeAll("|after\n");
+    try std.testing.expectEqualSlices(u8, expected.buffered(), captured[0..@intCast(length)]);
+}
+
 fn info(intf: *Intf, args: [][*:0]u8) c_int {
     var p = Params{};
     if ((args.len > 0 and eql(args[0], "help")) or parseArgs(args, &p) < 0) {
@@ -495,27 +733,9 @@ fn info(intf: *Intf, args: [][*:0]u8) c_int {
             log.print(log.Level.err, "LUN or LUN/NetFn pair %02x,%02x not supported", .{ p.lun, p.netfn });
             return 0;
         }
-        _ = c.printf("Commands on LUN 0x%02x, NetFn 0x%02x\n", p.lun, p.netfn);
-        _ = c.printf("support:      ");
-        printBitfield(&pair.command_mask, true, -1);
-        _ = c.printf("configurable: ");
-        printBitfield(&pair.config_mask, false, -1);
-        _ = c.printf("enabled:      ");
-        printBitfield(&pair.enable_mask, false, -1);
+        return printCommandMatrix(bmc, &p);
     } else {
-        for (0..max_lun) |l| {
-            if (bmc.lun[l].support == 0) continue;
-            for (0..max_netfn_pair) |n| {
-                const pair = &bmc.lun[l].netfn[n];
-                if (pair.support == 0) continue;
-                _ = c.printf("%02x,%02x support:      ", @as(c_uint, @intCast(l)), @as(c_uint, @intCast(n * 2)));
-                printBitfield(&pair.command_mask, true, -1);
-                _ = c.printf("%02x,%02x configurable: ", @as(c_uint, @intCast(l)), @as(c_uint, @intCast(n * 2)));
-                printBitfield(&pair.config_mask, false, -1);
-                _ = c.printf("%02x,%02x enabled:      ", @as(c_uint, @intCast(l)), @as(c_uint, @intCast(n * 2)));
-                printBitfield(&pair.enable_mask, false, -1);
-            }
-        }
+        return printCommandMatrix(bmc, &p);
     }
     return 0;
 }

@@ -1271,6 +1271,14 @@ The PEF, firewall and DCMI command ports now use the archive's typed logger
 for their diagnostics; with the C logger selected, calls still use its
 variadic ABI. `pef_log_status_hex` and `fw_log_unsupported_hex` pin the
 original hexadecimal diagnostics against the default C oracle.
+The firewall `info` command's selected-pair and all-pairs command-mask
+matrices now use checked Zig stdout. Its inverted support mask and normal
+configurable/enabled masks retain C's lower-case hex, trailing space after
+each four-byte group (including the last), and LUN/NetFn prefixes. Buffered
+C stdout is flushed before the first Zig row, not on empty or unsupported
+results; Zig write/final-flush failures return `-1`, while the existing
+unsupported-pair diagnostic still returns `0`. Detailed command/subfunction
+rows and reset/enable/disable output remain on their original paths.
 
 `exports.zig` gates each port on a build option, so an unselected module is
 never analysed and exports nothing:

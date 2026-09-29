@@ -613,6 +613,12 @@ byte count of **all** stdout and request-log bytes, plus visible first/last
 lines. This preserves full-run regression detection without committing 99,000
 repetitive lines. Differential mode still compares the raw streams byte for
 byte; `snapshot: sha256` changes only snapshot-mode storage and comparison.
+The `fw_info_netfn`, `fw_info_odd_netfn`, `fw_info_discover`,
+`fw_info_multi_discover`, `fw_info_none`, and denied/short-reply cases also
+pin the Zig command-mask list against the original C oracle. Run
+`zig build test-firewall-list-stdout` for C-formatted bytes at four-byte
+group boundaries, supported-pair selection, C/Zig stdout ordering, and
+preflush/write/final-flush failure coverage.
 
 ## Differential mode
 

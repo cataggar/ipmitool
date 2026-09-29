@@ -1455,6 +1455,14 @@ pub fn build(b: *std.Build) void {
     dcmi_strings_step.dependOn(&b.addRunArtifact(dcmi_strings_unit).step);
     test_step.dependOn(dcmi_strings_step);
 
+    const firewall_matrix_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.firewall.test.firewall command matrix"},
+    });
+    const firewall_matrix_step = b.step("test-firewall-list-stdout", "Compare firewall command-mask C bytes, output order, and I/O failures");
+    firewall_matrix_step.dependOn(&b.addRunArtifact(firewall_matrix_unit).step);
+    test_step.dependOn(firewall_matrix_step);
+
     const quanta_desc_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.quantaoem.test.Quanta memory event description"},
