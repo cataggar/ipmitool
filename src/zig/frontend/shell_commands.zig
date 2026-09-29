@@ -183,7 +183,10 @@ fn readExecLine(fp: *c.FILE, buf: *[2047]u8) ?ExecLine {
     var count: usize = 0;
     while (count < buf.len) {
         const ch = c.fgetc(fp);
-        if (ch == c.EOF) break;
+        if (ch == c.EOF) {
+            if (c.ferror(fp) != 0) return null;
+            break;
+        }
         buf[count] = @intCast(ch);
         count += 1;
         if (ch == '\n') break;
@@ -336,6 +339,70 @@ test "exec line scanner preserves FILE read errors" {
     try std.testing.expect(c.ferror(oracle) != 0);
     try std.testing.expect(c.ferror(scanned) != 0);
     try std.testing.expectEqual(c.feof(oracle) != 0, c.feof(scanned) != 0);
+}
+
+const FaultingExecCookie = struct {
+    input: []const u8,
+    fail_after: usize,
+    offset: usize = 0,
+    failures: usize = 0,
+};
+
+fn faultingExecRead(cookie: ?*anyopaque, dest: [*c]u8, capacity: usize) callconv(.c) c_long {
+    const state: *FaultingExecCookie = @ptrCast(@alignCast(cookie.?));
+    if (state.offset == state.fail_after) {
+        state.failures += 1;
+        std.c._errno().* = c.EIO;
+        return -1;
+    }
+    const count = @min(capacity, state.fail_after - state.offset);
+    @memcpy(dest[0..count], state.input[state.offset..][0..count]);
+    state.offset += count;
+    return @intCast(count);
+}
+
+fn expectExecReadErrorParity(input: []const u8, fail_after: usize, complete_lines: usize) !void {
+    var c_state: FaultingExecCookie = .{ .input = input, .fail_after = fail_after };
+    var zig_state: FaultingExecCookie = .{ .input = input, .fail_after = fail_after };
+    const funcs: c.cookie_io_functions_t = .{ .read = &faultingExecRead };
+    const oracle = c.fopencookie(&c_state, "r", funcs) orelse return error.CookieOpenFailed;
+    defer _ = c.fclose(oracle);
+    const scanned = c.fopencookie(&zig_state, "r", funcs) orelse return error.CookieOpenFailed;
+    defer _ = c.fclose(scanned);
+
+    var c_buf: [2048]u8 = undefined;
+    var zig_buf: [2047]u8 = undefined;
+    for (0..complete_lines) |_| {
+        const expected = fgetsExecLine(oracle, &c_buf) orelse return error.MissingOracleLine;
+        const actual = readExecLine(scanned, &zig_buf) orelse return error.MissingExecLine;
+        switch (expected) {
+            .overflow => try std.testing.expect(actual == .overflow),
+            .command => |line| switch (actual) {
+                .overflow => return error.UnexpectedExecOverflow,
+                .command => |other| try std.testing.expectEqualSlices(u8, line, other),
+            },
+        }
+    }
+    try std.testing.expect(fgetsExecLine(oracle, &c_buf) == null);
+    try std.testing.expect(readExecLine(scanned, &zig_buf) == null);
+    try std.testing.expect(c.ferror(oracle) != 0);
+    try std.testing.expect(c.ferror(scanned) != 0);
+    try std.testing.expectEqual(c_state.offset, zig_state.offset);
+    try std.testing.expectEqual(fail_after, zig_state.offset);
+    try std.testing.expect(c_state.failures > 0 and zig_state.failures > 0);
+}
+
+test "exec line scanner discards a partial command on a mid-line FILE read error" {
+    try expectExecReadErrorParity("echo partial\n", "echo pa".len, 0);
+    try expectExecReadErrorParity("echo good\necho partial\n", "echo good\necho pa".len, 1);
+    try expectExecReadErrorParity("echo \x00ignored\n", "echo \x00ign".len, 0);
+}
+
+test "exec line scanner preserves a complete chunk on failed lookahead or discard" {
+    const full = [_]u8{'x'} ** 2047;
+    try expectExecReadErrorParity(&full, full.len, 1);
+    const overlong = [_]u8{'x'} ** 2048;
+    try expectExecReadErrorParity(&overlong, overlong.len, 1);
 }
 
 fn expectOutputMatchesLibc(output: Output, comptime format: [*:0]const u8, args: anytype) !void {

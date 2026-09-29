@@ -1151,6 +1151,8 @@ open/close, `fgetc` for stream-buffering and offset compatibility, and
 `ferror` for the final read status; these are still libc interop dependencies.
 `test-exec-line-input` compares byte slices, overflow choices, offsets and
 stream error flags with the old C `fgets`/`fgetc`/`strlen` framing oracle.
+Its fault-injected C streams ensure that a mid-line read error discards the
+partial command while an error after a complete chunk leaves it intact.
 Original-C exec goldens cover 2047/2048 and embedded-NUL boundaries; only
 the overlong Zig CLI result intentionally differs from original C.
 

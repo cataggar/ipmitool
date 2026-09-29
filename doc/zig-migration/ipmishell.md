@@ -32,8 +32,13 @@ old `strlen` check did. Exactly 2047 bytes followed by LF (or EOF) are
 accepted; a following non-LF byte discards the rest of that physical line and
 reports an overflow. CR is a normal byte; LF terminates a chunk. The scanner
 still uses C `fgetc` on the owned `FILE*` to preserve its buffering, ownership
-and shared stream offset, and `ferror` to report read failures. The file-open
-and stream APIs remain C interop dependencies, not native Zig file I/O.
+and shared stream offset. If a read fails partway through a chunk, the
+scanner discards its partial command as `fgets` does; it does not dispatch
+the prefix. An error in the *lookahead* after a complete 2047-byte chunk
+still leaves that chunk available for dispatch. `ferror` reports either
+read failure with the existing `exec: unable to read file` status/diagnostic.
+The file-open and stream APIs remain C interop dependencies, not native
+Zig file I/O.
 
 The interactive editor uses a PTY's termios raw mode and a native Zig history
 list (up/down arrows). Left/right arrows, Home/End, Delete, Backspace,
@@ -70,7 +75,9 @@ the C `exec`/`set`/`echo` outputs and status with Zig. The test server listens
 on a worktree-local Unix socket and stops when the suite finishes.
 `zig build test-exec-line-input -Dzig-modules=ipmishell` compares the scanner
 against the old C `fgets`/`fgetc`/`strlen` framing on in-memory C streams,
-including every first byte, NULs, boundaries, CR/LF, EOF and failed reads.
+including every first byte, NULs, boundaries, CR/LF and EOF. Fault-injected
+`fopencookie` streams compare mid-line, post-newline, lookahead and overflow
+discard read errors without writing to a temporary directory.
 `zig build test-golden -Dzig-modules=ipmishell -- --filter shellcmd_`
 compares the selected Zig binary and the all-Zig binary against
 `exec`/`set`/`echo` snapshots recorded from the unchanged C oracle. The
