@@ -895,6 +895,20 @@ successive numbers. The `sl_oemmsg_*`,
 output, statuses and requests. General record/path formatting, allocation-
 sized lengths and PPS `strtol` parsing remain C interop seams.
 
+The SEL `add` file reader now clips `#` comments, trims C-locale whitespace,
+copies the diagnostic line including its NUL, and splits tokens on literal
+spaces using bounded Zig slices instead of `strchr`/`strlen`/`strcpy`/`strtok`.
+Tabs still trim at the edges but never separate byte tokens; only the first
+seven tokens enter the existing `str2uchar` converter and entry request.
+`fgets` still owns the 1024-byte input buffer; empty/comment lines, malformed
+byte diagnostics, `feof`/file-close behavior and BMC rejection statuses are
+unchanged. `zig build test-sel-add-strings` compares the entire mutated input
+buffer, diagnostic copy and token bytes against libc for
+whitespace, comments, embedded NULs and both 1022/1023-byte `fgets` edges.
+The `sl_add_*` original-C, SEL-selected and all-selected goldens pin CLI
+output, request bytes and exit statuses. This does not change the separate
+SEL PPS parser or event description formatter.
+
 The selected `sol payload status` result now uses checked Zig stdout for
 both enabled and disabled lines, retaining the C decimal fields and newline.
 The C stdout pre-flush preserves buffered output from earlier code; write

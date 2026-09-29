@@ -1462,6 +1462,14 @@ pub fn build(b: *std.Build) void {
     sel_cstrings_step.dependOn(&b.addRunArtifact(sel_cstrings_unit).step);
     test_step.dependOn(sel_cstrings_step);
 
+    const sel_add_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sel.test.sel add strings"},
+    });
+    const sel_add_strings_step = b.step("test-sel-add-strings", "Compare SEL add clipping, whitespace, diagnostics and token bytes with libc");
+    sel_add_strings_step.dependOn(&b.addRunArtifact(sel_add_strings_unit).step);
+    test_step.dependOn(sel_add_strings_step);
+
     const fru_strings_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.fru.test.fru string lengths"},

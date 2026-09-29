@@ -42,8 +42,9 @@
 //!   allocation displays pre-flush libc stdout and check writes and final
 //!   flushes, retaining C's timestamp formatter and request statuses.
 //! * **Bounded SEL C strings use Zig.**  OEM/PPS token equality, the PPS
-//!   `fgets` line length and Dell DIMM decimal digits avoid libc; allocation-
-//!   sized descriptions, record formatting and `strtol` retain the C bridge.
+//!   `fgets` line length, Dell DIMM decimal digits and SEL add line/token
+//!   handling avoid libc; allocation-sized descriptions, record formatting
+//!   and `strtol` retain the C bridge.
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sel` is selected.
@@ -621,6 +622,121 @@ fn getOem(intf: ?*Intf) callconv(.c) c.IPMI_OEM {
 // sel add
 // ---------------------------------------------------------------------------
 
+fn trimSelAddLine(line: []u8) ?[]u8 {
+    const length = boundedCStringLength(line);
+    var end = std.mem.indexOfScalar(u8, line[0..length], '#') orelse length;
+    line[end] = 0;
+    while (end > 0 and c.isspace(line[end - 1]) != 0) {
+        end -= 1;
+        line[end] = 0;
+    }
+    var start: usize = 0;
+    while (start < end and c.isspace(line[start]) != 0) : (start += 1) {}
+    if (start == end) return null;
+    return line[start .. end + 1];
+}
+
+fn nextSelAddToken(line: []u8, offset: *usize) ?[*:0]u8 {
+    var pos = offset.*;
+    while (line[pos] == ' ') : (pos += 1) {}
+    if (line[pos] == 0) {
+        offset.* = pos;
+        return null;
+    }
+    const start = pos;
+    while (line[pos] != 0 and line[pos] != ' ') : (pos += 1) {}
+    if (line[pos] == ' ') {
+        line[pos] = 0;
+        pos += 1;
+    }
+    offset.* = pos;
+    return @ptrCast(line.ptr + start);
+}
+
+fn expectSelAddLineMatchesLibc(raw: []const u8) !void {
+    var expected: [1024]u8 = @splat(0xa5);
+    var actual: [1024]u8 = expected;
+    @memcpy(expected[0..raw.len], raw);
+    @memcpy(actual[0..raw.len], raw);
+    expected[raw.len] = 0;
+    actual[raw.len] = 0;
+
+    var end = c.strchr(&expected, '#');
+    if (end != null) {
+        end[0] = 0;
+    } else {
+        end = @as([*c]u8, &expected) + c.strlen(&expected);
+    }
+    while (@intFromPtr(end) > @intFromPtr(&expected) and c.isspace((end - 1)[0]) != 0) {
+        end -= 1;
+        end[0] = 0;
+    }
+    var start: [*c]u8 = &expected;
+    while (c.isspace(start[0]) != 0) start += 1;
+
+    const trimmed = trimSelAddLine(&actual);
+    try std.testing.expectEqualSlices(u8, &expected, &actual);
+    if (c.strlen(start) == 0) {
+        try std.testing.expect(trimmed == null);
+        return;
+    }
+
+    const text = trimmed.?;
+    var event_line: [1024]u8 = @splat(0xa5);
+    var zig_event_line: [1024]u8 = event_line;
+    _ = c.strcpy(&event_line, start);
+    @memcpy(zig_event_line[0..text.len], text);
+    try std.testing.expectEqualSlices(u8, &event_line, &zig_event_line);
+    try std.testing.expectEqual(@as(usize, c.strlen(start)) + 1, text.len);
+
+    var c_token = c.strtok(start, " ");
+    var offset: usize = 0;
+    var token = nextSelAddToken(text, &offset);
+    var count: usize = 0;
+    while (true) {
+        try std.testing.expectEqual(c_token != null, token != null);
+        if (c_token == null) break;
+        try std.testing.expectEqualStrings(
+            std.mem.span(@as([*:0]const u8, @ptrCast(c_token))),
+            std.mem.span(token.?),
+        );
+        count += 1;
+        if (count == 8) break;
+        c_token = c.strtok(null, " ");
+        token = nextSelAddToken(text, &offset);
+    }
+    try std.testing.expectEqualSlices(u8, &expected, &actual);
+}
+
+test "sel add strings match libc clipping trimming diagnostics and space tokens" {
+    const lines = [_][]const u8{
+        "",
+        "\n",
+        "   \t\r\n",
+        " \t# comment",
+        "0x04 0x01 0x30 0x01 0x51 0xa1 0xb1",
+        "\t 0x04  0x01 0x30 0x01 0x51 0xa1 0xb1 \r\n",
+        "0x04\t0x01 0x30 0x01 0x51 0xa1 0xb1",
+        "0x04 0x01 0x30 0x01 0x51 0xa1 0xb1 # comment",
+        "0x04 0x01 0x30 0x01 0x51 0xa1 0xb1 extra tokens after seven",
+        "0x04 0x01 0x30 0x01 0x51 0xa1",
+        "0x04 0x01 0x30 invalid 0x51 0xa1 0xb1",
+        "  0x04 0x01\x00 0x30 0x01 0x51 0xa1 0xb1",
+        "#\x00 0x04 0x01 0x30 0x01 0x51 0xa1 0xb1",
+        "0x04 0x01 0x30 0x01 0x51 0xa1 0xb1#inline",
+    };
+    for (lines) |line| try expectSelAddLineMatchesLibc(line);
+
+    var edge: [1023]u8 = @splat(' ');
+    @memcpy(edge[0..4], "0x04");
+    for ([_]usize{ 1022, 1023 }) |length| {
+        try expectSelAddLineMatchesLibc(edge[0..length]);
+        edge[length - 1] = '#';
+        try expectSelAddLineMatchesLibc(edge[0..length]);
+        edge[length - 1] = ' ';
+    }
+}
+
 /// `ipmi_sel_add_entry()`.
 fn selAddEntry(intf: *Intf, rec: *SelEventRecord) c_int {
     var req = std.mem.zeroes(Request);
@@ -667,43 +783,25 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
         }
         line += 1;
 
-        // clip off optional comment tail indicated by #
-        var ptr = c.strchr(&buf, '#');
-        if (ptr != null) {
-            ptr[0] = 0;
-        } else {
-            ptr = @as([*c]u8, &buf) + c.strlen(&buf);
-        }
-
-        // clip off trailing and leading whitespace
-        while (@intFromPtr(ptr) > @intFromPtr(&buf) and c.isspace((ptr - 1)[0]) != 0) {
-            ptr -= 1;
-            ptr[0] = 0;
-        }
-        ptr = &buf;
-        while (c.isspace(ptr[0]) != 0) {
-            ptr += 1;
-        }
-        if (c.strlen(ptr) == 0) {
-            continue;
-        }
-        _ = c.strcpy(&event_line, ptr);
+        const line_text = trimSelAddLine(&buf) orelse continue;
+        @memcpy(event_line[0..line_text.len], line_text);
 
         // parse the event, 7 bytes with optional comment
         // 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event
         var i: usize = 0;
         var invalid = false;
         rqdata = @splat(0);
-        var tok = c.strtok(ptr, " ");
-        while (tok != null) {
+        var offset: usize = 0;
+        var tok = nextSelAddToken(line_text, &offset);
+        while (tok) |token| {
             if (i == 7) break;
             const j = i;
             i += 1;
-            if (c.str2uchar(tok, &rqdata[j]) != 0) {
+            if (c.str2uchar(token, &rqdata[j]) != 0) {
                 invalid = true;
                 break;
             }
-            tok = c.strtok(null, " ");
+            tok = nextSelAddToken(line_text, &offset);
         }
         if (invalid or i < 7) {
             log.print(
