@@ -691,6 +691,25 @@ buffer before the next lookup. Any output failure logs its phase and returns
 sections and unknown lookups, buffered C/Zig order and injected I/O failures.
 The existing `mc_info*` original-C and selected-Zig CLI goldens in
 `41-mc.cases` and `30-commands.cases` retain the C oracle.
+The device-ID manufacturer and product names now use the Zig value-table
+helpers, not the C `val2str`/`oemval2str` calls and their libc `snprintf`
+unknown fallback. They still read the live IANA registry and ordered product
+table, preserve first-match and PICMG-wildcard rules, stop at their sentinels,
+and render `Unknown (0xNN)` with C's minimum two-digit uppercase hex. The
+shared fallback buffer is consumed by the writer before the product lookup
+overwrites it. `zig build test-mc-info-names` checks known C-formatted name
+bytes, embedded NULs and duplicate/terminator rules, and compares the 32-byte
+fallback buffer with libc formatting through the `u32`/`u16` boundaries;
+`mc_info*` original-C, selected-MC and all-selected goldens pin the request,
+status and printed names.
+For MC reset, global enables, device ID and selftest, completion-code names
+also use the Zig table lookup and bounded unknown formatter rather than C
+`val2str`. Watchdog and system-info status paths retain their previous
+implementation. `zig build test-mc-completion-names` checks precedence,
+NUL termination, all byte-sized unknown codes and the full zero-filled
+fallback against libc; `mc_info_unknown_ccode` adds the original-C CLI oracle
+for a two-digit unknown code and its error status, alongside the existing
+known-code MC goldens. Other MC lookup paths are unchanged.
 
 The selected `mc getenables` and `mc setenables` output now uses checked Zig
 streaming stdout. The seven flag rows retain C's 40-byte left alignment,

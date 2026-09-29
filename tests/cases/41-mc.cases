@@ -104,6 +104,12 @@ args: -I dummy mc info
 transcript: mc_ccode.tr
 covers: mc
 
+[mc_info_unknown_ccode]
+desc: an unknown completion code formats the zero-padded C fallback and fails
+args: -I dummy mc info
+transcript: mc_ccode_unknown.tr
+covers: mc
+
 # ---------------------------------------------------------------------------
 # mc guid - explicit encodings
 # ---------------------------------------------------------------------------

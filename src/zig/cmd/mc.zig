@@ -20,6 +20,8 @@
 //!   libc's locale whitespace classification. SET system-info strings use
 //!   Zig byte lengths and zero-padded block copies; MC C-string equality
 //!   and watchdog option splitting use NUL-terminated Zig byte slices.
+//!   Device-ID names and ordinary MC completion names use Zig table lookups
+//!   and the helper's bounded unknown-name formatter.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -34,6 +36,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
+const helper = @import("../util/helper.zig");
 const log = @import("../util/log.zig");
 const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
@@ -126,6 +129,37 @@ fn htole16(h: u16, p: [*]u8) void {
 
 fn ccString(ccode: u8) [*c]const u8 {
     return c.val2str(ccode, c.completion_code_vals);
+}
+
+fn mcCompletionName(ccode: u8, table: [*]const helper.ValStr) [*:0]const u8 {
+    return helper.val2str(ccode, table);
+}
+
+fn mcCompletionString(ccode: u8) [*:0]const u8 {
+    return mcCompletionName(ccode, @ptrCast(c.completion_code_vals));
+}
+
+test "mc non-watchdog completion names match C NUL and fallback formatting" {
+    const codes = [_]helper.ValStr{
+        .{ .val = 0, .str = "Success" },
+        .{ .val = 0xc1, .str = "Invalid command\x00hidden" },
+        .{ .val = 0xc1, .str = "shadowed" },
+        .{ .val = 0x80, .str = null },
+        .{ .val = 0x42, .str = "past terminator" },
+    };
+    try std.testing.expectEqualStrings("Success", std.mem.span(mcCompletionName(0, &codes)));
+    var formatted: [32]u8 = @splat(0);
+    const length = c.snprintf(&formatted, formatted.len, "%s", codes[1].str.?);
+    try std.testing.expectEqualStrings(formatted[0..@intCast(length)], std.mem.span(mcCompletionName(0xc1, &codes)));
+
+    for (0..256) |code| {
+        if (code == 0 or code == 0xc1) continue;
+        var expected: [32]u8 = @splat(0);
+        const count = c.snprintf(&expected, expected.len, "Unknown (0x%02X)", @as(c_uint, @intCast(code)));
+        const actual = mcCompletionName(@intCast(code), &codes);
+        try std.testing.expectEqual(@as(usize, @intCast(count)), std.mem.len(actual));
+        try std.testing.expectEqualSlices(u8, &expected, actual[0..32]);
+    }
 }
 
 // A `?:` over two string literals yields a slice, which cannot cross a
@@ -230,7 +264,7 @@ fn mcReset(intf: *Intf, cmd: c_int) c_int {
         log.print(log.Level.err, "MC reset command failed.", .{});
         return -1;
     } else if (rsp.?.ccode != 0) {
-        log.print(log.Level.err, "MC reset command failed: %s", .{ccString(rsp.?.ccode)});
+        log.print(log.Level.err, "MC reset command failed: %s", .{mcCompletionString(rsp.?.ccode)});
         return -1;
     }
 
@@ -458,7 +492,7 @@ fn mcGetEnablesTo(intf: *Intf, writer: *std.Io.Writer, preflush: anytype) McOutp
         return -1;
     };
     if (rsp.ccode != 0) {
-        log.print(log.Level.err, "Get Global Enables command failed: %s", .{ccString(rsp.ccode)});
+        log.print(log.Level.err, "Get Global Enables command failed: %s", .{mcCompletionString(rsp.ccode)});
         return -1;
     }
 
@@ -493,7 +527,7 @@ fn mcSetEnablesTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, writer: *std.Io.Wr
         return -1;
     };
     if (rsp.ccode != 0) {
-        log.print(log.Level.err, "Get Global Enables command failed: %s", .{ccString(rsp.ccode)});
+        log.print(log.Level.err, "Get Global Enables command failed: %s", .{mcCompletionString(rsp.ccode)});
         return -1;
     }
 
@@ -554,7 +588,7 @@ fn mcSetEnablesTo(intf: *Intf, argc: c_int, argv: [*][*:0]u8, writer: *std.Io.Wr
         return -1;
     };
     if (rsp2.ccode != 0) {
-        log.print(log.Level.err, "Set Global Enables command failed: %s", .{ccString(rsp2.ccode)});
+        log.print(log.Level.err, "Set Global Enables command failed: %s", .{mcCompletionString(rsp2.ccode)});
         return -1;
     }
 
@@ -855,14 +889,79 @@ const ipm_dev_adtl_dev_support_table = [8]?[*:0]const u8{
 
 const McDeviceIdNames = struct {
     fn manufacturer(mfg: u32) []const u8 {
-        return std.mem.span(c.val2str(mfg, c.ipmi_oem_info));
+        const registry: ?[*]const helper.ValStr = if (c.ipmi_oem_info == null)
+            null
+        else
+            @ptrCast(c.ipmi_oem_info);
+        return mcManufacturerName(mfg, registry);
     }
 
     fn product(mfg: u32, id: u16) ?[]const u8 {
-        const name = c.oemval2str(mfg, id, c.ipmi_oem_product_info);
-        return if (name == null) null else std.mem.span(name);
+        return mcProductName(mfg, id, @ptrCast(c.ipmi_oem_product_info));
     }
 };
+
+fn mcManufacturerName(mfg: u32, registry: ?[*]const helper.ValStr) []const u8 {
+    return std.mem.span(helper.val2str(mfg, registry));
+}
+
+fn mcProductName(mfg: u32, id: u16, products: [*]const helper.OemValStr) []const u8 {
+    return std.mem.span(helper.oemval2str(mfg, id, products));
+}
+
+test "mc info manufacturer names match C lookup, fallback and NUL boundaries" {
+    const registry = [_]helper.ValStr{
+        .{ .val = 0, .str = "zero" },
+        .{ .val = 343, .str = "Intel\x00hidden" },
+        .{ .val = 343, .str = "shadowed" },
+        .{ .val = 0xffffffff, .str = null },
+        .{ .val = 17, .str = "past terminator" },
+    };
+    try std.testing.expectEqualStrings("zero", mcManufacturerName(0, &registry));
+    var expected: [32]u8 = @splat(0);
+    const length = c.snprintf(&expected, expected.len, "%s", registry[1].str.?);
+    try std.testing.expectEqual(@as(c_int, 5), length);
+    try std.testing.expectEqualStrings(expected[0..@intCast(length)], mcManufacturerName(343, &registry));
+
+    for ([_]u32{ 0, 1, 0x0f, 0x10, 17, 0xff, 0x100, 0xffff, 0xffffff, 0xffffffff }) |mfg| {
+        for ([_]?[*]const helper.ValStr{ null, &registry }) |table| {
+            if (mfg == 0 and table != null) continue;
+            const actual = mcManufacturerName(mfg, table);
+            var formatted: [32]u8 = @splat(0);
+            const count = c.snprintf(&formatted, formatted.len, "Unknown (0x%02X)", @as(c_uint, mfg));
+            try std.testing.expectEqual(@as(usize, @intCast(count)), actual.len);
+            try std.testing.expectEqualSlices(u8, &formatted, actual.ptr[0..32]);
+        }
+    }
+}
+
+test "mc info product names match C lookup, wildcard, duplicate and fallback" {
+    const products = [_]helper.OemValStr{
+        .{ .oem = 343, .val = 0x28, .str = "S5000PAL\x00hidden" },
+        .{ .oem = 343, .val = 0x28, .str = "shadowed" },
+        .{ .oem = @intCast(c.IPMI_OEM_PICMG), .val = 0xf0, .str = "PICMG" },
+        .{ .oem = 343, .val = 0xf0, .str = "shadowed by PICMG" },
+        .{ .oem = 0xffffff, .val = 0x11, .str = "terminator" },
+        .{ .oem = 343, .val = 0x1234, .str = "past terminator" },
+    };
+    for ([_]u32{ 0, 343, 15000, 0xffffffff }) |mfg| {
+        for ([_]u16{ 0, 1, 0xf, 0x10, 0x28, 0xf0, 0xff, 0x100, 0x1234, 0xffff }) |id| {
+            const actual = mcProductName(mfg, id, &products);
+            if (id == 0x28 and mfg == 343) {
+                var formatted: [32]u8 = @splat(0);
+                const count = c.snprintf(&formatted, formatted.len, "%s", products[0].str.?);
+                try std.testing.expectEqualStrings(formatted[0..@intCast(count)], actual);
+            } else if (id == 0xf0) {
+                try std.testing.expectEqualStrings("PICMG", actual);
+            } else {
+                var formatted: [32]u8 = @splat(0);
+                const count = c.snprintf(&formatted, formatted.len, "Unknown (0x%02X)", @as(c_uint, id));
+                try std.testing.expectEqual(@as(usize, @intCast(count)), actual.len);
+                try std.testing.expectEqualSlices(u8, &formatted, actual.ptr[0..32]);
+            }
+        }
+    }
+}
 
 fn writeMcDeviceid(
     writer: *std.Io.Writer,
@@ -928,7 +1027,7 @@ fn mcGetDeviceid(intf: *Intf) c_int {
         return -1;
     };
     if (rsp.ccode != 0) {
-        log.print(log.Level.err, "Get Device ID command failed: %s", .{ccString(rsp.ccode)});
+        log.print(log.Level.err, "Get Device ID command failed: %s", .{mcCompletionString(rsp.ccode)});
         return -1;
     }
 
@@ -1747,7 +1846,7 @@ fn mcGetSelftest(intf: *Intf) c_int {
     };
 
     if (rsp.ccode != 0) {
-        log.print(log.Level.err, "Bad response: (%s)", .{ccString(rsp.ccode)});
+        log.print(log.Level.err, "Bad response: (%s)", .{mcCompletionString(rsp.ccode)});
         return -1;
     }
 
