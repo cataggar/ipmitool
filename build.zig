@@ -1478,6 +1478,14 @@ pub fn build(b: *std.Build) void {
     password_test_step.dependOn(&b.addRunArtifact(password_test_unit).step);
     test_step.dependOn(password_test_step);
 
+    const password_prompt_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.user.test.user password prompt"},
+    });
+    const password_prompt_step = b.step("test-user-password-prompt", "Compare all user password prompts and static buffer contents with libc");
+    password_prompt_step.dependOn(&b.addRunArtifact(password_prompt_unit).step);
+    test_step.dependOn(password_prompt_step);
+
     const user_write_ack_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.user.test.user write acknowledgement stdout"},

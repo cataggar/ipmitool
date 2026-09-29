@@ -781,6 +781,12 @@ bytes, mixed buffered C/Zig order, and pre-flush, early/late write and
 final-flush errors. The existing `user_test_*` C/selected-Zig CLI goldens
 cover success and failure codes.
 
+The selected `user set password` prompt uses bounded Zig decimal formatting
+instead of libc `snprintf`. The original 128-byte static buffer remains
+zeroed on each call and is reused for `getpass`; `zig build
+test-user-password-prompt` compares its entire buffer and pointer lifetime
+with the C formatter for every `u8` user ID.
+
 The selected `user priv` and `user set password` success acknowledgements
 stream through checked Zig stdout after a libc pre-flush. They preserve the
 C wording, user IDs, newline and status, while pre-flush, write and final-flush
