@@ -1,0 +1,22 @@
+#!golden 1
+#!case dcmi_asset_output_binary
+#!section exit
+0
+#!section stdout
+
+ Asset tag: \x00\xffABCDEFGHIJKLMN\x80
+
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=dc 00 00
+< rule=length ccode=0x00 len=2 data=dc 11
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=dc 00 10
+< rule=first ccode=0x00 len=18 data=dc 11 00 ff 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e
+> netfn=0x2c lun=0x00 cmd=0x06 target_cmd=0x00 data=dc 10 01
+< rule=last ccode=0x00 len=3 data=dc 11 80
+bye
+#!section files

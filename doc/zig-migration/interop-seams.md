@@ -1208,6 +1208,21 @@ command decisions with libc at digit-width boundaries, for every first byte
 and embedded NULs; the `dcmi_` CLI goldens preserve output and requests. The
 static label buffer still lasts only until the next unknown lookup.
 
+DCMI asset tag and MC identifier get/set now write the labels, payloads and
+newline through checked Zig stdout. Payloads are raw byte slices, not `%s`:
+an embedded NUL or `0xff` is printed in full, and MC set includes its trailing
+NUL on the wire and on stdout. The C stdout buffer is flushed before the first
+Zig label, each successful 16-byte chunk is written after its response, and a
+failed later response retains the label and earlier chunks without a newline.
+An invalid group reply still prints its existing C diagnostic in order after
+the Zig prefix. MC set on `lanplus` still skips response validation because
+the connection may drop after the command. `zig build test-dcmi-asset-stdout`
+compares libc `%c` bytes (including empty/exact/multiple chunks and binary
+values), BMC request sequence, partial results, C/Zig output ordering and
+preflush/write/final-flush failures; the `dcmi_asset_output_` C-oracle CLI
+snapshots cover on-wire and exit-status parity with selected and all-selected
+Zig builds. Other DCMI command printers remain on their existing paths.
+
 DCMI and Node Manager now share the bounded lowercase hexadecimal unknown
 label formatter. The selected Node Manager also compares its top-level
 `help` argument with NUL-aware Zig equality; locale-sensitive option

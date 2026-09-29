@@ -107,6 +107,55 @@ args: -I dummy dcmi set_mc_id_string "management id"
 transcript: dcmi.tr
 covers: dcmi
 
+[dcmi_asset_output_empty]
+args: -I dummy dcmi asset_tag
+transcript: dcmi_asset_output_empty.tr
+covers: dcmi
+
+[dcmi_asset_output_binary]
+args: -I dummy dcmi asset_tag
+transcript: dcmi_asset_output_binary.tr
+covers: dcmi
+
+[dcmi_asset_output_bad_group]
+args: -I dummy dcmi asset_tag
+transcript: dcmi_asset_output_bad_group.tr
+covers: dcmi
+
+[dcmi_asset_output_accepted_cc]
+args: -I dummy dcmi asset_tag
+transcript: dcmi_asset_output_accepted_cc.tr
+covers: dcmi
+
+[dcmi_asset_output_set_empty]
+args: -I dummy dcmi set_asset_tag ""
+covers: dcmi
+
+[dcmi_asset_output_set_partial]
+args: -I dummy dcmi set_asset_tag "0123456789abcdefMORE"
+transcript: dcmi_asset_output_set_partial.tr
+covers: dcmi
+
+[dcmi_asset_output_mc_empty]
+args: -I dummy dcmi get_mc_id_string
+transcript: dcmi_asset_output_mc_empty.tr
+covers: dcmi
+
+[dcmi_asset_output_mc_set_empty]
+args: -I dummy dcmi set_mc_id_string ""
+transcript: dcmi_asset_output_mc_set.tr
+covers: dcmi
+
+[dcmi_asset_output_mc_set_boundary]
+args: -I dummy dcmi set_mc_id_string "0123456789abcdef"
+transcript: dcmi_asset_output_mc_set.tr
+covers: dcmi
+
+[dcmi_asset_output_mc_partial]
+args: -I dummy dcmi get_mc_id_string
+transcript: dcmi_asset_output_mc_partial.tr
+covers: dcmi
+
 [dcmi_thermal_get]
 args: -I dummy dcmi thermalpolicy get 0x40 2
 transcript: dcmi.tr
