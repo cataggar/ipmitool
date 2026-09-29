@@ -60,6 +60,12 @@ args: -I dummy pef filter disable 2
 transcript: pef_filters.tr
 covers: pef
 
+[pef_status_stdout_filter_last]
+desc: C-oracle success announcement at the advertised last filter ID
+args: -I dummy pef filter enable 3
+transcript: pef_filters.tr
+covers: pef
+
 [pef_filter_enable_denied]
 args: -I dummy pef filter enable 1
 transcript: pef_denied.tr
@@ -157,6 +163,12 @@ covers: pef
 
 [pef_policy_disable]
 args: -I dummy pef policy disable 1
+transcript: pef_policies.tr
+covers: pef
+
+[pef_status_stdout_policy_last]
+desc: C-oracle success announcement at the advertised last policy ID
+args: -I dummy pef policy disable 2
 transcript: pef_policies.tr
 covers: pef
 
