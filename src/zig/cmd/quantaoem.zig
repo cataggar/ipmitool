@@ -45,6 +45,15 @@ const log = @import("../util/log.zig");
 const desc_size: usize = 128;
 const magic = [4]u8{ 0x4c, 0x1c, 0x00, 0x02 };
 
+fn formatMemoryEventDesc(buffer: []u8, data: u8) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(
+        buffer,
+        "CPU{d}_{c}{d}",
+        .{ (data >> 6) & 0x03, @as(u8, 'A') + ((data >> 3) & 0x07), data & 0x07 },
+        0,
+    );
+}
+
 /// `oem_qct_get_platform_id()`. A zero-length successful response reads the
 /// first byte of the interface's persistent response buffer, just as C does.
 fn getPlatformId(intf: *Intf) callconv(.c) c.qct_platform_t {
@@ -110,16 +119,30 @@ fn getEvtDesc(intf: *Intf, rec: ?*c.struct_sel_event_record) callconv(.c) [*c]u8
 
     if (getPlatformId(intf) == c.OEM_QCT_PLATFORM_PURLEY) {
         const data = bytes[data_offset + 2];
-        _ = c.snprintf(
-            desc,
-            desc_size,
-            "CPU%d_%c%d",
-            @as(c_int, (data >> 6) & 0x03),
-            @as(c_int, 0x41 + ((data >> 3) & 0x07)),
-            @as(c_int, data & 0x07),
-        );
+        _ = formatMemoryEventDesc(desc[0..desc_size], data) catch unreachable;
     }
     return desc;
+}
+
+test "Quanta memory event description matches libc for all bytes" {
+    for (0..256) |value| {
+        const data: u8 = @intCast(value);
+        var expected: [desc_size]u8 = @splat(0);
+        const written = c.snprintf(
+            &expected,
+            expected.len,
+            "CPU%d_%c%d",
+            @as(c_int, (data >> 6) & 0x03),
+            @as(c_int, 'A') + @as(c_int, (data >> 3) & 0x07),
+            @as(c_int, data & 0x07),
+        );
+        try std.testing.expectEqual(@as(c_int, 7), written);
+        var actual: [desc_size]u8 = @splat(0);
+        try std.testing.expectEqualStrings(expected[0..@intCast(written)], try formatMemoryEventDesc(&actual, data));
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    var small: [7]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, formatMemoryEventDesc(&small, 0));
 }
 
 pub fn exportSymbols() void {
