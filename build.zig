@@ -1302,6 +1302,23 @@ pub fn build(b: *std.Build) void {
     chassis_mailbox_requests_step.dependOn(&b.addRunArtifact(chassis_mailbox_requests_unit).step);
     test_step.dependOn(chassis_mailbox_requests_step);
 
+    const chassis_log_hex_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/chassis_log_hex_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    chassis_log_hex_mod.addImport("ipmi_c", bridge_mod);
+    chassis_log_hex_mod.addImport("build_options", abi_options.createModule());
+    configure(b, chassis_log_hex_mod, config_h, default_intf);
+    const chassis_log_hex_unit = b.addTest(.{
+        .root_module = chassis_log_hex_mod,
+        .filters = &.{"cmd.chassis.test.chassis bootparam log hex"},
+    });
+    const chassis_log_hex_step = b.step("test-chassis-log-hex", "Compare chassis boot-parameter log hex bytes, truncation and lifetimes with libc");
+    chassis_log_hex_step.dependOn(&b.addRunArtifact(chassis_log_hex_unit).step);
+    test_step.dependOn(chassis_log_hex_step);
+
     const chassis_control_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.chassis.test.chassis control stdout"},

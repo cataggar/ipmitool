@@ -616,6 +616,17 @@ decisions and byte lengths with libc across every first byte, shorter/longer
 names and embedded NULs; the chassis CLI goldens cover command and request
 statuses.
 
+The remaining chassis boot-parameter SET debug hex and mailbox SET info hex
+diagnostics call the Zig helper formatter directly, rather than the C
+`buf2str`/`buf2str_extended` ABI. It keeps C's lowercase digits, optional
+spaces, 3073-byte static buffer, truncation at whole-byte/separator boundaries,
+NUL termination and next-call overwrite; each pointer is consumed
+synchronously by the logger. `zig build test-chassis-log-hex` compares every
+byte against libc `snprintf` and checks both truncation limits, including
+buffer reuse. Original-C, selected-chassis and all-selected CLI goldens cover
+verbose diagnostics and the unchanged mailbox request/acknowledgment order.
+Other C parsing, lookup and logging seams are unchanged.
+
 The selected `chassis power on/off/cycle/reset/diag/soft` (and top-level
 `power`) success messages now use checked Zig stdout. Their original
 value-table wording, newline, request and error behavior remain unchanged;
