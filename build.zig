@@ -1454,6 +1454,14 @@ pub fn build(b: *std.Build) void {
     sel_cstrings_step.dependOn(&b.addRunArtifact(sel_cstrings_unit).step);
     test_step.dependOn(sel_cstrings_step);
 
+    const fru_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.fru.test.fru string lengths"},
+    });
+    const fru_strings_step = b.step("test-fru-strings", "Compare FRU string lengths, file statuses and multirecord labels with libc");
+    fru_strings_step.dependOn(&b.addRunArtifact(fru_strings_unit).step);
+    test_step.dependOn(fru_strings_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},

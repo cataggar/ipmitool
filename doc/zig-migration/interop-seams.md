@@ -1099,6 +1099,13 @@ The Zig OEM editor intentionally fixes the original C code's zeroed FRU size
 before multirecord reads; the isolated `tests/zig-fru` fixtures exercise
 successful edits that the C oracle cannot perform.
 
+The selected FRU module now uses Zig C-string lengths for file paths and
+Kontron version fields and bounded Zig formatting for multirecord type names.
+`zig build test-fru-strings` checks path boundaries, embedded NULs and every
+`u8` record type against libc; the original C and selected-Zig `fru_*` CLI
+goldens preserve output, requests and statuses. The 32-byte name buffer
+still belongs to the caller and is valid only until its next write.
+
 ### Offline eKey analyzer
 
 `-Dzig-modules=ekanalyzer` replaces only `lib/ipmi_ekanalyzer.c`.

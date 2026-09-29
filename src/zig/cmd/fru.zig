@@ -39,12 +39,16 @@ fn equals(a: [*c]u8, b: []const u8) bool {
     return std.mem.eql(u8, std.mem.span(@as([*:0]const u8, @ptrCast(a))), b);
 }
 
+fn cLength(text: [*c]const u8) usize {
+    return std.mem.span(@as([*:0]const u8, @ptrCast(text))).len;
+}
+
 fn validFilename(path: [*c]u8) bool {
     if (path == null) {
         log.print(log.Level.err, "ERROR: NULL pointer passed.", .{});
         return false;
     }
-    const length = c.strlen(path);
+    const length = cLength(path);
     if (length < 1) {
         log.print(log.Level.err, "File/path is invalid.", .{});
         return false;
@@ -609,10 +613,38 @@ const Block = struct {
 
 fn blockName(block: Block, storage: *[32]u8) [*:0]const u8 {
     if (block.record_type) |record_type| {
-        _ = c.snprintf(storage, storage.len, "Multi-Rec Area: Type %i", @as(c_int, record_type));
+        _ = std.fmt.bufPrintSentinel(storage, "Multi-Rec Area: Type {d}", .{record_type}, 0) catch unreachable;
         return @ptrCast(storage);
     }
     return block.name;
+}
+
+test "fru string lengths and multirecord names match libc" {
+    var path: [514]u8 = undefined;
+    for (0..514) |length| {
+        @memset(&path, 'a');
+        path[length] = 0;
+        try std.testing.expectEqual(c.strlen(&path), cLength(&path));
+        if (length == 0 or length == 511 or length == 512 or length == 513) {
+            const status: c_int = if (length == 0) -2 else if (length < 512) 0 else -3;
+            try std.testing.expectEqual(status, filenameStatus(&path));
+            try std.testing.expectEqual(status == 0, validFilename(&path));
+        }
+    }
+    var embedded = [_:0]u8{ 'a', 'b', 0, 'c', 'd' };
+    try std.testing.expectEqual(c.strlen(&embedded), cLength(&embedded));
+
+    var storage: [32]u8 = undefined;
+    for (0..256) |value| {
+        var expected: [32]u8 = undefined;
+        const written = c.snprintf(&expected, expected.len, "Multi-Rec Area: Type %i", @as(c_int, @intCast(value)));
+        try std.testing.expect(written > 0 and written < expected.len);
+        const block: Block = .{ .start = 0, .end = 0, .name = "unused", .record_type = @intCast(value) };
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(written)], std.mem.span(blockName(block, &storage)));
+        try std.testing.expectEqual(@as(u8, 0), storage[@intCast(written)]);
+    }
+    const named: Block = .{ .start = 0, .end = 0, .name = "Baseboard" };
+    try std.testing.expectEqualStrings("Baseboard", std.mem.span(blockName(named, &storage)));
 }
 
 /// Parse the common-header section boundaries and the multi-record chain.
@@ -1281,7 +1313,7 @@ fn kontronEdit(body: []u8, argc: c_int, argv: [*c][*c]u8) bool {
     }
     if (record_id != 3 or body.len < 6 or body[3] != 3) return false;
     for (8..12) |index| {
-        const len = c.strlen(argv[index]);
+        const len = cLength(argv[index]);
         if (len != 8 and len != 10) {
             _ = c.printf("error: version fields must have 8 characters\n");
             return false;
@@ -1822,7 +1854,7 @@ fn filenameStatus(filename: [*c]const u8) callconv(.c) c_int {
         log.print(log.Level.err, "ERROR: NULL pointer passed.", .{});
         return -1;
     }
-    const length = c.strlen(filename);
+    const length = cLength(filename);
     if (length < 1) {
         log.print(log.Level.err, "File/path is invalid.", .{});
         return -2;
