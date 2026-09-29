@@ -21,8 +21,19 @@ formats, and the same final newlines as C. The shared
 any Zig writes; unlike the CLI/helper's `syncC` wrapper it returns a checked
 error instead of panicking. A failed C flush, Zig write, or final Zig flush
 reports an error and returns -1 rather than success; session setters and the
-global `verbose`/CSV state retain their existing behavior. Script `FILE`
-ownership and reading remain unchanged.
+global `verbose`/CSV state retain their existing behavior.
+
+The selected `exec` command opens and closes its script through the same C
+`ipmi_open_file`/`fclose` path. A bounded Zig scanner counts at most 2047
+physical bytes per `fgets`-sized chunk and passes only the prefix before the
+first NUL to the shared Zig parser. It keeps consuming bytes after an embedded
+NUL; a full chunk with an early NUL skips the overflow lookahead, just as the
+old `strlen` check did. Exactly 2047 bytes followed by LF (or EOF) are
+accepted; a following non-LF byte discards the rest of that physical line and
+reports an overflow. CR is a normal byte; LF terminates a chunk. The scanner
+still uses C `fgetc` on the owned `FILE*` to preserve its buffering, ownership
+and shared stream offset, and `ferror` to report read failures. The file-open
+and stream APIs remain C interop dependencies, not native Zig file I/O.
 
 The interactive editor uses a PTY's termios raw mode and a native Zig history
 list (up/down arrows). Left/right arrows, Home/End, Delete, Backspace,
@@ -45,8 +56,9 @@ separate script arguments as well as shell arguments; adjacent and empty
 quoted words work. Unterminated quotes and more than 64 arguments fail with
 an error instead of invoking a partially parsed command. Script lines beyond
 the 2047-byte C buffer are rejected and skipped rather than executed as
-multiple unrelated fragments. No shell expansion or persistent history file
-is added.
+multiple unrelated fragments (except that an early NUL still makes the
+existing overflow check see only its prefix). No shell expansion or
+persistent history file is added.
 
 Run `zig build test-shell-unit -Dzig-modules=ipmishell` for the shared parser and
 `zig build test-shell -Dzig-modules=ipmishell` for automated PTY/CLI coverage
@@ -56,9 +68,15 @@ if available, pass a
 second path to the binary built *without* the Zig module; the suite compares
 the C `exec`/`set`/`echo` outputs and status with Zig. The test server listens
 on a worktree-local Unix socket and stops when the suite finishes.
+`zig build test-exec-line-input -Dzig-modules=ipmishell` compares the scanner
+against the old C `fgets`/`fgetc`/`strlen` framing on in-memory C streams,
+including every first byte, NULs, boundaries, CR/LF, EOF and failed reads.
 `zig build test-golden -Dzig-modules=ipmishell -- --filter shellcmd_`
-compares both the selected Zig binary and the all-Zig binary against thirteen
+compares the selected Zig binary and the all-Zig binary against
 `exec`/`set`/`echo` snapshots recorded from the unchanged C oracle. The
+`shellcmd_exec_2048` golden also keeps the original C snapshot: only this
+deliberately safer Zig overlong-line behavior uses its own `.zig.snap`. The
+2047-byte and embedded-NUL cases match the C CLI exactly. The
 `shellcmd_exec_stdout_order` snapshot and PTY test sandwich C-buffered SDR
 stdout between Zig echo and set responses. `zig build test-shell-stdout-unit`
 checks echo and every successful set response against libc `snprintf`, with
@@ -79,4 +97,8 @@ flags `-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`, use
 `-Dipmishell=false` for the unit and CLI goldens. For `test-shell`, select
 `-Dzig-modules=ipmishell` or `-Dzig-modules=all` without disabling the shell:
 both use the readline-free Zig frontend, including on hosts without readline
-headers.
+headers. To regenerate only the selected shell's intentionally different
+overlong snapshot, run `tests/run.sh --binary zig-out/bin/ipmitool
+--filter shellcmd_exec_2048 --zig-shell-deviations --update` after building
+with `-Dzig-modules=ipmishell`; without that flag the harness checks the
+original-C snapshot instead.

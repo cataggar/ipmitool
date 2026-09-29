@@ -1145,6 +1145,15 @@ test suite on both native architectures, including the daemon's shared logger
 state. This is not a libc-free build or a
 pure-Zig release.
 
+The selected `exec` frontend now frames at most 2047 physical script bytes
+with a Zig scanner rather than calling `fgets`/`strlen`. It retains C `FILE*`
+open/close, `fgetc` for stream-buffering and offset compatibility, and
+`ferror` for the final read status; these are still libc interop dependencies.
+`test-exec-line-input` compares byte slices, overflow choices, offsets and
+stream error flags with the old C `fgets`/`fgetc`/`strlen` framing oracle.
+Original-C exec goldens cover 2047/2048 and embedded-NUL boundaries; only
+the overlong Zig CLI result intentionally differs from original C.
+
 `src/zig/cli/main.zig` is linked through `exports.zig` into the shared Zig
 archive, unlike the separate `cli/tool.zig` executable root. Its diagnostics
 use the typed logger in that archive, sharing its state when `log` is selected

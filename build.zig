@@ -1927,6 +1927,13 @@ pub fn build(b: *std.Build) void {
     b.step("test-shell-stdout-unit", "Compare shell stdout formats with libc and reject writer failures")
         .dependOn(&b.addRunArtifact(shell_stdout_unit).step);
 
+    const exec_line_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"frontend.shell_commands.test.exec line scanner"},
+    });
+    b.step("test-exec-line-input", "Compare bounded Zig exec lines with the fgets/fgetc/strlen oracle")
+        .dependOn(&b.addRunArtifact(exec_line_unit).step);
+
     const fwum_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/fwum_test.zig"),
         .target = target,
@@ -2641,6 +2648,7 @@ pub fn build(b: *std.Build) void {
         null,
         replacedByZig("lib/ipmi_gendev.c", zig_selection),
         moduleSelected("delloem", zig_selection),
+        moduleSelected("ipmishell", zig_selection),
     ).step);
     const fru_oem_step = b.step("test-fru-oem", "Run fixed Zig-only OEM edit cases");
     if (zig_selection[fruIndex()]) {
@@ -2667,7 +2675,7 @@ pub fn build(b: *std.Build) void {
             .have_crypto_sha256 = openssl,
             .system_libs = swapped_libs,
         });
-        golden_step.dependOn(&addGolden(b, golden_exe, swapped, null, true, true).step);
+        golden_step.dependOn(&addGolden(b, golden_exe, swapped, null, true, true, true).step);
         if (!zig_selection[fruIndex()])
             fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, swapped).step);
     }
@@ -2766,7 +2774,7 @@ pub fn build(b: *std.Build) void {
         // Differential cases need /a and /b beneath each case name; a build
         // cache path plus a 36-character case exceeds sockaddr_un.sun_path in
         // longer checkout paths. The harness removes this short scratch root.
-        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-golden"), false, false);
+        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-golden"), false, false, false);
         compare.addArg("--candidate");
         compare.addFileArg(candidate.getEmittedBin());
         cli_step.dependOn(&compare.step);
@@ -2814,7 +2822,7 @@ pub fn build(b: *std.Build) void {
         const daemon_oracle = addSelectedTool(b, cutover_options, &shell_only, "ipmievd-cli-cutover-c");
         const daemon_candidate = addSelectedTool(b, cutover_options, &cli_and_shell, "ipmievd-cli-cutover-zig");
         const cutover_step = b.step("test-cli-cutover", "Compare C and Zig shared CLI through C daemon and Zig shell callers");
-        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-cutover-golden"), false, false);
+        const compare = addGolden(b, golden_exe, oracle, b.pathFromRoot(".cli-cutover-golden"), false, false, true);
         compare.addArg("--candidate");
         compare.addFileArg(candidate.getEmittedBin());
         cutover_step.dependOn(&compare.step);
@@ -2848,7 +2856,7 @@ pub fn build(b: *std.Build) void {
         const shell_log_candidate = addSelectedTool(b, cutover_options, &shell_and_log, "ipmitool-shell-log-zig");
         const shell_log_step = b.step("test-shell-log", "Compare C and Zig logger state through the selected shell");
         shell_log_step.dependOn(frontend_log_step);
-        const shell_log_compare = addGolden(b, golden_exe, shell_log_oracle, b.pathFromRoot(".shell-log-golden"), false, false);
+        const shell_log_compare = addGolden(b, golden_exe, shell_log_oracle, b.pathFromRoot(".shell-log-golden"), false, false, true);
         shell_log_compare.addArg("--candidate");
         shell_log_compare.addFileArg(shell_log_candidate.getEmittedBin());
         shell_log_step.dependOn(&shell_log_compare.step);
@@ -2966,6 +2974,7 @@ fn addGolden(
     work_dir: ?[]const u8,
     zig_gendev: bool,
     zig_deviations: bool,
+    zig_shell_deviations: bool,
 ) *std.Build.Step.Run {
     const run = b.addRunArtifact(golden_exe);
     run.setName(b.fmt("golden {s}", .{exe.name}));
@@ -2979,6 +2988,7 @@ fn addGolden(
     run.addArg("--binary");
     run.addFileArg(exe.getEmittedBin());
     if (zig_deviations) run.addArg("--zig-deviations");
+    if (zig_shell_deviations) run.addArg("--zig-shell-deviations");
     // A private scratch root per run: the default and the Zig-swapped suites
     // are independent steps and the build runner may execute them at the same
     // time.  `tmpPath` lives in the cache and is cleaned up on success.
