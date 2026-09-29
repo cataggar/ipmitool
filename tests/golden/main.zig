@@ -28,6 +28,7 @@
 //!     --keep               keep the scratch directories
 //!     --allow-uncovered    do not fail when a C command has no case
 //!     --zig-gendev         use .zig.snap for intentional gendev safety fixes
+//!     --zig-shell-deviations  use .zig.snap for marked Zig shell safety fixes
 //!     -v, --verbose        print each case as it runs
 //!
 //! The report goes to stdout on success and to stderr on failure, so a failing
@@ -64,6 +65,7 @@ const Options = struct {
     zig_gendev: bool = false,
     verbose: bool = false,
     zig_deviations: bool = false,
+    zig_shell_deviations: bool = false,
 };
 
 pub fn main(init: std.process.Init) !u8 {
@@ -129,6 +131,8 @@ fn dispatch(gpa: std.mem.Allocator, io: Io, init: std.process.Init, out: *Io.Wri
             opts.zig_gendev = true;
         } else if (std.mem.eql(u8, arg, "--zig-deviations")) {
             opts.zig_deviations = true;
+        } else if (std.mem.eql(u8, arg, "--zig-shell-deviations")) {
+            opts.zig_shell_deviations = true;
         } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--verbose")) {
             opts.verbose = true;
         } else if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
@@ -255,6 +259,7 @@ const usage_text =
     \\  --candidate <path>   differential mode: diff --binary against --candidate
     \\  --filter <substr>    only run matching cases
     \\  --zig-deviations    use *.zig.snap for cases marked zig_deviation: true
+    \\  --zig-shell-deviations  use *.zig.snap for shell_deviation: true
     \\  --update, --accept   rewrite snapshots
     \\  --list               list cases
     \\  --coverage           print the command coverage report only
@@ -320,7 +325,9 @@ fn runCase(
     const snapshot_path = try std.fmt.allocPrint(gpa, "{s}/snapshots/{s}{s}.snap", .{
         opts.tests_dir,
         c.name,
-        if ((opts.zig_gendev and c.zig_diff) or (opts.zig_deviations and c.zig_deviation)) ".zig" else "",
+        if ((opts.zig_gendev and c.zig_diff) or
+            (opts.zig_deviations and c.zig_deviation) or
+            (opts.zig_shell_deviations and c.shell_deviation)) ".zig" else "",
     });
     const root_abs = try realPath(gpa, io, work_root);
     const directory_name = try scratchName(gpa, root_abs, c.name, opts.candidate != null);

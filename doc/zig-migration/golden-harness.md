@@ -386,6 +386,7 @@ covers: fru
 | `blob`       | `<dest> <fixture.hex>` - materialize a binary file in the scratch dir      |
 | `capture`    | `<dest>` - snapshot length and SHA-256 of an output file (or its absence)   |
 | `zig_diff`   | `true` - use a separate `.zig.snap` for a documented Zig safety fix        |
+| `shell_deviation` | `true` - use a `.zig.snap` when the selected Zig `exec` frontend intentionally differs from C |
 | `text`       | `<dest> <fixture.txt>` - materialize a text file in the scratch dir        |
 | `registry`   | `default` (plant the IANA PEN fixture) or `none` (test the lookup failure) |
 | `timeout_ms` | per-case wall-clock budget, default 10000                                  |
@@ -401,6 +402,13 @@ Capture the C oracle's ordinary snapshot first, then capture the Zig
 replacement with `--zig-gendev --update`. `zig build test-golden` selects the
 appropriate expectation for its C and Zig builds automatically; all cases
 without this flag must retain byte-for-byte C parity.
+
+The `shellcmd_exec_2048` case uses `shell_deviation: true`: the original C
+executes the fragment after the 2047-byte buffer, while selected Zig rejects
+and discards the overlong physical line. Capture its C snapshot normally and
+the selected Zig result with `--zig-shell-deviations --update`; the build
+passes that flag only when its shell frontend is selected, independently of
+the Dell or gendev deviation flags.
 
 `{work}` in `args` expands to the case's scratch directory, and is scrubbed back
 out of the captured output, so file-based commands are stable:

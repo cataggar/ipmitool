@@ -68,3 +68,28 @@ covers: exec
 desc: exec reports a missing script without running commands
 args: -I dummy exec {work}/missing-shell-script.txt
 covers: exec
+
+[shellcmd_exec_2047]
+desc: 2047-byte comment plus LF is one accepted line, followed by echo
+args: -I dummy exec {work}/exec-2047.txt
+blob: exec-2047.txt shell/exec-2047.hex
+covers: exec
+
+[shellcmd_exec_2048]
+desc: 2048-byte comment plus LF is discarded by Zig, unlike original C
+args: -I dummy exec {work}/exec-2048.txt
+blob: exec-2048.txt shell/exec-2048.hex
+covers: exec
+shell_deviation: true
+
+[shellcmd_exec_nul]
+desc: embedded NUL truncates parse, not physical line consumption
+args: -I dummy exec {work}/exec-nul.txt
+blob: exec-nul.txt shell/exec-nul.hex
+covers: exec
+
+[shellcmd_exec_nul_boundary]
+desc: NUL before 2047-byte limit leaves following bytes for next fgets
+args: -I dummy exec {work}/exec-nul-boundary.txt
+blob: exec-nul-boundary.txt shell/exec-nul-boundary.hex
+covers: exec

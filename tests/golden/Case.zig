@@ -25,6 +25,7 @@
 //!     snapshot:    full | sha256 (compact full-stream digest and edge samples)
 //!     timeout_ms:  per-case wall clock budget (default 10000)
 //!     zig_deviation: true when an intentionally safer Zig result has its own snapshot
+//!     shell_deviation: true when the Zig shell intentionally differs from C
 //!
 //! `{work}` anywhere in `args` expands to the case's work directory, which is
 //! also scrubbed back out of the captured output.
@@ -51,6 +52,7 @@ fixed_time: ?i64 = null,
 snapshot_mode: SnapshotMode = .full,
 timeout_ms: u32 = 10_000,
 zig_deviation: bool = false,
+shell_deviation: bool = false,
 source: []const u8 = "",
 
 pub const Env = struct { name: []const u8, value: []const u8 };
@@ -230,6 +232,12 @@ fn parseInto(
                 return error.BadCaseFile;
             }
             c.zig_deviation = true;
+        } else if (std.mem.eql(u8, key, "shell_deviation")) {
+            if (!std.mem.eql(u8, value, "true")) {
+                try diag.print(gpa, "{s}:{d}: shell_deviation: must be true", .{ path, line_no });
+                return error.BadCaseFile;
+            }
+            c.shell_deviation = true;
         } else {
             try diag.print(gpa, "{s}:{d}: unknown case key '{s}'", .{ path, line_no, key });
             return error.BadCaseFile;
