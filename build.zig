@@ -1422,6 +1422,14 @@ pub fn build(b: *std.Build) void {
     dcmi_strings_step.dependOn(&b.addRunArtifact(dcmi_strings_unit).step);
     test_step.dependOn(dcmi_strings_step);
 
+    const quanta_desc_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.quantaoem.test.Quanta memory event description"},
+    });
+    const quanta_desc_step = b.step("test-quanta-desc", "Compare all Quanta memory descriptions with libc");
+    quanta_desc_step.dependOn(&b.addRunArtifact(quanta_desc_unit).step);
+    test_step.dependOn(quanta_desc_step);
+
     const nm_strings_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.nm.test.nm strings"},

@@ -557,6 +557,10 @@ non-memory records, zero-length platform/device responses, rejected
 platform/device requests, and malformed SEL IDs. The snapshots pin the OEM
 magic request as well as the printed descriptions and errors. Run them with
 `./tests/run.sh --filter slq_` and `./tests/run.sh --filter sl_quanta_`.
+The Purley CPU/channel/DIMM description now uses bounded Zig formatting
+instead of libc `snprintf`; `zig build test-quanta-desc` checks the full
+zero-initialized buffer against libc for every event byte and rejects a
+too-small destination. The allocated description still belongs to its caller.
 
 The HPM.1 `hpm_flow.tr`, `hpm_retry.tr`, `hpm_offset.tr`,
 `hpm_progress.tr` and `hpm_autorollback.tr` transcripts exercise target
