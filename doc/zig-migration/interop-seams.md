@@ -570,6 +570,15 @@ bytes and complete argument mutations with libc across every byte and
 delimiter boundary, then checks option masks. Existing original-C, selected
 and all-selected boot option goldens retain request bytes and exit statuses.
 
+The chassis command dispatch, bootflag and bootdev option names and prefixes,
+and text mailbox length now use NUL-terminated Zig slices rather than libc
+`strcmp`, `strncmp` and `strlen`. Prefix matching still requires the entire
+prefix, reads stop at the first NUL, and writable options keep their in-place
+token mutations. `zig build test-chassis-cstrings` compares equality, prefix
+decisions and byte lengths with libc across every first byte, shorter/longer
+names and embedded NULs; the chassis CLI goldens cover command and request
+statuses.
+
 The selected `chassis power on/off/cycle/reset/diag/soft` (and top-level
 `power`) success messages now use checked Zig stdout. Their original
 value-table wording, newline, request and error behavior remain unchanged;

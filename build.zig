@@ -1278,6 +1278,14 @@ pub fn build(b: *std.Build) void {
     chassis_comma_tokens_step.dependOn(&b.addRunArtifact(chassis_comma_tokens_unit).step);
     test_step.dependOn(chassis_comma_tokens_step);
 
+    const chassis_cstrings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.chassis.test.chassis cstrings"},
+    });
+    const chassis_cstrings_step = b.step("test-chassis-cstrings", "Compare chassis command strings, prefixes and lengths with libc");
+    chassis_cstrings_step.dependOn(&b.addRunArtifact(chassis_cstrings_unit).step);
+    test_step.dependOn(chassis_cstrings_step);
+
     const chassis_mailbox_requests_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.chassis.test.chassis mailbox request"},
