@@ -34,6 +34,14 @@ fn cString(ptr: [*c]const u8) []const u8 {
     return std.mem.span(@as([*:0]const u8, @ptrCast(ptr)));
 }
 
+fn equals(arg: [*c]const u8, text: []const u8) bool {
+    return std.mem.eql(u8, cString(arg), text);
+}
+
+fn isLan(name: *const [16]u8) bool {
+    return std.mem.eql(u8, std.mem.sliceTo(name, 0), "lan");
+}
+
 const SessionOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
 
 fn writeSessionInfo(writer: *std.Io.Writer, csv: bool, info: *const [info_size]u8, length: usize) std.Io.Writer.Error!void {
@@ -152,7 +160,7 @@ fn getSessionInfo(intf: *Intf, request_type: c_int, id_or_handle: u32) callconv(
             @memcpy(info[0..len], rsp.?.data[0..len]);
             return if (printSessionInfo(&info, len)) 0 else -1;
         }
-        if (request_type == current and c.strcmp(@ptrCast(&intf.name), "lan") != 0) {
+        if (request_type == current and !isLan(&intf.name)) {
             log.print(log.Level.err, "It is likely that the channel in use does not support sessions", .{});
         }
         return -1;
@@ -184,27 +192,27 @@ fn usage() void {
 }
 
 fn main(intf: *Intf, argc: c_int, argv: [*c][*c]u8) callconv(.c) c_int {
-    if (argc == 0 or c.strcmp(argv[0], "help") == 0) {
+    if (argc == 0 or equals(argv[0], "help")) {
         usage();
         return 0;
     }
-    if (c.strcmp(argv[0], "info") != 0) {
+    if (!equals(argv[0], "info")) {
         log.print(log.Level.err, "Invalid SESSION command: %s", .{argv[0]});
         usage();
         return -1;
     }
-    if (argc < 2 or c.strcmp(argv[1], "help") == 0) {
+    if (argc < 2 or equals(argv[1], "help")) {
         usage();
         return 0;
     }
     var request_type: c_int = current;
     var value: u32 = 0;
-    if (c.strcmp(argv[1], "active") == 0) {
+    if (equals(argv[1], "active")) {
         request_type = current;
-    } else if (c.strcmp(argv[1], "all") == 0) {
+    } else if (equals(argv[1], "all")) {
         request_type = all;
-    } else if (c.strcmp(argv[1], "id") == 0 or c.strcmp(argv[1], "handle") == 0) {
-        const id = c.strcmp(argv[1], "id") == 0;
+    } else if (equals(argv[1], "id") or equals(argv[1], "handle")) {
+        const id = equals(argv[1], "id");
         if (argc < 3) {
             log.print(log.Level.err, if (id) "Missing id argument" else "Missing handle argument", .{});
             usage();
@@ -229,6 +237,30 @@ pub fn exportSymbols() void {
     abi.assertCallSignature(@TypeOf(main), @TypeOf(c.ipmi_session_main));
     @export(&getSessionInfo, .{ .name = "ipmi_get_session_info", .linkage = .strong });
     @export(&main, .{ .name = "ipmi_session_main", .linkage = .strong });
+}
+
+test "session command and interface names match libc equality" {
+    const words = [_][*:0]const u8{ "help", "info", "active", "all", "id", "handle" };
+    for (words) |word| {
+        const text = std.mem.span(word);
+        for (0..256) |byte| {
+            var arg = [_:0]u8{ @intCast(byte), 'e', 'l', 'p', 0, 'x' };
+            try std.testing.expectEqual(c.strcmp(&arg, word) == 0, equals(&arg, text));
+        }
+        try std.testing.expect(equals(word, text));
+        var longer: [32:0]u8 = @splat(0);
+        @memcpy(longer[0..text.len], text);
+        longer[text.len] = 'x';
+        try std.testing.expectEqual(c.strcmp(&longer, word) == 0, equals(&longer, text));
+    }
+    const names = [_][]const u8{ "", "lan", "LAN", "lanplus", "lan\x00plus", "lanx" };
+    for (names) |text| {
+        var name: [16]u8 = @splat(0);
+        @memcpy(name[0..text.len], text);
+        try std.testing.expectEqual(c.strcmp(&name, "lan") == 0, isLan(&name));
+    }
+    const unterminated: [16]u8 = @splat('l');
+    try std.testing.expect(!isLan(&unterminated));
 }
 
 test "session info stdout matches C boundary formatting in csv and human modes" {

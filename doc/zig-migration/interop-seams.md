@@ -764,6 +764,14 @@ LAN, serial, slots-only, truncated replies, selectors and statuses. The
 Without local readline/OpenSSL headers, add `-Dipmishell=false -Dopenssl=false
 -Dinternal-md5=true -Dintf-lanplus=false`.
 
+Session command arguments now use NUL-aware Zig byte equality instead of
+libc `strcmp`; the transport-name check is bounded to its 16-byte interface
+field. `zig build test-session-strings` compares the dispatch names, first
+byte variations, embedded NULs and valid interface names with libc. A
+nonterminated interface name is rejected without reading beyond the field.
+The existing `session_info_*` C/selected CLI cases preserve request bytes,
+messages and statuses.
+
 The selected `user test` password result now uses a checked Zig stdout writer
 for success, incorrect password, wrong size, and unknown errors, retaining
 the original bytes and return statuses. It pre-flushes C stdout before
