@@ -2,6 +2,7 @@
 //! All request and response sizes are validated before accessing BMC data.
 //! Selected with `-Dzig-modules=pef`.
 //! Diagnostics use the shared typed logger, with the C logger as fallback.
+//! Filter and policy enable acknowledgements use checked Zig stdout.
 
 const std = @import("std");
 const c = @import("ipmi_c");
@@ -11,6 +12,31 @@ const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
 const Response = ipmi.Response;
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
+
+const StatusKind = enum { filter, policy };
+const StatusOutputError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+
+fn writeEnableStatus(writer: *std.Io.Writer, kind: StatusKind, enable: bool, id: u8) std.Io.Writer.Error!void {
+    try writer.writeAll("PEF ");
+    try writer.writeAll(if (kind == .filter) "Filter" else "Policy");
+    try writer.print(" ID {d} is {s} now.\n", .{ id, if (enable) "enabled" else "disabled" });
+}
+
+fn emitEnableStatus(writer: *std.Io.Writer, kind: StatusKind, enable: bool, id: u8, preflush: anytype) StatusOutputError!void {
+    preflush() catch return error.CStdoutFlushFailed;
+    writeEnableStatus(writer, kind, enable, id) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+}
+
+fn reportStatusOutputError(kind: StatusKind, err: StatusOutputError, write_error: anyerror) void {
+    const label: [*:0]const u8 = if (kind == .filter) "filter" else "policy";
+    switch (err) {
+        error.CStdoutFlushFailed => log.print(log.Level.err, "PEF %s status stdout C preflush failed (errno %d)", .{ label, std.c._errno().* }),
+        error.StdoutWriteFailed => log.print(log.Level.err, "PEF %s status stdout write failed: %s", .{ label, @errorName(write_error).ptr }),
+        error.StdoutFlushFailed => log.print(log.Level.err, "PEF %s status stdout final flush failed: %s", .{ label, @errorName(write_error).ptr }),
+    }
+}
 
 const Desc = struct { text: [*:0]const u8, mask: u32 };
 const Kind = enum { list, any, all };
@@ -492,7 +518,7 @@ fn listFilters(intf: *Intf) c_int {
     return 0;
 }
 
-fn filterEnable(intf: *Intf, enable: bool, id: u8) c_int {
+fn filterEnableTo(intf: *Intf, enable: bool, id: u8, writer: *std.Io.Writer, preflush: anytype) StatusOutputError!c_int {
     var size: u8 = 0;
     if (!evaluate(getTableSize(intf, 5, &size))) return -1;
     if (size == 0) {
@@ -510,8 +536,16 @@ fn filterEnable(intf: *Intf, enable: bool, id: u8) c_int {
         log.print(log.Level.err, "Failed to %s PEF Filter ID %d.", .{ @as([*:0]const u8, if (enable) "enable" else "disable"), @as(c_int, id) });
         return -1;
     }
-    _ = c.printf("PEF Filter ID %u is %s now.\n", @as(c_uint, id), @as([*:0]const u8, if (enable) "enabled" else "disabled"));
+    try emitEnableStatus(writer, .filter, enable, id, preflush);
     return 0;
+}
+
+fn filterEnable(intf: *Intf, enable: bool, id: u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return filterEnableTo(intf, enable, id, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        reportStatusOutputError(.filter, err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
 }
 
 fn retrieve(intf: *Intf, netfn: u6, cmd: u8, selector: *const [4]u8, label: [*:0]const u8, min: usize) ?*Response {
@@ -706,7 +740,7 @@ fn listPolicies(intf: *Intf) c_int {
     return 0;
 }
 
-fn policyEnable(intf: *Intf, enable: bool, id: u8) c_int {
+fn policyEnableTo(intf: *Intf, enable: bool, id: u8, writer: *std.Io.Writer, preflush: anytype) StatusOutputError!c_int {
     var size: u8 = 0;
     if (!evaluate(getTableSize(intf, 8, &size))) return -1;
     if (size == 0) {
@@ -724,8 +758,16 @@ fn policyEnable(intf: *Intf, enable: bool, id: u8) c_int {
         log.print(log.Level.err, "Failed to %s PEF Policy ID %d.", .{ @as([*:0]const u8, if (enable) "enable" else "disable"), @as(c_int, id) });
         return -1;
     }
-    _ = c.printf("PEF Policy ID %u is %s now.\n", @as(c_uint, id), @as([*:0]const u8, if (enable) "enabled" else "disabled"));
+    try emitEnableStatus(writer, .policy, enable, id, preflush);
     return 0;
+}
+
+fn policyEnable(intf: *Intf, enable: bool, id: u8) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    return policyEnableTo(intf, enable, id, &stdout.interface, stdout_io.trySyncC) catch |err| {
+        reportStatusOutputError(.policy, err, stdout.err orelse error.WriteFailed);
+        return -1;
+    };
 }
 
 fn getInfo(intf: *Intf) c_int {
@@ -989,6 +1031,85 @@ test "PEF rejects incomplete responses without reading missing fields" {
     try std.testing.expectEqual(@as(c_int, -1), val(null, 2));
     response.ccode = 0xd4;
     try std.testing.expectEqual(@as(c_int, 0xd4), val(&response, 2));
+}
+
+test "PEF enable status stdout matches libc across ID boundaries and both states" {
+    for ([_]StatusKind{ .filter, .policy }) |kind| {
+        const label: [*:0]const u8 = if (kind == .filter) "Filter" else "Policy";
+        for ([_]u8{ 0, 1, 9, 10, 99, 100, 127, 128, 254, 255 }) |id| {
+            for ([_]bool{ false, true }) |enable| {
+                var expected: [64]u8 = undefined;
+                const n = c.snprintf(&expected, expected.len, "PEF %s ID %u is %s now.\n", label, @as(c_uint, id), @as([*:0]const u8, if (enable) "enabled" else "disabled"));
+                try std.testing.expect(n > 0 and @as(usize, @intCast(n)) < expected.len);
+                var storage: [64]u8 = undefined;
+                var writer = std.Io.Writer.fixed(&storage);
+                try writeEnableStatus(&writer, kind, enable, id);
+                try std.testing.expectEqualSlices(u8, expected[0..@intCast(n)], writer.buffered());
+            }
+        }
+    }
+}
+
+test "PEF enable status stdout reports preflush write and final flush failures" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    for ([_]StatusKind{ .filter, .policy }) |kind| {
+        for ([_]bool{ false, true }) |enable| {
+            var storage: [64]u8 = undefined;
+            var writer = std.Io.Writer.fixed(&storage);
+            try std.testing.expectError(error.CStdoutFlushFailed, emitEnableStatus(&writer, kind, enable, 127, Stub.preflushFail));
+            try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+            var early: std.Io.Writer = .failing;
+            try std.testing.expectError(error.StdoutWriteFailed, emitEnableStatus(&early, kind, enable, 127, Stub.preflushOk));
+            var short: [10]u8 = undefined;
+            var late = std.Io.Writer.fixed(&short);
+            try std.testing.expectError(error.StdoutWriteFailed, emitEnableStatus(&late, kind, enable, 127, Stub.preflushOk));
+            try std.testing.expectEqualStrings("PEF ", late.buffered()[0..4]);
+            writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+            try std.testing.expectError(error.StdoutFlushFailed, emitEnableStatus(&writer, kind, enable, 127, Stub.preflushOk));
+            try std.testing.expect(std.mem.endsWith(u8, writer.buffered(), " now.\n"));
+        }
+    }
+}
+
+test "PEF enable status stdout preserves buffered C and Zig ordering" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+
+    _ = c.printf("before|");
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    try emitEnableStatus(&stdout.interface, .filter, true, 1, stdout_io.trySyncC);
+    _ = c.printf("|between|");
+    try emitEnableStatus(&stdout.interface, .policy, false, 127, stdout_io.trySyncC);
+    _ = c.printf("|after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [128]u8 = undefined;
+    const length = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(length >= 0);
+    try std.testing.expectEqualStrings(
+        "before|PEF Filter ID 1 is enabled now.\n|between|PEF Policy ID 127 is disabled now.\n|after\n",
+        captured[0..@intCast(length)],
+    );
 }
 
 test "PEF malformed trigger text stays within the caller's 128-byte buffer" {

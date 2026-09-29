@@ -2197,6 +2197,12 @@ pub fn build(b: *std.Build) void {
     });
     b.step("test-pef-strings", "Compare PEF command, trigger and IPv4 bytes with libc")
         .dependOn(&b.addRunArtifact(pef_strings_unit).step);
+    const pef_status_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.pef.test.PEF enable status stdout"},
+    });
+    b.step("test-pef-status-stdout", "Compare PEF enable announcements with libc and check stdout failures")
+        .dependOn(&b.addRunArtifact(pef_status_stdout_unit).step);
 
     const lanp_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/lanp_test.zig"),

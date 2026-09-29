@@ -1257,6 +1257,15 @@ against libc, including embedded NULs, hex and decimal digit boundaries,
 multi-bit trigger masks and the existing 128-byte Zig trigger clamp (C would
 overflow that buffer for some masks). The `pef_` CLI goldens pin command case
 handling, trigger text and LAN address output against the C oracle.
+Filter and policy enable/disable success announcements now use checked Zig
+streaming stdout: after the original configuration requests succeed, they
+pre-flush buffered C stdout, write the exact C message, and check the final
+Zig flush. Pre-flush, write and final-flush failures log the phase and return
+`-1`; BMC and validation failures retain their original status and emit no
+announcement. `zig build test-pef-status-stdout` checks libc byte parity
+across ID boundaries and both states, buffered C/Zig ordering, and injected
+output failures. The `pef_status_stdout_*` original-C CLI goldens cover the
+last valid filter and policy IDs, including exit statuses and request bytes.
 
 The PEF, firewall and DCMI command ports now use the archive's typed logger
 for their diagnostics; with the C logger selected, calls still use its
