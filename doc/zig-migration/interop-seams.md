@@ -105,6 +105,21 @@ names, including a 16-byte name with no in-record NUL. When changing either
 reader, rerun the `sen_` golden cases with `-Dzig-modules=sdr,sensor`; C-only
 validation cannot protect a swapped SDR build.
 
+### SDR unit-label formatting
+
+SDR unit-label composition now copies bounded Zig slices into the same
+41-byte static C ABI buffer. It preserves `snprintf`'s NUL termination,
+would-have-written length and truncation, including the 41-character
+`% uncorrectable error*uncorrectable error` combination (the final character
+is lost). Returned pointers alias the buffer until the next call; sensor
+readings, SEL printers and the event daemon still consume the borrowed label
+without changes to their request or print paths. `zig build test-sdr-unit-strings`
+compares every relation/percentage combination at unit-ID boundaries,
+synthetic empty and variable-width digit labels, and capacities 0–48 against
+libc. `sd_unit_labels_*` golden cases assert full CLI text, status and request
+bytes against C, including percent, multiply, divide and unknown units.
+No new out-of-bounds rejection is necessary.
+
 ### Kontron OEM / FRU dependency
 
 Selecting `-Dzig-modules=kontronoem` replaces `lib/ipmi_kontronoem.c` and
