@@ -46,9 +46,14 @@ fn sysFopen(path: [*:0]const u8, mode: [*:0]const u8) ?*c.FILE {
     return c.fopen(path, mode);
 }
 
-fn sysFgets(buf: [*c]u8, size: c_int, stream: *c.FILE) [*c]u8 {
-    if (builtin.is_test) return ModelDevice.fgets(buf, size, stream);
-    return c.fgets(buf, size, stream);
+fn sysFgetc(stream: *c.FILE) c_int {
+    if (builtin.is_test) return ModelDevice.fgetc(stream);
+    return c.fgetc(stream);
+}
+
+fn sysFerror(stream: *c.FILE) c_int {
+    if (builtin.is_test) return ModelDevice.ferror(stream);
+    return c.ferror(stream);
 }
 
 fn sysFclose(stream: *c.FILE) c_int {
@@ -84,15 +89,33 @@ fn sysSleep() void {
     }
 }
 
+const probe_line_size = 80;
+
+fn readProbeLine(line: *[probe_line_size + 1]u8, stream: *c.FILE, comptime getByte: anytype, comptime getError: anytype) bool {
+    var length: usize = 0;
+    while (length < probe_line_size - 1) {
+        const byte = getByte(stream);
+        if (byte == c.EOF) {
+            if (length == 0 or getError(stream) != 0) return false;
+            break;
+        }
+        line[length] = @intCast(byte);
+        length += 1;
+        if (byte == '\n') break;
+    }
+    line[length] = 0;
+    return true;
+}
+
 fn scsiProbeNew(num_ami_devices: *c_int, sg_nos: [*c]c_int) callconv(.c) c_int {
     const capacity = num_ami_devices.*;
     const fp = sysFopen("/proc/scsi/sg/device_strs", "r") orelse return 1;
     defer _ = sysFclose(fp);
     num_ami_devices.* = 0;
 
-    var line: [81]u8 = undefined;
+    var line: [probe_line_size + 1]u8 = undefined;
     var lineno: c_int = 0;
-    while (sysFgets(&line, 80, fp) != null) {
+    while (readProbeLine(&line, fp, sysFgetc, sysFerror)) {
         // sscanf("%s") counted only lines with a first word.  Unlike that
         // unbounded scan, this cannot write beyond the local vendor buffer.
         const text = std.mem.sliceTo(&line, 0);
@@ -462,6 +485,10 @@ const ModelDevice = if (builtin.is_test) struct {
     var lines: []const []const u8 = &.{"AMI Virtual CD\n"};
     var file_available: bool = true;
     var line_index: usize = 0;
+    var line_offset: usize = 0;
+    var bytes_read: usize = 0;
+    var read_error_after: ?usize = null;
+    var read_error: bool = false;
     var file_closed: bool = false;
     var attempts: [16][32]u8 = @splat(@splat(0));
     var open_count: usize = 0;
@@ -492,6 +519,10 @@ const ModelDevice = if (builtin.is_test) struct {
         lines = &.{"AMI Virtual CD\n"};
         file_available = true;
         line_index = 0;
+        line_offset = 0;
+        bytes_read = 0;
+        read_error_after = null;
+        read_error = false;
         file_closed = false;
         attempts = @splat(@splat(0));
         open_count = 0;
@@ -523,18 +554,38 @@ const ModelDevice = if (builtin.is_test) struct {
         if (!std.mem.eql(u8, std.mem.sliceTo(path, 0), "/proc/scsi/sg/device_strs") or
             !std.mem.eql(u8, std.mem.sliceTo(mode, 0), "r")) complaints += 1;
         if (!file_available) return null;
+        line_index = 0;
+        line_offset = 0;
+        bytes_read = 0;
+        read_error = false;
         return file;
     }
 
-    fn fgets(buf: [*c]u8, size: c_int, stream: *c.FILE) [*c]u8 {
-        if (stream != file or size != 80) complaints += 1;
-        if (line_index >= lines.len) return null;
-        const line = lines[line_index];
-        line_index += 1;
-        const n = @min(line.len, @as(usize, @intCast(size - 1)));
-        @memcpy(buf[0..n], line[0..n]);
-        buf[n] = 0;
-        return buf;
+    fn fgetc(stream: *c.FILE) c_int {
+        if (stream != file) complaints += 1;
+        if (read_error_after) |limit| {
+            if (bytes_read == limit) {
+                read_error = true;
+                return c.EOF;
+            }
+        }
+        while (line_index < lines.len) {
+            const line = lines[line_index];
+            if (line_offset < line.len) {
+                const byte = line[line_offset];
+                line_offset += 1;
+                bytes_read += 1;
+                return byte;
+            }
+            line_index += 1;
+            line_offset = 0;
+        }
+        return c.EOF;
+    }
+
+    fn ferror(stream: *c.FILE) c_int {
+        if (stream != file) complaints += 1;
+        return @intFromBool(read_error);
     }
 
     fn fclose(stream: *c.FILE) c_int {
@@ -664,6 +715,53 @@ test "USB vtable matches C and closes its descriptor" {
     try std.testing.expectEqual(@as(usize, 0), ModelDevice.complaints);
 }
 
+test "USB probe line bytes and FILE cursor match libc fgets" {
+    const Oracle = struct {
+        fn byte(stream: *c.FILE) c_int {
+            return c.fgetc(stream);
+        }
+        fn failed(stream: *c.FILE) c_int {
+            return c.ferror(stream);
+        }
+        fn compare(input: []const u8) !void {
+            const original = c.tmpfile() orelse return error.FileOpenFailed;
+            defer _ = c.fclose(original);
+            const scanned = c.tmpfile() orelse return error.FileOpenFailed;
+            defer _ = c.fclose(scanned);
+            try std.testing.expectEqual(input.len, c.fwrite(input.ptr, 1, input.len, original));
+            try std.testing.expectEqual(input.len, c.fwrite(input.ptr, 1, input.len, scanned));
+            c.rewind(original);
+            c.rewind(scanned);
+
+            var expected: [probe_line_size + 1]u8 = @splat(0xa5);
+            var actual: [probe_line_size + 1]u8 = expected;
+            while (true) {
+                const has_line = c.fgets(&expected, probe_line_size, original) != null;
+                try std.testing.expectEqual(has_line, readProbeLine(&actual, scanned, byte, failed));
+                try std.testing.expectEqual(c.ftell(original), c.ftell(scanned));
+                if (!has_line) break;
+                try std.testing.expectEqualSlices(u8, &expected, &actual);
+            }
+        }
+    };
+
+    for ([_][]const u8{
+        "",
+        "\n",
+        "\r\n",
+        "AMI disk\n",
+        "AMI\x00 hidden\nAMI next\n",
+        ("X" ** 78) ++ "\nAMI after\n",
+        ("X" ** 79) ++ "AMI remainder\n",
+        ("X" ** 80) ++ "AMI remainder",
+        "AMI " ++ ("X" ** 160),
+    }) |input| try Oracle.compare(input);
+    for (0..256) |byte| {
+        const input = [_]u8{ @intCast(byte), 'M', 'I', '\n', 'A', 'M', 'I' };
+        try Oracle.compare(&input);
+    }
+}
+
 test "probe scans AMI vendor lines, limits results, and closes proc stream" {
     ModelDevice.reset();
     ModelDevice.lines = &.{ "NOTAMI text\n", "\n", "AMI first\n", "AMI second\n", "AMI third\n" };
@@ -672,6 +770,29 @@ test "probe scans AMI vendor lines, limits results, and closes proc stream" {
     try std.testing.expectEqual(@as(c_int, 0), scsiProbeNew(&count, &found));
     try std.testing.expectEqual(@as(c_int, 2), count);
     try std.testing.expectEqualSlices(c_int, &.{ 1, 2 }, &found);
+    try std.testing.expect(ModelDevice.file_closed);
+    try std.testing.expectEqual(@as(usize, 0), ModelDevice.complaints);
+}
+
+test "probe preserves fgets chunks and discards a partial line on read error" {
+    ModelDevice.reset();
+    ModelDevice.lines = &.{("X" ** 79) ++ "AMI remainder\n"};
+    var found: [2]c_int = .{ -1, -1 };
+    var count: c_int = found.len;
+    try std.testing.expectEqual(@as(c_int, 0), scsiProbeNew(&count, &found));
+    try std.testing.expectEqual(@as(c_int, 1), count);
+    try std.testing.expectEqual(@as(c_int, 1), found[0]);
+    try std.testing.expect(ModelDevice.file_closed);
+    try std.testing.expectEqual(@as(usize, 0), ModelDevice.complaints);
+
+    ModelDevice.reset();
+    ModelDevice.lines = &.{"AMI first\nAMI partial\n"};
+    ModelDevice.read_error_after = "AMI first\nAMI ".len;
+    count = found.len;
+    try std.testing.expectEqual(@as(c_int, 0), scsiProbeNew(&count, &found));
+    try std.testing.expectEqual(@as(c_int, 1), count);
+    try std.testing.expectEqual(@as(c_int, 0), found[0]);
+    try std.testing.expect(ModelDevice.read_error);
     try std.testing.expect(ModelDevice.file_closed);
     try std.testing.expectEqual(@as(usize, 0), ModelDevice.complaints);
 }

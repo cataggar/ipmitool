@@ -390,7 +390,14 @@ The selected AMI USB SCSI transport formats `/dev/sgN` paths with bounded
 Zig formatting rather than libc `sprintf`. `zig build test-usb
 -Dzig-modules=usb` compares path bytes with libc across signed `c_int`
 boundaries, rejects a short destination, and retains the model SCSI device's
-discovery and descriptor-lifetime checks. The C USB transport is unchanged.
+discovery and descriptor-lifetime checks. USB discovery also frames each
+`/proc/scsi/sg/device_strs` line in Zig rather than calling `fgets`: it reads
+at most 79 bytes per chunk, keeps the same NUL terminator and file cursor,
+and discards a partial chunk on a read error. Differential tests compare
+the whole buffer and file position with libc `fgets` across the 79-byte
+boundary, embedded NULs and all first-byte values. The stream still uses
+libc `fopen`/`fgetc`/`fclose` until the remaining C FILE seam is removed.
+The C USB transport is unchanged.
 
 For `loglevel < 0`, the selected `print_valstr` and `print_valstr_2col` write
 through Zig's streaming stdout writer. They first check `fflush(stdout)` to
