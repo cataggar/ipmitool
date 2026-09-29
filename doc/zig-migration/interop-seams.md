@@ -810,6 +810,14 @@ late and final-flush failures. Output errors log a diagnostic and return
 `-1` without sending the event. Other event and sensor output stays on its
 existing C path.
 
+The selected event command now compares command/shortcut names and measures
+argument/file-line text with NUL-aware Zig operations. It finds the first `#`
+in a file line without libc `strchr`, still truncating that writable line in
+place before libc whitespace classification and `strtok` tokenization.
+`zig build test-event-cstrings` compares equality, comment pointer offsets
+and lengths with libc across every first byte and embedded NULs. The
+`event_` CLI goldens preserve comments, whitespace, requests and failures.
+
 Selected `sel time get` and the readback after a successful `sel time set`
 stream the original `ipmi_timestamp_numeric()` bytes plus newline through
 checked Zig stdout. The C formatter still controls special timestamps,
