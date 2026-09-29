@@ -19,6 +19,25 @@ const log = @import("../util/log.zig");
 const oem_prefix = [_]u8{ 0xb4, 0x90, 0x91, 0x8b };
 const bootdev = [_][:0]const u8{ "BIOS", "FDD", "HDD", "CDROM", "network" };
 
+fn decodedFieldLength(field: [*c]const u8) usize {
+    return std.mem.span(@as([*:0]const u8, @ptrCast(field))).len;
+}
+
+test "Kontron decoded FRU serial lengths match libc" {
+    for (0..257) |length| {
+        var field: [257:0]u8 = @splat('x');
+        field[length] = 0;
+        try std.testing.expectEqual(c.strlen(&field), decodedFieldLength(&field));
+    }
+    for (0..256) |byte| {
+        var field = [_:0]u8{ @intCast(byte), 'x', 0, 'y' };
+        try std.testing.expectEqual(c.strlen(&field), decodedFieldLength(&field));
+        for ([_]usize{ 0, 1, 2, 3, 255 }) |serial_length| {
+            try std.testing.expectEqual(c.strlen(&field) != serial_length, decodedFieldLength(&field) != serial_length);
+        }
+    }
+}
+
 // C's `struct fru_info` contains a one-bit access field, so translate-c makes
 // it opaque. The other seven bits in that byte are unused by these helpers.
 const FruInfo = extern struct {
@@ -218,7 +237,7 @@ fn serialField(buf: [*]u8, capacity: u32, start: u32, skips: usize, serial: []co
         return false;
     }
     defer c.free(field);
-    if (c.strlen(field) != serial.len) {
+    if (decodedFieldLength(field) != serial.len) {
         _ = c.printf("The length of the serial number in the FRU %s Area is wrong.\n", section.ptr);
         return false;
     }

@@ -1470,6 +1470,14 @@ pub fn build(b: *std.Build) void {
     fru_strings_step.dependOn(&b.addRunArtifact(fru_strings_unit).step);
     test_step.dependOn(fru_strings_step);
 
+    const kontron_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.kontronoem.test.Kontron decoded FRU serial lengths"},
+    });
+    const kontron_strings_step = b.step("test-kontron-strings", "Compare Kontron decoded FRU serial lengths with libc");
+    kontron_strings_step.dependOn(&b.addRunArtifact(kontron_strings_unit).step);
+    test_step.dependOn(kontron_strings_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},

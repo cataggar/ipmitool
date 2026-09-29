@@ -122,6 +122,11 @@ The Kontron C caller indexes its read buffer by absolute FRU offsets although
 intentionally places the serial fields at the positions that caller actually
 reads, so byte-level snapshots cover its observable behavior rather than
 silently correcting it.
+The decoded FRU serial length now uses NUL-aware Zig bytes instead of
+libc `strlen`, retaining the public FRU helper's allocation and caller-owned
+`free`. `zig build test-kontron-strings` checks lengths, embedded NULs and
+serial-size decisions against libc; the `kontron_*` C/selected CLI cases
+continue to pin requests, output and status.
 
 ## Naming conventions
 
