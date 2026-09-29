@@ -1582,6 +1582,14 @@ pub fn build(b: *std.Build) void {
     event_sample_step.dependOn(&b.addRunArtifact(event_sample_unit).step);
     test_step.dependOn(event_sample_step);
 
+    const event_sensor_stdout_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.event.test.sensor lookup stdout"},
+    });
+    const event_sensor_stdout_step = b.step("test-event-sensor-stdout", "Compare sensor lookup C bytes and test output failures");
+    event_sensor_stdout_step.dependOn(&b.addRunArtifact(event_sensor_stdout_unit).step);
+    test_step.dependOn(event_sensor_stdout_step);
+
     const event_cstrings_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.event.test.event cstrings"},

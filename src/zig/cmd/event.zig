@@ -25,14 +25,14 @@
 //!   the port drift the moment the header changed, so offsets are resolved
 //!   through `ipmi_get_first_event_sensor_type()` /
 //!   `ipmi_get_next_event_sensor_type()` exactly as C does.
-//! * **Formatting and string handling keep libc behavior.** Apart from the
-//!   checked Zig stdout announcements for the three sample events, `printf`,
-//!   `strcasecmp`, `isspace`, `fgets` and `str2uchar` use the `ipmi_c` bridge.
-//!   Equality, comment scanning, space-only tokenization and string lengths
-//!   use bounded Zig operations. Diagnostics use the typed logger
-//!   (libc `snprintf` when selected, C `lprintf` otherwise); `%-9s` padding,
-//!   the `(null)` a NULL `%s` prints and in-place token chopping are all
-//!   observable in the golden snapshots.
+//! * **Formatting and string handling keep libc behavior.** The sample event
+//!   announcements and sensor lookup status use checked Zig stdout; the
+//!   remaining `printf`, `strcasecmp`, `isspace`, `fgets` and `str2uchar` use
+//!   the `ipmi_c` bridge. Equality, comment scanning, space-only tokenization
+//!   and string lengths use bounded Zig operations. Diagnostics use the typed
+//!   logger (libc `snprintf` when selected, C `lprintf` otherwise); `%-9s`
+//!   padding, the `(null)` a NULL `%s` prints and in-place token chopping are
+//!   all observable in the golden snapshots.
 //! * **File errors are sticky.**  As in C, a bad token rejects only its line:
 //!   subsequent valid lines are still sent, but the command returns failure
 //!   even if those sends succeed. A failed send still stops the file.
@@ -510,6 +510,21 @@ fn printSensorStates(intf: *Intf, sensor_type: u8, event_type: u8) void {
     _ = c.printf("\n");
 }
 
+const SensorFindingError = error{ FindingCStdoutFlushFailed, FindingWriteFailed, FindingFlushFailed };
+const SensorResultError = error{ ResultCStdoutFlushFailed, ResultWriteFailed, ResultFlushFailed };
+
+fn emitSensorFinding(writer: *std.Io.Writer, sensor_id: [*:0]const u8, preflush: anytype) SensorFindingError!void {
+    preflush() catch return error.FindingCStdoutFlushFailed;
+    writer.print("Finding sensor {s}... ", .{std.mem.span(sensor_id)}) catch return error.FindingWriteFailed;
+    writer.flush() catch return error.FindingFlushFailed;
+}
+
+fn emitSensorResult(writer: *std.Io.Writer, found: bool, preflush: anytype) SensorResultError!void {
+    preflush() catch return error.ResultCStdoutFlushFailed;
+    writer.writeAll(if (found) "ok\n" else "not found!\n") catch return error.ResultWriteFailed;
+    writer.flush() catch return error.ResultFlushFailed;
+}
+
 /// `ipmi_event_fromsensor()`.
 fn eventFromSensor(
     intf: *Intf,
@@ -542,13 +557,27 @@ fn eventFromSensor(
         emsg.td.event_dir = EVENT_DIR_ASSERT;
     }
 
-    _ = c.printf("Finding sensor %s... ", sensor_id);
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitSensorFinding(&stdout.interface, sensor_id, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.FindingCStdoutFlushFailed => log.print(log.Level.err, "Sensor lookup stdout finding C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.FindingWriteFailed => log.print(log.Level.err, "Sensor lookup stdout finding write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.FindingFlushFailed => log.print(log.Level.err, "Sensor lookup stdout finding flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
     const sdr: ?*const SdrRecordList = @ptrCast(c.ipmi_sdr_find_sdr_byid(cIntf(intf), sensor_id));
+    emitSensorResult(&stdout.interface, sdr != null, stdout_io.trySyncC) catch |err| {
+        switch (err) {
+            error.ResultCStdoutFlushFailed => log.print(log.Level.err, "Sensor lookup stdout result C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.ResultWriteFailed => log.print(log.Level.err, "Sensor lookup stdout result write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.ResultFlushFailed => log.print(log.Level.err, "Sensor lookup stdout result flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
     if (sdr == null) {
-        _ = c.printf("not found!\n");
         return -1;
     }
-    _ = c.printf("ok\n");
 
     var target: u8 = undefined;
     var lun: u8 = undefined;
@@ -730,6 +759,107 @@ fn eventFromSensor(
     }
 
     return sendPlatformEvent(intf, &emsg);
+}
+
+test "sensor lookup stdout matches libc bytes across C string boundaries" {
+    const Stub = struct {
+        fn preflushOk() error{CStdoutFlushFailed}!void {}
+    };
+    const Oracle = struct {
+        fn check(sensor_id: [*:0]const u8) !void {
+            inline for (.{ true, false }) |found| {
+                var c_bytes: [512]u8 = undefined;
+                const n = c.snprintf(
+                    &c_bytes,
+                    c_bytes.len,
+                    "Finding sensor %s... %s",
+                    sensor_id,
+                    if (found) "ok\n" else "not found!\n",
+                );
+                try std.testing.expect(n >= 0 and @as(usize, @intCast(n)) < c_bytes.len);
+
+                var storage: [512]u8 = undefined;
+                var writer = std.Io.Writer.fixed(&storage);
+                try emitSensorFinding(&writer, sensor_id, Stub.preflushOk);
+                try emitSensorResult(&writer, found, Stub.preflushOk);
+                try std.testing.expectEqualSlices(u8, c_bytes[0..@intCast(n)], writer.buffered());
+            }
+        }
+    };
+
+    for ([_][*:0]const u8{ "", "CPU1 Temp", "CPU1 Temp ", "NO%PE", "before\x00%after" }) |id|
+        try Oracle.check(id);
+    for (0..256) |byte| {
+        const id = [_:0]u8{ 'A', @intCast(byte), '%', 'Z' };
+        try Oracle.check(&id);
+    }
+}
+
+test "sensor lookup stdout reports finding and result output failures" {
+    const Stub = struct {
+        var preflushes: usize = 0;
+
+        fn preflushOk() error{CStdoutFlushFailed}!void {
+            preflushes += 1;
+        }
+        fn preflushFail() error{CStdoutFlushFailed}!void {
+            preflushes += 1;
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    const sensor_id = "GENR";
+    const finding = "Finding sensor GENR... ";
+
+    var storage: [64]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&storage);
+    Stub.preflushes = 0;
+    try std.testing.expectError(error.FindingCStdoutFlushFailed, emitSensorFinding(&writer, sensor_id, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 1), Stub.preflushes);
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.FindingWriteFailed, emitSensorFinding(&early, sensor_id, Stub.preflushOk));
+    var short_finding: [finding.len - 1]u8 = undefined;
+    var late_finding = std.Io.Writer.fixed(&short_finding);
+    try std.testing.expectError(error.FindingWriteFailed, emitSensorFinding(&late_finding, sensor_id, Stub.preflushOk));
+    try std.testing.expectEqualStrings(finding[0 .. finding.len - 1], late_finding.buffered());
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+    try std.testing.expectError(error.FindingFlushFailed, emitSensorFinding(&writer, sensor_id, Stub.preflushOk));
+    try std.testing.expectEqualStrings(finding, writer.buffered());
+
+    var result_storage: [64]u8 = undefined;
+    var result_writer = std.Io.Writer.fixed(&result_storage);
+    Stub.preflushes = 0;
+    try emitSensorFinding(&result_writer, sensor_id, Stub.preflushOk);
+    try std.testing.expectError(error.ResultCStdoutFlushFailed, emitSensorResult(&result_writer, true, Stub.preflushFail));
+    try std.testing.expectEqual(@as(usize, 2), Stub.preflushes);
+    try std.testing.expectEqualStrings(finding, result_writer.buffered());
+
+    var result_early_storage: [finding.len]u8 = undefined;
+    var result_early = std.Io.Writer.fixed(&result_early_storage);
+    try emitSensorFinding(&result_early, sensor_id, Stub.preflushOk);
+    try std.testing.expectError(error.ResultWriteFailed, emitSensorResult(&result_early, false, Stub.preflushOk));
+    try std.testing.expectEqualStrings(finding, result_early.buffered());
+
+    inline for (.{ true, false }) |found| {
+        const suffix = if (found) "ok\n" else "not found!\n";
+        var short_result: [finding.len + suffix.len - 1]u8 = undefined;
+        var late_result = std.Io.Writer.fixed(&short_result);
+        try emitSensorFinding(&late_result, sensor_id, Stub.preflushOk);
+        try std.testing.expectError(error.ResultWriteFailed, emitSensorResult(&late_result, found, Stub.preflushOk));
+        try std.testing.expectEqualStrings((finding ++ suffix)[0 .. finding.len + suffix.len - 1], late_result.buffered());
+
+        var flushed_result_storage: [64]u8 = undefined;
+        var flushed_result = std.Io.Writer.fixed(&flushed_result_storage);
+        try emitSensorFinding(&flushed_result, sensor_id, Stub.preflushOk);
+        flushed_result.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Stub.flushFail };
+        try std.testing.expectError(error.ResultFlushFailed, emitSensorResult(&flushed_result, found, Stub.preflushOk));
+        try std.testing.expectEqualStrings(finding ++ suffix, flushed_result.buffered());
+    }
 }
 
 // ---------------------------------------------------------------------------
