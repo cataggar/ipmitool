@@ -1,0 +1,2 @@
+# Unknown completion code below 0x10 exercises the %02X zero-padding.
+default_ccode 0x01

@@ -1326,6 +1326,14 @@ pub fn build(b: *std.Build) void {
     mc_reset_step.dependOn(&b.addRunArtifact(mc_reset_unit).step);
     test_step.dependOn(mc_reset_step);
 
+    const mc_completion_names_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc non-watchdog completion"},
+    });
+    const mc_completion_names_step = b.step("test-mc-completion-names", "Compare MC completion-name NUL and unknown formatting with libc");
+    mc_completion_names_step.dependOn(&b.addRunArtifact(mc_completion_names_unit).step);
+    test_step.dependOn(mc_completion_names_step);
+
     const mc_enables_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.global enables stdout"},
@@ -1373,6 +1381,14 @@ pub fn build(b: *std.Build) void {
     const mc_info_step = b.step("test-mc-info-stdout", "Compare MC info C bytes, output ordering, and I/O failures");
     mc_info_step.dependOn(&b.addRunArtifact(mc_info_unit).step);
     test_step.dependOn(mc_info_step);
+
+    const mc_info_names_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.mc info"},
+    });
+    const mc_info_names_step = b.step("test-mc-info-names", "Compare MC manufacturer and product lookup bytes and fallback formatting with C");
+    mc_info_names_step.dependOn(&b.addRunArtifact(mc_info_names_unit).step);
+    test_step.dependOn(mc_info_names_step);
 
     const mc_guid_unit = b.addTest(.{
         .root_module = abi_mod,
