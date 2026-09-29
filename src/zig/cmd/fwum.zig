@@ -7,6 +7,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("../util/log.zig");
+const stdout_io = @import("../util/stdout.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const Request = ipmi.Request;
@@ -22,6 +23,9 @@ const max_retry = 6;
 var firm_buf: [image_limit]u8 = [_]u8{0} ** image_limit;
 var save_fw_nfo: c.tKFWUM_SaveFirmwareInfo = std.mem.zeroes(c.tKFWUM_SaveFirmwareInfo);
 var last_progress: c_ulong = std.math.maxInt(c_ulong);
+const ProgressError = error{ CStdoutFlushFailed, StdoutWriteFailed, StdoutFlushFailed };
+const hashes_bar = "##########################################";
+const blanks_bar = "                                          ";
 
 const cmd_names = [_][*:0]const u8{
     "GetFwInfo",       "KickWatchdog",  "GetLastAnswer",  "BootHandshake",
@@ -96,21 +100,53 @@ fn getFileSize(path: [*:0]const u8, size: *c_ulong) callconv(.c) c_int {
     return if (size.* != 0) 0 else -1;
 }
 
-fn showProgress(task: [*:0]const u8, current: c_ulong, total: c_ulong) callconv(.c) void {
+pub fn emitProgress(
+    writer: *std.Io.Writer,
+    preflush: anytype,
+    task: [*:0]const u8,
+    current: c_ulong,
+    total: c_ulong,
+    previous: *c_ulong,
+) ProgressError!void {
     if (total == 0) return;
     const percent: f32 = @as(f32, @floatFromInt(current)) / @as(f32, @floatFromInt(total));
-    const progress: c_ulong = @intFromFloat(@as(f32, 100) * percent);
-    if (progress == last_progress) return;
-    last_progress = progress;
+    const scaled = @as(f32, 100) * percent;
+    const progress: c_ulong = if (scaled >= @as(f32, @floatFromInt(std.math.maxInt(c_ulong))))
+        std.math.maxInt(c_ulong)
+    else
+        @intFromFloat(scaled);
+    if (progress == previous.*) return;
 
-    const hashes: usize = @min(@as(usize, @intFromFloat(percent * 42)), 42);
-    var bar: [43]u8 = [_]u8{'#'} ** 43;
-    bar[hashes] = 0;
-    var blanks: [43]u8 = [_]u8{' '} ** 43;
-    blanks[42 - hashes] = 0;
-    _ = c.printf("%-25s : %s%s %3lu %%\r", task, &bar, &blanks, progress);
-    if (progress == 100) _ = c.printf("\n");
-    _ = c.fflush(null);
+    const hashes: usize = if (percent >= 1) 42 else @intFromFloat(percent * 42);
+    const name = std.mem.span(task);
+    preflush() catch return error.CStdoutFlushFailed;
+    writer.print("{s}{s} : {s}{s} {d: >3} %\r{s}", .{
+        name,
+        blanks_bar[0..25 -| name.len],
+        hashes_bar[0..hashes],
+        blanks_bar[0 .. 42 - hashes],
+        progress,
+        if (progress == 100) @as([]const u8, "\n") else "",
+    }) catch return error.StdoutWriteFailed;
+    writer.flush() catch return error.StdoutFlushFailed;
+    previous.* = progress;
+}
+
+fn progressStatus(task: [*:0]const u8, current: c_ulong, total: c_ulong) c_int {
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    emitProgress(&stdout.interface, stdout_io.trySyncC, task, current, total, &last_progress) catch |err| {
+        switch (err) {
+            error.CStdoutFlushFailed => log.print(err_level, "FWUM progress stdout C preflush failed (errno %d)", .{std.c._errno().*}),
+            error.StdoutWriteFailed => log.print(err_level, "FWUM progress stdout write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(err_level, "FWUM progress stdout final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+        }
+        return -1;
+    };
+    return 0;
+}
+
+fn showProgress(task: [*:0]const u8, current: c_ulong, total: c_ulong) callconv(.c) void {
+    _ = progressStatus(task, current, total);
 }
 
 fn setupBuffers(path: [*:0]const u8, file_size: c_ulong) callconv(.c) c_int {
@@ -130,7 +166,7 @@ fn setupBuffers(path: [*:0]const u8, file_size: c_ulong) callconv(.c) c_int {
     const modulus: usize = @as(usize, @intCast(file_size % 1024)) * 16;
     var success = false;
     for (0..count) |chunk| {
-        showProgress("Reading Firmware from File", @intCast(chunk), @intCast(count));
+        if (progressStatus("Reading Firmware from File", @intCast(chunk), @intCast(count)) != 0) return -1;
         const start = chunk * buffer_size;
         if (start <= image_limit - buffer_size and start < file_size and
             c.fread(&firm_buf[start], 1, buffer_size, file) == buffer_size)
@@ -140,7 +176,7 @@ fn setupBuffers(path: [*:0]const u8, file_size: c_ulong) callconv(.c) c_int {
     if (modulus > 0 and start < image_limit and modulus <= image_limit - start and
         c.fread(&firm_buf[start], 1, modulus, file) == modulus)
         success = true;
-    if (success) showProgress("Reading Firmware from File", 100, 100);
+    if (success and progressStatus("Reading Firmware from File", 100, 100) != 0) return -1;
     return if (success) 0 else -1;
 }
 
@@ -440,10 +476,10 @@ fn upload(intf: *Intf, buffer: [*c]u8, total: c_ulong) callconv(.c) c_int {
             last_address = address;
             address += size;
         }
-        if (address % 1024 == 0) showProgress("Writing Firmware in Flash", @intCast(address), total);
+        if (address % 1024 == 0 and progressStatus("Writing Firmware in Flash", @intCast(address), total) != 0) return -1;
         sequence +%= 1;
     }
-    showProgress("Writing Firmware in Flash", 100, 100);
+    if (progressStatus("Writing Firmware in Flash", 100, 100) != 0) return -1;
     return 0;
 }
 
@@ -624,6 +660,181 @@ pub fn exportSymbols() void {
     @export(&exported_ext_cmd_names, .{ .name = "EXT_CMD_ID_STRING" });
     @export(&exported_state_names, .{ .name = "CMD_STATE_STRING" });
     @export(&bank_state_vals, .{ .name = "bankStateValS" });
+}
+
+test "fwum C progress oracle pins width, rounding, NUL, duplicates and boundaries" {
+    const oracle = struct {
+        extern fn fwum_progress_oracle([*]u8, usize, [*:0]const u8, c_ulong, c_ulong, *c_ulong) c_int;
+    }.fwum_progress_oracle;
+    const spaces42 = "                                          ";
+    const hashes42 = "##########################################";
+    try std.testing.expectEqual(@as(usize, 42), spaces42.len);
+    try std.testing.expectEqual(@as(usize, 42), hashes42.len);
+    var previous: c_ulong = std.math.maxInt(c_ulong);
+    var storage: [256]u8 = undefined;
+    const initial = oracle(&storage, storage.len, "Read", 0, 100, &previous);
+    try std.testing.expectEqualStrings("Read                      : " ++ spaces42 ++ "   0 %\r", storage[0..@intCast(initial)]);
+    try std.testing.expectEqual(@as(c_ulong, 0), previous);
+    try std.testing.expectEqual(@as(c_int, 0), oracle(&storage, storage.len, "Different", 0, 7, &previous));
+    try std.testing.expectEqual(@as(c_int, 0), oracle(&storage, storage.len, "Read", 4, 0, &previous));
+    try std.testing.expectEqual(@as(c_ulong, 0), previous);
+
+    const half = oracle(&storage, storage.len, "TaskNameWithMoreThan25Characters", 1, 2, &previous);
+    try std.testing.expectEqualStrings(
+        "TaskNameWithMoreThan25Characters : #####################" ++ "                     " ++ "  50 %\r",
+        storage[0..@intCast(half)],
+    );
+    const complete = oracle(&storage, storage.len, "Read", 100, 100, &previous);
+    try std.testing.expectEqualStrings("Read                      : " ++ hashes42 ++ " 100 %\r\n", storage[0..@intCast(complete)]);
+    try std.testing.expectEqual(@as(c_int, 0), oracle(&storage, storage.len, "Read", std.math.maxInt(c_ulong), std.math.maxInt(c_ulong), &previous));
+
+    previous = std.math.maxInt(c_ulong);
+    const nul = oracle(&storage, storage.len, "Hi\x00ignored", 1, 3, &previous);
+    try std.testing.expectEqualStrings(
+        "Hi                        : ##############" ++ "                            " ++ "  33 %\r",
+        storage[0..@intCast(nul)],
+    );
+    try std.testing.expectEqual(@as(c_int, -1), oracle(&storage, storage.len, "Read", 101, 100, &previous));
+}
+
+test "fwum progress stdout is libc-identical across float boundaries and C strings" {
+    const oracle = struct {
+        extern fn fwum_progress_oracle([*]u8, usize, [*:0]const u8, c_ulong, c_ulong, *c_ulong) c_int;
+    }.fwum_progress_oracle;
+    const Flush = struct {
+        fn ok() error{CStdoutFlushFailed}!void {}
+    };
+    var c_previous: c_ulong = std.math.maxInt(c_ulong);
+    var zig_previous = c_previous;
+    for ([_]struct { [*:0]const u8, c_ulong, c_ulong }{
+        .{ "Read", 0, 100 },
+        .{ "different", 0, 0 },
+        .{ "no duplicate", 0, 20 },
+        .{ "Short", 1, 3 },
+        .{ "Half", 1, 2 },
+        .{ "TaskNameWithMoreThan25Characters", 99, 100 },
+        .{ "Embedded\x00ignored", 100, 100 },
+        .{ "Maximum", std.math.maxInt(c_ulong), std.math.maxInt(c_ulong) },
+        .{ "One", 1, std.math.maxInt(c_ulong) },
+    }) |entry| {
+        var expected: [256]u8 = undefined;
+        const length = oracle(&expected, expected.len, entry.@"0", entry.@"1", entry.@"2", &c_previous);
+        try std.testing.expect(length >= 0);
+        var actual: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&actual);
+        try emitProgress(&writer, Flush.ok, entry.@"0", entry.@"1", entry.@"2", &zig_previous);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], writer.buffered());
+        try std.testing.expectEqual(c_previous, zig_previous);
+    }
+    for (0..101) |current| {
+        var expected: [256]u8 = undefined;
+        const length = oracle(&expected, expected.len, "Reading Firmware from File", @intCast(current), 100, &c_previous);
+        try std.testing.expect(length >= 0);
+        var actual: [256]u8 = undefined;
+        var writer = std.Io.Writer.fixed(&actual);
+        try emitProgress(&writer, Flush.ok, "Reading Firmware from File", @intCast(current), 100, &zig_previous);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], writer.buffered());
+        try std.testing.expectEqual(c_previous, zig_previous);
+    }
+}
+
+test "fwum progress stdout orders buffered C output before each Zig update" {
+    const fd = c.fileno(c.stdout);
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    const saved = c.dup(fd);
+    try std.testing.expect(saved >= 0);
+    defer {
+        _ = c.fflush(c.stdout);
+        _ = c.dup2(saved, fd);
+        _ = c.close(saved);
+    }
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    defer _ = c.close(fds[0]);
+    try std.testing.expectEqual(fd, c.dup2(fds[1], fd));
+    _ = c.close(fds[1]);
+    var previous: c_ulong = std.math.maxInt(c_ulong);
+    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
+    _ = c.printf("before|");
+    try emitProgress(&stdout.interface, stdout_io.trySyncC, "Read", 0, 100, &previous);
+    _ = c.printf("middle|");
+    try emitProgress(&stdout.interface, stdout_io.trySyncC, "Read", 100, 100, &previous);
+    _ = c.printf("after\n");
+    try std.testing.expectEqual(@as(c_int, 0), c.fflush(c.stdout));
+    try std.testing.expectEqual(fd, c.dup2(saved, fd));
+    var captured: [256]u8 = undefined;
+    const count = c.read(fds[0], &captured, captured.len);
+    try std.testing.expect(count >= 0);
+    try std.testing.expectEqualStrings(
+        "before|Read                      : " ++ blanks_bar ++ "   0 %\r" ++
+            "middle|Read                      : " ++ hashes_bar ++ " 100 %\r\n" ++
+            "after\n",
+        captured[0..@intCast(count)],
+    );
+}
+
+test "fwum progress stdout checks preflush early and late writes and final flush" {
+    const Flush = struct {
+        fn ok() error{CStdoutFlushFailed}!void {}
+        fn fail() error{CStdoutFlushFailed}!void {
+            return error.CStdoutFlushFailed;
+        }
+        fn flushFail(_: *std.Io.Writer) std.Io.Writer.Error!void {
+            return error.WriteFailed;
+        }
+    };
+    var previous: c_ulong = std.math.maxInt(c_ulong);
+    var space: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&space);
+    try std.testing.expectError(error.CStdoutFlushFailed, emitProgress(&writer, Flush.fail, "Read", 0, 100, &previous));
+    try std.testing.expectEqual(@as(usize, 0), writer.buffered().len);
+    try std.testing.expectEqual(std.math.maxInt(c_ulong), previous);
+
+    var early: std.Io.Writer = .failing;
+    try std.testing.expectError(error.StdoutWriteFailed, emitProgress(&early, Flush.ok, "Read", 0, 100, &previous));
+    try std.testing.expectEqual(std.math.maxInt(c_ulong), previous);
+
+    var short: [8]u8 = undefined;
+    var late = std.Io.Writer.fixed(&short);
+    try std.testing.expectError(error.StdoutWriteFailed, emitProgress(&late, Flush.ok, "Read", 0, 100, &previous));
+    try std.testing.expectEqualStrings("Read    ", late.buffered());
+    try std.testing.expectEqual(std.math.maxInt(c_ulong), previous);
+
+    writer.vtable = &.{ .drain = std.Io.Writer.failingDrain, .flush = Flush.flushFail };
+    try std.testing.expectError(error.StdoutFlushFailed, emitProgress(&writer, Flush.ok, "Read", 0, 100, &previous));
+    try std.testing.expectEqual(std.math.maxInt(c_ulong), previous);
+    try std.testing.expectEqualStrings(
+        "Read                      : " ++ blanks_bar ++ "   0 %\r",
+        writer.buffered(),
+    );
+    try emitProgress(&late, Flush.fail, "Read", 0, 0, &previous);
+    try std.testing.expectEqual(@as(usize, 8), late.buffered().len);
+    var duplicate: c_ulong = 0;
+    try emitProgress(&late, Flush.fail, "Other task", 0, 100, &duplicate);
+    try std.testing.expectEqual(@as(c_ulong, 0), duplicate);
+    try std.testing.expectEqual(@as(usize, 8), late.buffered().len);
+}
+
+test "fwum progress stdout bounds undefined C overflows without skipping errors" {
+    const Flush = struct {
+        fn ok() error{CStdoutFlushFailed}!void {}
+    };
+    var previous: c_ulong = std.math.maxInt(c_ulong);
+    var space: [256]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&space);
+    try emitProgress(&writer, Flush.ok, "Overflow", 101, 100, &previous);
+    try std.testing.expectEqual(@as(c_ulong, 101), previous);
+    try std.testing.expectEqualStrings(
+        "Overflow                  : " ++ hashes_bar ++ " 101 %\r",
+        writer.buffered(),
+    );
+
+    writer = std.Io.Writer.fixed(&space);
+    try emitProgress(&writer, Flush.ok, "Overflow", std.math.maxInt(c_ulong), 1, &previous);
+    try std.testing.expectEqual(std.math.maxInt(c_ulong), previous);
+    var expected: [256]u8 = undefined;
+    const full = try std.fmt.bufPrint(&expected, "Overflow                  : {s} {d} %\r", .{ hashes_bar, previous });
+    try std.testing.expectEqualSlices(u8, full, writer.buffered());
 }
 
 test "network failures have bounded retries and leave no image running" {

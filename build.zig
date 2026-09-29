@@ -1943,11 +1943,45 @@ pub fn build(b: *std.Build) void {
     fwum_test_mod.addImport("ipmi_c", bridge_mod);
     fwum_test_mod.addIncludePath(b.path("include"));
     fwum_test_mod.addCSourceFile(.{ .file = b.path("lib/log.c"), .flags = &.{} });
+    fwum_test_mod.addCSourceFile(.{ .file = b.path("tests/fwum_progress_oracle.c"), .flags = &.{"-std=c11"} });
     const fwum_tests = b.addTest(.{ .root_module = fwum_test_mod });
     const fwum_test_run = b.addRunArtifact(fwum_tests);
     unit_step.dependOn(&fwum_test_run.step);
     b.step("test-fwum-unit", "Run bounded FWUM retries and firmware metadata tests")
         .dependOn(&fwum_test_run.step);
+    const fwum_oracle = b.addTest(.{
+        .root_module = fwum_test_mod,
+        .filters = &.{"cmd.fwum.test.fwum C progress oracle"},
+    });
+    b.step("test-fwum-progress-oracle", "Characterize the original C FWUM progress bytes")
+        .dependOn(&b.addRunArtifact(fwum_oracle).step);
+    const fwum_stdout = b.addTest(.{
+        .root_module = fwum_test_mod,
+        .filters = &.{"cmd.fwum.test.fwum progress stdout"},
+    });
+    const fwum_stdout_step = b.step("test-fwum-progress-output", "Compare FWUM progress to libc and check stdout order and I/O failures");
+    fwum_stdout_step.dependOn(&b.addRunArtifact(fwum_stdout).step);
+    fwum_stdout_step.dependOn(&b.addRunArtifact(fwum_oracle).step);
+    const fwum_cli_c_mod = b.createModule(.{ .target = b.graph.host, .optimize = .Debug, .link_libc = true });
+    fwum_cli_c_mod.addCSourceFiles(.{
+        .files = &.{ "tests/fwum_progress_cli.c", "tests/fwum_progress_oracle.c" },
+        .flags = &.{"-std=c11"},
+    });
+    const fwum_cli_c = b.addExecutable(.{ .name = "fwum-progress-c", .root_module = fwum_cli_c_mod });
+    const fwum_cli_zig_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/fwum_progress_cli.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+        .link_libc = true,
+    });
+    fwum_cli_zig_mod.addImport("ipmi_c", bridge_mod);
+    const fwum_cli_zig = b.addExecutable(.{ .name = "fwum-progress-zig", .root_module = fwum_cli_zig_mod });
+    const fwum_cli_compare = b.addSystemCommand(&.{ "python3", "-B", "tests/fwum_progress_cli.py" });
+    fwum_cli_compare.addFileArg(fwum_cli_c.getEmittedBin());
+    fwum_cli_compare.addFileArg(fwum_cli_zig.getEmittedBin());
+    fwum_cli_compare.addFileArg(b.path("tests/fwum/snapshots/progress_output_cli.snap"));
+    fwum_stdout_step.dependOn(&fwum_cli_compare.step);
+    test_step.dependOn(fwum_stdout_step);
 
     test_step.dependOn(unit_step);
 
