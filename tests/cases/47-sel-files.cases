@@ -127,6 +127,34 @@ transcript: sel_file.tr
 text: ev.txt sel/add_noeol.txt
 covers: sel
 
+[sl_add_line_1022]
+desc: sel add: LF is the 1023rd byte of a chunk
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+blob: ev.txt sel/add_line_1022.hex
+covers: sel
+
+[sl_add_line_1023]
+desc: sel add: a full 1023-byte chunk without LF
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+blob: ev.txt sel/add_line_1023.hex
+covers: sel
+
+[sl_add_line_1024]
+desc: sel add: the 1024th byte begins the next chunk
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+blob: ev.txt sel/add_line_1024.hex
+covers: sel
+
+[sl_add_line_binary]
+desc: sel add: embedded NUL and high-bit bytes after the seven tokens and in a comment
+args: -I dummy sel add {work}/ev.txt
+transcript: sel_file.tr
+blob: ev.txt sel/add_line_binary.hex
+covers: sel
+
 [sl_add_missing]
 desc: sel add on a file that does not exist
 args: -I dummy sel add {work}/nope.txt
