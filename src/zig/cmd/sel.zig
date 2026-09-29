@@ -41,6 +41,9 @@
 //! * **SEL info results use checked Zig stdout.**  The main and optional
 //!   allocation displays pre-flush libc stdout and check writes and final
 //!   flushes, retaining C's timestamp formatter and request statuses.
+//! * **Bounded SEL C strings use Zig.**  OEM/PPS token equality, the PPS
+//!   `fgets` line length and Dell DIMM decimal digits avoid libc; allocation-
+//!   sized descriptions, record formatting and `strtol` retain the C bridge.
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sel` is selected.
@@ -245,6 +248,19 @@ fn eql(a: [*:0]const u8, b: []const u8) bool {
     return std.mem.eql(u8, std.mem.span(a), b);
 }
 
+fn boundedCStringLength(bytes: []const u8) usize {
+    // fgets with size 256 terminates within the 256-byte buffer.
+    return std.mem.indexOfScalar(u8, bytes, 0) orelse unreachable;
+}
+
+fn setDimmNumber(dimm_str: *[max_dimm_str]u8, offset: usize, number: u8) void {
+    var digits: [3]u8 = undefined;
+    // All u8 decimal values fit in three bytes.
+    const text = std.fmt.bufPrint(&digits, "{d}", .{number}) catch unreachable;
+    @memcpy(dimm_str[offset .. offset + text.len], text);
+    dimm_str[offset + text.len] = 0;
+}
+
 /// One `intf->sendrecv()` round trip.
 fn sendrecv(intf: *Intf, req: *Request) ?*Response {
     const send = intf.sendrecv orelse return null;
@@ -285,10 +301,10 @@ fn setErrno(v: c_int) void {
 /// `ipmi_sel_oem_readval()`: -1 for `XX`, -2 for `R`, -3 for non-hex, else the
 /// hex value.
 fn oemReadval(str: [*c]u8) c_int {
-    if (c.strcmp(str, "XX") == 0) {
+    if (eql(@ptrCast(str), "XX")) {
         return -1;
     }
-    if (c.strcmp(str, "R") == 0) {
+    if (eql(@ptrCast(str), "R")) {
         return -2;
     }
     var ret: c_int = undefined;
@@ -296,6 +312,64 @@ fn oemReadval(str: [*c]u8) c_int {
         return -3;
     }
     return ret;
+}
+
+test "sel cstrings equality and OEM values match libc with embedded NULs" {
+    const tokens = [_][*:0]const u8{
+        "",   "pps",            "PPS", "ppS", "ppsX", "pps\x00trailing",
+        "XX", "XX\x00trailing", "XX ", "xx",  "R",    "R\x00trailing",
+        "r",
+    };
+    for (tokens) |left| {
+        for (tokens) |right| {
+            try std.testing.expectEqual(
+                c.strcmp(left, right) == 0,
+                eql(left, std.mem.span(right)),
+            );
+        }
+    }
+    for (0..256) |byte| {
+        const left = [_:0]u8{ @intCast(byte), 'x' };
+        const right = [_:0]u8{ @intCast(byte), 'y' };
+        try std.testing.expectEqual(
+            c.strcmp(&left, &right) == 0,
+            eql(&left, std.mem.span(@as([*:0]const u8, &right))),
+        );
+    }
+
+    const values = [_][:0]const u8{
+        "XX",   "XX\x00tail", "XX ",      "xx", "R",  "R\x00tail", "r",
+        "0x01", "0Xff",       "0x12junk", "0x", "12", "",
+    };
+    for (values) |text| {
+        var input: [32]u8 = undefined;
+        @memcpy(input[0 .. text.len + 1], text[0 .. text.len + 1]);
+        const ptr: [*c]u8 = @ptrCast(&input);
+        var parsed: c_int = undefined;
+        const oracle: c_int = if (c.strcmp(ptr, "XX") == 0)
+            -1
+        else if (c.strcmp(ptr, "R") == 0)
+            -2
+        else if (c.sscanf(ptr, "0x%x", &parsed) != 1)
+            -3
+        else
+            parsed;
+        try std.testing.expectEqual(oracle, oemReadval(ptr));
+    }
+}
+
+test "sel cstrings bounded PPS lengths match libc including the fgets limit" {
+    var buffer: [256]u8 = undefined;
+    for (0..buffer.len) |length| {
+        @memset(&buffer, 'x');
+        buffer[length] = 0;
+        try std.testing.expectEqual(c.strlen(&buffer), boundedCStringLength(&buffer));
+    }
+    @memset(&buffer, 'x');
+    buffer[3] = 0;
+    buffer[254] = '\n';
+    buffer[255] = 0;
+    try std.testing.expectEqual(c.strlen(&buffer), boundedCStringLength(&buffer));
 }
 
 /// `ipmi_sel_oem_match()`.
@@ -947,7 +1021,6 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
     var str: [*c]u8 = null;
     var incr: u8 = 0;
     var i: u8 = 0;
-    var j: u8 = 0;
     var desc: [*c]u8 = null;
 
     // Get the OEM event Bytes of the SEL Records byte 13, 14, 15 to
@@ -1190,12 +1263,7 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
                                     @as(c_int, dimms_per_node),
                                 ) + 1);
                                 dimm_str[5] = node +% 'A';
-                                _ = c.sprintf(&tmpdesc, "%d", @as(c_int, dimm_num));
-                                j = 0;
-                                while (j < c.strlen(&tmpdesc)) : (j += 1) {
-                                    dimm_str[6 + j] = tmpdesc[j];
-                                }
-                                dimm_str[6 + j] = 0;
+                                setDimmNumber(&dimm_str, 6, dimm_num);
                                 // final DIMM Details
                                 _ = c.strcat(str, &dimm_str);
                                 count += 1;
@@ -1209,16 +1277,13 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
                         while (i < 8) : (i += 1) {
                             if (bit(i) & data3 != 0) {
                                 // check if more than one DIMM, if so add a comma
-                                _ = c.sprintf(&tmpdesc, "%d", @as(c_int, i) + @as(c_int, incr) + 1);
                                 if (count != 0) {
                                     _ = c.strcat(str, ",");
                                     count = 0x00;
                                 }
-                                j = 0;
-                                while (j < c.strlen(&tmpdesc)) : (j += 1) {
-                                    dimm_str[5 + j] = tmpdesc[j];
-                                }
-                                dimm_str[5 + j] = 0;
+                                // incr <= 14 * 8 here and i < 8: the C-width sum is at most 120.
+                                const dimm_index = @as(c_int, i) + @as(c_int, incr) + 1;
+                                setDimmNumber(&dimm_str, 5, @intCast(dimm_index));
                                 _ = c.strcat(str, &dimm_str);
                                 count += 1;
                             }
@@ -1414,6 +1479,118 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
         }
     }
     return desc;
+}
+
+test "sel cstrings Dell DIMM bytes match libc across decimal boundaries" {
+    for ([_]usize{ 5, 6 }) |offset| {
+        for (0..256) |value| {
+            var actual: [max_dimm_str]u8 = @splat(0xa5);
+            var expected: [max_dimm_str]u8 = @splat(0xa5);
+            var number: [16]u8 = undefined;
+            _ = c.sprintf(&number, "%d", @as(c_int, @intCast(value)));
+            const length = c.strlen(&number);
+            for (0..length) |index| expected[offset + index] = number[index];
+            expected[offset + length] = 0;
+            setDimmNumber(&actual, offset, @intCast(value));
+            try std.testing.expectEqualSlices(u8, &expected, &actual);
+        }
+    }
+}
+
+test "sel cstrings Dell DIMM arithmetic stays in range for every response byte" {
+    var largest: c_int = 0;
+    for (0..256) |data2| {
+        for ([_]bool{ false, true }) |byte2_specified| {
+            const low_nibble = data2 & 0x0f;
+            const incr: u8 = if (byte2_specified and low_nibble != 0x0f)
+                @intCast(low_nibble << 3)
+            else
+                0;
+            for (0..8) |bit_index| {
+                const number = @as(c_int, incr) + @as(c_int, @intCast(bit_index)) + 1;
+                try std.testing.expect(number >= 1 and number <= 120);
+                try std.testing.expectEqual(
+                    number,
+                    @as(c_int, @as(u8, @intCast(bit_index)) + incr + 1),
+                );
+                largest = @max(largest, number);
+            }
+        }
+    }
+    try std.testing.expectEqual(@as(c_int, 120), largest);
+}
+
+test "sel cstrings Dell DIMM shortening preserves C trailing bytes" {
+    for ([_]usize{ 5, 6 }) |offset| {
+        var expected: [max_dimm_str]u8 = @splat(0xa5);
+        var actual: [max_dimm_str]u8 = @splat(0xa5);
+        var tmpdesc: [size_of_desc]u8 = @splat(0);
+        _ = c.strcpy(&expected, " DIMM");
+        _ = c.strcpy(&actual, " DIMM");
+        _ = c.snprintf(&tmpdesc, size_of_desc, "Card %c", @as(c_int, 'A'));
+
+        for ([_]u8{ 120, 1, 99, 9, 255, 0 }) |number| {
+            _ = c.sprintf(&tmpdesc, "%d", @as(c_int, number));
+            const length = c.strlen(&tmpdesc);
+            for (0..length) |index| expected[offset + index] = tmpdesc[index];
+            expected[offset + length] = 0;
+            setDimmNumber(&actual, offset, number);
+            try std.testing.expectEqualSlices(u8, &expected, &actual);
+        }
+    }
+}
+
+test "sel cstrings Dell DIMM request and failure status remain unchanged" {
+    const Stub = struct {
+        var requests: usize = 0;
+        var fail: enum { none, missing, ccode } = .none;
+        var response = std.mem.zeroes(Response);
+
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            requests += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_app);
+            std.debug.assert(req.msg.cmd == cmd_get_device_id);
+            std.debug.assert(req.msg.data_len == 0 and req.msg.data == null);
+            if (fail == .missing) return null;
+            response = std.mem.zeroes(Response);
+            response.ccode = if (fail == .ccode) 0xc1 else 0;
+            response.data_len = 15;
+            response.data[4] = 0x02;
+            return &response;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    var rec = std.mem.zeroes(SelEventRecord);
+    rec.sel_type.standard_type.td.event_type = 0x6f;
+    rec.sel_type.standard_type.sensor_type = c.SENSOR_TYPE_MEMORY;
+    rec.sel_type.standard_type.event_data[0] = 0xa0;
+    rec.sel_type.standard_type.event_data[2] = 0x80;
+
+    for ([_]@TypeOf(Stub.fail){ .missing, .ccode }) |failure| {
+        Stub.fail = failure;
+        Stub.requests = 0;
+        try std.testing.expect(getDellEvtDesc(&intf, &rec) == null);
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+    }
+    Stub.fail = .none;
+    for ([_]struct { data2: u8, expected: []const u8 }{
+        .{ .data2 = 0xfe, .expected = "Correctable ECC |  DIMM120" },
+        .{ .data2 = 0xde, .expected = "Correctable ECC |  DIMME24" },
+        .{ .data2 = 0xff, .expected = "Correctable ECC |  DIMM8" },
+        .{ .data2 = 0x7e, .expected = "Correctable ECC | Card H DIMM120" },
+    }) |sample| {
+        rec.sel_type.standard_type.event_data[1] = sample.data2;
+        Stub.requests = 0;
+        const description = getDellEvtDesc(&intf, &rec);
+        try std.testing.expect(description != null);
+        defer c.free(description);
+        try std.testing.expectEqual(@as(usize, 1), Stub.requests);
+        try std.testing.expectEqualStrings(
+            sample.expected,
+            std.mem.span(@as([*:0]const u8, @ptrCast(description))),
+        );
+    }
 }
 
 /// `ipmi_get_oem_desc()`.
@@ -3006,7 +3183,7 @@ fn selInterpret(
     var status: c_int = 0;
     // since the interface is not used, iana is taken from the command line
     sel_iana = @intCast(iana);
-    if (c.strcmp("pps", format) == 0) {
+    if (eql(@ptrCast(format), "pps")) {
         // Parser for the following format:
         // 0x001F: Event: at Mar 27 06:41:10 2007;from:(0x9a,0,7);
         // sensor:(0xc3,119); event:0x6f(asserted): 0xA3 0x00 0x88
@@ -3029,7 +3206,9 @@ fn selInterpret(
                 status = -1;
                 break;
             }
-            if (c.strlen(buffer) == 255 and buffer[254] != '\n' and c.fgetc(fp) != c.EOF) {
+            if (boundedCStringLength(buffer[0..256]) == 255 and
+                buffer[254] != '\n' and c.fgetc(fp) != c.EOF)
+            {
                 log.print(log.Level.err, "ipmitool: invalid entry found in file.", .{});
                 status = -1;
                 break;

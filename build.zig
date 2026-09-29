@@ -1438,6 +1438,14 @@ pub fn build(b: *std.Build) void {
     sel_info_stdout_step.dependOn(&b.addRunArtifact(sel_info_stdout_unit).step);
     test_step.dependOn(sel_info_stdout_step);
 
+    const sel_cstrings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sel.test.sel cstrings"},
+    });
+    const sel_cstrings_step = b.step("test-sel-cstrings", "Compare SEL tokens, PPS line lengths and Dell DIMM digits with libc");
+    sel_cstrings_step.dependOn(&b.addRunArtifact(sel_cstrings_unit).step);
+    test_step.dependOn(sel_cstrings_step);
+
     const session_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.session.test.session info stdout"},
