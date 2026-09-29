@@ -1334,6 +1334,14 @@ pub fn build(b: *std.Build) void {
     mc_watchdog_numeric_step.dependOn(&b.addRunArtifact(mc_watchdog_numeric_unit).step);
     test_step.dependOn(mc_watchdog_numeric_step);
 
+    const mc_watchdog_equals_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test.watchdog equals"},
+    });
+    const mc_watchdog_equals_step = b.step("test-mc-watchdog-equals", "Compare watchdog option value pointers and requests with libc");
+    mc_watchdog_equals_step.dependOn(&b.addRunArtifact(mc_watchdog_equals_unit).step);
+    test_step.dependOn(mc_watchdog_equals_step);
+
     const mc_info_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.mc.test.mc info stdout"},

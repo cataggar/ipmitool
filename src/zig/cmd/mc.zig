@@ -19,7 +19,7 @@
 //!   formatting. Watchdog SET decimal values use Zig's saturating parser and
 //!   libc's locale whitespace classification. SET system-info strings use
 //!   Zig byte lengths and zero-padded block copies; MC C-string equality
-//!   uses NUL-terminated Zig byte slices.
+//!   and watchdog option splitting use NUL-terminated Zig byte slices.
 //! * **System-info lengths are unsigned bytes.**  The BMC can declare up to
 //!   255 characters.  Both implementations read all required blocks and bound
 //!   the final copy to leave room for a NUL in the 256-byte output buffer.
@@ -2231,6 +2231,11 @@ fn parseWatchdogDecimal(text: [*:0]const u8) WatchdogDecimal {
     };
 }
 
+fn watchdogOptionValue(arg: [*:0]u8) [*c]u8 {
+    const equals = std.mem.indexOfScalar(u8, std.mem.span(arg), '=') orelse return null;
+    return @ptrCast(arg + equals + 1);
+}
+
 /// `parse_set_wdt_options()`.
 fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
     // Seconds, makes almost USHRT_MAX when converted to 100ms intervals.
@@ -2247,8 +2252,7 @@ fn parseSetWdtOptions(conf: *WdtConf, argc: c_int, argv: [*][*:0]u8) bool {
     while (i < argc) : (i += 1) {
         var val: c_long = undefined;
         const arg = argv[@intCast(i)];
-        var vstr = c.strchr(arg, '=');
-        if (vstr != null) vstr += 1; // Point to the value
+        const vstr = watchdogOptionValue(arg);
 
         if (std.mem.indexOfScalar(u8, "tpiuac", arg[0]) != null and
             (vstr == null or vstr[0] == 0))
@@ -2481,6 +2485,71 @@ test "watchdog numeric decimal matches libc value and end across signs whitespac
     long_digits[129] = 'x';
     long_digits[130] = 0;
     try expectWatchdogDecimalOracle(@ptrCast(&long_digits));
+}
+
+test "watchdog equals scanner matches libc pointer and request behavior" {
+    const Oracle = struct {
+        fn check(arg: [*:0]u8) !void {
+            const match = c.strchr(arg, '=');
+            const expected = if (match == null) null else match + 1;
+            const actual = watchdogOptionValue(arg);
+            try std.testing.expectEqual(expected == null, actual == null);
+            if (expected != null) {
+                try std.testing.expectEqual(@intFromPtr(expected), @intFromPtr(actual));
+                try std.testing.expectEqualStrings(std.mem.span(expected), std.mem.span(actual));
+            }
+        }
+    };
+    for ([_][*:0]const u8{
+        "", "t", "t=", "=1", "timeout=1", "timeout==1", "t=1=2", "nolog", "nolog=",
+    }) |text| try Oracle.check(@constCast(text));
+    for (0..256) |byte| {
+        var input = [_:0]u8{ 't', @intCast(byte), '=', '1' };
+        try Oracle.check(&input);
+    }
+    for (0..5) |offset| {
+        var input = [_:0]u8{ 't', 'x', 'x', 'x', 'x' };
+        input[offset] = '=';
+        try Oracle.check(&input);
+    }
+    var hidden = [_:0]u8{ 't', '=', '1', 0, '=', '2' };
+    try Oracle.check(&hidden);
+
+    const Stub = struct {
+        var response = std.mem.zeroes(Response);
+        var calls: usize = 0;
+        var payload: [6]u8 = undefined;
+        fn send(_: *Intf, req: *Request) callconv(.c) ?*Response {
+            calls += 1;
+            std.debug.assert(req.msg.netfn_lun.netfn == netfn_app and
+                req.msg.cmd == BMC_SET_WATCHDOG_TIMER and req.msg.data_len == 6 and req.msg.data != null);
+            @memcpy(&payload, req.msg.data.?[0..payload.len]);
+            return &response;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    intf.sendrecv = Stub.send;
+    for ([_]struct { arg: [*:0]u8, accepted: bool, timeout: u16 = 0, pretimeout: u8 = 0 }{
+        .{ .arg = @constCast("t=1"), .accepted = true, .timeout = 10 },
+        .{ .arg = @constCast("p=2"), .accepted = true, .pretimeout = 2 },
+        .{ .arg = @constCast("t"), .accepted = false },
+        .{ .arg = @constCast("t="), .accepted = false },
+        .{ .arg = @constCast("t=1=2"), .accepted = false },
+        .{ .arg = @constCast("n=1"), .accepted = false },
+        .{ .arg = @constCast("u=sms=other"), .accepted = false },
+        .{ .arg = &hidden, .accepted = true, .timeout = 10 },
+    }) |case| {
+        Stub.calls = 0;
+        var options = [_][*:0]u8{case.arg};
+        try std.testing.expectEqual(@as(c_int, if (case.accepted) 0 else -1), mcSetWatchdog(&intf, 1, &options));
+        try std.testing.expectEqual(@as(usize, @intFromBool(case.accepted)), Stub.calls);
+        if (case.accepted) {
+            var expected = [_]u8{0} ** 6;
+            expected[2] = case.pretimeout;
+            htole16(case.timeout, expected[4..]);
+            try std.testing.expectEqualSlices(u8, &expected, &Stub.payload);
+        }
+    }
 }
 
 test "watchdog numeric SET retains libc request bytes and error statuses" {
