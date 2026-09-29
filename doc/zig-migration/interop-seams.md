@@ -560,6 +560,16 @@ single/all-block ordering and status propagation. The
 `chassis_bootmbox_get*` C, selected and all-selected CLI goldens also compare
 the on-wire request bytes. Mailbox SET, stdout printers and POH are unchanged.
 
+The selected `chassis bootparam set bootflag options=...` and `chassis
+bootdev ... options=...` paths now split comma-separated options in Zig rather
+than libc `strtok_r`. Like C, the scanner skips empty tokens, stops at the
+first NUL, and writes NULs over only the delimiters reached; the caller's
+writable argument and the no-comma help literal retain their lifetimes and
+mutations. `zig build test-chassis-comma-tokens` compares token addresses,
+bytes and complete argument mutations with libc across every byte and
+delimiter boundary, then checks option masks. Existing original-C, selected
+and all-selected boot option goldens retain request bytes and exit statuses.
+
 The selected `chassis power on/off/cycle/reset/diag/soft` (and top-level
 `power`) success messages now use checked Zig stdout. Their original
 value-table wording, newline, request and error behavior remain unchanged;
