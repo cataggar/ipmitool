@@ -39,3 +39,9 @@ Intentional hardening for *invalid* inputs/replies only:
 
 Valid C and Zig requests are golden-tested for stdout, stderr, exit status
 and byte-for-byte IPMI wire traffic.
+
+The saved-command prefix now uses bounded Zig formatting instead of libc
+`snprintf`. `zig build test-lanp6-unit` compares every valid channel's entire
+20-byte buffer with C, including both terminators, and rejects an oversized
+command format. The `lan6_*` golden cases continue to
+cover saved script output against the original C command.

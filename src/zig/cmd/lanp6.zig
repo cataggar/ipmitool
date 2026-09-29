@@ -19,6 +19,11 @@ const Action = c.struct_ipmi_cfgp_action;
 const Valstr = c.struct_valstr;
 const File = c.FILE;
 
+fn formatSaveCommand(storage: *[20]u8, channel: c_int) !void {
+    _ = try std.fmt.bufPrintSentinel(storage[0 .. storage.len - 1], "lan6 set {d} nolock", .{channel}, 0);
+    storage[storage.len - 1] = 0;
+}
+
 // The shared cfgp engine consumes unsigned-int bitfields, which translate-c
 // exposes as opaque. The layout is pinned to the C header in abi_layout.h.
 const Flags = switch (builtin.target.cpu.arch.endian()) {
@@ -726,8 +731,10 @@ fn main(intf: *Intf, input_argc: c_int, input_argv: [*c][*c]u8) callconv(.c) c_i
             if (c.ipmi_cfgp_get(&ctx, &sel) != 0) return -1;
             if (cmd == cmd_print) return c.ipmi_cfgp_print(&ctx, &sel, c.stdout);
             var saved_cmd: [20]u8 = undefined;
-            _ = c.snprintf(&saved_cmd, saved_cmd.len - 1, "lan6 set %d nolock", channel);
-            saved_cmd[saved_cmd.len - 1] = 0;
+            formatSaveCommand(&saved_cmd, channel) catch {
+                log.print(log.Level.err, "Could not format LAN6 save command", .{});
+                return -1;
+            };
             ctx.cmdname = &saved_cmd;
             _ = c.fprintf(c.stdout, "lan6 lock %d\n", channel);
             const ret = c.ipmi_cfgp_save(&ctx, &sel, c.stdout);
@@ -785,6 +792,20 @@ pub fn exportSymbols() void {
     @export(&setDynamic, .{ .name = "ipmi_set_dynamic_oem_lanp", .linkage = .strong });
     @export(&setParam, .{ .name = "ipmi_set_lanp", .linkage = .strong });
     @export(&main, .{ .name = "ipmi_lan6_main", .linkage = .strong });
+}
+
+test "LAN6 saved command matches C for all channels" {
+    for (0..15) |channel| {
+        var expected: [20]u8 = @splat(0xa5);
+        const written = c.snprintf(&expected, expected.len - 1, "lan6 set %d nolock", @as(c_int, @intCast(channel)));
+        expected[expected.len - 1] = 0;
+        try std.testing.expectEqual(@as(c_int, if (channel < 10) 17 else 18), written);
+        var actual: [20]u8 = @splat(0xa5);
+        try formatSaveCommand(&actual, @intCast(channel));
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    var too_short: [20]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, formatSaveCommand(&too_short, 100));
 }
 
 test "LAN6 short BMC replies are zero-padded without reading past the payload" {
