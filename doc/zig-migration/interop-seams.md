@@ -1026,6 +1026,9 @@ mid-line discards that partial chunk, logs the file name and returns `-1`.
 `zig build test-sel-add-line` compares the complete buffers and `feof` state
 to libc `fgets` for all 256 first bytes, LF/NUL/`0xff`, 1022/1023/1024 and
 multi-chunk boundaries, and injects a mid-line `FILE` read error.
+The error fixture uses separate identical libc and Zig `fopencookie`
+streams with a fixed failure offset, verifies `ferror` and consumed offsets,
+and asserts that the add loop never dispatches a valid-looking partial line.
 `zig build test-sel-add-strings` still compares the entire mutated input
 buffer, diagnostic copy and token bytes against libc for
 whitespace, comments, embedded NULs and both 1022/1023-byte `fgets` edges.

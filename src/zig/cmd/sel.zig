@@ -764,7 +764,7 @@ fn selAddEntry(intf: *Intf, rec: *SelEventRecord) c_int {
 fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
     if (filename == null) return -1;
     const fp = c.ipmi_open_file_read(filename) orelse return -1;
-    return selAddEntriesFromStream(intf, filename, fp);
+    return selAddEntriesFromStream(intf, filename, fp, parseSelAddLine);
 }
 
 const SelAddLineResult = enum { line, eof, read_error };
@@ -852,8 +852,8 @@ test "sel add line framing matches libc for every first byte and length boundary
     const candidate = c.fopen("tests/fixtures/sel/add_ok.txt", "rb") orelse return error.OpenFailed;
     defer _ = c.fclose(candidate);
     while (true) {
-        var c_buf: [1024]u8 = undefined;
-        var zig_buf: [1024]u8 = undefined;
+        var c_buf: [1024]u8 = @splat(0xa5);
+        var zig_buf: [1024]u8 = c_buf;
         const got = c.fgets(&c_buf, c_buf.len, original) != null;
         const result = readSelAddLine(candidate, &zig_buf);
         try std.testing.expectEqual(if (got) SelAddLineResult.line else .eof, result);
@@ -864,38 +864,90 @@ test "sel add line framing matches libc for every first byte and length boundary
     }
 }
 
-test "sel add line discards partial FILE read errors instead of treating them as EOF" {
-    const text = "# ignore\n0x04 0x01 0x30 0x01 0x51 0xa1 0xb1";
-    const file = try selAddTestFile(text);
-    try std.testing.expectEqual(@as(c_int, '#'), c.fgetc(file));
-    try std.testing.expectEqual(@as(c_int, '#'), c.ungetc('#', file));
-    try std.testing.expectEqual(@as(c_int, 0), c.close(c.fileno(file)));
-    var buf: [1024]u8 = @splat(0xa5);
-    try std.testing.expectEqual(SelAddLineResult.line, readSelAddLine(file, &buf));
-    try std.testing.expectEqualStrings("# ignore\n", std.mem.sliceTo(&buf, 0));
-    try std.testing.expectEqual(SelAddLineResult.read_error, readSelAddLine(file, &buf));
-    try std.testing.expectEqual(@as(u8, 0), buf[0]);
-    try std.testing.expect(c.ferror(file) != 0 and c.feof(file) == 0);
-    _ = c.fclose(file);
+const SelAddErrorCookie = struct {
+    bytes: []const u8,
+    fail_after: usize,
+    position: usize = 0,
+    closed: bool = false,
 
-    const oracle = try selAddTestFile(text);
-    try std.testing.expectEqual(@as(c_int, '#'), c.fgetc(oracle));
-    try std.testing.expectEqual(@as(c_int, '#'), c.ungetc('#', oracle));
-    try std.testing.expectEqual(@as(c_int, 0), c.close(c.fileno(oracle)));
-    var c_buf: [1024]u8 = undefined;
+    fn open(self: *SelAddErrorCookie) !*c.FILE {
+        return c.fopencookie(self, "r", .{ .read = read, .close = close }) orelse error.OpenFailed;
+    }
+
+    fn read(context: ?*anyopaque, buf: [*c]u8, requested: usize) callconv(.c) isize {
+        const self: *SelAddErrorCookie = @ptrCast(@alignCast(context.?));
+        if (self.position == self.fail_after) {
+            std.c._errno().* = c.EIO;
+            return -1;
+        }
+        const n = @min(requested, self.fail_after - self.position);
+        @memcpy(buf[0..n], self.bytes[self.position..][0..n]);
+        self.position += n;
+        return @intCast(n);
+    }
+
+    fn close(context: ?*anyopaque) callconv(.c) c_int {
+        const self: *SelAddErrorCookie = @ptrCast(@alignCast(context.?));
+        self.closed = true;
+        return 0;
+    }
+};
+
+test "sel add line FILE read errors discard valid-looking partial commands" {
+    const complete = "# complete\n";
+    const partial = "0x04 0x01 0x30 0x01 0x51 0xa1 0xb1";
+    const data = complete ++ partial ++ " unread after error";
+    const cutoff = complete.len + partial.len;
+    var oracle_cookie = SelAddErrorCookie{ .bytes = data, .fail_after = cutoff };
+    var zig_cookie = SelAddErrorCookie{ .bytes = data, .fail_after = cutoff };
+    const oracle = try oracle_cookie.open();
+    const candidate = try zig_cookie.open();
+    var c_buf: [1024]u8 = @splat(0xa5);
+    var zig_buf: [1024]u8 = c_buf;
     try std.testing.expect(c.fgets(&c_buf, c_buf.len, oracle) != null);
+    try std.testing.expectEqual(SelAddLineResult.line, readSelAddLine(candidate, &zig_buf));
+    try std.testing.expectEqualSlices(u8, &c_buf, &zig_buf);
+    try std.testing.expectEqual(oracle_cookie.position, zig_cookie.position);
+    try std.testing.expect(c.ferror(oracle) == 0 and c.ferror(candidate) == 0);
+    try std.testing.expect(c.feof(oracle) == 0 and c.feof(candidate) == 0);
+
     try std.testing.expect(c.fgets(&c_buf, c_buf.len, oracle) == null);
-    try std.testing.expect(c.ferror(oracle) != 0 and c.feof(oracle) == 0);
+    try std.testing.expectEqual(SelAddLineResult.read_error, readSelAddLine(candidate, &zig_buf));
+    try std.testing.expectEqual(@as(u8, 0), zig_buf[0]);
+    try std.testing.expectEqual(cutoff, oracle_cookie.position);
+    try std.testing.expectEqual(oracle_cookie.position, zig_cookie.position);
+    try std.testing.expect(c.ferror(oracle) != 0 and c.ferror(candidate) != 0);
+    try std.testing.expect(c.feof(oracle) == 0 and c.feof(candidate) == 0);
     _ = c.fclose(oracle);
+    _ = c.fclose(candidate);
+    try std.testing.expect(oracle_cookie.closed and zig_cookie.closed);
+
+    const Recorder = struct {
+        var calls: usize = 0;
+        fn process(_: *Intf, buf: *[1024]u8, line: c_int) c_int {
+            calls += 1;
+            std.debug.assert(line == 1);
+            std.debug.assert(std.mem.eql(u8, std.mem.sliceTo(buf, 0), complete));
+            return 0;
+        }
+    };
+    var intf = std.mem.zeroes(Intf);
+    for ([_]struct { bytes: []const u8, limit: usize, expected_calls: usize }{
+        .{ .bytes = data, .limit = cutoff, .expected_calls = 1 },
+        .{ .bytes = partial ++ " unread after error", .limit = partial.len, .expected_calls = 0 },
+    }) |case| {
+        var cookie = SelAddErrorCookie{ .bytes = case.bytes, .fail_after = case.limit };
+        Recorder.calls = 0;
+        try std.testing.expectEqual(@as(c_int, -1), selAddEntriesFromStream(&intf, "cookie-error", try cookie.open(), Recorder.process));
+        try std.testing.expectEqual(case.expected_calls, Recorder.calls);
+        try std.testing.expectEqual(case.limit, cookie.position);
+        try std.testing.expect(cookie.closed);
+    }
 }
 
-fn selAddEntriesFromStream(intf: *Intf, filename: [*c]const u8, fp: *c.FILE) c_int {
+fn selAddEntriesFromStream(intf: *Intf, filename: [*c]const u8, fp: *c.FILE, process: anytype) c_int {
     defer _ = c.fclose(fp);
     var buf: [1024]u8 = undefined;
-    var event_line: [1024]u8 = undefined;
-    var rqdata: [7]u8 = undefined;
-    var sel_event: SelEventRecord = undefined;
-    var rc: c_int = 0;
     var line: c_int = 0;
 
     while (true) {
@@ -908,59 +960,62 @@ fn selAddEntriesFromStream(intf: *Intf, filename: [*c]const u8, fp: *c.FILE) c_i
             },
         }
         line += 1;
+        const rc = process(intf, &buf, line);
+        if (rc < 0) return rc;
+    }
+    return 0;
+}
 
-        const line_text = trimSelAddLine(&buf) orelse continue;
-        @memcpy(event_line[0..line_text.len], line_text);
+fn parseSelAddLine(intf: *Intf, buf: *[1024]u8, line: c_int) c_int {
+    var event_line: [1024]u8 = undefined;
+    const line_text = trimSelAddLine(buf) orelse return 0;
+    @memcpy(event_line[0..line_text.len], line_text);
 
-        // parse the event, 7 bytes with optional comment
-        // 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event
-        var i: usize = 0;
-        var invalid = false;
-        rqdata = @splat(0);
-        var offset: usize = 0;
-        var tok = nextSelAddToken(line_text, &offset);
-        while (tok) |token| {
-            if (i == 7) break;
-            const j = i;
-            i += 1;
-            if (c.str2uchar(token, &rqdata[j]) != 0) {
-                invalid = true;
-                break;
-            }
-            tok = nextSelAddToken(line_text, &offset);
+    // parse the event, 7 bytes with optional comment
+    // 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event
+    var rqdata: [7]u8 = @splat(0);
+    var i: usize = 0;
+    var invalid = false;
+    var offset: usize = 0;
+    var tok = nextSelAddToken(line_text, &offset);
+    while (tok) |token| {
+        if (i == 7) break;
+        const j = i;
+        i += 1;
+        if (c.str2uchar(token, &rqdata[j]) != 0) {
+            invalid = true;
+            break;
         }
-        if (invalid or i < 7) {
-            log.print(
-                log.Level.err,
-                "Invalid Event on line %d: %s",
-                .{
-                    line,
-                    &event_line,
-                },
-            );
-            continue;
-        }
-
-        sel_event = .{};
-        sel_event.record_id = 0x0000;
-        sel_event.record_type = 0x02;
-        // IPMI spec 32.1 generator ID: bit 0 = 1 "Software defined",
-        // bits 1-7 SWID, 2 = "System management software".
-        sel_event.sel_type.standard_type.gen_id = 0x41;
-        sel_event.sel_type.standard_type.evm_rev = rqdata[0];
-        sel_event.sel_type.standard_type.sensor_type = rqdata[1];
-        sel_event.sel_type.standard_type.sensor_num = rqdata[2];
-        sel_event.sel_type.standard_type.td.event_type = @truncate(rqdata[3] & 0x7f);
-        sel_event.sel_type.standard_type.td.event_dir = @truncate((rqdata[3] & 0x80) >> 7);
-        sel_event.sel_type.standard_type.event_data[0] = rqdata[4];
-        sel_event.sel_type.standard_type.event_data[1] = rqdata[5];
-        sel_event.sel_type.standard_type.event_data[2] = rqdata[6];
-
-        rc = selAddEntry(intf, &sel_event);
-        if (rc < 0) break;
+        tok = nextSelAddToken(line_text, &offset);
+    }
+    if (invalid or i < 7) {
+        log.print(
+            log.Level.err,
+            "Invalid Event on line %d: %s",
+            .{
+                line,
+                &event_line,
+            },
+        );
+        return 0;
     }
 
-    return rc;
+    var sel_event: SelEventRecord = .{};
+    sel_event.record_id = 0x0000;
+    sel_event.record_type = 0x02;
+    // IPMI spec 32.1 generator ID: bit 0 = 1 "Software defined",
+    // bits 1-7 SWID, 2 = "System management software".
+    sel_event.sel_type.standard_type.gen_id = 0x41;
+    sel_event.sel_type.standard_type.evm_rev = rqdata[0];
+    sel_event.sel_type.standard_type.sensor_type = rqdata[1];
+    sel_event.sel_type.standard_type.sensor_num = rqdata[2];
+    sel_event.sel_type.standard_type.td.event_type = @truncate(rqdata[3] & 0x7f);
+    sel_event.sel_type.standard_type.td.event_dir = @truncate((rqdata[3] & 0x80) >> 7);
+    sel_event.sel_type.standard_type.event_data[0] = rqdata[4];
+    sel_event.sel_type.standard_type.event_data[1] = rqdata[5];
+    sel_event.sel_type.standard_type.event_data[2] = rqdata[6];
+
+    return selAddEntry(intf, &sel_event);
 }
 
 // ---------------------------------------------------------------------------
