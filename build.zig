@@ -1647,6 +1647,14 @@ pub fn build(b: *std.Build) void {
     b.step("test-helper-valstr-unit", "Check value-table stdout formatting against libc")
         .dependOn(&b.addRunArtifact(helper_valstr_unit).step);
 
+    const helper_integer_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.helper.test.integer base-zero"},
+    });
+    const helper_integer_step = b.step("test-helper-integers", "Compare Zig base-zero integer conversions, values and errno with libc");
+    helper_integer_step.dependOn(&b.addRunArtifact(helper_integer_unit).step);
+    test_step.dependOn(helper_integer_step);
+
     const valstr_c_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
