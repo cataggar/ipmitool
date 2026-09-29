@@ -959,8 +959,19 @@ var prompt_buf: [128]u8 = undefined;
 /// `ipmi_user_build_password_prompt()`.
 fn buildPasswordPrompt(user_id: u8) callconv(.c) [*c]const u8 {
     @memset(&prompt_buf, 0);
-    _ = c.snprintf(&prompt_buf, 128, "Password for user %d: ", @as(c_int, user_id));
+    _ = std.fmt.bufPrintSentinel(&prompt_buf, "Password for user {d}: ", .{user_id}, 0) catch unreachable;
     return &prompt_buf;
+}
+
+test "user password prompt matches libc for every user ID" {
+    const first = buildPasswordPrompt(0);
+    for (0..256) |id| {
+        var expected: [128]u8 = @splat(0);
+        const written = c.snprintf(&expected, expected.len, "Password for user %d: ", @as(c_int, @intCast(id)));
+        try std.testing.expect(written > 0 and written < expected.len);
+        try std.testing.expectEqual(@intFromPtr(first), @intFromPtr(buildPasswordPrompt(@intCast(id))));
+        try std.testing.expectEqualSlices(u8, &expected, &prompt_buf);
+    }
 }
 
 /// `ask_password()`: prompt for a password.
