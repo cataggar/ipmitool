@@ -14,9 +14,10 @@
 //!
 //! * **Command results use checked Zig stdout.** Diagnostics use `log.print()`
 //!   from the selected logger archive (or its C fallback). Boot mailbox
-//!   request selectors use bounded, NUL-terminated Zig formatting; `printf`
-//!   remains in tests to seed buffered C output. C-string comparisons,
-//!   prefix checks and lengths use NUL-terminated Zig slices; `str2uchar`
+//!   request selectors and boot-parameter hex diagnostics use bounded Zig
+//!   formatting; `printf` remains in tests to seed buffered C output.
+//!   C-string comparisons, prefix checks and lengths use NUL-terminated Zig
+//!   slices; `str2uchar`
 //!   keeps its C arguments. Boot options split writable strings in place in
 //!   Zig, matching `strtok_r`. The `power_usage` format is a constant.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
@@ -47,6 +48,7 @@ const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
+const helper = @import("../util/helper.zig");
 const log = @import("../util/log.zig");
 const stdout_io = @import("../util/stdout.zig");
 const Intf = @import("../intf/intf.zig").Intf;
@@ -1679,11 +1681,63 @@ fn chassisSetBootparam(intf: *Intf, param: u8, data: [*]const u8, len: c_int) c_
         "Chassis Set Boot Parameter %d to %s",
         .{
             @as(c_int, param),
-            c.buf2str(data, len),
+            helper.buf2str(data, len),
         },
     );
 
     return rc;
+}
+
+test "chassis bootparam log hex matches libc bytes, separator, truncation and buffer lifetime" {
+    var data: [1600]u8 = undefined;
+    for (&data, 0..) |*byte, i| byte.* = @truncate(i);
+
+    for (0..256) |value| {
+        const byte = [_]u8{@intCast(value)};
+        var expected: [3]u8 = undefined;
+        try std.testing.expectEqual(@as(c_int, 2), c.snprintf(&expected, expected.len, "%02x", @as(c_uint, byte[0])));
+        try std.testing.expectEqualStrings(
+            expected[0..2],
+            std.mem.span(helper.buf2str(&byte, 1)),
+        );
+        try std.testing.expectEqualStrings(
+            expected[0..2],
+            std.mem.span(helper.buf2strExtended(&byte, 1, " ")),
+        );
+    }
+
+    for ([_]usize{ 0, 1, 13, 16, 255, 1023, 1024, 1025, 1535, 1536, 1537, data.len, 0 }) |length| {
+        const len: c_int = @intCast(length);
+        var expected: [helper.buf2str_max_output_size]u8 = undefined;
+        var written: usize = 0;
+        for (data[0..@min(length, 1536)]) |byte| {
+            const n = c.snprintf(@ptrCast(&expected[written]), expected.len - written, "%02x", @as(c_uint, byte));
+            try std.testing.expectEqual(@as(c_int, 2), n);
+            written += 2;
+        }
+        const plain = helper.buf2str(&data, len);
+        try std.testing.expectEqualSlices(u8, expected[0..written], std.mem.span(plain));
+        try std.testing.expectEqual(@as(u8, 0), plain[written]);
+
+        written = 0;
+        for (data[0..@min(length, 1024)], 0..) |byte, i| {
+            if (i != 0) {
+                expected[written] = ' ';
+                written += 1;
+            }
+            const n = c.snprintf(@ptrCast(&expected[written]), expected.len - written, "%02x", @as(c_uint, byte));
+            try std.testing.expectEqual(@as(c_int, 2), n);
+            written += 2;
+        }
+        if (length > 1024) {
+            expected[written] = ' ';
+            written += 1;
+        }
+        const separated = helper.buf2strExtended(&data, len, " ");
+        try std.testing.expectEqual(@intFromPtr(plain), @intFromPtr(separated));
+        try std.testing.expectEqualSlices(u8, expected[0..written], std.mem.span(separated));
+        try std.testing.expectEqual(@as(u8, 0), separated[written]);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -2810,7 +2864,7 @@ fn chassisSetBootmailbox(
             "Block %3d: %s",
             .{
                 @as(c_int, block),
-                c.buf2str_extended(data, @intCast(blocksize), " "),
+                helper.buf2strExtended(data, @intCast(blocksize), " "),
             },
         );
 

@@ -1514,6 +1514,12 @@ args: -I dummy -v chassis bootmbox set text 343 abcdefghijklm
 transcript: chassis.tr
 covers: chassis
 
+[chassis_bootmbox_set_debug_hex]
+desc: -vvv exposes both unseparated boot-parameter hex and spaced mailbox hex with NUL and high bytes
+args: -I dummy -v -v -v chassis bootmbox set block 1 343 0 10 127 128 255
+transcript: chassis.tr
+covers: chassis
+
 [chassis_bootmbox_numeric_diagnostic]
 desc: verbose block 255 logs unsigned size, signed block index, padded hex bytes and size_t block count
 args: -I dummy -v chassis bootmbox set block 255 343 0 255
