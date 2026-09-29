@@ -845,6 +845,19 @@ flags and size boundaries, buffered output order, request statuses and
 injected failures. The original-C/selected-Zig `sel_info` and `sl_info_*`
 goldens cover the actual dummy interface; SEL record printers are unchanged.
 
+SEL OEM translation tokens (`XX`/`R`) and PPS `interpret` format selection
+now reuse the NUL-aware Zig equality used by command dispatch. The 256-byte
+`fgets` PPS line buffer uses a bounded NUL search for its existing 255-byte
+overlong-line decision, preserving the conditional `fgetc` and parse order.
+Dell DIMM numbers (one to three decimal digits) use a three-byte Zig scratch
+and explicitly terminate the existing 32-byte DIMM text; the allocator-owned
+description and remaining record formatting stay on libc. `zig build
+test-sel-cstrings` compares equality, byte lengths and DIMM strings to libc,
+including embedded NULs and numeric boundaries. The `sl_oemmsg_*`,
+`sl_int_*` and `sl_dell*` original-C/selected-Zig CLI cases cover resulting
+output, statuses and requests. General record/path formatting, allocation-
+sized lengths and PPS `strtol` parsing remain C interop seams.
+
 The selected `sol payload status` result now uses checked Zig stdout for
 both enabled and disabled lines, retaining the C decimal fields and newline.
 The C stdout pre-flush preserves buffered output from earlier code; write

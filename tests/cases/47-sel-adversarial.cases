@@ -264,6 +264,13 @@ transcript: sel_interpret.tr
 text: log.txt sel/pps_empty.txt
 covers: sel
 
+[sl_int_upperformat]
+desc: sel interpret format is case sensitive
+args: -I dummy sel interpret 674 {work}/log.txt PPS
+transcript: sel_interpret.tr
+text: log.txt sel/pps_empty.txt
+covers: sel
+
 [sl_int_missing]
 desc: sel interpret on a file that does not exist
 args: -I dummy sel interpret 674 {work}/nope.txt pps
