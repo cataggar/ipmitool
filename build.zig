@@ -1638,6 +1638,14 @@ pub fn build(b: *std.Build) void {
     event_space_tokens_step.dependOn(&b.addRunArtifact(event_space_tokens_unit).step);
     test_step.dependOn(event_space_tokens_step);
 
+    const event_file_line_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.event.test.event file line"},
+    });
+    const event_file_line_step = b.step("test-event-file-line", "Compare bounded event-file line framing and read errors with libc");
+    event_file_line_step.dependOn(&b.addRunArtifact(event_file_line_unit).step);
+    test_step.dependOn(event_file_line_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},
