@@ -1093,6 +1093,14 @@ pub fn build(b: *std.Build) void {
     const unit_step = b.step("test-unit", "Run Zig in-module unit and ABI tests");
     unit_step.dependOn(&unit_tests.step);
 
+    const password_file_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cli.main.test.password file line"},
+    });
+    const password_file_step = b.step("test-cli-password-file", "Compare CLI password file line framing and trimming with libc");
+    password_file_step.dependOn(&b.addRunArtifact(password_file_unit).step);
+    test_step.dependOn(password_file_step);
+
     const dummy_posix_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.dummy.test."},

@@ -30,29 +30,122 @@ fn replace(slot: *?[*:0]u8, value: [*c]const u8, progname: [*:0]const u8) bool {
     return true;
 }
 
+fn readPasswordLine(fp: *c.FILE, pass: *[21]u8) bool {
+    var len: usize = 0;
+    while (len < pass.len - 1) {
+        const byte = c.fgetc(fp);
+        if (byte == c.EOF) {
+            if (c.ferror(fp) != 0) return false;
+            break;
+        }
+        pass[len] = @intCast(byte);
+        len += 1;
+        if (byte == '\n') break;
+    }
+    if (len == 0) return false;
+    pass[len] = 0;
+
+    if (std.mem.indexOfAny(u8, pass[0..len], "\x00\r\n\t")) |end| {
+        if (end > 0) pass[end] = 0;
+    }
+    return true;
+}
+
 fn passwordFileRead(filename: [*c]u8) ?[*:0]u8 {
     const raw = c.malloc(21) orelse {
         log.print(log.Level.err, "ipmitool: malloc failure", .{});
         return null;
     };
-    const pass: [*c]u8 = @ptrCast(raw);
-    @memset(pass[0..21], 0);
+    const pass: *[21]u8 = @ptrCast(raw);
+    @memset(pass, 0);
     const fp = c.ipmi_open_file(filename, 0);
     if (fp == null) {
         log.print(log.Level.err, "Unable to open password file %s", .{filename});
         c.free(raw);
         return null;
     }
-    if (c.fgets(pass, 21, fp) == null) {
+    if (!readPasswordLine(fp.?, pass)) {
         log.print(log.Level.err, "Unable to read password from file %s", .{filename});
         c.free(raw);
         _ = c.fclose(fp);
         return null;
     }
-    const n = c.strcspn(pass, "\r\n\t");
-    if (n > 0) pass[n] = 0;
     _ = c.fclose(fp);
     return @ptrCast(pass);
+}
+
+fn checkPasswordLine(input: []const u8) !void {
+    const allocator = std.testing.allocator;
+    const oracle_bytes = try allocator.dupe(u8, input);
+    defer allocator.free(oracle_bytes);
+    const zig_bytes = try allocator.dupe(u8, input);
+    defer allocator.free(zig_bytes);
+
+    const oracle = c.fmemopen(oracle_bytes.ptr, oracle_bytes.len, "r") orelse return error.MemoryStreamFailed;
+    defer _ = c.fclose(oracle);
+    const candidate = c.fmemopen(zig_bytes.ptr, zig_bytes.len, "r") orelse return error.MemoryStreamFailed;
+    defer _ = c.fclose(candidate);
+
+    var expected: [21]u8 = @splat(0);
+    var actual: [21]u8 = @splat(0);
+    const got_line = c.fgets(&expected, expected.len, oracle) != null;
+    const read_line = readPasswordLine(candidate, &actual);
+    try std.testing.expectEqual(got_line, read_line);
+    if (got_line) {
+        const end = c.strcspn(&expected, "\r\n\t");
+        if (end > 0) expected[end] = 0;
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    try std.testing.expectEqual(c.ftell(oracle), c.ftell(candidate));
+    try std.testing.expectEqual(c.feof(oracle), c.feof(candidate));
+    try std.testing.expectEqual(c.ferror(oracle), c.ferror(candidate));
+}
+
+test "password file line matches libc" {
+    const cases = [_][]const u8{
+        "",                          "secret\nnext", "\nnext",               "\r\n",
+        "\tpass",                    "a\tb\n",       "a\rb\n",               "a\x00b\n",
+        "\x00password",              "password",     "12345678901234567890", "123456789012345678901",
+        "1234567890123456789\nnext",
+    };
+    for (cases) |bytes| try checkPasswordLine(bytes);
+    for (0..256) |byte| {
+        const bytes = [_]u8{ @intCast(byte), 'Q', '\n', 'Z' };
+        try checkPasswordLine(&bytes);
+    }
+}
+
+test "password file line discards partial input on FILE read error" {
+    const Fault = struct {
+        input: []const u8 = "secret",
+        offset: usize = 0,
+        fn read(cookie: ?*anyopaque, dest: [*c]u8, capacity: usize) callconv(.c) c_long {
+            const state: *@This() = @ptrCast(@alignCast(cookie.?));
+            if (state.offset == 3) {
+                std.c._errno().* = c.EIO;
+                return -1;
+            }
+            const count = @min(capacity, 3 - state.offset);
+            @memcpy(dest[0..count], state.input[state.offset..][0..count]);
+            state.offset += count;
+            return @intCast(count);
+        }
+    };
+    var original = Fault{};
+    var scanned = Fault{};
+    const funcs: c.cookie_io_functions_t = .{ .read = Fault.read };
+    const oracle = c.fopencookie(&original, "r", funcs) orelse return error.CookieOpenFailed;
+    defer _ = c.fclose(oracle);
+    const candidate = c.fopencookie(&scanned, "r", funcs) orelse return error.CookieOpenFailed;
+    defer _ = c.fclose(candidate);
+    var expected: [21]u8 = @splat(0);
+    var actual: [21]u8 = @splat(0);
+    try std.testing.expect(c.fgets(&expected, expected.len, oracle) == null);
+    try std.testing.expect(!readPasswordLine(candidate, &actual));
+    try std.testing.expect(c.ferror(oracle) != 0);
+    try std.testing.expect(c.ferror(candidate) != 0);
+    try std.testing.expectEqual(@as(usize, 3), original.offset);
+    try std.testing.expectEqual(original.offset, scanned.offset);
 }
 
 fn cmdPrint(cmdlist: ?[*]Cmd) callconv(.c) void {
