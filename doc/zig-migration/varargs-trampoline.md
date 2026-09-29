@@ -198,12 +198,16 @@ is the one the module itself exports.  Nothing is lost: `zig build test` links
 `ipmitool-zig` with every module selected on both CI architectures, so every
 assertion still runs on every PR.
 
-## Formatting and locale-sensitive parsing stay in libc
+## Formatting and locale-sensitive parsing seams
 
 Output parity is the acceptance criterion for the whole migration, so the ports
 call `printf`/`fprintf`/`snprintf` through the bridge rather than
-`std.fmt`.  The same goes for `strtol`/`strtoul`/`strtod`/`sscanf`/`strftime`:
-they honour `LC_NUMERIC`/`LC_TIME` and set `errno` in ways `std.fmt.parseInt`
-does not, and several ipmitool code paths depend on the exact `errno`/end-pointer
-behaviour.  Zig error sets are used *inside* a module; the exported functions
-keep the original C return codes.
+`std.fmt`. Some locale-sensitive parsing remains in libc:
+`strtod`/`sscanf`/`strftime` honour `LC_NUMERIC`/`LC_TIME` and set `errno` in
+ways Zig's standard parsers do not. The selected helper's `str2long` and
+`str2ulong` instead use a base-zero Zig scanner that preserves the C
+return-code, end-position and `errno` behavior for ASCII digits and active-
+locale whitespace; other `strtol`/`strtoul` callers remain on the bridge.
+Non-ASCII locale-specific digits are outside this scanner's scope. Zig error
+sets are used *inside* a module; the exported functions keep the original C
+return codes.

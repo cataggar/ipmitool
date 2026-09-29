@@ -663,6 +663,14 @@ Non-C locales may define additional non-ASCII digits for `strtol`; those
 implementation-defined numeric alphabets are outside this ASCII-decimal
 scanner's scope, while locale-specific whitespace remains supported.
 
+The selected helper's `str2long`/`str2ulong` now scan base-zero signed and
+unsigned integers in Zig, preserving C `isspace` for the active locale and
+the original `errno`, saturation, no-conversion, trailing-input, and
+negative-unsigned rules. `zig build test-helper-integers` compares values,
+return codes, and `errno` with libc across all first-byte inputs and
+overflow/prefix boundaries. Non-ASCII locale-specific numeric alphabets
+remain a documented difference; `str2double` still uses libc.
+
 Watchdog option splitting now scans the NUL-terminated argument in Zig
 instead of calling libc `strchr`. It still selects the first `=`, returns a
 pointer immediately after it (including an empty value), and ignores bytes
