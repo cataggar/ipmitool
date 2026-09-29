@@ -622,6 +622,14 @@ Non-C locales may define additional non-ASCII digits for `strtol`; those
 implementation-defined numeric alphabets are outside this ASCII-decimal
 scanner's scope, while locale-specific whitespace remains supported.
 
+Watchdog option splitting now scans the NUL-terminated argument in Zig
+instead of calling libc `strchr`. It still selects the first `=`, returns a
+pointer immediately after it (including an empty value), and ignores bytes
+after the first NUL. `zig build test-mc-watchdog-equals` compares pointers
+and value bytes with libc across all byte values and checks real SET request
+bytes and failures; existing C/selected-Zig watchdog CLI goldens cover the
+command path.
+
 The selected `mc info` device-ID printer now streams its human-readable
 fields through checked Zig stdout, pre-flushing libc stdout before writing
 and checking every write and the final flush. The labels, decimal and
@@ -698,8 +706,8 @@ The selected MC dispatch, GUID modes, global-enables values, watchdog literal
 options and system-info parameter names now compare typed NUL-terminated Zig
 byte slices instead of calling libc `strcmp`. The original argument guards,
 selector ordering, case sensitivity, embedded-NUL behavior, request bytes
-and statuses remain unchanged; `strchr`, watchdog numeric parsing and
-system-info SET copies are outside this change. `zig build test-mc-strcmp`
+and statuses remain unchanged; watchdog option splitting, numeric parsing
+and system-info SET copies are separately covered above. `zig build test-mc-strcmp`
 compares libc equality for every byte and string-length boundaries, checks
 watchdog and system-info selectors, and exercises real SET requests and
 response statuses. Existing original-C, selected-MC and all-selected
