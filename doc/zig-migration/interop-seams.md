@@ -355,6 +355,17 @@ also tests the OpenIPMI model and early/late writer failures. Without local
 readline/OpenSSL headers, run both with `-Dipmishell=false -Dopenssl=false
 -Dinternal-md5=true -Dintf-lanplus=false`.
 
+The selected OpenIPMI transport now formats its three `/dev/ipmi*` node
+names into the original fixed-size arrays with bounded Zig formatting.
+Names that fit remain byte-identical to libc and retain the original
+fallback order, flags and error diagnostic. The `devnum` ABI is an unsigned
+byte, so every representable number fits; the bounded formatter explicitly
+rejects hypothetical wider or negative out-of-range inputs rather than
+overflowing a buffer. `zig build test-open-device-path` compares
+NUL-terminated paths with libc at decimal-width boundaries, checks this
+bound and exercises the maximum ABI value through the model driver.
+`test-fdset` exercises the remaining model-driver fallback.
+
 For `loglevel < 0`, the selected `print_valstr` and `print_valstr_2col` write
 through Zig's streaming stdout writer. They first check `fflush(stdout)` to
 drain any preceding libc `printf` output, then check both Zig writes and the

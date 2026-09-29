@@ -1663,6 +1663,13 @@ pub fn build(b: *std.Build) void {
     b.step("test-fdset-compile", "Cross-compile fd_set ABI parity tests")
         .dependOn(&fd_set_unit.step);
 
+    const open_path_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.open.test.open device paths"},
+    });
+    b.step("test-open-device-path", "Compare bounded OpenIPMI device paths with libc and reject overflow")
+        .dependOn(&b.addRunArtifact(open_path_unit).step);
+
     const open_verbose_step = b.step("test-open-verbose-stderr", "Compare original and Zig OpenIPMI stderr bytes and mixed C output order");
     var open_c_exe: *std.Build.Step.Compile = undefined;
     var open_zig_exe: *std.Build.Step.Compile = undefined;
