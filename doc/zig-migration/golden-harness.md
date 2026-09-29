@@ -112,6 +112,35 @@ and LAN save retries, and finish retries, terminate without sending forever.
 Lanplus can instead remain enabled without OpenSSL when
 `-Dzig-modules=fwum,lanplus-crypt-impl -Dintf-lanplus=true` is selected.
 
+FWUM's progress updates use a Zig streaming stdout writer after flushing
+buffered C stdout. The byte-level C oracle in
+`tests/fwum_progress_oracle.c` pins `%-25s`, the 42-column bar, f32
+percentage truncation, `\r` on each update and `\n` only at 100%;
+`fwum_download_new` and `fwum_download_old` snapshot the full transfer's
+partial and completed progress alongside C output and IPMI requests.
+`zig build test-fwum-progress-oracle` runs the libc formatter fixture's
+explicit snapshots independently of Zig output. `zig build
+test-fwum-progress-output` compares every percentage and the short/long/NUL
+task strings against libc, tests zero and maximum counters, checks mixed
+C/Zig stdout order, and exercises preflush, early/late write and final flush
+failures. Its C and Zig CLI fixtures must also match the committed
+`tests/fwum/snapshots/progress_output_cli.snap` (zero, partial, complete,
+duplicate, maximum counter and embedded NUL, with buffered C output).
+The internal file-read and upload callers return failure on output errors;
+the public `void KfwumShowProgress` ABI reports them through the
+FWUM logger. Total zero continues to emit nothing; out-of-range percentages
+that overran C's 43-byte temporary buffer are bounded rather than reproduced.
+With the reduced build flags shown above, check all three CLI configurations:
+
+```sh
+zig build test-golden -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
+  -Dintf-lanplus=false -- --filter fwum_ --allow-uncovered
+zig build test-golden -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
+  -Dintf-lanplus=false -Dzig-modules=fwum -- --filter fwum_ --allow-uncovered
+zig build test-golden -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
+  -Dintf-lanplus=false -Dzig-modules=all -- --filter fwum_ --allow-uncovered
+```
+
 `tests/run.sh` is a thin POSIX shell wrapper around
 `zig run tests/golden/main.zig`. The harness needs nothing from `build.zig`, so
 it also works against an autotools build, against an archived oracle, and on a
