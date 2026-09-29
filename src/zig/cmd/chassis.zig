@@ -15,10 +15,10 @@
 //! * **Command results use checked Zig stdout.** Diagnostics use `log.print()`
 //!   from the selected logger archive (or its C fallback). Boot mailbox
 //!   request selectors use bounded, NUL-terminated Zig formatting; `printf`
-//!   remains in tests to seed buffered C output. `strcmp`, `strncmp`,
-//!   and `str2uchar` keep their C arguments. Boot options split writable
-//!   strings in place in Zig, matching `strtok_r`. The `power_usage` format
-//!   is a constant, never user input.
+//!   remains in tests to seed buffered C output. C-string comparisons,
+//!   prefix checks and lengths use NUL-terminated Zig slices; `str2uchar`
+//!   keeps its C arguments. Boot options split writable strings in place in
+//!   Zig, matching `strtok_r`. The `power_usage` format is a constant.
 //! * **The POH counter arithmetic is `float`, deliberately.**  C computes
 //!   `minutes = (float)count * mins_per_count` and then splits it, so a large
 //!   counter loses precision and reports a day count that integer arithmetic
@@ -179,7 +179,37 @@ fn sendrecv(intf: *Intf, req: *Request) ?*Response {
 }
 
 fn eqlArg(arg: [*:0]const u8, want: [*:0]const u8) bool {
-    return c.strcmp(arg, want) == 0;
+    return std.mem.eql(u8, std.mem.span(arg), std.mem.span(want));
+}
+
+fn hasArgPrefix(arg: [*:0]const u8, prefix: [*:0]const u8) bool {
+    return std.mem.startsWith(u8, std.mem.span(arg), std.mem.span(prefix));
+}
+
+test "chassis cstrings match libc equality prefixes and lengths" {
+    const Oracle = struct {
+        fn check(arg: [*:0]const u8, want: [*:0]const u8) !void {
+            try std.testing.expectEqual(c.strcmp(arg, want) == 0, eqlArg(arg, want));
+            try std.testing.expectEqual(c.strncmp(arg, want, std.mem.len(want)) == 0, hasArgPrefix(arg, want));
+            try std.testing.expectEqual(c.strlen(arg), std.mem.len(arg));
+        }
+    };
+    const words = [_][*:0]const u8{
+        "",     "options=", "options", "options=PEF", "Options=PEF", "no-",         "no", "no-reset",
+        "help", "help ",    "bootdev", "bootparam",   "persistent",  "verbose=yes",
+    };
+    for (words) |arg| {
+        for (words) |want| try Oracle.check(arg, want);
+    }
+    for (0..256) |byte| {
+        const arg = [_:0]u8{ @intCast(byte), 'o', '-', 'x' };
+        for ([_][*:0]const u8{ "", "no-", "options=", "help" }) |want| {
+            try Oracle.check(&arg, want);
+        }
+    }
+    const hidden = [_:0]u8{ 'o', 'p', 't', 'i', 'o', 'n', 's', '=', 0, 'n', 'o', '-' };
+    try Oracle.check(&hidden, "options=");
+    try Oracle.check(&hidden, "options=PEF");
 }
 
 // ---------------------------------------------------------------------------
@@ -2268,7 +2298,7 @@ fn getBootparamOptions(optstring: [*:0]u8, set_flag: *u8, clr_flag: *u8) c_int {
     clr_flag.* = 0;
 
     const optkw: [*:0]const u8 = "options=";
-    if (c.strncmp(optstring, optkw, c.strlen(optkw)) != 0) {
+    if (!hasArgPrefix(optstring, optkw)) {
         log.print(log.Level.err, "No options= keyword found \"%s\"", .{optstring});
         return -1;
     }
@@ -2277,17 +2307,17 @@ fn getBootparamOptions(optstring: [*:0]u8, set_flag: *u8, clr_flag: *u8) c_int {
     while (tokens.next()) |token| {
         var setbit = false;
         var name: [*:0]u8 = token;
-        if (c.strcmp(name, "help") == 0) {
+        if (eqlArg(name, "help")) {
             option_error = true;
             break;
         }
-        if (c.strncmp(name, "no-", 3) == 0) {
+        if (hasArgPrefix(name, "no-")) {
             setbit = true;
             name += 3;
         }
         var found = false;
         for (bootparam_options) |op| {
-            if (c.strcmp(name, op.name) == 0) {
+            if (eqlArg(name, op.name)) {
                 if (setbit) {
                     set_flag.* |= op.value;
                 } else {
@@ -2699,7 +2729,7 @@ fn chassisSetBootmailbox(
     if (!use_text) {
         datasize = @intCast(argc);
     } else {
-        datasize = c.strlen(argv[0]) + 1;
+        datasize = std.mem.len(argv[0]) + 1;
     }
 
     log.print(log.Level.info, "Data size: %u", .{datasize});
@@ -3326,13 +3356,13 @@ fn bootdevParseOptions(optstring: [*:0]u8, flags: *[BF_BYTE_COUNT]u8) bool {
 
     var tokens = CommaTokens.init(optstring);
     while (tokens.next()) |token| {
-        if (c.strcmp(token, "help") == 0) {
+        if (eqlArg(token, "help")) {
             option_error = true;
             break;
         }
         var found = false;
         for (bootdev_options) |op| {
-            if (c.strcmp(token, op.name) == 0) {
+            if (eqlArg(token, op.name)) {
                 flags[op.offset] &= ~op.mask;
                 flags[op.offset] |= op.value;
                 found = true;
@@ -3506,8 +3536,8 @@ fn chassisMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_
                 if (eqlArg(argv[2], "clear-cmos=yes")) {
                     // Exclusive clear-cmos, no other flags.
                     optstr = @constCast(@as([*:0]const u8, "clear-cmos"));
-                } else if (c.strncmp(argv[2], kw, c.strlen(kw)) == 0) {
-                    optstr = argv[2] + c.strlen(kw);
+                } else if (hasArgPrefix(argv[2], kw)) {
+                    optstr = argv[2] + std.mem.len(kw);
                 }
             }
             if (optstr) |s| {
