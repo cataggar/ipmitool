@@ -425,6 +425,15 @@ output and propagates Zig write and flush failures. The helper's value-table
 stdout path reuses that pre-flush. SIGINT diagnostics still use the legacy
 C stdio path pending the signal-handler cutover.
 
+The selected CLI's `-f` password-file option retains C file opening and
+ownership, but frames at most 20 bytes with a bounded Zig `fgetc` scanner
+instead of `fgets`. It stops on newline (including after embedded NULs),
+accepts a final unterminated line, and rejects an empty file or read error.
+Only the first CR, LF, or tab after an initial byte truncates the visible
+password, matching the original `strcspn` behavior even when the first byte
+is a delimiter. `zig build test-cli-password-file` checks buffer bytes and
+file positions against the C oracle across all possible first bytes.
+
 The shell echo/set stdout paths call its checked `trySyncC` variant and return
 `-1` with a log diagnostic on flush failure; CLI/helper keep `syncC`'s panic.
 

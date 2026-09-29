@@ -93,6 +93,7 @@ test {
     _ = @import("cmd/mc.zig");
     _ = @import("cmd/sel.zig");
     _ = @import("cmd/sdr.zig");
+    _ = @import("cli/main.zig");
     _ = @import("frontend/ipmishell.zig");
     _ = @import("cmd/pef.zig");
     _ = @import("cmd/firewall.zig");
