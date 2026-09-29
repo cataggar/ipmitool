@@ -132,10 +132,14 @@ const action_names = [_]Item{
     .{ .val = 17, .name = "Log Event to SEL" },
 };
 
+fn formatUnknown(buffer: []u8, val: u16) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(buffer, "Unknown (0x{x})", .{val}, 0);
+}
+
 fn name(table: []const Item, val: u16) [*:0]const u8 {
     for (table) |item| if (item.val == val) return item.name;
     // All callers use this immediately, before the next unknown lookup.
-    _ = c.snprintf(&unknown, unknown.len, "Unknown (0x%x)", @as(c_uint, val));
+    _ = formatUnknown(&unknown, val) catch unreachable;
     return @ptrCast(&unknown);
 }
 var unknown: [32]u8 = @splat(0);
@@ -149,7 +153,28 @@ fn argAt(args: []const ?[*:0]u8, i: usize) ?[*:0]u8 {
     return if (i < args.len) args[i] else null;
 }
 fn is(arg: ?[*:0]u8, text: [*:0]const u8) bool {
-    return arg != null and c.strcmp(arg.?, text) == 0;
+    return if (arg) |value| std.mem.eql(u8, std.mem.span(value), std.mem.span(text)) else false;
+}
+
+test "DCMI strings match libc unknown values and command equality" {
+    for ([_]u16{ 0, 1, 9, 0xf, 0x10, 0xff, 0x100, std.math.maxInt(u16) }) |val| {
+        var expected: [32]u8 = undefined;
+        const printed = c.snprintf(&expected, expected.len, "Unknown (0x%x)", @as(c_uint, val));
+        try std.testing.expect(printed > 0);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(printed)], std.mem.span(name(&.{}, val)));
+    }
+    try std.testing.expectEqualStrings("power", std.mem.span(name(&commands, 1)));
+    var short: [10]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, formatUnknown(&short, 0xffff));
+
+    try std.testing.expect(!is(null, "power"));
+    for (0..256) |byte| {
+        var arg = [_:0]u8{ @intCast(byte), 'o', 'w', 'e', 'r', 0, 'x' };
+        try std.testing.expectEqual(c.strcmp(&arg, "power") == 0, is(&arg, "power"));
+    }
+    var hidden = [_:0]u8{ 'p', 'o', 'w', 'e', 'r', 0, 'x' };
+    try std.testing.expect(is(&hidden, "power"));
+    try std.testing.expect(!is(&hidden, "Power"));
 }
 fn choose(b: bool, yes: [*:0]const u8, no: [*:0]const u8) [*:0]const u8 {
     return if (b) yes else no;

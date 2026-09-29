@@ -1414,6 +1414,14 @@ pub fn build(b: *std.Build) void {
     channel_strings_step.dependOn(&b.addRunArtifact(channel_strings_unit).step);
     test_step.dependOn(channel_strings_step);
 
+    const dcmi_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.dcmi.test.DCMI strings"},
+    });
+    const dcmi_strings_step = b.step("test-dcmi-strings", "Compare DCMI unknown labels and command equality with libc");
+    dcmi_strings_step.dependOn(&b.addRunArtifact(dcmi_strings_unit).step);
+    test_step.dependOn(dcmi_strings_step);
+
     const sel_time_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.sel.test.sel time stdout"},
