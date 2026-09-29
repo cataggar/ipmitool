@@ -1547,6 +1547,14 @@ pub fn build(b: *std.Build) void {
     b.step("test-lanplus-data-stderr", "Compare LAN+ verbose data hex with C and reject write failures")
         .dependOn(&b.addRunArtifact(lanplus_data_unit).step);
 
+    const lanplus_lengths_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"intf.lanplus.test.lanplus lengths"},
+    });
+    const lanplus_lengths_step = b.step("test-lanplus-lengths", "Compare bounded LAN+ username and hostname lengths with libc");
+    lanplus_lengths_step.dependOn(&b.addRunArtifact(lanplus_lengths_unit).step);
+    test_step.dependOn(lanplus_lengths_step);
+
     const dump_stdout_step = b.step("test-lanplus-dump-stdout", "Compare C/Zig LAN+ dump bytes and test writer failures");
     const dump_stdout_unit = b.addTest(.{
         .root_module = abi_mod,

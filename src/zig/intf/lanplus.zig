@@ -78,6 +78,11 @@
 //!     bytes for SHA256, matching the comment "We need to copy 16 bytes" but
 //!     not the 32-byte digest.  That is what the spec asks for -- the authcode
 //!     is truncated -- and is reproduced as written.
+//!
+//! Unlike C's unbounded `strlen`, username framing stays inside its 17-byte
+//! array and rejects a missing terminator as too long. `test_crypt2` measures
+//! its eight-byte, nonterminated input by array length instead of reading past
+//! it. Terminated input lengths and LAN+ wire bytes are unchanged.
 
 const builtin = @import("builtin");
 const std = @import("std");
@@ -2455,6 +2460,10 @@ fn openSession(intf: *Intf) c_int {
     return rc;
 }
 
+fn usernameLength(username: *const [17]u8) usize {
+    return std.mem.indexOfScalar(u8, username, 0) orelse username.len;
+}
+
 /// `ipmi_lanplus_rakp1()`: section 13.20 of the IPMI v2 specification.
 fn rakp1(intf: *Intf) c_int {
     var v2_payload: ipmi.V2Payload = undefined;
@@ -2499,7 +2508,7 @@ fn rakp1(intf: *Intf) c_int {
     msg[26] = 0; // reserved
 
     // Username specification.
-    msg[27] = @truncate(c.strlen(&intf.ssn_params.username));
+    msg[27] = @intCast(usernameLength(&intf.ssn_params.username));
     if (msg[27] > max_user_name_length) {
         log.print(
             log.Level.err,
@@ -2788,6 +2797,10 @@ fn findBestCipherSuite(intf: *Intf) u8 {
     return @truncate(@as(c_uint, @bitCast(best_suite)));
 }
 
+fn hostnameMissing(hostname: ?[*:0]const u8) bool {
+    return hostname == null or hostname.?[0] == 0;
+}
+
 /// `ipmi_lanplus_open()`.  Note 12: the `!intf` guard has no counterpart.
 fn open(intf: *Intf) callconv(.c) c_int {
     var rc: c_int = undefined;
@@ -2802,7 +2815,7 @@ fn open(intf: *Intf) callconv(.c) c_int {
     if (params.timeout == 0) params.timeout = lan_timeout;
     if (params.retry == 0) params.retry = lan_retry;
 
-    if (params.hostname == null or c.strlen(params.hostname) == 0) {
+    if (hostnameMissing(params.hostname)) {
         log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     }
@@ -2972,6 +2985,8 @@ fn testCrypt1() callconv(.c) void {
     c.exit(0);
 }
 
+const crypt2_input: [8]u8 = "12345678".*;
+
 fn testCrypt2() callconv(.c) void {
     const key = [_]u8{
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
@@ -2981,20 +2996,20 @@ fn testCrypt2() callconv(.c) void {
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
         0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14,
     };
-    const data: [8]u8 = "12345678".*;
+    const data = crypt2_input;
 
     var encrypt_buffer: [1000]u8 = undefined;
     var decrypt_buffer: [1000]u8 = undefined;
     var bytes_encrypted: u32 = undefined;
     var bytes_decrypted: u32 = undefined;
 
-    c.printbuf(&data, @intCast(c.strlen(&data)), "input data");
+    c.printbuf(&data, @intCast(data.len), "input data");
 
     c.lanplus_encrypt_aes_cbc_128(
         &iv,
         &key,
         &data,
-        @intCast(c.strlen(&data)),
+        @intCast(data.len),
         &encrypt_buffer,
         &bytes_encrypted,
     );
@@ -3153,6 +3168,45 @@ pub fn exportSymbols() void {
 
 const testing = std.testing;
 const crypto_test_stubs = @import("../crypto/test_stubs.zig");
+
+test "lanplus lengths RAKP usernames match libc when terminated and bound missing NUL" {
+    var username: [17]u8 = undefined;
+    for (0..username.len) |length| {
+        @memset(&username, 'u');
+        username[length] = 0;
+        try testing.expectEqual(c.strlen(&username), usernameLength(&username));
+        try testing.expect(usernameLength(&username) <= max_user_name_length);
+    }
+
+    @memset(&username, 'u');
+    try testing.expectEqual(@as(usize, 17), usernameLength(&username));
+    try testing.expect(usernameLength(&username) > max_user_name_length);
+
+    username[3] = 0;
+    try testing.expectEqual(c.strlen(&username), usernameLength(&username));
+    try testing.expectEqual(@as(usize, 3), usernameLength(&username));
+}
+
+test "lanplus lengths hostname guard matches libc on terminated inputs" {
+    try testing.expect(hostnameMissing(null));
+    const names = [_][:0]const u8{ "", "bmc", "\x00hidden", "bmc\x00hidden" };
+    for (names) |name| {
+        try testing.expectEqual(c.strlen(name.ptr) == 0, hostnameMissing(name.ptr));
+    }
+
+    var intf = std.mem.zeroes(Intf);
+    try testing.expectEqual(@as(c_int, -1), open(&intf));
+    var empty = [_:0]u8{0};
+    intf.ssn_params.hostname = &empty;
+    try testing.expectEqual(@as(c_int, -1), open(&intf));
+}
+
+test "lanplus lengths crypt2 uses all eight bytes without a terminator" {
+    const terminated: [9]u8 = "12345678\x00".*;
+    try testing.expectEqual(c.strlen(&terminated), crypt2_input.len);
+    try testing.expectEqualSlices(u8, terminated[0..8], &crypt2_input);
+    try testing.expect(std.mem.indexOfScalar(u8, &crypt2_input, 0) == null);
+}
 
 test "ipmi payload stderr matches C hex formatting and detects write failures" {
     var bytes: [256]u8 = undefined;
