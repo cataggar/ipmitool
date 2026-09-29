@@ -164,7 +164,7 @@ fn exchange(intf: *Intf, netfn: u6, cmd: u8, data: []const u8, text: [*:0]const 
 }
 
 fn eql(str: [*:0]const u8, literal: [*:0]const u8) bool {
-    return c.strcmp(str, literal) == 0;
+    return std.mem.eql(u8, std.mem.span(str), std.mem.span(literal));
 }
 
 fn description(map: Map, value: u32) [*:0]const u8 {
@@ -397,33 +397,44 @@ fn setPolicyEntry(intf: *Intf, id: u8, entry: *const PolicyEntry) c_int {
     return rsp.ccode;
 }
 
+fn formatTriggerPrefix(buffer: []u8, t: u8, offmask: u16) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(buffer, "(0x{x:0>2}/0x{x:0>4})", .{ t, offmask }, 0);
+}
+
 fn formatTrigger(t: u8, offmask: u16, buf: [*c]u8) void {
-    if (offmask == 0xffff or t == 0xff) {
-        _ = c.strcpy(buf, "Any");
-    } else if (t == 0) {
-        _ = c.strcpy(buf, "Unspecified");
-    } else if (t == 0x6f) {
-        _ = c.strcpy(buf, "Sensor-specific");
-    } else if (t > 0x6f) {
-        _ = c.strcpy(buf, "OEM");
-    } else {
-        var pos: usize = @intCast(c.sprintf(buf, "(0x%02x/0x%04x)", @as(c_uint, t), @as(c_uint, offmask)));
-        var mask = offmask;
-        for (0..generic.len) |i| {
-            if (mask & 1 != 0) {
-                const suffix: [*:0]const u8 = if (t > generic.len)
-                    ", Unrecognized event trigger"
-                else
-                    description(generic[t - 1], @intCast(i));
-                const written: c_int = if (t > generic.len)
-                    c.snprintf(buf + pos, 128 - pos, "%s", suffix)
-                else
-                    c.snprintf(buf + pos, 128 - pos, ",%s", suffix);
-                pos += @min(@as(usize, @intCast(written)), 127 - pos);
-                if (pos == 127) break;
+    const fixed: ?[:0]const u8 = if (offmask == 0xffff or t == 0xff)
+        "Any"
+    else if (t == 0)
+        "Unspecified"
+    else if (t == 0x6f)
+        "Sensor-specific"
+    else if (t > 0x6f)
+        "OEM"
+    else
+        null;
+    if (fixed) |label| {
+        @memcpy(buf[0 .. label.len + 1], label.ptr[0 .. label.len + 1]);
+        return;
+    }
+
+    var pos = (formatTriggerPrefix(buf[0..128], t, offmask) catch unreachable).len;
+    var mask = offmask;
+    for (0..generic.len) |i| {
+        if (mask & 1 != 0) {
+            const unknown = t > generic.len;
+            const suffix = if (unknown) ", Unrecognized event trigger" else std.mem.span(description(generic[t - 1], @intCast(i)));
+            if (!unknown) {
+                buf[pos] = ',';
+                pos += 1;
             }
-            mask >>= 1;
+            // Retain the port's 127-byte clamp for masks that overflow C's buffer.
+            const count = @min(suffix.len, 127 - pos);
+            @memcpy(buf[pos..][0..count], suffix[0..count]);
+            pos += count;
+            buf[pos] = 0;
+            if (pos == 127) break;
         }
+        mask >>= 1;
     }
 }
 
@@ -547,6 +558,10 @@ fn oemLanDestination(intf: *Intf, dest: u8) void {
     printStr("IPv6 Address", &address);
 }
 
+fn formatIpAddress(buffer: []u8, ip: [4]u8) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(buffer, "{d}.{d}.{d}.{d}", .{ ip[0], ip[1], ip[2], ip[3] }, 0);
+}
+
 fn lanDestination(intf: *Intf, ch: u8, dest: u8) void {
     var selector = [4]u8{ ch, 17, 0, 0 };
     _ = retrieve(intf, ipmi.NetFn.transport, 2, &selector, "Alert destination count", 2) orelse return;
@@ -579,8 +594,9 @@ fn lanDestination(intf: *Intf, ch: u8, dest: u8) void {
         return;
     }
     var ipbuf: [32]u8 = @splat(0);
-    _ = c.sprintf(&ipbuf, "%u.%u.%u.%u", @as(c_uint, addr.data[4]), @as(c_uint, addr.data[5]), @as(c_uint, addr.data[6]), @as(c_uint, addr.data[7]));
-    printStr("IP address", &ipbuf);
+    const ip = [4]u8{ addr.data[4], addr.data[5], addr.data[6], addr.data[7] };
+    const address = formatIpAddress(&ipbuf, ip) catch unreachable;
+    printStr("IP address", address.ptr);
     printStr("MAC address", c.mac2str(@ptrCast(&addr.data[8])));
 }
 
@@ -1008,4 +1024,117 @@ test "PEF trigger descriptions handle sentinel and boundary values" {
     try std.testing.expectEqualStrings("OEM", std.mem.sliceTo(&buf, 0));
     formatTrigger(1, 1, &buf);
     try std.testing.expectEqualStrings("(0x01/0x0001),<LNC", std.mem.sliceTo(&buf, 0));
+}
+
+test "PEF strings match libc command equality" {
+    for ([_][*:0]const u8{ "help", "list", "enable", "disable", "filter", "policy", "status" }) |word| {
+        try std.testing.expect(eql(word, word));
+        const original = std.mem.span(word);
+        for (0..256) |byte| {
+            var text = std.mem.zeroes([16:0]u8);
+            @memcpy(text[0..original.len], original);
+            text[0] = @intCast(byte);
+            text[original.len + 1] = 'x';
+            try std.testing.expectEqual(c.strcmp(&text, word) == 0, eql(&text, word));
+        }
+    }
+    for ([_][*:0]const u8{ "", "Help", "filter ", "polic", "policies", "STATUS" }) |text| {
+        try std.testing.expectEqual(c.strcmp(text, "policy") == 0, eql(text, "policy"));
+    }
+    const embedded = [_:0]u8{ 'l', 'i', 's', 't', 0, 'x' };
+    try std.testing.expectEqual(c.strcmp(&embedded, "list") == 0, eql(&embedded, "list"));
+}
+
+test "PEF trigger labels and prefixes match libc bytes" {
+    for ([_]struct { t: u8, mask: u16, label: [*:0]const u8 }{
+        .{ .t = 0xff, .mask = 0, .label = "Any" },
+        .{ .t = 1, .mask = 0xffff, .label = "Any" },
+        .{ .t = 0, .mask = 0, .label = "Unspecified" },
+        .{ .t = 0x6f, .mask = 0, .label = "Sensor-specific" },
+        .{ .t = 0x70, .mask = 0, .label = "OEM" },
+    }) |entry| {
+        var expected: [128]u8 = @splat(0xa5);
+        var actual: [128]u8 = @splat(0xa5);
+        _ = c.strcpy(&expected, entry.label);
+        formatTrigger(entry.t, entry.mask, &actual);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    for ([_]struct { t: u8, mask: u16 }{
+        .{ .t = 1, .mask = 0 },
+        .{ .t = 9, .mask = 0x0ff0 },
+        .{ .t = 0x6e, .mask = 0xfffe },
+    }) |entry| {
+        var expected: [128]u8 = @splat(0xa5);
+        var actual: [128]u8 = @splat(0xa5);
+        const length = c.sprintf(&expected, "(0x%02x/0x%04x)", @as(c_uint, entry.t), @as(c_uint, entry.mask));
+        try std.testing.expect(length > 0);
+        const result = try formatTriggerPrefix(&actual, entry.t, entry.mask);
+        try std.testing.expectEqual(@as(usize, @intCast(length)), result.len);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    var short: [13]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, formatTriggerPrefix(&short, 1, 0));
+}
+
+test "PEF trigger suffixes match bounded libc formatting" {
+    for ([_]struct { t: u8, mask: u16, suffix: [*:0]const u8 }{
+        .{ .t = 1, .mask = 0x0003, .suffix = ",<LNC,>LNC" },
+        .{ .t = 12, .mask = 0x0003, .suffix = ",D0 power state,D1 power state" },
+        .{ .t = 13, .mask = 0x0005, .suffix = ", Unrecognized event trigger, Unrecognized event trigger" },
+    }) |entry| {
+        var expected: [128]u8 = @splat(0xa5);
+        var actual: [128]u8 = @splat(0xa5);
+        const length = c.sprintf(&expected, "(0x%02x/0x%04x)%s", @as(c_uint, entry.t), @as(c_uint, entry.mask), entry.suffix);
+        try std.testing.expect(length > 0);
+        formatTrigger(entry.t, entry.mask, &actual);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+
+    var expected: [128]u8 = @splat(0xa5);
+    var actual: [128]u8 = @splat(0xa5);
+    const prefix = c.sprintf(&expected, "(0x%02x/0x%04x)", @as(c_uint, 13), @as(c_uint, 0x0fff));
+    try std.testing.expect(prefix > 0);
+    var pos: usize = @intCast(prefix);
+    for (0..generic.len) |_| {
+        const written = c.snprintf(expected[pos..].ptr, expected.len - pos, "%s", ", Unrecognized event trigger");
+        try std.testing.expect(written > 0);
+        pos += @min(@as(usize, @intCast(written)), expected.len - 1 - pos);
+        if (pos == 127) break;
+    }
+    formatTrigger(13, 0x0fff, &actual);
+    try std.testing.expectEqual(@as(u8, 0), actual[127]);
+    try std.testing.expectEqualSlices(u8, &expected, &actual);
+
+    expected = @splat(0xa5);
+    actual = @splat(0xa5);
+    const recognized_prefix = c.sprintf(&expected, "(0x%02x/0x%04x)", @as(c_uint, 10), @as(c_uint, 0x0fff));
+    try std.testing.expect(recognized_prefix > 0);
+    pos = @intCast(recognized_prefix);
+    for (0..generic.len) |i| {
+        const suffix = description(generic[9], @intCast(i));
+        const written = c.snprintf(expected[pos..].ptr, expected.len - pos, ",%s", suffix);
+        try std.testing.expect(written > 0);
+        pos += @min(@as(usize, @intCast(written)), expected.len - 1 - pos);
+        if (pos == 127) break;
+    }
+    formatTrigger(10, 0x0fff, &actual);
+    try std.testing.expectEqual(@as(u8, 0), actual[127]);
+    try std.testing.expectEqualSlices(u8, &expected, &actual);
+}
+
+test "PEF LAN IPv4 bytes match libc sprintf" {
+    for ([_][4]u8{
+        .{ 0, 0, 0, 0 },         .{ 192, 0, 2, 1 }, .{ 9, 10, 99, 100 },
+        .{ 255, 255, 255, 255 }, .{ 1, 2, 3, 4 },
+    }) |ip| {
+        var expected: [32]u8 = @splat(0xa5);
+        var actual: [32]u8 = @splat(0xa5);
+        const length = c.sprintf(&expected, "%u.%u.%u.%u", @as(c_uint, ip[0]), @as(c_uint, ip[1]), @as(c_uint, ip[2]), @as(c_uint, ip[3]));
+        try std.testing.expect(length > 0);
+        const result = try formatIpAddress(&actual, ip);
+        try std.testing.expectEqual(@as(usize, @intCast(length)), result.len);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    var short: [15]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, formatIpAddress(&short, .{ 255, 255, 255, 255 }));
 }

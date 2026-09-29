@@ -1,0 +1,18 @@
+#!golden 1
+#!case pef_filter_unrecognized_trigger
+#!section exit
+0
+#!section stdout
+ 1 | enabled, configurable | Temperature | 39 | Critical | Discrete | (0x0d/0x0005), Unrecognized event trigger, Unrecognized event trigger | Alert,Power-off,Reset,Power-cycle,OEM-defined,Diagnostic-interrupt | 5
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x04 lun=0x00 cmd=0x10 target_cmd=0x00 data=
+< rule=capabilities ccode=0x00 len=3 data=51 3f 01
+> netfn=0x04 lun=0x00 cmd=0x13 target_cmd=0x00 data=06 01 00
+< rule=filter1 ccode=0x00 len=22 data=11 01 80 3f 05 19 39 01 01 27 0d 05 00 00 00 00 00 00 00 00 00 00
+bye
+#!section files
