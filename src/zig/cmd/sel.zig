@@ -44,7 +44,8 @@
 //! * **Bounded SEL C strings use Zig.**  OEM/PPS token equality, the PPS
 //!   `fgets` line length, Dell DIMM decimal digits and SEL add line/token
 //!   handling avoid libc; allocation-sized descriptions, record formatting
-//!   and `strtol` retain the C bridge.
+//!   and `strtol` retain the C bridge. SEL add framing uses bounded Zig
+//!   reads from the C FILE and terminates on read errors.
 //!
 //! * **The exports are gathered in `exportSymbols()`**, which
 //!   `src/zig/exports.zig` invokes at comptime only when `sel` is selected.
@@ -761,6 +762,135 @@ fn selAddEntry(intf: *Intf, rec: *SelEventRecord) c_int {
 
 /// `ipmi_sel_add_entries_fromfile()`.
 fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
+    if (filename == null) return -1;
+    const fp = c.ipmi_open_file_read(filename) orelse return -1;
+    return selAddEntriesFromStream(intf, filename, fp);
+}
+
+const SelAddLineResult = enum { line, eof, read_error };
+
+fn readSelAddLine(fp: *c.FILE, buf: *[1024]u8) SelAddLineResult {
+    var n: usize = 0;
+    while (n < buf.len - 1) {
+        const ch = c.fgetc(fp);
+        if (ch == c.EOF) {
+            if (c.ferror(fp) != 0) {
+                buf[0] = 0;
+                return .read_error;
+            }
+            if (n == 0) return .eof;
+            break;
+        }
+        buf[n] = @intCast(ch);
+        n += 1;
+        if (ch == '\n') break;
+    }
+    buf[n] = 0;
+    return .line;
+}
+
+fn selAddTestFile(data: []const u8) !*c.FILE {
+    var fds: [2]c_int = undefined;
+    try std.testing.expectEqual(@as(c_int, 0), c.pipe(&fds));
+    errdefer {
+        _ = c.close(fds[0]);
+        _ = c.close(fds[1]);
+    }
+    if (data.len != 0) {
+        const written = c.write(fds[1], data.ptr, data.len);
+        try std.testing.expectEqual(@as(isize, @intCast(data.len)), written);
+    }
+    const fp = c.fdopen(fds[0], "rb") orelse return error.OpenFailed;
+    _ = c.close(fds[1]);
+    return fp;
+}
+
+fn expectSelAddFramingMatchesLibc(data: []const u8) !void {
+    const c_file = try selAddTestFile(data);
+    defer _ = c.fclose(c_file);
+    const zig_file = try selAddTestFile(data);
+    defer _ = c.fclose(zig_file);
+    for (0..8) |_| {
+        var expected: [1024]u8 = @splat(0xa5);
+        var actual: [1024]u8 = expected;
+        const got = c.fgets(&expected, expected.len, c_file) != null;
+        const result = readSelAddLine(zig_file, &actual);
+        try std.testing.expectEqual(if (got) SelAddLineResult.line else .eof, result);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+        try std.testing.expectEqual(c.feof(c_file) != 0, c.feof(zig_file) != 0);
+        try std.testing.expectEqual(c.ferror(c_file) != 0, c.ferror(zig_file) != 0);
+        if (!got) return;
+    }
+    return error.TooManyChunks;
+}
+
+test "sel add line framing matches libc for every first byte and length boundary" {
+    for (0..256) |byte| {
+        const data = [_]u8{ @intCast(byte), 0, 0xff, '\n', 'a', '\n' };
+        try expectSelAddFramingMatchesLibc(&data);
+    }
+    var data: [2060]u8 = @splat('a');
+    for ([_]usize{ 1022, 1023, 1024, 2046 }) |size| {
+        for ([_]bool{ false, true }) |has_lf| {
+            for ([_]u8{ 0, 0xff }) |special| {
+                data[0] = special;
+                data[size - 1] = special;
+                data[size] = if (has_lf) '\n' else 'b';
+                data[size + 1] = 'z';
+                data[size + 2] = '\n';
+                try expectSelAddFramingMatchesLibc(data[0 .. size + 3]);
+                data[size - 1] = 'a';
+            }
+        }
+    }
+    for ([_]usize{ 0, 1, 1022, 1023, 1024, 2046 }) |size| {
+        try expectSelAddFramingMatchesLibc(data[0..size]);
+    }
+
+    const original = c.fopen("tests/fixtures/sel/add_ok.txt", "rb") orelse return error.OpenFailed;
+    defer _ = c.fclose(original);
+    const candidate = c.fopen("tests/fixtures/sel/add_ok.txt", "rb") orelse return error.OpenFailed;
+    defer _ = c.fclose(candidate);
+    while (true) {
+        var c_buf: [1024]u8 = undefined;
+        var zig_buf: [1024]u8 = undefined;
+        const got = c.fgets(&c_buf, c_buf.len, original) != null;
+        const result = readSelAddLine(candidate, &zig_buf);
+        try std.testing.expectEqual(if (got) SelAddLineResult.line else .eof, result);
+        try std.testing.expectEqual(c.ftell(original), c.ftell(candidate));
+        try std.testing.expectEqual(c.feof(original) != 0, c.feof(candidate) != 0);
+        if (!got) break;
+        try std.testing.expectEqualSlices(u8, &c_buf, &zig_buf);
+    }
+}
+
+test "sel add line discards partial FILE read errors instead of treating them as EOF" {
+    const text = "# ignore\n0x04 0x01 0x30 0x01 0x51 0xa1 0xb1";
+    const file = try selAddTestFile(text);
+    try std.testing.expectEqual(@as(c_int, '#'), c.fgetc(file));
+    try std.testing.expectEqual(@as(c_int, '#'), c.ungetc('#', file));
+    try std.testing.expectEqual(@as(c_int, 0), c.close(c.fileno(file)));
+    var buf: [1024]u8 = @splat(0xa5);
+    try std.testing.expectEqual(SelAddLineResult.line, readSelAddLine(file, &buf));
+    try std.testing.expectEqualStrings("# ignore\n", std.mem.sliceTo(&buf, 0));
+    try std.testing.expectEqual(SelAddLineResult.read_error, readSelAddLine(file, &buf));
+    try std.testing.expectEqual(@as(u8, 0), buf[0]);
+    try std.testing.expect(c.ferror(file) != 0 and c.feof(file) == 0);
+    _ = c.fclose(file);
+
+    const oracle = try selAddTestFile(text);
+    try std.testing.expectEqual(@as(c_int, '#'), c.fgetc(oracle));
+    try std.testing.expectEqual(@as(c_int, '#'), c.ungetc('#', oracle));
+    try std.testing.expectEqual(@as(c_int, 0), c.close(c.fileno(oracle)));
+    var c_buf: [1024]u8 = undefined;
+    try std.testing.expect(c.fgets(&c_buf, c_buf.len, oracle) != null);
+    try std.testing.expect(c.fgets(&c_buf, c_buf.len, oracle) == null);
+    try std.testing.expect(c.ferror(oracle) != 0 and c.feof(oracle) == 0);
+    _ = c.fclose(oracle);
+}
+
+fn selAddEntriesFromStream(intf: *Intf, filename: [*c]const u8, fp: *c.FILE) c_int {
+    defer _ = c.fclose(fp);
     var buf: [1024]u8 = undefined;
     var event_line: [1024]u8 = undefined;
     var rqdata: [7]u8 = undefined;
@@ -768,18 +898,14 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
     var rc: c_int = 0;
     var line: c_int = 0;
 
-    if (filename == null) {
-        return -1;
-    }
-
-    const fp = c.ipmi_open_file_read(filename);
-    if (fp == null) {
-        return -1;
-    }
-
-    while (c.feof(fp) == 0) {
-        if (c.fgets(&buf, 1024, fp) == null) {
-            continue;
+    while (true) {
+        switch (readSelAddLine(fp, &buf)) {
+            .line => {},
+            .eof => break,
+            .read_error => {
+                log.print(log.Level.err, "Error reading SEL add file %s", .{filename});
+                return -1;
+            },
         }
         line += 1;
 
@@ -834,7 +960,6 @@ fn selAddEntriesFromfile(intf: *Intf, filename: [*c]const u8) c_int {
         if (rc < 0) break;
     }
 
-    _ = c.fclose(fp);
     return rc;
 }
 

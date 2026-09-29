@@ -1,0 +1,3 @@
+@pad 1024 0x20
+5a 0a
+@include sel/add_line_event.hex

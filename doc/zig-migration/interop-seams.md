@@ -1014,14 +1014,25 @@ copies the diagnostic line including its NUL, and splits tokens on literal
 spaces using bounded Zig slices instead of `strchr`/`strlen`/`strcpy`/`strtok`.
 Tabs still trim at the edges but never separate byte tokens; only the first
 seven tokens enter the existing `str2uchar` converter and entry request.
-`fgets` still owns the 1024-byte input buffer; empty/comment lines, malformed
-byte diagnostics, `feof`/file-close behavior and BMC rejection statuses are
-unchanged. `zig build test-sel-add-strings` compares the entire mutated input
+The 1024-byte SEL add input buffer is now filled by bounded Zig framing over
+the existing C `FILE` byte/error primitives. It reads at most 1023 bytes per
+chunk and stops at LF or EOF, then adds a NUL; embedded NULs remain in the
+buffer and follow the original C-string parser rules. A full chunk does not
+peek at the next byte, and EOF after a partial chunk still returns that chunk.
+Empty/comment lines, malformed byte diagnostics, stream position/`feof`,
+file-close behavior and BMC rejection statuses remain unchanged. Unlike the C
+`feof` loop (which can spin forever after a read error), an `ferror` even
+mid-line discards that partial chunk, logs the file name and returns `-1`.
+`zig build test-sel-add-line` compares the complete buffers and `feof` state
+to libc `fgets` for all 256 first bytes, LF/NUL/`0xff`, 1022/1023/1024 and
+multi-chunk boundaries, and injects a mid-line `FILE` read error.
+`zig build test-sel-add-strings` still compares the entire mutated input
 buffer, diagnostic copy and token bytes against libc for
 whitespace, comments, embedded NULs and both 1022/1023-byte `fgets` edges.
-The `sl_add_*` original-C, SEL-selected and all-selected goldens pin CLI
-output, request bytes and exit statuses. This does not change the separate
-SEL PPS parser or event description formatter.
+The `sl_add_*` original-C, SEL-selected and all-selected goldens, including
+new byte-level fixtures for these chunk boundaries, pin CLI output, request
+bytes and exit statuses. This does not change the separate SEL PPS parser or
+event description formatter.
 
 The selected `sol payload status` result now uses checked Zig stdout for
 both enabled and disabled lines, retaining the C decimal fields and newline.

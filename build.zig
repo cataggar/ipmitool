@@ -1535,6 +1535,14 @@ pub fn build(b: *std.Build) void {
     sel_add_strings_step.dependOn(&b.addRunArtifact(sel_add_strings_unit).step);
     test_step.dependOn(sel_add_strings_step);
 
+    const sel_add_line_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sel.test.sel add line"},
+    });
+    const sel_add_line_step = b.step("test-sel-add-line", "Compare SEL add FILE chunks and cursor with fgets, and reject partial I/O errors");
+    sel_add_line_step.dependOn(&b.addRunArtifact(sel_add_line_unit).step);
+    test_step.dependOn(sel_add_line_step);
+
     const sdr_unit_strings_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.sdr.test.sdr unit strings"},
