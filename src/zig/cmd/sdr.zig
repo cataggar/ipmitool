@@ -1295,34 +1295,114 @@ fn toBExp(bacc: u32) i32 {
 /// static, exactly as in C, so callers must copy before the next call.
 ///
 /// The buffer is twice the longest unit name plus `'%'`, the relation and the
-/// terminator.
+/// terminator. C's `% ` prefix actually takes two bytes, so the longest
+/// percent/modifier combination loses its last byte to `snprintf` truncation.
 var unitstr_buf: [2 * unit_type_longest_name + 2 + 1]u8 = @splat(0);
 
+fn appendUnitPart(buffer: []u8, length: *usize, part: []const u8) void {
+    if (buffer.len > 0 and length.* < buffer.len - 1) {
+        const copied = @min(part.len, buffer.len - 1 - length.*);
+        @memcpy(buffer[length.*..][0..copied], part[0..copied]);
+    }
+    length.* += part.len;
+}
+
+/// Return the would-have-written `snprintf` length, writing at most capacity
+/// minus one bytes and a NUL. The label slices are bounded by the SDR table.
+fn composeUnitString(buffer: []u8, pct: bool, relation: u8, base: u8, base_label: []const u8, modifier_label: []const u8) usize {
+    var length: usize = 0;
+    if (pct and base == 0 and relation != SDR_UNIT_MOD_MUL and relation != SDR_UNIT_MOD_DIV) {
+        appendUnitPart(buffer, &length, "percent");
+    } else {
+        if (pct) appendUnitPart(buffer, &length, "% ");
+        appendUnitPart(buffer, &length, base_label);
+        switch (relation) {
+            SDR_UNIT_MOD_MUL => {
+                appendUnitPart(buffer, &length, "*");
+                appendUnitPart(buffer, &length, modifier_label);
+            },
+            SDR_UNIT_MOD_DIV => {
+                appendUnitPart(buffer, &length, "/");
+                appendUnitPart(buffer, &length, modifier_label);
+            },
+            else => {},
+        }
+    }
+    if (buffer.len > 0) buffer[@min(length, buffer.len - 1)] = 0;
+    return length;
+}
+
 fn getUnitString(pct: bool, relation: u8, base: u8, modifier: u8) callconv(.c) [*c]const u8 {
-    const pctstr: [*:0]const u8 = pick(pct, "% ", "");
     const basestr: [*:0]const u8 =
         if (base <= unit_type_max) unit_desc[base] else "invalid";
     const modstr: [*:0]const u8 =
         if (modifier <= unit_type_max) unit_desc[modifier] else "invalid";
 
-    switch (relation) {
-        SDR_UNIT_MOD_MUL => {
-            _ = c.snprintf(&unitstr_buf, unitstr_buf.len, "%s%s*%s", pctstr, basestr, modstr);
-        },
-        SDR_UNIT_MOD_DIV => {
-            _ = c.snprintf(&unitstr_buf, unitstr_buf.len, "%s%s/%s", pctstr, basestr, modstr);
-        },
-        // SDR_UNIT_MOD_NONE and everything else.
-        else => {
-            // "percent" only when the base unit is "unspecified".
-            if (base == 0 and pct) {
-                _ = c.snprintf(&unitstr_buf, unitstr_buf.len, "percent");
-            } else {
-                _ = c.snprintf(&unitstr_buf, unitstr_buf.len, "%s%s", pctstr, basestr);
-            }
-        },
-    }
+    _ = composeUnitString(&unitstr_buf, pct, relation, base, std.mem.span(basestr), std.mem.span(modstr));
     return &unitstr_buf;
+}
+
+fn expectUnitStringMatchesLibc(pct: bool, relation: u8, base: u8, base_label: [*:0]const u8, modifier_label: [*:0]const u8) !void {
+    for ([_]usize{ 0, 1, 2, 3, 7, 19, 39, 40, 41, 42, 48 }) |capacity| {
+        var actual: [48]u8 = @splat(0xa5);
+        var expected: [48]u8 = @splat(0xa5);
+        const length = composeUnitString(actual[0..capacity], pct, relation, base, std.mem.span(base_label), std.mem.span(modifier_label));
+        const pctstr: [*:0]const u8 = pick(pct, "% ", "");
+        const printed = switch (relation) {
+            SDR_UNIT_MOD_MUL => c.snprintf(&expected, capacity, "%s%s*%s", pctstr, base_label, modifier_label),
+            SDR_UNIT_MOD_DIV => c.snprintf(&expected, capacity, "%s%s/%s", pctstr, base_label, modifier_label),
+            else => if (base == 0 and pct)
+                c.snprintf(&expected, capacity, "percent")
+            else
+                c.snprintf(&expected, capacity, "%s%s", pctstr, base_label),
+        };
+        try std.testing.expect(printed >= 0);
+        try std.testing.expectEqual(@as(usize, @intCast(printed)), length);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+}
+
+test "sdr unit strings match libc across relations, bounds and static lifetime" {
+    const ids = [_]u8{ 0, 1, 9, 19, 22, 66, 90, 91, 92, 93, 255 };
+    const relations = [_]u8{ SDR_UNIT_MOD_NONE, SDR_UNIT_MOD_DIV, SDR_UNIT_MOD_MUL, 3, 255 };
+    const static_ptr = getUnitString(false, SDR_UNIT_MOD_NONE, 0, 0);
+    for ([_]bool{ false, true }) |pct| {
+        for (relations) |relation| {
+            for (ids) |base| {
+                const base_label: [*:0]const u8 = if (base <= unit_type_max) unit_desc[base] else "invalid";
+                for (ids) |modifier| {
+                    const modifier_label: [*:0]const u8 = if (modifier <= unit_type_max) unit_desc[modifier] else "invalid";
+                    try expectUnitStringMatchesLibc(pct, relation, base, base_label, modifier_label);
+
+                    var expected: [unitstr_buf.len]u8 = undefined;
+                    const length = composeUnitString(&expected, pct, relation, base, std.mem.span(base_label), std.mem.span(modifier_label));
+                    const result = getUnitString(pct, relation, base, modifier);
+                    try std.testing.expectEqual(@intFromPtr(static_ptr), @intFromPtr(result));
+                    try std.testing.expectEqualSlices(u8, expected[0 .. @min(length, expected.len - 1) + 1], unitstr_buf[0 .. @min(length, unitstr_buf.len - 1) + 1]);
+                    try std.testing.expectEqualStrings(std.mem.sliceTo(&expected, 0), std.mem.span(@as([*:0]const u8, @ptrCast(result))));
+                }
+            }
+        }
+    }
+    _ = getUnitString(true, SDR_UNIT_MOD_NONE, 0, 255);
+    try std.testing.expectEqualStrings("percent", std.mem.span(@as([*:0]const u8, @ptrCast(static_ptr))));
+    _ = getUnitString(true, SDR_UNIT_MOD_MUL, 90, 90);
+    try std.testing.expectEqual(@as(usize, unitstr_buf.len - 1), std.mem.span(@as([*:0]const u8, @ptrCast(static_ptr))).len);
+}
+
+test "sdr unit strings match libc with empty and digit-width labels" {
+    const labels = [_][*:0]const u8{ "", "1", "09", "123", "color temp deg K", "uncorrectable error" };
+    for ([_]bool{ false, true }) |pct| {
+        for ([_]u8{ 0, 1, 2, 3 }) |relation| {
+            for ([_]u8{ 0, 1 }) |base| {
+                for (labels) |base_label| {
+                    for (labels) |modifier_label| {
+                        try expectUnitStringMatchesLibc(pct, relation, base, base_label, modifier_label);
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// `sdr_sensor_has_analog_reading()`.

@@ -1,0 +1,85 @@
+#!golden 1
+#!case sd_unit_labels_csv
+#!section exit
+0
+#!section stdout
+Unit Max,91,grams,ok
+Unit Bad,91,invalid*invalid,ok
+Unit Div,91,RPM/millisecond,ok
+Unit Mul,91,RPM*millisecond,ok
+Unit Pct0,91,percent,ok
+Unit PctU,91,% Watts,ok
+#!section stderr
+#!section requests
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=00
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x2c lun=0x00 cmd=0x00 target_cmd=0x00 data=03
+< rule=default ccode=0xc1 len=0 data=
+> netfn=0x06 lun=0x00 cmd=0x01 target_cmd=0x00 data=
+< rule=get_device_id ccode=0x00 len=15 data=20 81 01 00 02 bf 57 00 00 00 00 00 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x20 target_cmd=0x00 data=
+< rule=sdr_repo_info ccode=0x00 len=14 data=51 06 00 5a 3c 00 e3 0b 5e 00 00 00 00 02
+> netfn=0x0a lun=0x00 cmd=0x22 target_cmd=0x00 data=
+< rule=reserve_sdr_repo ccode=0x00 len=2 data=5a a5
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 00 00 00 05
+< rule=get_sdr_first ccode=0x00 len=7 data=24 21 23 21 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 23 21 05 17
+< rule=get_sdr_2123 ccode=0x00 len=25 data=24 21 20 00 83 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 00 5c 5c 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 23 21 1c 17
+< rule=get_sdr_2123 ccode=0x00 len=25 data=24 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c8 55 6e 69
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 23 21 33 05
+< rule=get_sdr_2123 ccode=0x00 len=7 data=24 21 74 20 4d 61 78
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=83
+< rule=get_sensor_reading ccode=0x00 len=4 data=5b c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 24 21 00 05
+< rule=get_sdr_2124 ccode=0x00 len=7 data=25 21 24 21 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 24 21 05 17
+< rule=get_sdr_2124 ccode=0x00 len=25 data=25 21 20 00 84 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 04 5d ff 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 24 21 1c 17
+< rule=get_sdr_2124 ccode=0x00 len=25 data=25 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c8 55 6e 69
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 24 21 33 05
+< rule=get_sdr_2124 ccode=0x00 len=7 data=25 21 74 20 42 61 64
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=84
+< rule=get_sensor_reading ccode=0x00 len=4 data=5b c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 25 21 00 05
+< rule=get_sdr_2125 ccode=0x00 len=7 data=26 21 25 21 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 25 21 05 17
+< rule=get_sdr_2125 ccode=0x00 len=25 data=26 21 20 00 85 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 02 12 15 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 25 21 1c 17
+< rule=get_sdr_2125 ccode=0x00 len=25 data=26 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c8 55 6e 69
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 25 21 33 05
+< rule=get_sdr_2125 ccode=0x00 len=7 data=26 21 74 20 44 69 76
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=85
+< rule=get_sensor_reading ccode=0x00 len=4 data=5b c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 26 21 00 05
+< rule=get_sdr_2126 ccode=0x00 len=7 data=27 21 26 21 51 01 33
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 26 21 05 17
+< rule=get_sdr_2126 ccode=0x00 len=25 data=27 21 20 00 86 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 04 12 15 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 26 21 1c 17
+< rule=get_sdr_2126 ccode=0x00 len=25 data=27 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c8 55 6e 69
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 26 21 33 05
+< rule=get_sdr_2126 ccode=0x00 len=7 data=27 21 74 20 4d 75 6c
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=86
+< rule=get_sensor_reading ccode=0x00 len=4 data=5b c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 27 21 00 05
+< rule=get_sdr_2127 ccode=0x00 len=7 data=28 21 27 21 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 27 21 05 17
+< rule=get_sdr_2127 ccode=0x00 len=25 data=28 21 20 00 87 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 01 00 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 27 21 1c 17
+< rule=get_sdr_2127 ccode=0x00 len=25 data=28 21 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 55 6e 69
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 27 21 33 06
+< rule=get_sdr_2127 ccode=0x00 len=8 data=28 21 74 20 50 63 74 30
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=87
+< rule=get_sensor_reading ccode=0x00 len=4 data=5b c0 c0 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 28 21 00 05
+< rule=get_sdr_2128 ccode=0x00 len=7 data=ff ff 28 21 51 01 34
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 28 21 05 17
+< rule=get_sdr_2128 ccode=0x00 len=25 data=ff ff 20 00 88 03 01 7f 68 01 01 ff 3f ff 3f 3f 3f 01 06 00 00 01 00 00 00
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 28 21 1c 17
+< rule=get_sdr_2128 ccode=0x00 len=25 data=ff ff 00 00 07 28 50 0a ff 00 5f 55 4b 05 0a 0f 02 02 00 00 00 c9 55 6e 69
+> netfn=0x0a lun=0x00 cmd=0x23 target_cmd=0x00 data=5a a5 28 21 33 06
+< rule=get_sdr_2128 ccode=0x00 len=8 data=ff ff 74 20 50 63 74 55
+> netfn=0x04 lun=0x00 cmd=0x2d target_cmd=0x00 data=88
+< rule=get_sensor_reading ccode=0x00 len=4 data=5b c0 c0 00
+bye
+#!section files

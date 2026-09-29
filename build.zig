@@ -1486,6 +1486,14 @@ pub fn build(b: *std.Build) void {
     sel_add_strings_step.dependOn(&b.addRunArtifact(sel_add_strings_unit).step);
     test_step.dependOn(sel_add_strings_step);
 
+    const sdr_unit_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.sdr.test.sdr unit strings"},
+    });
+    const sdr_unit_strings_step = b.step("test-sdr-unit-strings", "Compare SDR unit labels and truncation with libc");
+    sdr_unit_strings_step.dependOn(&b.addRunArtifact(sdr_unit_strings_unit).step);
+    test_step.dependOn(sdr_unit_strings_step);
+
     const fru_strings_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.fru.test.fru string lengths"},

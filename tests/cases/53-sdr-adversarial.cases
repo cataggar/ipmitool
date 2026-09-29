@@ -46,6 +46,18 @@ args: -I dummy sdr list full
 transcript: sd_adversarial.tr
 covers: sdr
 
+[sd_unit_labels_csv]
+desc: C oracle: CSV full sensors with percent, multiplier, divisor and invalid unit IDs
+args: -I dummy -c sdr list full
+transcript: sdr_unit_labels.tr
+covers: sdr
+
+[sd_unit_labels_verbose]
+desc: C oracle: verbose single-sensor print with invalid multiplied units
+args: -I dummy sdr get "Unit Bad"
+transcript: sdr_unit_labels.tr
+covers: sdr
+
 [sd_adv_compact]
 desc: `sdr list compact'
 args: -I dummy sdr list compact
