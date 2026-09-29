@@ -677,3 +677,17 @@ args: -I dummy event file {work}/ev.txt
 transcript: bmc.tr
 text: ev.txt event/tabtok.txt
 covers: event
+
+[event_file_space_runs]
+desc: repeated ASCII spaces split seven bytes, while extra malformed tokens are ignored
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/space_runs.txt
+covers: event
+
+[event_file_space_errors]
+desc: interior tabs, overflow and malformed hex reject their lines without stopping later sends
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+text: ev.txt event/space_errors.txt
+covers: event

@@ -1525,6 +1525,14 @@ pub fn build(b: *std.Build) void {
     event_cstrings_step.dependOn(&b.addRunArtifact(event_cstrings_unit).step);
     test_step.dependOn(event_cstrings_step);
 
+    const event_space_tokens_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.event.test.event space tokens"},
+    });
+    const event_space_tokens_step = b.step("test-event-space-tokens", "Compare bounded event-file space tokens with libc");
+    event_space_tokens_step.dependOn(&b.addRunArtifact(event_space_tokens_unit).step);
+    test_step.dependOn(event_space_tokens_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},
