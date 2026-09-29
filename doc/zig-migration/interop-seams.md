@@ -1050,6 +1050,14 @@ command decisions with libc at digit-width boundaries, for every first byte
 and embedded NULs; the `dcmi_` CLI goldens preserve output and requests. The
 static label buffer still lasts only until the next unknown lookup.
 
+DCMI and Node Manager now share the bounded lowercase hexadecimal unknown
+label formatter. The selected Node Manager also compares its top-level
+`help` argument with NUL-aware Zig equality; locale-sensitive option
+lookups still use libc `strcasecmp`. `zig build test-nm-strings` checks
+every unsigned-byte label and first-byte help comparison against libc.
+The `nm_` C/selected/all-selected CLI goldens preserve resulting requests
+and output; each module keeps its own static label buffer.
+
 Mechanics, all in `build.zig`:
 
 1. `zig_modules` maps each name to the `.c` it replaces and to its Zig

@@ -3,6 +3,7 @@
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const dcmi_strings = @import("dcmi_strings.zig");
 const log = @import("../util/log.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
@@ -131,10 +132,29 @@ fn val(table: []const Item, arg: ?[*:0]u8) u8 {
 }
 fn text(table: []const Item, value: u8) [*:0]const u8 {
     for (table) |item| if (item.value == value) return item.text;
-    _ = c.snprintf(&unknown, unknown.len, "Unknown (0x%x)", @as(c_uint, value));
+    _ = dcmi_strings.formatUnknown(&unknown, value) catch unreachable;
     return @ptrCast(&unknown);
 }
 var unknown: [32]u8 = @splat(0);
+fn isHelp(arg: [*:0]const u8) bool {
+    return std.mem.eql(u8, std.mem.span(arg), "help");
+}
+test "nm strings match libc help and unknown labels" {
+    for (0..256) |byte| {
+        const value: u8 = @intCast(byte);
+        var expected: [32]u8 = undefined;
+        const printed = c.snprintf(&expected, expected.len, "Unknown (0x%x)", @as(c_uint, value));
+        try std.testing.expect(printed > 0);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(printed)], std.mem.span(text(&.{}, value)));
+        var arg = [_:0]u8{ value, 'e', 'l', 'p', 0, 'x' };
+        try std.testing.expectEqual(c.strcmp(&arg, "help") == 0, isHelp(&arg));
+    }
+    var short: [4]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, dcmi_strings.formatUnknown(&short, 0xff));
+    try std.testing.expectEqualStrings("platform", std.mem.span(text(&domains, 0)));
+    try std.testing.expect(isHelp("help"));
+    try std.testing.expect(!isHelp("HELP"));
+}
 fn pick(condition: bool, yes: [*:0]const u8, no: [*:0]const u8) [*:0]const u8 {
     return if (condition) yes else no;
 }
@@ -770,7 +790,7 @@ fn nmSuspend(intf: *Intf, args: []const ?[*:0]u8) c_int {
 fn nmMain(intf_opt: ?*Intf, argc: c_int, argv: ?[*:null]?[*:0]u8) callconv(.c) c_int {
     const intf = intf_opt orelse return -1;
     const args: []const ?[*:0]u8 = if (argc > 0 and argv != null) argv.?[0..@intCast(argc)] else &.{};
-    if (args.len == 0 or c.strcmp(args[0].?, "help") == 0) {
+    if (args.len == 0 or isHelp(args[0].?)) {
         usage(&commands, "Node Manager Interface commands");
         return -1;
     }

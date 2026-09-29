@@ -7,6 +7,7 @@
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const dcmi_strings = @import("dcmi_strings.zig");
 const log = @import("../util/log.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
@@ -132,14 +133,10 @@ const action_names = [_]Item{
     .{ .val = 17, .name = "Log Event to SEL" },
 };
 
-fn formatUnknown(buffer: []u8, val: u16) ![:0]u8 {
-    return std.fmt.bufPrintSentinel(buffer, "Unknown (0x{x})", .{val}, 0);
-}
-
 fn name(table: []const Item, val: u16) [*:0]const u8 {
     for (table) |item| if (item.val == val) return item.name;
     // All callers use this immediately, before the next unknown lookup.
-    _ = formatUnknown(&unknown, val) catch unreachable;
+    _ = dcmi_strings.formatUnknown(&unknown, val) catch unreachable;
     return @ptrCast(&unknown);
 }
 var unknown: [32]u8 = @splat(0);
@@ -165,7 +162,7 @@ test "DCMI strings match libc unknown values and command equality" {
     }
     try std.testing.expectEqualStrings("power", std.mem.span(name(&commands, 1)));
     var short: [10]u8 = undefined;
-    try std.testing.expectError(error.NoSpaceLeft, formatUnknown(&short, 0xffff));
+    try std.testing.expectError(error.NoSpaceLeft, dcmi_strings.formatUnknown(&short, 0xffff));
 
     try std.testing.expect(!is(null, "power"));
     for (0..256) |byte| {

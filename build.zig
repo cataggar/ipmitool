@@ -1422,6 +1422,14 @@ pub fn build(b: *std.Build) void {
     dcmi_strings_step.dependOn(&b.addRunArtifact(dcmi_strings_unit).step);
     test_step.dependOn(dcmi_strings_step);
 
+    const nm_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.nm.test.nm strings"},
+    });
+    const nm_strings_step = b.step("test-nm-strings", "Compare Node Manager unknown labels and help with libc");
+    nm_strings_step.dependOn(&b.addRunArtifact(nm_strings_unit).step);
+    test_step.dependOn(nm_strings_step);
+
     const sel_time_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.sel.test.sel time stdout"},
