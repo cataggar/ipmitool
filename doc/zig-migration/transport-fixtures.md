@@ -641,7 +641,10 @@ characters, unrelated packets, invalid checksums/sequences, malformed
 escape/hex data, retries, timeouts, open errors, one- and two-hop IPMB bridging,
 and the system-interface Get Message queue. All bridged cases must complete
 successfully, not merely agree on an error. `zig build test-serial-unit` runs
-the focused Zig framing, size-limit and response-validation tests.
+the focused Zig framing, size-limit and response-validation tests. The
+shared serial device parser now finds colon delimiters with a NUL-aware Zig
+scan instead of libc `strchr`; the unit step compares delimiter offsets with
+libc across every byte and verifies in-place device/baud/system splitting.
 
 The PTY step also runs under `zig build test` when the serial plugin is enabled
 on Linux. The C oracle remains in the repository: selecting one serial Zig

@@ -58,6 +58,40 @@ const rates = [_]Rate{
     .{ .baud = c.B230400, .value = 230400 },
 } ++ if (@hasDecl(c, "B460800")) [_]Rate{.{ .baud = c.B460800, .value = 460800 }} else [_]Rate{};
 
+fn firstColon(text: [*:0]u8) ?[*:0]u8 {
+    var at = text;
+    while (at[0] != 0) : (at += 1) {
+        if (at[0] == ':') return at;
+    }
+    return null;
+}
+
+test "serial colon offsets match libc strchr across C bytes" {
+    for (0..256) |byte| {
+        var text = [_:0]u8{ @intCast(byte), ':', 'S', 0, ':', 'X' };
+        const expected = if (c.strchr(&text, ':')) |at|
+            @as(?usize, @intFromPtr(at) - @intFromPtr(&text))
+        else
+            null;
+        const actual = if (firstColon(&text)) |at|
+            @as(?usize, @intFromPtr(at) - @intFromPtr(&text))
+        else
+            null;
+        try std.testing.expectEqual(expected, actual);
+    }
+    var absent = [_:0]u8{ 't', 't', 'y', 0, ':' };
+    try std.testing.expect(firstColon(&absent) == null);
+    var two = [_:0]u8{ 't', 't', 'y', ':', '9', '6', '0', '0', ':', 's' };
+    const first = firstColon(&two).?;
+    try std.testing.expectEqual(@as(usize, 3), @intFromPtr(first) - @intFromPtr(&two));
+    first[0] = 0;
+    const second = firstColon(first + 1).?;
+    try std.testing.expectEqual(@as(usize, 8), @intFromPtr(second) - @intFromPtr(&two));
+    second[0] = 0;
+    try std.testing.expectEqualStrings("tty", std.mem.span(@as([*:0]const u8, &two)));
+    try std.testing.expectEqualStrings("9600", std.mem.span(first + 1));
+}
+
 pub fn open(intf: *Intf, system: *bool) c_int {
     const dev = intf.devfile orelse {
         log.print(log.Level.err, "Serial device is not specified", .{});
@@ -65,10 +99,10 @@ pub fn open(intf: *Intf, system: *bool) c_int {
     };
     system.* = false;
     var rate: u32 = 9600;
-    if (c.strchr(dev, ':')) |colon| {
+    if (firstColon(dev)) |colon| {
         colon[0] = 0;
         const text = colon + 1;
-        if (c.strchr(text, ':')) |second| {
+        if (firstColon(text)) |second| {
             second[0] = 0;
             system.* = second[1] == 'S' or second[1] == 's';
         }
