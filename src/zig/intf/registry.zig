@@ -45,6 +45,24 @@ const log = @import("../util/log.zig");
 const Intf = intf_mod.Intf;
 const IntfSupport = intf_mod.IntfSupport;
 
+fn eqlCString(left: [*:0]const u8, right: [*:0]const u8) bool {
+    return std.mem.eql(u8, std.mem.span(left), std.mem.span(right));
+}
+
+test "interface names match libc equality across C bytes and lengths" {
+    const names = [_][*:0]const u8{ "", "lan", "lanplus", "Lan", "lan ", "dummy", "serial-basic", "serial-terminal" };
+    for (names) |left| {
+        for (names) |right| {
+            try std.testing.expectEqual(c.strcmp(left, right) == 0, eqlCString(left, right));
+        }
+    }
+    for (0..256) |byte| {
+        const left = [_:0]u8{ @intCast(byte), 'a', 0, 'z' };
+        const right = [_:0]u8{ @intCast(byte), 'b' };
+        try std.testing.expectEqual(c.strcmp(&left, &right) == 0, eqlCString(&left, &right));
+    }
+}
+
 /// `IPMI_DEFAULT_PAYLOAD_SIZE`.
 const default_payload_size = 25;
 
@@ -107,7 +125,7 @@ fn defaultInterface(table: []const ?*Intf) ?*Intf {
     const default_intf_name: [*:0]const u8 = c.DEFAULT_INTF;
     for (table) |entry| {
         const candidate = entry orelse break;
-        if (c.strcmp(default_intf_name, @ptrCast(&candidate.name)) == 0) {
+        if (eqlCString(default_intf_name, @ptrCast(&candidate.name))) {
             return candidate;
         }
     }
@@ -118,7 +136,7 @@ fn defaultInterface(table: []const ?*Intf) ?*Intf {
 fn findInterface(table: []const ?*Intf, name: [*:0]const u8) ?*Intf {
     for (table) |entry| {
         const candidate = entry orelse break;
-        if (c.strcmp(name, @ptrCast(&candidate.name)) == 0) {
+        if (eqlCString(name, @ptrCast(&candidate.name))) {
             return candidate;
         }
     }
@@ -134,7 +152,7 @@ fn isSupported(intflist: [*]const IntfSupport, candidate: *const Intf) bool {
     var found = false;
     var i: usize = 0;
     while (intflist[i].name) |name| : (i += 1) {
-        if (c.strcmp(name, @ptrCast(&candidate.name)) == 0 and
+        if (eqlCString(name, @ptrCast(&candidate.name)) and
             intflist[i].supported != 0)
         {
             found = true;
@@ -208,7 +226,7 @@ fn sessionSetUsername(intf: *Intf, username: ?[*:0]u8) callconv(.c) void {
     @memset(&intf.ssn_params.username, 0);
 
     const name = username orelse return;
-    const n = @min(c.strlen(name), 16);
+    const n = @min(std.mem.len(name), 16);
     @memcpy(intf.ssn_params.username[0..n], name[0..n]);
 }
 
@@ -223,7 +241,7 @@ fn sessionSetPassword(intf: *Intf, password: ?[*:0]u8) callconv(.c) void {
     };
 
     intf.ssn_params.password = 1;
-    const n = @min(c.strlen(pass), intf_mod.authcode_buffer_size);
+    const n = @min(std.mem.len(pass), intf_mod.authcode_buffer_size);
     @memcpy(intf.ssn_params.authcode_set[0..n], pass[0..n]);
 }
 
@@ -308,6 +326,24 @@ fn in6IsAddrLinklocal(addr: *const [16]u8) bool {
     return addr[0] == 0xfe and (addr[1] & 0xc0) == 0x80;
 }
 
+fn servicePort(buffer: []u8, port: c_int) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(buffer, "{d}", .{port}, 0);
+}
+
+test "UDP service port matches libc formatting including signed boundaries" {
+    for ([_]c_int{ std.math.minInt(c_int), -1234, -1, 0, 1, 623, 65535, std.math.maxInt(c_int) }) |port| {
+        var actual: [c.NI_MAXSERV]u8 = undefined;
+        var expected: [c.NI_MAXSERV]u8 = undefined;
+        const length = c.snprintf(&expected, expected.len, "%d", port);
+        try std.testing.expect(length > 0);
+        const formatted = try servicePort(&actual, port);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], formatted);
+        try std.testing.expectEqual(@as(u8, 0), actual[formatted.len]);
+    }
+    var short: [2]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, servicePort(&short, 623));
+}
+
 /// `ipmi_intf_socket_connect()`: resolve `ssn_params.hostname` and connect a
 /// UDP socket to it, leaving the descriptor in `intf->fd`.
 ///
@@ -325,13 +361,16 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
         log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     };
-    if (c.strlen(hostname) == 0) {
+    if (std.mem.len(hostname) == 0) {
         log.print(log.Level.err, "No hostname specified!", .{});
         return -1;
     }
 
     var service: [c.NI_MAXSERV]u8 = undefined;
-    _ = c.sprintf(&service, "%d", params.port);
+    const port = servicePort(&service, params.port) catch {
+        log.print(log.Level.err, "Unable to format UDP service port", .{});
+        return -1;
+    };
 
     // Obtain address(es) matching host/port.
     var hints: c.struct_addrinfo = std.mem.zeroes(c.struct_addrinfo);
@@ -341,7 +380,7 @@ fn socketConnect(intf: ?*Intf) callconv(.c) c_int {
     hints.ai_protocol = c.IPPROTO_UDP;
 
     var rp0: [*c]c.struct_addrinfo = null;
-    if (c.getaddrinfo(hostname, &service, &hints, &rp0) != 0) {
+    if (c.getaddrinfo(hostname, port.ptr, &hints, &rp0) != 0) {
         log.print(log.Level.err, "Address lookup for %s failed", .{hostname});
         return -1;
     }

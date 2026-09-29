@@ -442,8 +442,12 @@ against the original C registry and separately against the selectable Zig
 registry. It byte-compares the two complete traces, including table order,
 default marking, the supported-interface filter, setup success/failure,
 session and auth setters, bridging payload sizes, and a loopback UDP connect.
-It also runs the 15 isolated registry/ABI unit tests. The fake plugin
-instances are confined to this test; production builds still link the real
+It also runs the isolated registry/ABI unit tests. Registry name comparisons,
+credential lengths, empty-host detection and UDP service port formatting now
+use NUL-aware or bounded Zig operations rather than libc `strcmp`, `strlen`
+and `sprintf`. The unit tests compare name equality over all first bytes and
+signed port formatting with libc, including too-small destinations. The fake
+plugin instances are confined to this test; production builds still link the real
 C or Zig transport vtables. Run again with `-Ddefault-intf=dummy
 -Dintf-open=false` to check a default other than the first entry. On hosts
 without readline or OpenSSL headers, add `-Dipmishell=false -Dopenssl=false
