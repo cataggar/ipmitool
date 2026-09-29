@@ -1281,7 +1281,9 @@ fn getDellEvtDesc(intf: ?*Intf, rec: ?*SelEventRecord) callconv(.c) [*c]u8 {
                                     _ = c.strcat(str, ",");
                                     count = 0x00;
                                 }
-                                setDimmNumber(&dimm_str, 5, i + incr + 1);
+                                // incr <= 14 * 8 here and i < 8: the C-width sum is at most 120.
+                                const dimm_index = @as(c_int, i) + @as(c_int, incr) + 1;
+                                setDimmNumber(&dimm_str, 5, @intCast(dimm_index));
                                 _ = c.strcat(str, &dimm_str);
                                 count += 1;
                             }
@@ -1495,6 +1497,49 @@ test "sel cstrings Dell DIMM bytes match libc across decimal boundaries" {
     }
 }
 
+test "sel cstrings Dell DIMM arithmetic stays in range for every response byte" {
+    var largest: c_int = 0;
+    for (0..256) |data2| {
+        for ([_]bool{ false, true }) |byte2_specified| {
+            const low_nibble = data2 & 0x0f;
+            const incr: u8 = if (byte2_specified and low_nibble != 0x0f)
+                @intCast(low_nibble << 3)
+            else
+                0;
+            for (0..8) |bit_index| {
+                const number = @as(c_int, incr) + @as(c_int, @intCast(bit_index)) + 1;
+                try std.testing.expect(number >= 1 and number <= 120);
+                try std.testing.expectEqual(
+                    number,
+                    @as(c_int, @as(u8, @intCast(bit_index)) + incr + 1),
+                );
+                largest = @max(largest, number);
+            }
+        }
+    }
+    try std.testing.expectEqual(@as(c_int, 120), largest);
+}
+
+test "sel cstrings Dell DIMM shortening preserves C trailing bytes" {
+    for ([_]usize{ 5, 6 }) |offset| {
+        var expected: [max_dimm_str]u8 = @splat(0xa5);
+        var actual: [max_dimm_str]u8 = @splat(0xa5);
+        var tmpdesc: [size_of_desc]u8 = @splat(0);
+        _ = c.strcpy(&expected, " DIMM");
+        _ = c.strcpy(&actual, " DIMM");
+        _ = c.snprintf(&tmpdesc, size_of_desc, "Card %c", @as(c_int, 'A'));
+
+        for ([_]u8{ 120, 1, 99, 9, 255, 0 }) |number| {
+            _ = c.sprintf(&tmpdesc, "%d", @as(c_int, number));
+            const length = c.strlen(&tmpdesc);
+            for (0..length) |index| expected[offset + index] = tmpdesc[index];
+            expected[offset + length] = 0;
+            setDimmNumber(&actual, offset, number);
+            try std.testing.expectEqualSlices(u8, &expected, &actual);
+        }
+    }
+}
+
 test "sel cstrings Dell DIMM request and failure status remain unchanged" {
     const Stub = struct {
         var requests: usize = 0;
@@ -1530,8 +1575,10 @@ test "sel cstrings Dell DIMM request and failure status remain unchanged" {
     }
     Stub.fail = .none;
     for ([_]struct { data2: u8, expected: []const u8 }{
-        .{ .data2 = 0xfe, .expected = "DIMM120" },
-        .{ .data2 = 0xde, .expected = "DIMME24" },
+        .{ .data2 = 0xfe, .expected = "Correctable ECC |  DIMM120" },
+        .{ .data2 = 0xde, .expected = "Correctable ECC |  DIMME24" },
+        .{ .data2 = 0xff, .expected = "Correctable ECC |  DIMM8" },
+        .{ .data2 = 0x7e, .expected = "Correctable ECC | Card H DIMM120" },
     }) |sample| {
         rec.sel_type.standard_type.event_data[1] = sample.data2;
         Stub.requests = 0;
@@ -1539,8 +1586,9 @@ test "sel cstrings Dell DIMM request and failure status remain unchanged" {
         try std.testing.expect(description != null);
         defer c.free(description);
         try std.testing.expectEqual(@as(usize, 1), Stub.requests);
-        try std.testing.expect(
-            std.mem.indexOf(u8, std.mem.span(@as([*:0]const u8, @ptrCast(description))), sample.expected) != null,
+        try std.testing.expectEqualStrings(
+            sample.expected,
+            std.mem.span(@as([*:0]const u8, @ptrCast(description))),
         );
     }
 }

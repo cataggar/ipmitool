@@ -851,9 +851,16 @@ now reuse the NUL-aware Zig equality used by command dispatch. The 256-byte
 overlong-line decision, preserving the conditional `fgetc` and parse order.
 Dell DIMM numbers (one to three decimal digits) use a three-byte Zig scratch
 and explicitly terminate the existing 32-byte DIMM text; the allocator-owned
-description and remaining record formatting stay on libc. `zig build
-test-sel-cstrings` compares equality, byte lengths and DIMM strings to libc,
-including embedded NULs and numeric boundaries. The `sl_oemmsg_*`,
+description and remaining record formatting stay on libc. For spec 2.0 the
+optional `incr` is at most `14 << 3` (low nibble `0xf` skips assignment);
+the bit index is at most 7, so even C-width `i + incr + 1` cannot exceed
+120. The per-node branch formats at most 24. Only the copied digits and
+terminator enter `dimm_str`; the existing `tmpdesc` initialization remains,
+but that scratch is not read again after the removed `sprintf` calls.
+`zig build test-sel-cstrings` compares equality, byte lengths and DIMM
+strings to libc, including embedded NULs, every response-byte-derived
+DIMM index, numeric boundaries and full-buffer trailing bytes after
+successive numbers. The `sl_oemmsg_*`,
 `sl_int_*` and `sl_dell*` original-C/selected-Zig CLI cases cover resulting
 output, statuses and requests. General record/path formatting, allocation-
 sized lengths and PPS `strtol` parsing remain C interop seams.
