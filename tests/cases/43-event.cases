@@ -104,6 +104,18 @@ args: -I dummy event NOPE list
 transcript: event_sdr.tr
 covers: event
 
+[event_sensor_percent_not_found]
+desc: percent signs in a missing sensor ID are printed literally
+args: -I dummy event "NO%PE" list
+transcript: event_sdr.tr
+covers: event
+
+[event_sensor_trailing_space_not_found]
+desc: the lookup retains trailing spaces in the sensor ID
+args: -I dummy event "CPU1 Temp " list
+transcript: event_sdr.tr
+covers: event
+
 [event_sensor_evonly]
 desc: an event-only record is neither full nor compact
 args: -I dummy event EVON list

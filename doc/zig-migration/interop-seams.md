@@ -879,8 +879,21 @@ the Platform Event Message. Their C byte shape and ordering are pinned by
 the `event_num_*` C/Zig CLI goldens; `zig build test-event-sample-stdout`
 compares all three lines with libc formatting and tests pre-flush, early,
 late and final-flush failures. Output errors log a diagnostic and return
-`-1` without sending the event. Other event and sensor output stays on its
-existing C path.
+`-1` without sending the event.
+
+The selected `event <sensorid>` lookup now emits its `Finding sensor
+<sensorid>... ` prefix and `not found!`/`ok` line through checked Zig stdout.
+It flushes C stdout before each phase and flushes Zig output immediately,
+so C SDR lookup output between them and later C state-table/SEL rendering
+retain their order. The sensor name is measured through its first NUL, just
+like C `%s`. `zig build test-event-sensor-stdout` compares libc bytes for
+empty, embedded-NUL, percent, whitespace and arbitrary byte IDs, and
+exercises preflush, early/partial writes and final-flush failures in both
+phases. On failure it logs the phase and returns `-1` before the lookup
+(finding failure) or before state processing (result failure). The
+`event_sensor_*`, `event_thresh_*` and `event_digi_*` CLI goldens pin the
+C/selected/all-selected byte order, requests and statuses; state-table and
+other event output remain in C.
 
 The selected event command now compares command/shortcut names and measures
 argument/file-line text with NUL-aware Zig operations. It finds the first `#`
