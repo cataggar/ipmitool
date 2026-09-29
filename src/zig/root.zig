@@ -95,6 +95,7 @@ test {
     _ = @import("cmd/sdr.zig");
     _ = @import("frontend/ipmishell.zig");
     _ = @import("cmd/pef.zig");
+    _ = @import("cmd/firewall.zig");
     _ = @import("cmd/delloem.zig");
     _ = @import("cmd/sunoem.zig");
     _ = @import("frontend/shell_commands.zig");
