@@ -5,6 +5,26 @@ args: -I dummy pef filter list
 transcript: pef_filters.tr
 covers: pef
 
+[pef_filter_unrecognized_trigger]
+args: -I dummy pef filter list
+transcript: pef_filter_unrecognized.tr
+covers: pef
+
+[pef_filter_case_sensitive]
+args: -I dummy pef filter List
+transcript: default.tr
+covers: pef
+
+[pef_policy_case_sensitive]
+args: -I dummy pef policy List
+transcript: default.tr
+covers: pef
+
+[pef_command_case_sensitive]
+args: -I dummy pef Filter
+transcript: default.tr
+covers: pef
+
 [pef_filters_verbose]
 args: -v -I dummy pef filter list
 transcript: pef_filters.tr

@@ -2094,6 +2094,12 @@ pub fn build(b: *std.Build) void {
     });
     b.step("test-pef-unit", "Run Zig PEF validation and formatting unit tests")
         .dependOn(&b.addRunArtifact(pef_unit).step);
+    const pef_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{ "cmd.pef.test.PEF strings match libc", "cmd.pef.test.PEF trigger labels and prefixes match libc", "cmd.pef.test.PEF trigger suffixes match bounded libc", "cmd.pef.test.PEF LAN IPv4 bytes match libc" },
+    });
+    b.step("test-pef-strings", "Compare PEF command, trigger and IPv4 bytes with libc")
+        .dependOn(&b.addRunArtifact(pef_strings_unit).step);
 
     const lanp_test_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/lanp_test.zig"),

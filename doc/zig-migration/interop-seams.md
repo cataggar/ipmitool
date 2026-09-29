@@ -1139,6 +1139,13 @@ terminates when a BMC advertises 255 filter entries (the C `uint8_t` counter
 would wrap).
 Run `zig build test-pef-unit` for the focused PEF unit tests without
 running unrelated crypto vector fixtures.
+PEF command matching now uses NUL-aware, case-sensitive Zig equality; fixed
+trigger labels, trigger prefix/suffix text and IPv4 addresses use Zig copies
+and bounded formatting. `zig build test-pef-strings` compares these bytes
+against libc, including embedded NULs, hex and decimal digit boundaries,
+multi-bit trigger masks and the existing 128-byte Zig trigger clamp (C would
+overflow that buffer for some masks). The `pef_` CLI goldens pin command case
+handling, trigger text and LAN address output against the C oracle.
 
 The PEF, firewall and DCMI command ports now use the archive's typed logger
 for their diagnostics; with the C logger selected, calls still use its
