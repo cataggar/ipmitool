@@ -984,6 +984,13 @@ otherwise the wrapper calls C `lprintf`. The default C-oracle fixtures
 `raw_log_ccode_hex` and `chan_log_priv_bad_numeric` pin hexadecimal completion
 codes and `%hhu` privilege bounds without changing existing snapshots.
 
+The selected channel cipher listing now uses bounded Zig formatting for its
+six-digit-minimum lowercase OEM IANA value and Zig NUL-aware equality for the
+`ipmi` payload selector. `zig build test-channel-strings` compares those
+decisions and bytes against libc, including wide 32-bit values, all first
+bytes, embedded NULs and a too-small destination. The `chan_` CLI goldens
+preserve cipher requests, output and exit statuses for C and selected Zig.
+
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
 used by both C and Zig LAN+ transports. The C tables remain the default oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator

@@ -1406,6 +1406,14 @@ pub fn build(b: *std.Build) void {
     mc_strcmp_step.dependOn(&b.addRunArtifact(mc_strcmp_unit).step);
     test_step.dependOn(mc_strcmp_step);
 
+    const channel_strings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.channel.test.channel strings"},
+    });
+    const channel_strings_step = b.step("test-channel-strings", "Compare channel IANA formatting and payload matching with libc");
+    channel_strings_step.dependOn(&b.addRunArtifact(channel_strings_unit).step);
+    test_step.dependOn(channel_strings_step);
+
     const sel_time_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.sel.test.sel time stdout"},

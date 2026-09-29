@@ -269,12 +269,42 @@ fn setChannelAccess(
 /// consumes it immediately.
 var iana_buf: [10]u8 = undefined;
 
+fn formatIana(buffer: []u8, iana: u32) ![:0]u8 {
+    return std.fmt.bufPrintSentinel(buffer, "{x:0>6}", .{iana}, 0);
+}
+
 fn ianaString(iana: u32) [*:0]const u8 {
     if (iana != 0) {
-        _ = c.sprintf(&iana_buf, "%06x", iana);
+        _ = formatIana(&iana_buf, iana) catch unreachable;
         return @ptrCast(&iana_buf);
     }
     return "N/A";
+}
+
+fn isIpmiPayload(payload_type: [*:0]const u8) bool {
+    return std.mem.eql(u8, std.mem.span(payload_type), "ipmi");
+}
+
+test "channel strings match libc iana and payload types" {
+    try std.testing.expectEqualStrings("N/A", std.mem.span(ianaString(0)));
+    for ([_]u32{ 1, 9, 0xff, 0x10000, 0xffffff, 0x1000000, std.math.maxInt(u32) }) |iana| {
+        var expected: [10]u8 = undefined;
+        const length = c.snprintf(&expected, expected.len, "%06x", iana);
+        try std.testing.expect(length > 0);
+        try std.testing.expectEqualSlices(u8, expected[0..@intCast(length)], std.mem.span(ianaString(iana)));
+    }
+    var short: [6]u8 = undefined;
+    try std.testing.expectError(error.NoSpaceLeft, formatIana(&short, 1));
+
+    for ([_][*:0]const u8{ "", "ipmi", "IPMI", "ipmi ", "ipm", "sol" }) |payload_type| {
+        try std.testing.expectEqual(c.strcmp(payload_type, "ipmi") == 0, isIpmiPayload(payload_type));
+    }
+    for (0..256) |byte| {
+        const payload_type = [_:0]u8{ @intCast(byte), 'p', 'm', 'i' };
+        try std.testing.expectEqual(c.strcmp(&payload_type, "ipmi") == 0, isIpmiPayload(&payload_type));
+    }
+    const hidden = [_:0]u8{ 'i', 'p', 'm', 'i', 0, 'x' };
+    try std.testing.expect(isIpmiPayload(&hidden));
 }
 
 /// `ipmi_1_5_authtypes()`: the space separated list of v1.5 auth types in `n`.
@@ -562,7 +592,7 @@ fn getChannelCipherSuites(
     req.msg.data_len = rqdata.len;
 
     rqdata[0] = channel;
-    rqdata[1] = if (c.strcmp(payload_type, "ipmi") != 0) 1 else 0;
+    rqdata[1] = if (isIpmiPayload(payload_type.?)) 0 else 1;
 
     while (true) {
         // Always ask for cipher suite format
