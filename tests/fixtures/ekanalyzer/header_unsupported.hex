@@ -1,0 +1,2 @@
+# Version's low nibble 5 is unsupported; high nibble is ignored.
+a5 00 00 00 00 00 00 5b

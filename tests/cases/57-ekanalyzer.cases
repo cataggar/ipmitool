@@ -102,6 +102,24 @@ args: -I dummy ekanalyzer frushow a1={work}/short.fru
 blob: short.fru ekanalyzer/short_header.hex
 covers: ekanalyzer
 
+[ek_header_unsupported]
+desc: original C common header displays unsupported format nibble and zero multi offset
+args: -I dummy ekanalyzer frushow a1={work}/unsupported.fru
+blob: unsupported.fru ekanalyzer/header_unsupported.hex
+covers: ekanalyzer
+
+[ek_header_seven]
+desc: original C rejects a seven-byte common header without printing header fields
+args: -I dummy ekanalyzer frushow a1={work}/seven.fru
+blob: seven.fru ekanalyzer/header_seven.hex
+covers: ekanalyzer
+
+[ek_header_zero]
+desc: original C rejects an empty FRU file without printing header fields
+args: -I dummy ekanalyzer frushow a1={work}/zero.fru
+blob: zero.fru ekanalyzer/header_zero.hex
+covers: ekanalyzer
+
 [ek_bad_crc]
 desc: C oracle's observable behavior for a corrupt multirecord checksum
 args: -I dummy ekanalyzer frushow a1={work}/bad.fru
