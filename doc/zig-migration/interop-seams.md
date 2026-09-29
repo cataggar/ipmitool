@@ -945,6 +945,23 @@ test-only libc `strtok_r` oracle. The `event_file_` C/selected/all-selected
 CLI goldens compare outputs, exit statuses and request bytes for whitespace,
 invalid and overflow tokens, ignored extra tokens and later valid lines.
 
+The selected `event file` reader now fills each 1024-byte C-compatible buffer
+through a bounded Zig scanner over `fgetc`. It keeps `ipmi_open_file`/`fclose`
+ownership and libc's `FILE*` buffering and position; LF or 1023 bytes ends a
+chunk, and embedded NUL only affects later parsing, not bytes consumed.
+An unterminated final chunk and `feof` timing remain `fgets`-compatible.
+Unlike the original C reader, a `ferror` (including after a partial chunk)
+stops without dispatching that chunk, logs `event file: unable to read file`
+and returns `-1` instead of spinning in the old `while (!feof)` loop.
+`zig build test-event-file-line` checks every first byte, whole-buffer
+contents, cursor/EOF, NUL and long-line boundaries against libc `fgets`;
+an injected `fopencookie` failure checks partial-line suppression and
+post-boundary errors. The original-C and selected/all-selected
+`event_file_split_chunk` and `event_file_nul_boundary` CLI goldens pin
+long-line fragmentation, embedded NULs, output and BMC request counts.
+File opening, closing and byte reads are still C `FILE*` interop seams,
+not native Zig file I/O.
+
 Selected `sel time get` and the readback after a successful `sel time set`
 stream the original `ipmi_timestamp_numeric()` bytes plus newline through
 checked Zig stdout. The C formatter still controls special timestamps,

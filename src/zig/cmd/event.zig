@@ -977,19 +977,154 @@ test "event space tokens retain independent cursors across lines" {
     }
 }
 
+fn readEventLine(fp: *c.FILE, buf: *[1024]u8) error{ReadFailed}!bool {
+    var len: usize = 0;
+    while (len < buf.len - 1) {
+        const ch = c.fgetc(fp);
+        if (ch == c.EOF) {
+            if (c.ferror(fp) != 0) return error.ReadFailed;
+            break;
+        }
+        buf[len] = @intCast(ch);
+        len += 1;
+        if (ch == '\n') break;
+    }
+    if (len == 0) return false;
+    buf[len] = 0;
+    return true;
+}
+
+fn expectEventFileLineParity(input: []const u8) !void {
+    const oracle_bytes = try std.testing.allocator.alloc(u8, @max(input.len, 1));
+    defer std.testing.allocator.free(oracle_bytes);
+    const zig_bytes = try std.testing.allocator.alloc(u8, @max(input.len, 1));
+    defer std.testing.allocator.free(zig_bytes);
+    @memcpy(oracle_bytes[0..input.len], input);
+    @memcpy(zig_bytes[0..input.len], input);
+
+    const oracle = c.fmemopen(oracle_bytes.ptr, input.len, "r") orelse return error.MemoryStreamFailed;
+    defer _ = c.fclose(oracle);
+    const scanned = c.fmemopen(zig_bytes.ptr, input.len, "r") orelse return error.MemoryStreamFailed;
+    defer _ = c.fclose(scanned);
+    var chunks: usize = 0;
+    while (c.feof(oracle) == 0) {
+        var expected = [_]u8{0xa5} ** 1024;
+        var actual = [_]u8{0xa5} ** 1024;
+        const have_expected = c.fgets(&expected, expected.len, oracle) != null;
+        const have_actual = try readEventLine(scanned, &actual);
+        try std.testing.expectEqual(have_expected, have_actual);
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+        try std.testing.expectEqual(c.ftell(oracle), c.ftell(scanned));
+        try std.testing.expectEqual(c.feof(oracle) != 0, c.feof(scanned) != 0);
+        try std.testing.expectEqual(c.ferror(oracle) != 0, c.ferror(scanned) != 0);
+        chunks += 1;
+        try std.testing.expect(chunks <= input.len + 1);
+    }
+}
+
+test "event file line scanner matches fgets bytes offsets and feof" {
+    try expectEventFileLineParity("");
+    try expectEventFileLineParity("\n\r\n\recho partial");
+    try expectEventFileLineParity("0x04 \x00invisible\r\n0x01");
+    for (0..256) |byte| {
+        const input = [_]u8{ @intCast(byte), '\r', '\n', '0', 'x', '0', '4', '\n' };
+        try expectEventFileLineParity(&input);
+    }
+
+    var input: [8192]u8 = undefined;
+    for ([_]usize{ 0, 1, 1022, 1023, 1024, 2046, 2047, 4096 }) |size| {
+        @memset(input[0..size], 'x');
+        try expectEventFileLineParity(input[0..size]);
+        input[size] = '\n';
+        @memcpy(input[size + 1 .. size + 36], "0x04 0x01 0x30 0x01 0x09 0xff 0xff\n");
+        try expectEventFileLineParity(input[0 .. size + 36]);
+        if (size >= 1023) {
+            for ([_]usize{ 0, 1022 }) |nul| {
+                input[nul] = 0;
+                try expectEventFileLineParity(input[0 .. size + 36]);
+                input[nul] = 'x';
+            }
+        }
+        if (size >= 1024) {
+            input[1023] = 0;
+            try expectEventFileLineParity(input[0 .. size + 36]);
+        }
+    }
+}
+
+const EventFileFault = struct {
+    input: []const u8,
+    fail_after: usize,
+    offset: usize = 0,
+    failures: usize = 0,
+};
+
+fn eventFileFaultRead(cookie: ?*anyopaque, dest: [*c]u8, capacity: usize) callconv(.c) c_long {
+    const state: *EventFileFault = @ptrCast(@alignCast(cookie.?));
+    if (state.offset == state.fail_after) {
+        state.failures += 1;
+        std.c._errno().* = c.EIO;
+        return -1;
+    }
+    const count = @min(capacity, state.fail_after - state.offset);
+    @memcpy(dest[0..count], state.input[state.offset..][0..count]);
+    state.offset += count;
+    return @intCast(count);
+}
+
+fn expectEventFileReadError(input: []const u8, fail_after: usize, complete_chunks: usize) !void {
+    var c_state: EventFileFault = .{ .input = input, .fail_after = fail_after };
+    var zig_state: EventFileFault = .{ .input = input, .fail_after = fail_after };
+    const funcs: c.cookie_io_functions_t = .{ .read = &eventFileFaultRead };
+    const oracle = c.fopencookie(&c_state, "r", funcs) orelse return error.CookieOpenFailed;
+    defer _ = c.fclose(oracle);
+    const scanned = c.fopencookie(&zig_state, "r", funcs) orelse return error.CookieOpenFailed;
+    defer _ = c.fclose(scanned);
+
+    var expected: [1024]u8 = undefined;
+    var actual: [1024]u8 = undefined;
+    for (0..complete_chunks) |_| {
+        @memset(&expected, 0xa5);
+        @memset(&actual, 0xa5);
+        try std.testing.expect(c.fgets(&expected, expected.len, oracle) != null);
+        try std.testing.expect(try readEventLine(scanned, &actual));
+        try std.testing.expectEqualSlices(u8, &expected, &actual);
+    }
+    try std.testing.expect(c.fgets(&expected, expected.len, oracle) == null);
+    try std.testing.expectError(error.ReadFailed, readEventLine(scanned, &actual));
+    try std.testing.expect(c.ferror(oracle) != 0);
+    try std.testing.expect(c.ferror(scanned) != 0);
+    try std.testing.expectEqual(c_state.offset, zig_state.offset);
+    try std.testing.expectEqual(fail_after, zig_state.offset);
+    try std.testing.expect(c_state.failures > 0 and zig_state.failures > 0);
+}
+
+test "event file line scanner discards partial chunks on injected FILE read error" {
+    try expectEventFileReadError("0x04", 0, 0);
+    try expectEventFileReadError("0x04 0x01 0x30\n", 7, 0);
+    try expectEventFileReadError("0x04 0x01 0x30\n0x01 0x09\n", "0x04 0x01 0x30\n0x01".len, 1);
+    try expectEventFileReadError("0x04\x00ignored\n", 7, 0);
+    const full = [_]u8{'x'} ** 1023;
+    try expectEventFileReadError(&full, full.len, 1);
+}
+
 /// `ipmi_event_fromfile()`.
 fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
     const name = file orelse return -1;
 
-    const fp = c.ipmi_open_file(name, 0);
-    if (fp == null) return -1;
+    const fp = c.ipmi_open_file(name, 0) orelse return -1;
+    defer _ = c.fclose(fp);
 
     var buf: [1024]u8 = undefined;
     var rc: c_int = 0;
 
     while (c.feof(fp) == 0) {
         var count: usize = 0;
-        if (c.fgets(&buf, 1024, fp) == null) continue;
+        const have_line = readEventLine(fp, &buf) catch {
+            log.print(log.Level.err, "event file: unable to read file", .{});
+            return -1;
+        };
+        if (!have_line) continue;
 
         // Each line is a new event
         var rqdata = std.mem.zeroes([@sizeOf(PlatformEventMsg)]u8);
@@ -1038,7 +1173,6 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
         }
     }
 
-    _ = c.fclose(fp);
     return rc;
 }
 

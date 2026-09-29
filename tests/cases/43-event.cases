@@ -683,6 +683,20 @@ transcript: bmc.tr
 text: ev.txt event/longline.txt
 covers: event
 
+[event_file_split_chunk]
+desc: physical line beyond 1023 bytes is parsed as multiple fgets chunks
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+blob: ev.txt event/split-chunk.hex
+covers: event
+
+[event_file_nul_boundary]
+desc: NUL hides the rest of a 1023-byte chunk without losing the following event
+args: -I dummy event file {work}/ev.txt
+transcript: bmc.tr
+blob: ev.txt event/nul-boundary.hex
+covers: event
+
 [event_file_tab_indent]
 desc: leading whitespace is stripped before the line is tokenised
 args: -I dummy event file {work}/ev.txt
