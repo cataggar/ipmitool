@@ -1023,6 +1023,13 @@ response lengths and bounded counts before decoding; malformed successful
 replies that the C code would read past are rejected rather than silently
 consuming stale transport-buffer data.
 
+The selected DCMI command now renders unknown `u16` labels into bounded Zig
+storage and matches case-sensitive command names with NUL-aware Zig equality.
+`zig build test-dcmi-strings` compares lowercase hexadecimal bytes and
+command decisions with libc at digit-width boundaries, for every first byte
+and embedded NULs; the `dcmi_` CLI goldens preserve output and requests. The
+static label buffer still lasts only until the next unknown lookup.
+
 Mechanics, all in `build.zig`:
 
 1. `zig_modules` maps each name to the `.c` it replaces and to its Zig
