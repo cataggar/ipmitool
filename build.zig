@@ -1469,6 +1469,14 @@ pub fn build(b: *std.Build) void {
     event_sample_step.dependOn(&b.addRunArtifact(event_sample_unit).step);
     test_step.dependOn(event_sample_step);
 
+    const event_cstrings_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.event.test.event cstrings"},
+    });
+    const event_cstrings_step = b.step("test-event-cstrings", "Compare event strings, comment offsets and lengths with libc");
+    event_cstrings_step.dependOn(&b.addRunArtifact(event_cstrings_unit).step);
+    test_step.dependOn(event_cstrings_step);
+
     const pong_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"intf.lanplus.test.pong stdout"},

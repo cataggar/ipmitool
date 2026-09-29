@@ -27,8 +27,9 @@
 //!   `ipmi_get_next_event_sensor_type()` exactly as C does.
 //! * **Formatting and string handling keep libc behavior.** Apart from the
 //!   checked Zig stdout announcements for the three sample events, `printf`,
-//!   `strcmp`, `strcasecmp`, `strchr`, `strtok`, `isspace`, `fgets` and
-//!   `str2uchar` use the `ipmi_c` bridge. Diagnostics use the typed logger
+//!   `strcasecmp`, `strtok`, `isspace`, `fgets` and `str2uchar` use the
+//!   `ipmi_c` bridge. Equality, comment scanning and string lengths use
+//!   NUL-aware Zig operations. Diagnostics use the typed logger
 //!   (libc `snprintf` when selected, C `lprintf` otherwise); `%-9s` padding,
 //!   the `(null)` a NULL `%s` prints and `strtok`'s in-place chopping are all
 //!   observable in the golden snapshots.
@@ -233,7 +234,37 @@ fn cIntf(intf: *Intf) [*c]c.struct_ipmi_intf {
 }
 
 fn eql(a: [*:0]const u8, b: [*:0]const u8) bool {
-    return c.strcmp(a, b) == 0;
+    return std.mem.eql(u8, std.mem.span(a), std.mem.span(b));
+}
+
+fn findComment(text: [*:0]u8) ?[*:0]u8 {
+    const index = std.mem.indexOfScalar(u8, std.mem.span(text), '#') orelse return null;
+    return text + index;
+}
+
+test "event cstrings match libc equality comment offsets and lengths" {
+    for ([_][*:0]const u8{ "", "help", "Help", "file", "file ", "1", "12" }) |left| {
+        for ([_][*:0]const u8{ "", "help", "Help", "file", "file ", "1", "12" }) |right| {
+            try std.testing.expectEqual(c.strcmp(left, right) == 0, eql(left, right));
+        }
+    }
+    for (0..256) |byte| {
+        var text = [_:0]u8{ @intCast(byte), '#', 'x', 0, '#' };
+        const expected = if (c.strchr(&text, '#')) |at|
+            @as(?usize, @intFromPtr(at) - @intFromPtr(&text))
+        else
+            null;
+        const actual = if (findComment(&text)) |at|
+            @as(?usize, @intFromPtr(at) - @intFromPtr(&text))
+        else
+            null;
+        try std.testing.expectEqual(expected, actual);
+        try std.testing.expectEqual(c.strlen(&text), std.mem.sliceTo(&text, 0).len);
+        try std.testing.expectEqual(c.strcmp(&text, "help") == 0, eql(&text, "help"));
+    }
+    var hidden = [_:0]u8{ 'h', 'e', 'l', 'p', 0, '#' };
+    try std.testing.expect(eql(&hidden, "help"));
+    try std.testing.expect(findComment(&hidden) == null);
 }
 
 fn eqlIgnoreCase(a: [*:0]const u8, b: [*:0]const u8) bool {
@@ -723,20 +754,17 @@ fn eventFromFile(intf: *Intf, file: ?[*:0]const u8) c_int {
         var rqdata = std.mem.zeroes([@sizeOf(PlatformEventMsg)]u8);
 
         // clip off optional comment tail indicated by #
-        var ptr: [*c]u8 = c.strchr(&buf, '#');
-        if (ptr != null) {
-            ptr[0] = 0;
-        }
+        if (findComment(@ptrCast(&buf))) |comment| comment[0] = 0;
 
         // clip off trailing and leading whitespace
-        var end = c.strlen(&buf);
+        var end = std.mem.sliceTo(&buf, 0).len;
         while (end > 0 and c.isspace(buf[end - 1]) != 0) {
             end -= 1;
             buf[end] = 0;
         }
-        ptr = &buf;
+        var ptr: [*c]u8 = &buf;
         while (c.isspace(ptr[0]) != 0) ptr += 1;
-        if (c.strlen(ptr) == 0) continue;
+        if (ptr[0] == 0) continue;
 
         // parse the event, 7 bytes with optional comment
         // 0x00 0x00 0x00 0x00 0x00 0x00 0x00 # event
@@ -811,7 +839,7 @@ fn eventMain(intf: *Intf, argc: c_int, argv: [*]const [*:0]u8) callconv(.c) c_in
         }
         return eventFromFile(intf, argv[1]);
     }
-    if (c.strlen(argv[0]) == 1) {
+    if (std.mem.len(argv[0]) == 1) {
         switch (argv[0][0]) {
             '1' => return sendPlatformEventNum(intf, 1),
             '2' => return sendPlatformEventNum(intf, 2),
