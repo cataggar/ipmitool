@@ -1078,6 +1078,35 @@ pub fn build(b: *std.Build) void {
     budget_step.dependOn(&budget_tests.step);
     test_step.dependOn(budget_step);
 
+    const native_headers_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/header_types_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = false,
+    });
+    const native_headers = b.addTest(.{ .root_module = native_headers_mod });
+    const native_headers_step = b.step("test-header-types-native", "Run standalone native header wire, bitfield and layout tests without C or libc");
+    native_headers_step.dependOn(&b.addRunArtifact(native_headers).step);
+    b.step("test-header-types-native-compile", "Cross-compile standalone native header tests without C or libc")
+        .dependOn(&native_headers.step);
+    test_step.dependOn(native_headers_step);
+
+    const interop_headers_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/header_types_interop_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    interop_headers_mod.addImport("ipmi_c", bridge_mod);
+    configure(b, interop_headers_mod, config_h, default_intf);
+    interop_headers_mod.addCSourceFile(.{ .file = b.path("tests/header_types_oracle.c"), .flags = &.{"-std=c11"} });
+    const interop_headers = b.addTest(.{ .root_module = interop_headers_mod });
+    const interop_headers_step = b.step("test-header-types-interop", "Run retained C header ABI, bitfield and session socket fixtures");
+    interop_headers_step.dependOn(&b.addRunArtifact(interop_headers).step);
+    b.step("test-header-types-interop-compile", "Cross-compile retained C header ABI and socket fixtures")
+        .dependOn(&interop_headers.step);
+    test_step.dependOn(interop_headers_step);
+
     if (allSelected(zig_selection) and is_linux) {
         const no_varargs_step = b.step("test-no-log-varargs", "Check the all-selected archives have no project C objects or C variadic logger");
         const check = b.addSystemCommand(&.{ "python3", "-B", "tests/logging_no_varargs.py" });
@@ -1119,8 +1148,8 @@ pub fn build(b: *std.Build) void {
     }
 
     // Compiling `src/zig/root.zig` runs every `comptime` layout assertion in
-    // the header ports, so this fails the build when a C header and its Zig
-    // mirror drift apart. Nothing here is exported; the fd_set C oracle
+    // the header ports and isolated interop validation, so mismatched C and Zig
+    // declarations fail the build. Nothing here is exported; the fd_set C oracle
     // below is linked into tests only, never into production binaries.
     const abi_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/root.zig"),

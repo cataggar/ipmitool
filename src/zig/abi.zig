@@ -2,10 +2,10 @@
 //!
 //! Every `extern struct` under `core/`, `intf/` and `util/` mirrors a C
 //! declaration in `include/ipmitool/`.  Nothing enforces that by itself, so
-//! each mirror ends with a `comptime` block that calls into this file.  The
-//! assertions run whenever the module is compiled, which means a header change
-//! that is not reflected in the Zig port is a build failure rather than silent
-//! memory corruption at run time.
+//! mirrors call into this file either directly or from an isolated validation
+//! module imported by mixed-selection roots. A header change not reflected in
+//! the Zig port is a build failure rather than silent memory corruption at run
+//! time, while native header consumers need not translate C.
 //!
 //! Two flavours exist because `translate-c` demotes any struct containing a
 //! bitfield to `opaque {}`:
