@@ -7,6 +7,73 @@ revertible change instead of an architectural decision.
 Related documents: [`baseline-oracle.md`](baseline-oracle.md) for the reference
 binaries the golden checks compare against, and issue #2 for the overall plan.
 
+## C bridge budget ratchet
+
+`zig build test-cimport-budget` checks the sorted, checked-in
+[`cimport-budget.txt`](cimport-budget.txt) inventory (`<count> <path>` per
+line). It is also part of `zig build test` and the CI `fmt` job. The checker
+and its regression tests are pure Zig, with no C headers, libc oracle,
+autotools, Python, or external dependencies. The build runs the checker on
+the **build root**, not the caller's cwd, and always rescans, even on a cache
+hit. Only regular `.zig` files under that root's `src/zig` are scanned,
+including untracked/hidden sources; `.git`, `.zig-cache`, `.worktrees`,
+`zig-out`, and symlinks are not followed (a `.zig` symlink is rejected).
+Noncanonical/whitespace-containing `.zig` paths are rejected, not silently
+skipped. Sibling worktrees and build caches are not source inputs.
+
+This is a **syntax-reference budget**, not a count of libc calls. The rough
+regex counts in issue #226 also matched comments and strings and are not
+the baseline here. `std.zig.Ast` uses Zig's tokenizer/parser to count each
+field-access expression whose namespace is the `ipmi_c` bridge, plus each
+qualified access yielding a reexported bridge namespace and the equivalent
+`@field(namespace, "member")` expressions. For example, `c.printf`, `c.FILE`,
+and `c.EINVAL` each cost one, regardless of whether the declaration is used
+as a call, type, constant, or function value. `common.c.printf` costs two
+(the reexported namespace and its member); `const c = common.c` costs one.
+Comments, ordinary/multiline strings, and unrelated fields cost nothing.
+Quoted identifiers and escaped import strings are decoded, not regex-matched.
+
+Direct `@import("ipmi_c")` expressions establish bridge namespaces under
+**any alias**, as do parenthesized/chained aliases and relative Zig-file
+reexports within the scanned tree. Alias discovery is conservative and
+file-wide, not a compiler's lexical scope/type analysis: a same-named local
+shadow is still charged, and conflicting non-bridge module aliases are
+rejected rather than silently resolved. Use distinct namespace alias names.
+Computed import paths and malformed Zig source fail closed. This does not
+perform arbitrary comptime evaluation or discover C usage through unrelated
+wrappers outside `src/zig`; it is not a whole-program dependency analyzer.
+
+Imports are tracked separately from reference counts. An importing file
+with no qualified references has a **zero** entry and is not clean yet.
+Any new importing or bridge-referencing file fails if absent from the
+inventory, including relative reexport consumers. A budget entry fails if
+its file disappears, becomes clean (no direct bridge imports **and** no
+bridge references), or exceeds its reference limit. Counts include all
+source configurations and **in-tree characterization tests using C as an
+oracle**; test-only imports and references are not silently exempted.
+
+When removing seams, lower the affected limits to the measured counts, and
+remove entries for deleted/now-clean files. Inspect current measurements:
+
+```sh
+zig run tools/cimport_budget.zig -- --inventory .
+zig build test-cimport-budget -Dzig-modules=all \
+  -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false
+```
+
+The feature flags above avoid the build configuration's optional
+OpenSSL/readline detection on minimal hosts; the checker itself does not
+compile or link any selected application modules.
+
+The inventory command only prints; the gate never rewrites its baseline.
+Do not blindly replace the inventory on every PR: review its diff together
+with the source diff, and keep existing per-file budgets non-increasing.
+The checked-in inventory is a maintainable ratchet **against the selected
+checkout**, not cross-branch baseline enforcement. CI does not compare the
+budget to the PR base; editing a limit upward or adding an entry can bless
+an increase. Reviewers must compare inventory changes with the base branch
+and require explicit justification for any new seam or budget increase.
+
 ## Module map
 
 The Zig tree mirrors the C tree. Header ports and translation-unit ports are
