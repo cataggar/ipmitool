@@ -123,6 +123,10 @@ MC wrapper shares this scanner. Exact bridge limits fall by two in `helper.zig`
 and one in `mc.zig`, with no new importing/reference entry or blanket refresh.
 Production `str2double` remains libc-backed pending locale/FP adapters.
 
+The bounded, C-free [timezone prerequisite](timezone.md) defines the owned
+TZif/POSIX offset/DST/abbreviation API for the forthcoming `util/time.zig`
+adapter. Calendar/locale formatting and that adapter remain separate slices.
+
 The Zig tree mirrors the C tree. Header ports and translation-unit ports are
 kept apart, exactly as `include/ipmitool/*.h` and `lib/*.c` are.
 

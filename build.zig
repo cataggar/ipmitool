@@ -2315,6 +2315,19 @@ pub fn build(b: *std.Build) void {
     calendar_parity_step.dependOn(&b.addRunArtifact(calendar_parity).step);
     test_step.dependOn(calendar_parity_step);
 
+    const timezone_unit = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/zig/util/timezone_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = false,
+        }),
+    });
+    const timezone_step = b.step("test-timezone", "Test C-free TZif and POSIX timezone decoding");
+    timezone_step.dependOn(&b.addRunArtifact(timezone_unit).step);
+    b.step("test-timezone-compile", "Cross-compile C-free timezone tests").dependOn(&timezone_unit.step);
+    test_step.dependOn(timezone_step);
+
     const shell_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"quoted shell words"},
