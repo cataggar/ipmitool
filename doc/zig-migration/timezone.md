@@ -3,7 +3,18 @@
 `src/zig/util/timezone.zig` decodes bounded TZif v1/v2/v3 files and POSIX TZ
 specifications without C imports, libc or process-global timezone state.
 This is a prerequisite, **not** the `util/time.zig` adapter cutover or completion
-of #228. That adapter remains unchanged; calendar/locale formatting is separate.
+of #228. This timezone child does not change adapter/locale policy; its shared
+calendar primitive/formatter comes from the reviewed parent recorded below.
+
+## Recorded stack provenance
+
+The original timezone implementation is
+`92911eea8aeb2ab4b3c3a32c342be70b3dd31c7d`, preserved locally as
+`issue-228-timezone-pre-calendar-92911eea`. This child is stacked on reviewed
+calendar commit `0367664943a7660caa36dada6abbe84466901053`.
+Only this child adds `Civil.epochDay() !i128` to the shared calendar and reuses
+it for weekday/epoch conversion and timezone rules. The calendar and strings
+worktrees are not modified by this stack.
 
 ## Offset API and ownership
 
@@ -62,6 +73,13 @@ POSIX rule evaluation follows glibc's UTC calendar-year selection and its
 pre-1970 January-1 epoch anchoring, including the resulting historical and
 out-of-day/year-boundary behavior. Do not silently replace these rules with
 a more intuitive extrapolation during the formatter migration.
+
+Gregorian arithmetic is shared with `time_calendar.zig`: transition years use
+`calendar.fromEpoch(instant).year`, leap rules use `calendar.isLeapYear`, and
+month/day boundaries use checked `Civil.epochDay() !i128`. All transition
+seconds remain `i128`; an `i64 toEpoch` call cannot represent some January/rule
+boundaries surrounding a valid endpoint instant. The characterized `<=1970`
+POSIX epoch anchoring is retained after this extraction.
 
 POSIX offsets use the reversed POSIX sign convention (`XYZ5` is UTC-05:00).
 Alphabetic/quoted names, explicit/default DST offsets, northern/southern

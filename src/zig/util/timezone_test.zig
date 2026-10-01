@@ -228,6 +228,10 @@ test "POSIX signed/out-of-day transition clocks and full signed timestamp domain
     try expect(&zone, 1636333200, 0, false, "STD");
     _ = zone.offsetAt(std.math.minInt(i64));
     _ = zone.offsetAt(std.math.maxInt(i64));
+    var wide = try tz.Zone.fromPosix(allocator, "STD0DST,0/0u,365/167u");
+    defer wide.deinit();
+    try expect(&wide, std.math.minInt(i64), 0, false, "STD");
+    try expect(&wide, std.math.maxInt(i64), 3600, true, "DST");
 }
 
 test "glibc POSIX UTC-year boundary and pre-1970 semantics remain explicit" {

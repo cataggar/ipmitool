@@ -1,5 +1,6 @@
 //! Borrowed, bounded POSIX TZ specifications; no environment or libc access.
 const std = @import("std");
+const calendar = @import("time_calendar.zig");
 
 pub const max_spec_bytes = 4096;
 pub const ParseError = error{ InvalidSpecification, MissingDstRules, LimitExceeded };
@@ -29,7 +30,7 @@ pub const Spec = struct {
 
     pub fn offsetAt(self: Spec, instant: i64) Offset {
         const dst = self.daylight orelse return self.standard();
-        const year = yearFromDays(@divFloor(instant, 86400));
+        const year = calendar.fromEpoch(instant).year;
         // glibc evaluates rules in the UTC calendar year. Preserve this
         // characterized behavior, including its pre-1970 epoch anchoring and
         // UTC-year boundaries for out-of-day rules, rather than "fixing" it.
@@ -194,42 +195,25 @@ const Parser = struct {
     }
 };
 
-fn leap(year: i64) bool {
-    return @mod(year, 4) == 0 and (@mod(year, 100) != 0 or @mod(year, 400) == 0);
-}
-
-fn daysFromCivil(year: i64, month: u8, day: u8) i64 {
-    const y = year - @as(i64, @intFromBool(month <= 2));
-    const era = @divFloor(y, 400);
-    const yoe = y - era * 400;
-    const m = @as(i64, month) + @as(i64, if (month > 2) -3 else 9);
-    const doy = @divFloor(153 * m + 2, 5) + day - 1;
-    const doe = yoe * 365 + @divFloor(yoe, 4) - @divFloor(yoe, 100) + doy;
-    return era * 146097 + doe - 719468;
-}
-
-fn yearFromDays(days: i64) i64 {
-    const z = days + 719468;
-    const era = @divFloor(z, 146097);
-    const doe = z - era * 146097;
-    const yoe = @divFloor(doe - @divFloor(doe, 1460) + @divFloor(doe, 36524) - @divFloor(doe, 146096), 365);
-    const year = yoe + era * 400;
-    const doy = doe - (365 * yoe + @divFloor(yoe, 4) - @divFloor(yoe, 100));
-    const mp = @divFloor(5 * doy + 2, 153);
-    return year + @as(i64, @intFromBool(mp >= 10));
-}
-
 fn transition(rule: Rule, year: i64, standard_offset: i32, wall_offset: i32) i128 {
+    // Rules are validated and fromEpoch's years fit well inside i64. Day one
+    // and the following month are valid even at either i64 instant endpoint.
+    const january = (calendar.Civil{ .year = year, .month = 1, .day = 1 }).epochDay() catch unreachable;
     const days = switch (rule.day) {
-        .julian => |day| daysFromCivil(year, 1, 1) + day - 1 +
-            @as(i64, @intFromBool(leap(year) and day >= 60)),
-        .ordinal => |day| daysFromCivil(year, 1, 1) + day,
+        .julian => |day| january + day - 1 +
+            @as(i128, @intFromBool(calendar.isLeapYear(year) and day >= 60)),
+        .ordinal => |day| january + day,
         .month => |m| blk: {
-            const first = daysFromCivil(year, m.month, 1);
-            const weekday = @mod(first + 4, 7);
-            var day = @mod(@as(i64, m.weekday) - weekday, 7) + 7 * (@as(i64, m.week) - 1);
-            const lengths = [_]u8{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-            const length = lengths[m.month - 1] + @as(u8, @intFromBool(m.month == 2 and leap(year)));
+            const date = calendar.Civil{ .year = year, .month = m.month, .day = 1 };
+            const first = date.epochDay() catch unreachable;
+            const weekday = date.weekday() catch unreachable;
+            const next_month = calendar.Civil{
+                .year = year + @as(i64, @intFromBool(m.month == 12)),
+                .month = if (m.month == 12) 1 else m.month + 1,
+                .day = 1,
+            };
+            const length = (next_month.epochDay() catch unreachable) - first;
+            var day = @mod(@as(i128, m.weekday) - weekday, 7) + 7 * (@as(i128, m.week) - 1);
             if (day >= length) day -= 7;
             break :blk first + day;
         },
@@ -239,6 +223,6 @@ fn transition(rule: Rule, year: i64, standard_offset: i32, wall_offset: i32) i12
         .standard => standard_offset,
         .utc => 0,
     };
-    const anchored_days = if (year <= 1970) days - daysFromCivil(year, 1, 1) else days;
-    return @as(i128, anchored_days) * 86400 + rule.seconds - offset;
+    const anchored_days = if (year <= 1970) days - january else days;
+    return anchored_days * calendar.seconds_per_day + rule.seconds - offset;
 }
