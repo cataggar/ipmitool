@@ -1873,12 +1873,25 @@ pub fn build(b: *std.Build) void {
 
     const fd_set_unit = b.addTest(.{
         .root_module = abi_mod,
-        .filters = &.{ "fd_set matches libc macros", "intf.open.test." },
+        .filters = &.{ "util.fd_set.test.", "intf.open.test." },
     });
     b.step("test-fdset", "Run fd_set boundary and OpenIPMI model tests")
         .dependOn(&b.addRunArtifact(fd_set_unit).step);
     b.step("test-fdset-compile", "Cross-compile fd_set ABI parity tests")
         .dependOn(&fd_set_unit.step);
+
+    const fd_native_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/util/fd_set.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const fd_native_test = b.addTest(.{
+        .root_module = fd_native_mod,
+        .filters = &.{"fd_set native"},
+    });
+    const fd_native_step = b.step("test-fdset-native", "Test fd_set without translated headers or libc");
+    fd_native_step.dependOn(&b.addRunArtifact(fd_native_test).step);
+    test_step.dependOn(fd_native_step);
 
     const open_path_unit = b.addTest(.{
         .root_module = abi_mod,
