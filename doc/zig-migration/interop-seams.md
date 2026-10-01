@@ -1153,14 +1153,19 @@ the new file and reports the existing PID creation error; the daemon process
 fixture checks exact bytes, permissions and cleanup after both stop signals.
 The default C daemon remains the oracle.
 
-The ISOL, LAN, LAN+ and OpenIPMI ports share a Zig-only `fd_set` helper. It
-accepts a translated libc type only when its size, alignment and single
-long-word-array layout match `FD_SETSIZE`; no private glibc field name or
-production C shim is needed. `zig build test-fdset` checks the word and
-capacity boundaries against libc's `FD_*` macros in a test-only C oracle;
-`test-fdset-compile` checks those ABI assertions on cross targets. OpenIPMI
-also passes `ioctl` requests in the request type declared by the target libc,
-preserving the 32-bit request bits on musl.
+The ISOL, LAN, LAN+ and OpenIPMI ports share a Zig-only `fd_set` helper.
+`util/fd_set.zig` declares its own 1024-bit `FdSet` without importing
+`ipmi_c`. Its generic pointer helpers also accept the existing translated
+libc types, but only when their size, alignment and single long-word-array
+layout match the native declaration; unsupported layouts fail at compile
+time. No private glibc field name or production C shim is needed.
+`zig build test-fdset-native` tests every descriptor using unsigned and
+signed word arrays without translated headers or libc. `test-fdset` retains
+the byte-for-byte comparison with libc's `FD_*` macros in a test-only C
+oracle, whose static assertions also guard capacity, size and alignment on
+the `test-fdset-compile` cross targets. OpenIPMI passes `ioctl` requests in
+the request type declared by the target libc, preserving the 32-bit
+request bits on musl.
 
 The LAN and LAN+ Zig transports use `util/log.zig`'s typed `print` for
 literal C `printf` diagnostics. Both transports and the selected logger are
