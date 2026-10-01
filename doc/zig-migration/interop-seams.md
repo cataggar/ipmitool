@@ -235,8 +235,8 @@ steps still include the broader ABI root.
 ### Frozen static string oracle provenance
 
 `util/testdata/strings-c-sha256-{0,1}.txt` are not derived from the generated
-Zig tables or their parser. `tools/dump_strings_baseline.c` compiles and walks
-the original C arrays at pinned C-capable revision
+Zig tables or their parser. An archived C dumper compiles and walks
+the original C arrays at the independent **product-baseline pin**,
 `207aa0ddeec2a7192a2edd9559c1bf4bd19a6f21`. It uses `sizeof(array)` rather
 than stopping at NULL, so entries added behind the sentinel cannot evade the
 check. Each fixture records its revision/feature, constants, table kind/count,
@@ -249,6 +249,13 @@ The archived `lib/ipmi_strings.c` SHA256 is
 `1e645b0d134f8755840c0f93ccae3062155f45843f89746e10971249301da8e9`;
 the pinned `include` Git tree is
 `27308375ae27168e3afce432d977c02984c5c66d`.
+
+The independent **dumper-generation pin** is
+`3734b6e935c72e031d66346fb9bc95b81277dcfe`, whose historical
+`tools/dump_strings_baseline.c` has Git blob
+`903561f7a808dc42cce6d25c244ab02228b184ad` and SHA256
+`a27bf2cf84b8a173020575244d82e7e033413427c879ac078e17fc9e80bd6505`.
+The current tree deliberately contains no copy of that C dumper.
 `strings-c.SHA256SUMS` records the fixture digests:
 
 | SHA256 feature | Frozen fixture SHA256 |
@@ -257,13 +264,33 @@ the pinned `include` Git tree is
 | enabled | `6c0dc692a848f8aeeffb89222948e5ce218254712843f6a6d6d54e4739afde1a` |
 
 Optional reproduction: `sh tools/gen_strings_baseline.sh --check`. This uses
-`git archive` to recover only the pinned headers/C source under
-`build/strings-baseline`, verifies their provenance, compiles the external
-oracle with `zig cc`, and byte-compares both dumps and their SHA256 sums.
-It requires that historical commit in local Git history (fetch it if using a
-shallow clone), but **never reads current C/product data or runs `build.zig`**.
-It therefore survives future deletion of in-tree C, and is not a normal test
-dependency. Explicit `--write` rewrites only the two fixtures; changing the
+`git archive` to recover the product-baseline headers/C source under
+`build/strings-baseline/pinned`, verifies their provenance, and recovers the
+historical dumper blob into `build/strings-baseline/dump_strings_baseline.c`.
+It verifies both the dumper's generation-commit/blob relationship and SHA256
+before compiling that recovered source with `zig cc`, then byte-compares both
+dumps and their SHA256 sums. It **never reads current C/product data or runs
+`build.zig`**, so deleting all tracked C files does not break reproduction.
+Neither historical recovery nor C compilation is a normal test dependency.
+
+Both pinned commits must exist in local Git history; missing objects cause a
+hard error, never a fallback to current product tables. For a shallow clone,
+obtain the exact pins from a remote retaining their published history:
+
+```sh
+git fetch --no-tags origin 207aa0ddeec2a7192a2edd9559c1bf4bd19a6f21
+git fetch --no-tags origin 3734b6e935c72e031d66346fb9bc95b81277dcfe
+```
+
+If the server disallows direct commit-SHA fetches, fetch the published branch
+containing those commits (including the dumper-generation history), or use
+`git fetch --unshallow origin` for a shallow clone of that history. Substitute
+a retaining remote for `origin` if necessary; do not replace either pin with
+current HEAD.
+
+Explicit `--write` rewrites only the two fixtures and deliberately **does not
+update `strings-c.SHA256SUMS`**. If fixture content changes, its checksum
+manifest stays stale until separately reviewed and updated. Changing either
 pin, checksums and expected coverage remains a separate reviewed action.
 
 The frozen revision includes intentional upstream corrections, not an older
