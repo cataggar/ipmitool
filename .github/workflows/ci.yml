@@ -91,6 +91,9 @@ jobs:
           printf '  %s\n' "${files[@]}"
           zig fmt --check "${files[@]}"
 
+      - name: Ratchet C bridge references
+        run: zig build test-cimport-budget -Dzig-modules=all -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false
+
   build:
     name: build
     strategy:

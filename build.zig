@@ -1062,6 +1062,22 @@ pub fn build(b: *std.Build) void {
     selector_step.dependOn(&selector_cli_tests.step);
     test_step.dependOn(selector_step);
 
+    const budget_mod = b.createModule(.{
+        .root_source_file = b.path("tools/cimport_budget.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const budget_exe = b.addExecutable(.{ .name = "cimport-budget", .root_module = budget_mod });
+    const budget_check = b.addRunArtifact(budget_exe);
+    budget_check.addDirectoryArg(b.path("."));
+    // Always rescan: new/untracked sources are not explicit build inputs.
+    budget_check.has_side_effects = true;
+    const budget_tests = b.addRunArtifact(b.addTest(.{ .root_module = budget_mod }));
+    const budget_step = b.step("test-cimport-budget", "Ratchet C bridge references and test the syntax-only checker");
+    budget_step.dependOn(&budget_check.step);
+    budget_step.dependOn(&budget_tests.step);
+    test_step.dependOn(budget_step);
+
     if (allSelected(zig_selection) and is_linux) {
         const no_varargs_step = b.step("test-no-log-varargs", "Check the all-selected archives have no project C objects or C variadic logger");
         const check = b.addSystemCommand(&.{ "python3", "-B", "tests/logging_no_varargs.py" });
