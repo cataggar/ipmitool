@@ -5,6 +5,8 @@
 # tables change.  Running it on a clean tree must leave the tree clean - that
 # is the cheapest check that the committed Zig really is what the generator
 # produces from the C.
+# It never rewrites the independent frozen baseline or its validator; see
+# tools/gen_strings_baseline.sh for optional historical oracle reproduction.
 #
 # Usage: sh tools/gen_strings.sh
 

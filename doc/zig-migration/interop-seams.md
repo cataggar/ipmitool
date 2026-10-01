@@ -210,23 +210,67 @@ The generated `util/strings_tables.zig` is data-only: it imports the pure-Zig
 `-Dopenssl` switch that defines `HAVE_CRYPTO_SHA256` in `config.h`, even with
 LAN+ disabled. `util/strings.zig`'s lookup rules also import only the Zig
 tables and layouts; the dynamic registry uses those layouts directly. The
-selected export boundary and ABI test root import the separate generated
-`util/strings_tables_validation.zig` to check every copied C constant,
-exported table element layout and the SHA256 feature against the translated C
-header. The table file retains the same C exports and entry order. The
-unchanged C implementation remains the golden oracle.
+selected export boundary and ABI test root import the separate, hand-written
+`util/strings_tables_validation.zig`. It checks all 72 copied constants,
+all 34 static arrays (including the registry head/tail/dummy), every numeric
+field, complete string byte sequence, duplicate-key order, array length and
+sentinel against frozen **independently compiled C-origin** fixtures. It
+checks the extern element layouts and SHA256 build option without importing
+the C bridge. The table file retains the same C exports and entry order.
 
-To regenerate both files after changing the C tables or headers, translate
+To regenerate product data after changing the C tables or headers, translate
 `src/zig/ipmi_c.h` with the same configuration as `build.zig`, then run
 `zig run tools/gen_strings.zig -- lib/ipmi_strings.c ipmi_c.zig
 src/zig/util/strings_tables.zig`. Repeat with `--check` before the C source
-to verify both generated files without writing them. `zig build
-test-strings-tables` compiles the data without a C bridge in both SHA256
-configurations; `zig build test-strings-lookup-data` runs the lookup tests
-without C headers or libc in both configurations. `zig build
-test-strings-unit` retains the C-backed ABI checks. `zig build
-test-strings-compile -Dtarget=x86_64-linux-musl`
-cross-compiles those C header checks without running a foreign test binary.
+to verify the product data without writing it. This generator never rewrites
+the validator or frozen oracle. `zig build test-strings-tables` validates
+both SHA256 configurations without C headers or libc, verifies both fixture
+SHA256 digests and runs deliberate value/text/order/sentinel corruption tests.
+`zig build test-strings-tables-compile -Dtarget=x86_64-linux-musl` cross-compiles
+the same pure validation without running a foreign test binary.
+`zig build test-strings-lookup-data` runs the C-free lookup tests in both
+configurations. The existing `test-strings-unit` and `test-strings-compile`
+steps still include the broader ABI root.
+
+### Frozen static string oracle provenance
+
+`util/testdata/strings-c-sha256-{0,1}.txt` are not derived from the generated
+Zig tables or their parser. `tools/dump_strings_baseline.c` compiles and walks
+the original C arrays at pinned C-capable revision
+`207aa0ddeec2a7192a2edd9559c1bf4bd19a6f21`. It uses `sizeof(array)` rather
+than stopping at NULL, so entries added behind the sentinel cannot evade the
+check. Each fixture records its revision/feature, constants, table kind/count,
+row index, numeric fields and nullable length-prefixed hexadecimal string
+bytes; empty strings and NULL are distinct. There are 1,274 entries with
+SHA256 disabled and 1,276 enabled, including every sentinel. The original
+Sun license is retained alongside the fixtures.
+
+The archived `lib/ipmi_strings.c` SHA256 is
+`1e645b0d134f8755840c0f93ccae3062155f45843f89746e10971249301da8e9`;
+the pinned `include` Git tree is
+`27308375ae27168e3afce432d977c02984c5c66d`.
+`strings-c.SHA256SUMS` records the fixture digests:
+
+| SHA256 feature | Frozen fixture SHA256 |
+| --- | --- |
+| disabled | `267dc282f6cf88b2214c5b578a71be2d2176ed405ca86c8f67f58ccb0e57975f` |
+| enabled | `6c0dc692a848f8aeeffb89222948e5ce218254712843f6a6d6d54e4739afde1a` |
+
+Optional reproduction: `sh tools/gen_strings_baseline.sh --check`. This uses
+`git archive` to recover only the pinned headers/C source under
+`build/strings-baseline`, verifies their provenance, compiles the external
+oracle with `zig cc`, and byte-compares both dumps and their SHA256 sums.
+It requires that historical commit in local Git history (fetch it if using a
+shallow clone), but **never reads current C/product data or runs `build.zig`**.
+It therefore survives future deletion of in-tree C, and is not a normal test
+dependency. Explicit `--write` rewrites only the two fixtures; changing the
+pin, checksums and expected coverage remains a separate reviewed action.
+
+The frozen revision includes intentional upstream corrections, not an older
+golden typo: completion code `0xd1` says “Device firmware in update mode”
+(`eb1df8d6a608074c05a1db768830747c01927aaa`), and YADRO product `49769/0x15`
+says “TATLIN Series Storage Controller BMC”
+(`3c91e6d91ec6090fe548c55ef301c33ff20c8ed8`). Dedicated tests retain both.
 
 The two LAN+ lookup tables in `intf/lanplus_strings.zig` also import only
 `util/table_types.zig`. Selected exports check every copied status and

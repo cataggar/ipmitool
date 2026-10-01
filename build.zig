@@ -1984,7 +1984,8 @@ pub fn build(b: *std.Build) void {
     b.step("test-strings-compile", "Cross-compile lookup table C header assertions")
         .dependOn(&strings_unit.step);
 
-    const strings_tables_step = b.step("test-strings-tables", "Test pure-Zig tables with and without SHA256");
+    const strings_tables_step = b.step("test-strings-tables", "Compare pure-Zig tables with frozen C baselines, with and without SHA256");
+    const strings_tables_compile_step = b.step("test-strings-tables-compile", "Cross-compile C-free static table validation in both SHA256 configurations");
     inline for (.{ false, true }) |sha256| {
         const feature_options = b.addOptions();
         feature_options.addOption(bool, "have_crypto_sha256", sha256);
@@ -1994,7 +1995,9 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         });
         table_mod.addImport("build_options", feature_options.createModule());
-        strings_tables_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = table_mod })).step);
+        const table_tests = b.addTest(.{ .root_module = table_mod });
+        strings_tables_step.dependOn(&b.addRunArtifact(table_tests).step);
+        strings_tables_compile_step.dependOn(&table_tests.step);
     }
     test_step.dependOn(strings_tables_step);
 
