@@ -11,9 +11,10 @@
 //! offset. `ipmiLocaltime2utc()` remains exported for C ABI compatibility but
 //! cannot convert a `time_t` that already identifies an absolute instant.
 //!
-//! Calendar formatting goes through libc `strftime()` so the `%c`, `%x`,
-//! `%X` and `%Z` conversions keep producing exactly what they did before.
-//! The fixed "Unknown" timestamp uses Zig byte copies.
+//! Owned relative numeric accessor patterns use the header-free Gregorian
+//! calendar helper. The general ABI and absolute/locale-sensitive formatting
+//! still use libc explicitly until timezone and non-C-locale adapters exist.
+//! No helper failure falls back to libc. "Unknown" uses Zig byte copies.
 //!
 //! Storage: `ipmiTimestampFmt()` and everything built on it return a pointer to
 //! a single module-level buffer that the next call overwrites, and the
@@ -23,6 +24,7 @@ const std = @import("std");
 
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const calendar = @import("time_calendar.zig");
 
 /// `IPMI_TIME_UNSPECIFIED`, as `time_t` after the C integer promotions.
 pub const time_unspecified: c.time_t = 0xFFFFFFFF;
@@ -129,6 +131,14 @@ pub fn ipmiTimestampFmt(stamp: u32, fmt: [*:0]const u8) callconv(.c) [*c]u8 {
     return &datebuf;
 }
 
+fn relativeTimestampFmt(stamp: u32, comptime format: []const u8) [*c]u8 {
+    std.debug.assert(isSpecial(stamp));
+    const len = calendar.formatZ(&datebuf, format, calendar.fromEpoch(stamp), .{}) catch |err|
+        std.debug.panic("relative timestamp formatting failed: {s}", .{@errorName(err)});
+    if (len == 0) std.debug.panic("relative timestamp exceeded IPMI_ASCTIME_SZ", .{});
+    return &datebuf;
+}
+
 /// The `"Unspecified"` literal the four accessors return for an invalid stamp.
 ///
 /// C returns a string literal through a `char *`, which the callers only ever
@@ -143,9 +153,9 @@ pub fn ipmiTimestampString(stamp: u32) callconv(.c) [*c]u8 {
 
     if (isSpecial(stamp)) {
         if (stamp < seconds_a_day) {
-            return ipmiTimestampFmt(stamp, "S+ %H:%M:%S");
+            return relativeTimestampFmt(stamp, "S+ %H:%M:%S");
         }
-        return ipmiTimestampFmt(stamp, "S+ %y years %j days %H:%M:%S");
+        return relativeTimestampFmt(stamp, "S+ %y years %j days %H:%M:%S");
     }
     return ipmiTimestampFmt(stamp, "%c %Z");
 }
@@ -156,9 +166,9 @@ pub fn ipmiTimestampNumeric(stamp: u32) callconv(.c) [*c]u8 {
 
     if (isSpecial(stamp)) {
         if (stamp < seconds_a_day) {
-            return ipmiTimestampFmt(stamp, "S+ %H:%M:%S");
+            return relativeTimestampFmt(stamp, "S+ %H:%M:%S");
         }
-        return ipmiTimestampFmt(stamp, "S+ %y/%j %H:%M:%S");
+        return relativeTimestampFmt(stamp, "S+ %y/%j %H:%M:%S");
     }
     return ipmiTimestampFmt(stamp, "%x %X %Z");
 }
@@ -167,7 +177,7 @@ pub fn ipmiTimestampNumeric(stamp: u32) callconv(.c) [*c]u8 {
 pub fn ipmiTimestampDate(stamp: u32) callconv(.c) [*c]u8 {
     if (!isValid(stamp)) return unspecified();
 
-    if (isSpecial(stamp)) return ipmiTimestampFmt(stamp, "S+ %y/%j");
+    if (isSpecial(stamp)) return relativeTimestampFmt(stamp, "S+ %y/%j");
     return ipmiTimestampFmt(stamp, "%x");
 }
 
@@ -218,8 +228,8 @@ comptime {
 // ---------------------------------------------------------------------------
 // Tests
 //
-// Everything here goes through libc only, so it runs in the ABI test binary.
-// `TZ` is set explicitly for every timezone-sensitive expectation.
+// Libc remains the differential oracle. Header-free calendar tests also run
+// separately without libc. TZ is explicit for timezone-sensitive expectations.
 // ---------------------------------------------------------------------------
 
 /// Point libc at a fixed timezone for the duration of a test.
@@ -425,5 +435,105 @@ test "absolute formatting handles fixed offsets and both DST transitions" {
             buf[0..19],
         );
         time_in_utc = false;
+    }
+}
+
+test "calendar relative accessors preserve the original C time baseline" {
+    setTimezone("XYZ5");
+    defer setTimezone("UTC");
+    const stamps = [_]u32{ 0, 1, 59, 60, 3661, 86399, 86400, 86401, 8640000, 31622400, @intCast(time_init_done - 1) };
+    for (stamps) |stamp| {
+        try std.testing.expectEqualStrings(std.mem.span(c.ipmi_timestamp_string(stamp)), std.mem.span(ipmiTimestampString(stamp)));
+        try std.testing.expectEqualStrings(std.mem.span(c.ipmi_timestamp_numeric(stamp)), std.mem.span(ipmiTimestampNumeric(stamp)));
+        try std.testing.expectEqualStrings(std.mem.span(c.ipmi_timestamp_date(stamp)), std.mem.span(ipmiTimestampDate(stamp)));
+    }
+    const borrowed = ipmiTimestampString(3661);
+    try std.testing.expectEqual(borrowed, ipmiTimestampNumeric(86400));
+    try std.testing.expectEqualStrings("S+ 70/002 00:00:00", std.mem.span(borrowed));
+}
+
+test "calendar C locale writer and bounds match libc without new C helpers" {
+    const original = c.setlocale(c.LC_TIME, null) orelse return error.LocaleQueryFailed;
+    const saved = try std.testing.allocator.dupeZ(u8, std.mem.span(original));
+    defer std.testing.allocator.free(saved);
+    defer std.debug.assert(c.setlocale(c.LC_TIME, saved.ptr) != null);
+    if (c.setlocale(c.LC_TIME, "C") == null) return error.LocaleSelectionFailed;
+
+    const minimum_year: i64 = @as(i64, std.math.minInt(i32)) + 1900;
+    const maximum_year: i64 = @as(i64, std.math.maxInt(i32)) + 1900;
+    const epochs = [_]i64{
+        std.math.minInt(i64),
+        try calendar.toEpoch(.{ .year = minimum_year, .month = 1, .day = 1 }) - 1,
+        try calendar.toEpoch(.{ .year = minimum_year, .month = 1, .day = 1 }),
+        -62198755200, // Astronomical year -1.
+        -62167219200, // Year 0.
+        -62135596800, // Year 1.
+        -11670998400, // Leap century 1600.
+        -2203891200, // Non-leap century 1900.
+        -1,
+        0,
+        3661,
+        8640000,
+        951782400,
+        1530395348,
+        2147483648,
+        4107542400,
+        4294967296,
+        13574563200,
+        253402300800,
+        try calendar.toEpoch(.{ .year = maximum_year, .month = 12, .day = 31, .hour = 23, .minute = 59, .second = 59 }),
+        try calendar.toEpoch(.{ .year = maximum_year + 1, .month = 1, .day = 1 }),
+        std.math.maxInt(i64),
+    };
+    const formats = [_][*:0]const u8{
+        "",                                    "S+%H:%M:%S",
+        "S+%yy %jd %H:%M:%S",                  "S+ %H:%M:%S",
+        "S+ %y years %j days %H:%M:%S",        "S+ %y/%j %H:%M:%S",
+        "S+ %y/%j",                            "%c %Z",
+        "%x %X %Z",                            "%x",
+        "%X %Z",                               "%Y-%m-%d %H:%M:%S",
+        "%% %a %A %b %B %e %j %w %u %F %T %z",
+    };
+    const flavor: calendar.Flavor = if (@import("builtin").abi.isMusl()) .musl else .gnu;
+    for (epochs) |epoch| {
+        var stamp: c.time_t = @intCast(epoch);
+        var tm: c.struct_tm = undefined;
+        const date = calendar.fromEpoch(epoch);
+        if (c.gmtime_r(&stamp, &tm) == null) {
+            try std.testing.expectError(error.YearOutOfRange, date.tmYear());
+            continue;
+        }
+        try std.testing.expectEqual(@as(i64, tm.tm_year) + 1900, date.year);
+        try std.testing.expectEqual(@as(u8, @intCast(tm.tm_mon + 1)), date.month);
+        try std.testing.expectEqual(@as(u8, @intCast(tm.tm_mday)), date.day);
+        try std.testing.expectEqual(@as(u8, @intCast(tm.tm_hour)), date.hour);
+        try std.testing.expectEqual(@as(u8, @intCast(tm.tm_min)), date.minute);
+        try std.testing.expectEqual(@as(u8, @intCast(tm.tm_sec)), date.second);
+        try std.testing.expectEqual(@as(u16, @intCast(tm.tm_yday)), try date.dayOfYear());
+        try std.testing.expectEqual(@as(u3, @intCast(tm.tm_wday)), try date.weekday());
+
+        var zone: [64]u8 = undefined;
+        const zone_len = c.strftime(&zone, zone.len, "%Z", &tm);
+        const options = calendar.FormatOptions{
+            .zone = .{ .abbreviation = zone[0..zone_len] },
+            .flavor = flavor,
+        };
+        for (formats) |format| {
+            var expected: [192]u8 = @splat(0xa5);
+            const full_len = c.strftime(&expected, expected.len, format, &tm);
+            for (0..full_len + 2) |capacity| {
+                var libc_buf: [192]u8 = @splat(0xa5);
+                var actual: [192]u8 = @splat(0xa5);
+                const c_len = c.strftime(&libc_buf, capacity, format, &tm);
+                const zig_len = try calendar.formatZ(actual[0..capacity], std.mem.span(format), date, options);
+                if (c_len != zig_len) std.debug.print("calendar mismatch epoch={d} fmt={s} capacity={d} full={d} C={d} Zig={d} text={s}\n", .{ epoch, std.mem.span(format), capacity, full_len, c_len, zig_len, expected[0..full_len] });
+                try std.testing.expectEqual(c_len, zig_len);
+                if (capacity > full_len) {
+                    try std.testing.expectEqualSlices(u8, libc_buf[0 .. c_len + 1], actual[0 .. zig_len + 1]);
+                } else {
+                    try std.testing.expectEqual([_]u8{0xa5} ** 192, actual);
+                }
+            }
+        }
     }
 }
