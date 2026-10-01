@@ -35,9 +35,21 @@ Quoted identifiers and escaped import strings are decoded, not regex-matched.
 
 Direct `@import("ipmi_c")` expressions establish bridge namespaces under
 **any alias**, as do parenthesized/chained aliases and relative Zig-file
-reexports within the scanned tree. Alias discovery is conservative and
+reexports within the scanned tree. `if` and `switch` aliases join **all**
+branches, including branches unreachable in the selected configuration;
+`comptime` and `@as(type, namespace)` wrappers preserve the namespace.
+Container namespace aliases resolve their declaration initializers as well;
+`@This()` resolves the enclosing tracked namespace rather than losing aliases.
+Unsupported tracked-namespace flows fail closed: namespace-returning blocks/functions,
+ordinary calls receiving namespace arguments, and value aggregates containing
+namespaces are rejected rather than measured as zero. Use direct or conditional
+import aliases instead. Metadata builtins such as `@hasDecl` and `@typeInfo`,
+the standard library's `std.testing.refAllDecls`/`refAllDeclsRecursive` through
+direct, unambiguous `std` imports, and explicit `_ = namespace` discards remain
+allowed without being misclassified as namespace-returning wrappers.
+Alias discovery is conservative and
 file-wide, not a compiler's lexical scope/type analysis: a same-named local
-shadow is still charged, and conflicting non-bridge module aliases are
+shadow is still charged, and conflicting non-bridge namespace aliases are
 rejected rather than silently resolved. Use distinct namespace alias names.
 Computed import paths and malformed Zig source fail closed. This does not
 perform arbitrary comptime evaluation or discover C usage through unrelated

@@ -5,8 +5,10 @@ const Allocator = std.mem.Allocator;
 
 const Namespace = union(enum) {
     none,
+    standard,
     bridge,
     module: usize,
+    container: struct { file: usize, node: Ast.Node.Index },
 };
 
 const Source = struct {
@@ -19,6 +21,7 @@ const File = struct {
     tree: Ast,
     namespaces: []Namespace,
     aliases: std.StringHashMapUnmanaged(Namespace) = .empty,
+    this_targets: std.ArrayList(struct { node: Ast.Node.Index, container: Ast.Node.Index }) = .empty,
     imports: usize = 0,
 };
 
@@ -145,16 +148,148 @@ fn string(gpa: Allocator, tree: *const Ast, node: Ast.Node.Index) ![]const u8 {
 
 fn same(a: Namespace, b: Namespace) bool {
     return std.meta.activeTag(a) == std.meta.activeTag(b) and
-        (a != .module or a.module == b.module);
+        switch (a) {
+            .module => a.module == b.module,
+            .container => std.meta.eql(a.container, b.container),
+            else => true,
+        };
 }
 
 // Aliases are deliberately file-wide and conservative: shadowing a bridge
 // alias must not hide references. Conflicting non-bridge modules are rejected.
 fn join(destination: *Namespace, value: Namespace) !bool {
     if (value == .none or same(destination.*, value) or destination.* == .bridge) return false;
-    if (destination.* != .none and value != .bridge) return error.AmbiguousNamespaceAlias;
+    if (value == .standard and destination.* != .none) return false;
+    if (destination.* != .none and destination.* != .standard and value != .bridge) return error.AmbiguousNamespaceAlias;
     destination.* = value;
     return true;
+}
+
+fn memberNamespace(gpa: Allocator, files: []const File, namespace: Namespace, name: []const u8) !Namespace {
+    switch (namespace) {
+        .module => |i| return files[i].aliases.get(name) orelse .none,
+        .container => |container| {
+            const file = &files[container.file];
+            var buffer: [2]Ast.Node.Index = undefined;
+            for (file.tree.fullContainerDecl(&buffer, container.node).?.ast.members) |member| {
+                const decl = file.tree.fullVarDecl(member) orelse continue;
+                const member_name = try identifier(gpa, &file.tree, decl.ast.mut_token + 1);
+                if (!std.mem.eql(u8, name, member_name)) continue;
+                if (decl.ast.init_node.unwrap()) |init_node|
+                    return file.namespaces[@intFromEnum(init_node)];
+            }
+            return .none;
+        },
+        else => return .none,
+    }
+}
+
+fn isRefAllDecls(gpa: Allocator, file: *const File, node: Ast.Node.Index) !bool {
+    const tree = &file.tree;
+    if (tree.nodeTag(node) != .field_access) return false;
+    const function = tree.nodeData(node).node_and_token;
+    const name = tree.tokenSlice(function[1]);
+    if (!std.mem.eql(u8, name, "refAllDecls") and !std.mem.eql(u8, name, "refAllDeclsRecursive")) return false;
+    if (tree.nodeTag(function[0]) != .field_access) return false;
+    const testing = tree.nodeData(function[0]).node_and_token;
+    if (!std.mem.eql(u8, tree.tokenSlice(testing[1]), "testing") or
+        file.namespaces[@intFromEnum(testing[0])] != .standard) return false;
+
+    // Unlike bridge taint, a trusted void-returning consumer must have exact
+    // provenance. File-wide alias merging cannot bless a shadowed std name.
+    const base = testing[0];
+    if (tree.nodeTag(base) != .identifier)
+        return std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(base)), "@import");
+    const base_name = try identifier(gpa, tree, tree.nodeMainToken(base));
+    var found = false;
+    for (0..tree.nodes.len) |n| {
+        const candidate: Ast.Node.Index = @enumFromInt(n);
+        var proto_buffer: [1]Ast.Node.Index = undefined;
+        if (tree.fullFnProto(&proto_buffer, candidate)) |proto| {
+            var params = proto.iterate(tree);
+            while (params.next()) |param| {
+                if (param.name_token) |token| {
+                    if (std.mem.eql(u8, base_name, try identifier(gpa, tree, token))) return false;
+                }
+            }
+        }
+        const decl = tree.fullVarDecl(candidate) orelse continue;
+        const name_token = decl.ast.mut_token + 1;
+        if (!std.mem.eql(u8, base_name, try identifier(gpa, tree, name_token))) continue;
+        if (tree.tokenTag(decl.ast.mut_token) != .keyword_const) return false;
+        const init_node = decl.ast.init_node.unwrap() orelse return false;
+        if (file.namespaces[@intFromEnum(init_node)] != .standard or
+            !std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(init_node)), "@import")) return false;
+        found = true;
+    }
+    return found;
+}
+
+fn namespaceWrapperError(file: *const File, node: Ast.Node.Index) error{UnsupportedNamespaceWrapper} {
+    if (!@import("builtin").is_test) {
+        std.debug.print(
+            "cimport-budget: {s}: unsupported namespace wrapper at byte {d}; use direct/conditional import aliases\n",
+            .{ file.path, file.tree.tokenStart(file.tree.nodeMainToken(node)) },
+        );
+    }
+    return error.UnsupportedNamespaceWrapper;
+}
+
+fn checkNamespaceUses(gpa: Allocator, file: *const File) !void {
+    const tree = &file.tree;
+    const consumed = try gpa.alloc(bool, tree.nodes.len);
+    @memset(consumed, false);
+    for (0..tree.nodes.len) |n| {
+        const node: Ast.Node.Index = @enumFromInt(n);
+        if (tree.fullVarDecl(node)) |decl| {
+            if (decl.ast.init_node.unwrap()) |init_node| consumed[@intFromEnum(init_node)] = true;
+        }
+        if (tree.fullIf(node)) |conditional| {
+            consumed[@intFromEnum(conditional.ast.then_expr)] = true;
+            if (conditional.ast.else_expr.unwrap()) |branch| consumed[@intFromEnum(branch)] = true;
+        }
+        if (tree.fullSwitch(node)) |selection| {
+            for (selection.ast.cases) |case| {
+                const branch = tree.fullSwitchCase(case).?.ast.target_expr;
+                consumed[@intFromEnum(branch)] = true;
+            }
+        }
+        var call_buffer: [1]Ast.Node.Index = undefined;
+        if (tree.fullCall(&call_buffer, node)) |call| {
+            if (try isRefAllDecls(gpa, file, call.ast.fn_expr)) {
+                for (call.ast.params) |param| consumed[@intFromEnum(param)] = true;
+            }
+        }
+        switch (tree.nodeTag(node)) {
+            .field_access, .grouped_expression => consumed[@intFromEnum(tree.nodeData(node).node_and_token[0])] = true,
+            .@"comptime" => consumed[@intFromEnum(tree.nodeData(node).node)] = true,
+            .assign => {
+                const data = tree.nodeData(node).node_and_node;
+                if (tree.nodeTag(data[0]) == .identifier and std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(data[0])), "_"))
+                    consumed[@intFromEnum(data[1])] = true;
+            },
+            else => {},
+        }
+        var buffer: [2]Ast.Node.Index = undefined;
+        if (tree.builtinCallParams(&buffer, node)) |params| {
+            const name = tree.tokenSlice(tree.nodeMainToken(node));
+            for ([_][]const u8{
+                "@field",    "@as",       "@hasDecl", "@hasField", "@TypeOf",
+                "@typeInfo", "@typeName", "@sizeOf",  "@alignOf",  "@offsetOf",
+            }) |supported| {
+                if (!std.mem.eql(u8, name, supported)) continue;
+                for (params) |param| consumed[@intFromEnum(param)] = true;
+                break;
+            }
+        }
+    }
+    // A namespace value may only flow through expressions analyzed above.
+    // In particular, blocks, returns, ordinary call arguments and aggregates
+    // must not quietly turn a tracked namespace into an untracked alias.
+    for (file.namespaces, 0..) |namespace, n| {
+        if (namespace != .none and namespace != .standard and !consumed[n])
+            return namespaceWrapperError(file, @enumFromInt(n));
+    }
 }
 
 fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
@@ -174,18 +309,39 @@ fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
         files[i] = .{ .path = source.path, .tree = tree, .namespaces = namespaces };
         try paths.put(gpa, source.path, i);
     }
-    for (files) |*file| {
+    for (files, 0..) |*file, file_index| {
         const tree = &file.tree;
         for (0..tree.nodes.len) |n| {
             const node: Ast.Node.Index = @enumFromInt(n);
             var buffer: [2]Ast.Node.Index = undefined;
             const params = tree.builtinCallParams(&buffer, node) orelse continue;
+            if (params.len == 0 and std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(node)), "@This")) {
+                // @This follows lexical container scope, not file-wide aliases.
+                const token = tree.nodeMainToken(node);
+                var enclosing: Ast.Node.Index = .root;
+                for (1..tree.nodes.len) |candidate_index| {
+                    const candidate: Ast.Node.Index = @enumFromInt(candidate_index);
+                    var container_buffer: [2]Ast.Node.Index = undefined;
+                    if (tree.fullContainerDecl(&container_buffer, candidate) == null) continue;
+                    if (tree.firstToken(candidate) <= token and tree.lastToken(candidate) >= token and
+                        (enclosing == .root or tree.firstToken(candidate) > tree.firstToken(enclosing)))
+                        enclosing = candidate;
+                }
+                if (enclosing == .root) {
+                    file.namespaces[n] = .{ .module = file_index };
+                } else {
+                    try file.this_targets.append(gpa, .{ .node = node, .container = enclosing });
+                }
+                continue;
+            }
             if (!std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(node)), "@import")) continue;
             if (params.len != 1) return error.NonLiteralImport;
             const imported = try string(gpa, tree, params[0]);
             if (std.mem.eql(u8, imported, "ipmi_c")) {
                 file.namespaces[n] = .bridge;
                 file.imports += 1;
+            } else if (std.mem.eql(u8, imported, "std")) {
+                file.namespaces[n] = .standard;
             } else if (std.mem.endsWith(u8, imported, ".zig")) {
                 // Virtual absolute root: normalize relative Zig imports without
                 // consulting the process cwd or opening files outside src/zig.
@@ -199,8 +355,10 @@ fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
     var changed = true;
     while (changed) {
         changed = false;
-        for (files) |*file| {
+        for (files, 0..) |*file, file_index| {
             const tree = &file.tree;
+            for (file.this_targets.items) |target|
+                changed = try join(&file.namespaces[@intFromEnum(target.node)], file.namespaces[@intFromEnum(target.container)]) or changed;
             for (0..tree.nodes.len) |n| {
                 const node: Ast.Node.Index = @enumFromInt(n);
                 var value: Namespace = .none;
@@ -210,22 +368,64 @@ fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
                         value = file.aliases.get(name) orelse .none;
                     },
                     .grouped_expression => value = file.namespaces[@intFromEnum(tree.nodeData(node).node_and_token[0])],
+                    .@"comptime" => value = file.namespaces[@intFromEnum(tree.nodeData(node).node)],
+                    .if_simple, .@"if" => {
+                        const conditional = tree.fullIf(node).?;
+                        const then_namespace = file.namespaces[@intFromEnum(conditional.ast.then_expr)];
+                        _ = try join(&value, then_namespace);
+                        var all_standard = then_namespace == .standard;
+                        if (conditional.ast.else_expr.unwrap()) |branch| {
+                            const else_namespace = file.namespaces[@intFromEnum(branch)];
+                            _ = try join(&value, else_namespace);
+                            all_standard = all_standard and else_namespace == .standard;
+                        } else {
+                            all_standard = false;
+                        }
+                        if (value == .standard and !all_standard) value = .none;
+                    },
+                    .@"switch", .switch_comma => {
+                        var all_standard = true;
+                        for (tree.fullSwitch(node).?.ast.cases) |case| {
+                            const branch = tree.fullSwitchCase(case).?.ast.target_expr;
+                            const namespace = file.namespaces[@intFromEnum(branch)];
+                            _ = try join(&value, namespace);
+                            all_standard = all_standard and namespace == .standard;
+                        }
+                        if (value == .standard and !all_standard) value = .none;
+                    },
                     .field_access => {
                         const data = tree.nodeData(node).node_and_token;
                         const lhs = file.namespaces[@intFromEnum(data[0])];
-                        if (lhs == .module) {
+                        if (lhs == .module or lhs == .container) {
                             const name = try identifier(gpa, tree, data[1]);
-                            value = files[lhs.module].aliases.get(name) orelse .none;
+                            value = try memberNamespace(gpa, files, lhs, name);
                         }
                     },
                     else => {
                         var buffer: [2]Ast.Node.Index = undefined;
                         if (tree.builtinCallParams(&buffer, node)) |params| {
+                            if (params.len == 2 and std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(node)), "@as"))
+                                value = file.namespaces[@intFromEnum(params[1])];
                             if (params.len == 2 and std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(node)), "@field")) {
                                 const lhs = file.namespaces[@intFromEnum(params[0])];
-                                if (lhs == .module) {
+                                if (lhs == .module or lhs == .container) {
                                     const name = try string(gpa, tree, params[1]);
-                                    value = files[lhs.module].aliases.get(name) orelse .none;
+                                    value = try memberNamespace(gpa, files, lhs, name);
+                                }
+                            }
+                        }
+                        var container_buffer: [2]Ast.Node.Index = undefined;
+                        if (node != .root) {
+                            if (tree.fullContainerDecl(&container_buffer, node)) |container| {
+                                for (container.ast.members) |member| {
+                                    const decl = tree.fullVarDecl(member) orelse continue;
+                                    if (decl.ast.init_node.unwrap()) |init_node| {
+                                        const namespace = file.namespaces[@intFromEnum(init_node)];
+                                        if (namespace != .none and namespace != .standard) {
+                                            value = .{ .container = .{ .file = file_index, .node = node } };
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -245,6 +445,7 @@ fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
     }
     const results = try gpa.alloc(Measurement, files.len);
     for (files, 0..) |*file, i| {
+        try checkNamespaceUses(gpa, file);
         var refs: usize = 0;
         const tree = &file.tree;
         for (0..tree.nodes.len) |n| {
@@ -499,5 +700,205 @@ test "conflicting module aliases fail closed" {
         },
         .{ .path = "src/zig/a.zig", .text = "" },
         .{ .path = "src/zig/b.zig", .text = "" },
+    }));
+}
+
+test "conditional namespace aliases cannot hide qualified references" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    for ([_][]const u8{
+        "if (@import(\"builtin\").is_test) @import(\"ipmi_c\") else @import(\"ipmi_c\")",
+        "if (true) @import(\"std\") else @import(\"ipmi_c\")",
+        "if (false) @import(\"ipmi_c\") else @import(\"std\")",
+        "switch (@import(\"builtin\").is_test) { true => @import(\"ipmi_c\"), false => @import(\"ipmi_c\") }",
+        "switch (0) { 0 => @import(\"std\"), else => @import(\"ipmi_c\") }",
+        "switch (0) { 0 => @import(\"ipmi_c\"), else => @import(\"std\") }",
+        "if (true) (switch (0) { 0 => @import(\"std\"), else => @import(\"ipmi_c\") }) else @import(\"std\")",
+        "@as(type, @import(\"ipmi_c\"))",
+        "comptime @import(\"ipmi_c\")",
+    }) |expression| {
+        const text = try std.fmt.allocPrint(arena.allocator(), "const api = {s}; pub fn f() void {{ _ = api.printf(\"x\"); }}", .{expression});
+        const measured = try measure(arena.allocator(), &.{.{
+            .path = "src/zig/example.zig",
+            .text = text,
+        }});
+        try std.testing.expectEqual(1, measured[0].refs);
+        try std.testing.expect(validate(&.{.{ .path = measured[0].path, .limit = 0 }}, measured).? == .increase);
+    }
+}
+
+test "unsupported namespace-producing blocks functions and containers fail closed" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    for ([_][]const u8{
+        "const api = scope: { break :scope @import(\"ipmi_c\"); };",
+        "const api = scope: { if (true) break :scope @import(\"ipmi_c\"); break :scope @import(\"std\"); };",
+        "fn bridge() type { return @import(\"ipmi_c\"); } const api = bridge();",
+        "const c = @import(\"ipmi_c\"); fn bridge() type { return if (true) c else c; } const api = bridge();",
+        "fn identity(comptime T: type) type { return T; } const api = identity(@import(\"ipmi_c\"));",
+        "const apis = [_]type{ @import(\"ipmi_c\") }; const api = apis[0];",
+        "const api = @import(\"std\").meta.Child(*@import(\"ipmi_c\"));",
+        "fn wrapped() type { return struct { pub const api = @import(\"ipmi_c\"); }; } const api = wrapped().api;",
+    }) |prefix| {
+        const text = try std.fmt.allocPrint(arena.allocator(), "{s} pub fn f() void {{ _ = api.printf(\"x\"); }}", .{prefix});
+        try std.testing.expectError(error.UnsupportedNamespaceWrapper, measure(arena.allocator(), &.{.{
+            .path = "src/zig/example.zig",
+            .text = text,
+        }}));
+    }
+}
+
+test "container and This namespace aliases preserve bridge references" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    for ([_][]const u8{
+        "const wrapped = struct { pub const bridge = @import(\"ipmi_c\"); }; const api = wrapped.bridge;",
+        "const c = @import(\"ipmi_c\"); const api = @This().c;",
+        "const c = @import(\"ipmi_c\"); const self = @This(); const api = self.c;",
+        "const wrapped = struct { pub const bridge = @import(\"ipmi_c\"); pub const self = @This(); }; const api = wrapped.self.bridge;",
+    }) |prefix| {
+        const text = try std.fmt.allocPrint(arena.allocator(), "{s} pub fn f() void {{ _ = api.printf(\"x\"); }}", .{prefix});
+        const measured = try measure(arena.allocator(), &.{.{
+            .path = "src/zig/example.zig",
+            .text = text,
+        }});
+        try std.testing.expectEqual(2, measured[0].refs);
+        try std.testing.expect(validate(&.{.{ .path = measured[0].path, .limit = 1 }}, measured).? == .increase);
+    }
+}
+
+test "metadata inspection and real standard refAllDecls remain allowed" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const measured = try measure(arena.allocator(), &.{.{
+        .path = "src/zig/example.zig",
+        .text =
+        \\const actual = @import("std");
+        \\const c = @import("ipmi_c");
+        \\comptime {
+        \\    _ = @hasDecl(c, "printf");
+        \\    _ = @typeInfo(c);
+        \\    _ = @TypeOf(c);
+        \\    _ = c;
+        \\    actual.testing.refAllDecls(c);
+        \\    actual.testing.refAllDeclsRecursive(@This());
+        \\}
+        ,
+    }});
+    try std.testing.expectEqual(0, measured[0].refs);
+    try std.testing.expectEqual(1, measured[0].imports);
+}
+
+test "refAllDecls lookalikes and mixed standard aliases cannot hide namespaces" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    for ([_][]const u8{
+        "fake",
+        "if (false) @import(\"std\") else fake",
+        "switch (false) { true => @import(\"std\"), false => fake }",
+    }) |expression| {
+        const text = try std.fmt.allocPrint(arena.allocator(),
+            \\const fake = struct {{
+            \\    pub const testing = struct {{
+            \\        pub fn refAllDecls(comptime T: type) type {{ return T; }}
+            \\    }};
+            \\}};
+            \\const meta = {s};
+            \\const api = meta.testing.refAllDecls(@import("ipmi_c"));
+            \\pub fn f() void {{ _ = api.printf("x"); }}
+        , .{expression});
+        try std.testing.expectError(error.UnsupportedNamespaceWrapper, measure(arena.allocator(), &.{.{
+            .path = "src/zig/example.zig",
+            .text = text,
+        }}));
+    }
+    try std.testing.expectError(error.UnsupportedNamespaceWrapper, measure(arena.allocator(), &.{.{
+        .path = "src/zig/example.zig",
+        .text =
+        \\const actual = @import("std");
+        \\const wrapped = struct {
+        \\    const actual = struct {
+        \\        pub const testing = struct {
+        \\            pub fn refAllDecls(comptime T: type) type { return T; }
+        \\        };
+        \\    };
+        \\    const c = @import("ipmi_c");
+        \\    pub const api = actual.testing.refAllDecls(c);
+        \\};
+        \\pub fn f() void { _ = wrapped.api.printf("x"); }
+        ,
+    }}));
+}
+
+test "mutable and parameter-shadowed standard aliases are not trusted consumers" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    for ([_][]const u8{
+        \\const actual = @import("std");
+        \\const fake = struct { pub const testing = struct {
+        \\    pub fn refAllDecls(comptime T: type) type { return T; }
+        \\}; };
+        \\fn bridge(comptime actual: type) type {
+        \\    return actual.testing.refAllDecls(@import("ipmi_c"));
+        \\}
+        \\const api = bridge(fake);
+        \\pub fn f() void { _ = api.printf("x"); }
+        ,
+        \\const fake = struct { pub const testing = struct {
+        \\    pub fn refAllDecls(comptime T: type) type { return T; }
+        \\}; };
+        \\fn bridge() type {
+        \\    comptime var actual: type = @import("std");
+        \\    actual = fake;
+        \\    return actual.testing.refAllDecls(@import("ipmi_c"));
+        \\}
+        \\const api = bridge();
+        \\pub fn f() void { _ = api.printf("x"); }
+        ,
+    }) |text| {
+        try std.testing.expectError(error.UnsupportedNamespaceWrapper, measure(arena.allocator(), &.{.{
+            .path = "src/zig/example.zig",
+            .text = text,
+        }}));
+    }
+}
+
+test "conditional relative module aliases retain reexported bridge namespaces" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const measured = try measure(arena.allocator(), &.{
+        .{
+            .path = "src/zig/consumer.zig",
+            .text =
+            \\const selected = if (@import("builtin").is_test) @import("provider.zig") else @import("provider.zig");
+            \\const api = selected.bridge;
+            \\pub fn f() void { _ = api.printf("x"); }
+            ,
+        },
+        .{
+            .path = "src/zig/provider.zig",
+            .text = "pub const bridge = if (true) @import(\"ipmi_c\") else @import(\"ipmi_c\");",
+        },
+    });
+    try std.testing.expectEqual(2, measured[0].refs);
+    try std.testing.expectEqual(0, measured[0].imports);
+    try std.testing.expect(validate(&.{.{ .path = measured[0].path, .limit = 1 }}, measured).? == .increase);
+}
+
+test "namespace-returning functions in another scanned file fail closed" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    try std.testing.expectError(error.UnsupportedNamespaceWrapper, measure(arena.allocator(), &.{
+        .{
+            .path = "src/zig/consumer.zig",
+            .text =
+            \\const api = @import("provider.zig").bridge();
+            \\pub fn f() void { _ = api.printf("x"); }
+            ,
+        },
+        .{
+            .path = "src/zig/provider.zig",
+            .text = "pub fn bridge() type { return @import(\"ipmi_c\"); }",
+        },
     }));
 }
