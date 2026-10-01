@@ -1167,6 +1167,18 @@ the `test-fdset-compile` cross targets. OpenIPMI passes `ioctl` requests in
 the request type declared by the target libc, preserving the 32-bit
 request bits on musl.
 
+`util/cassert.zig` writes assertion diagnostics with a checked Zig streaming
+writer and terminates through `std.process.abort`. It no longer directly
+calls `std.c.write` or `std.c.abort`; the standard-library termination path
+uses the selected runtime and works in a libc-free Linux executable.
+Existing assertion expressions and `SIGABRT` termination are unchanged.
+An oversized diagnostic is streamed completely rather than falling back to
+an incompletely initialized 512-byte array. A stderr write/flush failure
+still aborts instead of returning success. `zig build test-cassert` checks
+message bytes and writer failure without libc; `test-cassert-runtime`
+checks successful guards, failed guards, unreachable branches, oversized
+diagnostics and closed stderr with separate libc-free Linux processes.
+
 The LAN and LAN+ Zig transports use `util/log.zig`'s typed `print` for
 literal C `printf` diagnostics. Both transports and the selected logger are
 imported into the same `exports.zig` archive, so they share one logger state;

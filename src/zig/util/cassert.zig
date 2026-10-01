@@ -53,18 +53,51 @@ pub fn unreachableBranch(comptime site: Site) noreturn {
     fail(site);
 }
 
-fn fail(comptime site: Site) noreturn {
-    var buffer: [512]u8 = undefined;
-    const message = std.fmt.bufPrint(
-        &buffer,
+fn writeFailure(writer: *std.Io.Writer, comptime site: Site) std.Io.Writer.Error!void {
+    try writer.print(
         "{s}:{d}: {s}: Assertion `{s}' failed.\n",
         .{ site.file, site.line, site.func, site.expr },
-    ) catch &buffer;
-    var written: usize = 0;
-    while (written < message.len) {
-        const n = std.c.write(2, message.ptr + written, message.len - written);
-        if (n <= 0) break;
-        written += @intCast(n);
-    }
-    std.c.abort();
+    );
+}
+
+fn fail(comptime site: Site) noreturn {
+    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
+    writeFailure(&stderr.interface, site) catch std.process.abort();
+    stderr.interface.flush() catch std.process.abort();
+    std.process.abort();
+}
+
+test "assertion diagnostic preserves the expression and propagates writer failure" {
+    const site: Site = .{
+        .file = "assertion.c",
+        .line = 42,
+        .func = "fixture",
+        .expr = "expression",
+    };
+    var buffer: [128]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&buffer);
+    try writeFailure(&writer, site);
+    try std.testing.expectEqualStrings(
+        "assertion.c:42: fixture: Assertion `expression' failed.\n",
+        writer.buffered(),
+    );
+    var failing: std.Io.Writer = .failing;
+    try std.testing.expectError(error.WriteFailed, writeFailure(&failing, site));
+    expect(true, site);
+}
+
+test "assertion diagnostic is not limited to an uninitialized fixed-size fallback" {
+    const site: Site = .{
+        .file = "assertion.c",
+        .line = 42,
+        .func = "fixture",
+        .expr = "x" ** 1024,
+    };
+    var buffer: [2048]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&buffer);
+    try writeFailure(&writer, site);
+    try std.testing.expectEqualStrings(
+        "assertion.c:42: fixture: Assertion `" ++ ("x" ** 1024) ++ "' failed.\n",
+        writer.buffered(),
+    );
 }
