@@ -249,6 +249,146 @@ Runtime interfaces are function-pointer structs recovered with
 `@fieldParentPtr`, which is what `intf.Intf` already is in C and what issue #10
 will build the Zig transports on.
 
+## Shared command substrate (#227)
+
+### Checked output and flush ownership
+
+`util/stdout.zig` is the shared output substrate for both stdout and stderr.
+`Buffered.init(stream, buffer)` constructs a Zig 0.16 `std.Io.File.Writer`
+using `writerStreaming`; the **caller owns the buffer** and keeps it alive
+until the last checked flush. Do not move/copy a writer after borrowing its
+interface. The helper allocates no heap memory and does not install global
+buffers, which would otherwise cross shell dispatches and C callbacks.
+
+An output phase starts with `Buffered.begin()` (or `Operation.begin(writer,
+preflush)` for an injectable writer). This checks `fflush(stdout)` or
+`fflush(stderr)` before any Zig bytes. End every phase with an explicit,
+checked `Operation.finish()`: normally once per command, but **before each
+subsequent C print/callback, next request with observable progress output,
+shell prompt, or interactive input**. Start another phase after the callback.
+Do not use an unchecked `defer` flush or let a command's buffer survive its
+return. In particular, merely retaining the C preflush while buffering across
+a later C print is insufficient: it reorders mixed output.
+
+`Error` distinguishes C stdout/stderr preflush, Zig write and final-flush
+failures. Command handlers diagnose these and return their existing `-1`;
+the existing CLI converts a negative command result to exit status `1`.
+`commandStatus` is the shared mapping for handlers whose output is their only
+result; handlers with other results preserve them explicitly. Existing void
+`stdout.print` and logger APIs still fail fatally on output failure rather than
+silently succeeding. The logger now uses the same buffered stderr substrate
+and finishes each diagnostic line. Its libc/syslog formatting, severity,
+errno suffix and 1024-byte truncation remain unchanged.
+
+`Mode.current()` snapshots `csv_output` and `verbose` from the current command.
+`choice` selects a human or CSV printf format with separate typed tuples;
+`verbose` emits only at the requested verbosity. These helpers never change
+the globals or synthesize extra CSV quoting absent in the C convention.
+
+The worked command is **`rawi2cMain` in `cmd/raw.zig`**: it owns a 4096-byte
+buffer, formats all response fields through typed `printf`, preflushes C
+output and checks its final operation flush before returning. It preserves
+the C write/read visibility conditions, short-reply `-1`, binary/hex rows and
+no-output cases. Its existing phase-specific diagnostics and CLI exit mapping
+are unchanged. Logging has no intervening stdout callback inside this phase.
+
+### Typed printf scope, not a locale approximation
+
+`util/printf.zig` writes directly to `std.Io.Writer` without allocation or
+libc formatting. Supported conversions are `%%`, byte `%s`/`%c` and integer
+`d i u o x X`, with `hh h l ll j z t` integer lengths. It implements space
+and zero padding, `- + space # 0` integer flags, field widths, precision,
+dynamic C-int `*` widths/precisions (literal sizes also fit C int),
+negative-width left alignment,
+negative-precision omission, `%02x`, `%2.2x`, `%*.*s` and `%-*s`.
+Integer arguments undergo C default promotions: a `u8` passed to `%d` is
+positive, while `hh`/`h` narrow after promotion. Other runtime integer widths
+must match the length modifier; cast explicitly rather than silently
+narrowing a `u64` into `%d`. Signedness is interpreted at that promoted width.
+String precision counts bytes and bounds scanning; slices stop at their first
+NUL. Unbounded C strings must be NUL-terminated. Null `%s` is outside C's
+defined behavior and has no promised libc-specific spelling.
+
+This is **not snprintf**: it neither NUL-terminates nor silently truncates.
+A full/failing writer returns `WriteFailed`; use libc when an existing ABI
+still requires snprintf's would-have-written length/truncation semantics.
+Floating point, locale/grouping, wide strings/chars, `%p`, `%n` and positional
+arguments are compile-time errors. No Zig float printer silently substitutes
+for libc rounding, locale or special-value spelling.
+
+`tests/printf_inventory.py` preprocesses every `lib/ipmi_*.c` with the generated
+configuration, so PRI macros and conditional format expressions are included.
+It also conservatively scans raw/unconfigured literals and format-bearing
+tables (including scanf/strftime overlaps); it is an inventory, **never a
+textual source rewrite**. `util/printf_inventory.zig` pins the resulting
+literal-form set. The current Linux LP64 inventory has 87 supported forms and
+six unsupported float forms: `%-10.3f`, `%.*f`, `%.1f`, `%.2f`, `%.3f`, `%0.1f`.
+All supported forms have differential libc tests; the unsupported forms have
+explicit rejection tests. Dynamic expressions are also listed: their callers
+must migrate deliberately, even where their literal tables are inventoried.
+Changing the format corpus requires updating the gate and tests, not widening
+the compatibility claim. Float/locale/snprintf migration is future work.
+Regenerate with `python3 -B tests/printf_inventory.py --config
+<generated-config.h> src/zig/util/printf_inventory.zig`.
+
+### Allocators follow existing ownership
+
+`util/alloc.zig` names two defaults: `c_owned` (`std.heap.c_allocator`) for
+objects transferred to existing C `free`/`realloc` owners, and `private`
+(`std.heap.page_allocator`) for individually released private Zig state.
+Typed APIs accept an allocator explicitly; constructors/destructors must use
+the same instance. Tests supply `std.testing.allocator` or a failing allocator.
+Do not substitute an arena for persistent SDR/session/cache/registry/log
+objects or C-owned return values.
+
+There is deliberately **no process-wide root command arena**: shell history,
+interface/session state and borrowed ABI results outlive individual commands.
+An optional `CommandScratch` root lives in the synchronous dispatcher that
+owns it, receives an explicit backing allocator, passes `scratch.allocator()`
+to scratch-only APIs, and deinitializes after the command returns.
+The worked owner is shell `dispatch`: parsed argv is borrowed only for that
+call, while history/editor lines retain their separately freed allocations.
+Existing registry arenas keep their registry lifetime. The logger's owned
+program name remains private and survives until matching `logHalt`.
+
+OOM is propagated by allocation APIs, diagnosed at the existing command
+boundary and mapped to `command_failure == -1` (CLI exit `1`). Preserve existing
+special contracts such as `logInit` reporting duplication failure and carrying
+on with a null name; do not turn those into a blanket process-wide OOM panic.
+Allocation-failure tests cover every shell scratch parse allocation and cleanup.
+
+### Synchronous descriptor helpers
+
+`util/posix.zig` supplies `read`, `write`, `readExact`, `writeAll` and `poll`.
+On Linux it uses the available Zig 0.16 `std.os.linux` raw syscall bindings
+(including the architecture's `poll`/`ppoll` selection); other POSIX targets
+use available `std.c` bindings. It does **not** assume removed
+`std.posix.read/poll` or old `std.fs` writer APIs.
+Single read/write calls retry EINTR and return a short count; exact/all helpers
+advance the slice after partial I/O and reject premature EOF/zero writes.
+EAGAIN is returned to the caller, never spun on; errno is retained for existing
+diagnostics. Poll returns readiness/timeout and preserves `revents`; like the
+original serial loops it restarts the supplied timeout on EINTR. Deadline-based
+callers must pass remaining time, and signal-cancellable shell loops intentionally
+retain their own EINTR handling.
+
+Both existing serial modes use these helpers for reads, writes and readiness.
+Their caller-owned nonblocking descriptors, timeout/Io status, EAGAIN poll
+behavior, framing and checksum rules are unchanged. The output and allocator
+helpers still import the C bridge or use libc ownership/synchronization; these
+consumers are **not** declared pure/no-libc. The #226 seam budget is reconciled
+at merge/rebase, not replaced by a premature zero-seam claim.
+
+Validation: `zig build test-stdout-unit` runs inventory/libc parity, compile-error
+fixtures, buffered stdout/stderr ordering and delayed failure, allocator and fd
+retry/partial-I/O tests. `test-raw-output` compares the actual C/Zig raw and
+I2C ABI operations, mixed C output and delayed flush failure status.
+`test-raw-i2c-stdout`, `test-shell-unit`, `test-shell` and
+`test-serial` cover the worked operations. `test-stdout-compile
+-Dtarget=x86_64-linux-musl` compiles the same tests without executing a foreign
+binary. Keep `ipmishell` enabled under `-Dzig-modules=all`; on a reduced host add
+`-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
+
 ## The two-way bridge
 
 ### Zig calling C: the `ipmi_c` module

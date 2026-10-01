@@ -1165,16 +1165,56 @@ pub fn build(b: *std.Build) void {
 
     const stdout_unit = b.addTest(.{
         .root_module = abi_mod,
-        .filters = &.{"util.stdout.test."},
+        .filters = &.{ "util.stdout.test.", "util.printf.test.", "util.posix.test.", "util.alloc.test." },
     });
-    b.step("test-stdout-unit", "Run Zig stdout formatting and write-failure tests")
-        .dependOn(&b.addRunArtifact(stdout_unit).step);
+    const stdout_step = b.step("test-stdout-unit", "Run buffered output, printf/libc parity, allocator and fd retry tests");
+    stdout_step.dependOn(&b.addRunArtifact(stdout_unit).step);
+    const printf_inventory = b.addSystemCommand(&.{ "python3", "-B" });
+    printf_inventory.addFileArg(b.path("tests/printf_inventory.py"));
+    printf_inventory.addArg("--zig");
+    printf_inventory.addArg(b.graph.zig_exe);
+    printf_inventory.addArg("--config");
+    printf_inventory.addFileArg(config_h.getOutputFile());
+    printf_inventory.addArg("--check");
+    printf_inventory.addFileArg(b.path("src/zig/util/printf_inventory.zig"));
+    stdout_step.dependOn(&printf_inventory.step);
+    const stdout_compile = b.step("test-stdout-compile", "Cross-compile output, printf, allocator and fd retry tests without executing");
+    stdout_compile.dependOn(&stdout_unit.step);
+    for ([_]struct { format: []const u8, message: []const u8 }{
+        .{ .format = "%.2f", .message = "unsupported printf format '%.2f': UnsupportedConversion" },
+        .{ .format = "%*s", .message = "printf '*' requires a promoted C int" },
+        .{ .format = "%d", .message = "printf length modifier does not match the promoted C integer width; cast explicitly" },
+        .{ .format = "%d", .message = "missing printf value argument" },
+    }, 0..) |case, index| {
+        const case_options = b.addOptions();
+        case_options.addOption(usize, "scenario", index);
+        case_options.addOption([]const u8, "format", case.format);
+        const reject_mod = b.createModule(.{
+            .root_source_file = b.path("tests/printf_reject.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        reject_mod.addImport("case", case_options.createModule());
+        reject_mod.addImport("printf", b.createModule(.{
+            .root_source_file = b.path("src/zig/util/printf.zig"),
+            .target = target,
+            .optimize = optimize,
+        }));
+        const reject = b.addExecutable(.{
+            .name = b.fmt("printf-reject-{d}", .{index}),
+            .root_module = reject_mod,
+        });
+        reject.expect_errors = .{ .contains = case.message };
+        stdout_step.dependOn(&reject.step);
+        stdout_compile.dependOn(&reject.step);
+    }
+    test_step.dependOn(stdout_step);
 
     const raw_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.raw.test.raw stdout"},
     });
-    const raw_stdout_step = b.step("test-raw-output", "Compare C/Zig raw response bytes and test writer failures");
+    const raw_stdout_step = b.step("test-raw-output", "Compare C/Zig raw and I2C operations, output ordering and failure status");
     raw_stdout_step.dependOn(&b.addRunArtifact(raw_stdout_unit).step);
 
     const raw_c_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });

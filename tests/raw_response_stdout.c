@@ -11,6 +11,7 @@
 #include <ipmitool/log.h>
 
 int verbose;
+int csv_output;
 
 const struct valstr ipmi_netfn_vals[] = {{0, NULL}};
 const struct valstr completion_code_vals[] = {{0, NULL}};
@@ -77,7 +78,57 @@ static struct ipmi_rs *sendrecv(struct ipmi_intf *intf, struct ipmi_rq *req)
 	return &response;
 }
 
-int main(void)
+static struct ipmi_rs *i2c_sendrecv(struct ipmi_intf *intf, struct ipmi_rq *req)
+{
+	(void)intf;
+	if (req->msg.netfn != 6 || req->msg.cmd != 0x52 ||
+	    req->msg.data_len < 3 || req->msg.data_len > 4 ||
+	    req->msg.data[0] != 0 || req->msg.data[1] != 0xa0 ||
+	    (req->msg.data_len == 4 && req->msg.data[3] != 1))
+		return NULL;
+	return &response;
+}
+
+static int i2c_output(int failure)
+{
+	const struct {
+		int write_size, read_size, response_size, verbosity;
+	} cases[] = {
+		{0, 0, 0, 0}, {1, 0, 0, 0}, {0, 1, 1, 0},
+		{0, 4, 4, 0}, {1, 4, 4, 0}, {1, 4, 4, 1},
+		{0, 5, 5, 0}, {0, 16, 16, 0}, {0, 17, 17, 0},
+		{0, 8, 3, 0}, {1, 8, 3, 0}, {1, 8, 3, 1},
+	};
+	struct ipmi_intf intf = {0};
+	char address[] = "0xa0";
+	char count[16];
+	char byte[] = "1";
+	char *args[] = {address, count, byte};
+	size_t n;
+	int i, status;
+
+	intf.sendrecv = i2c_sendrecv;
+	if (failure) {
+		memset(&response, 0, sizeof(response));
+		response.data_len = 4;
+		strcpy(count, "4");
+		return ipmi_rawi2c_main(&intf, 2, args) < 0 ? 1 : 0;
+	}
+	for (n = 0; n < sizeof(cases) / sizeof(cases[0]); n++) {
+		memset(&response, 0, sizeof(response));
+		response.data_len = cases[n].response_size;
+		for (i = 0; i < response.data_len; i++)
+			response.data[i] = (uint8_t)(i * 41);
+		verbose = cases[n].verbosity;
+		snprintf(count, sizeof(count), "%d", cases[n].read_size);
+		printf("before[%zu]|", n);
+		status = ipmi_rawi2c_main(&intf, 2 + cases[n].write_size, args);
+		printf("|status:%d|after[%zu]\n", status, n);
+	}
+	return 0;
+}
+
+int main(int argc, char **argv)
 {
 	const int sizes[] = {0, 1, 15, 16, 17, 31, 32, 33, 256, 1024};
 	struct ipmi_intf intf = {0};
@@ -90,6 +141,8 @@ int main(void)
 	intf.sendrecv = sendrecv;
 	if (setvbuf(stdout, NULL, _IOFBF, 4096))
 		return 1;
+	if (argc > 1)
+		return i2c_output(strcmp(argv[1], "--i2c-failure") == 0);
 	for (n = 0; n < sizeof(sizes) / sizeof(sizes[0]); n++) {
 		memset(&response, 0, sizeof(response));
 		response.data_len = sizes[n];
