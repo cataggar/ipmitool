@@ -19,12 +19,14 @@ fn errnoError(code: std.c.E) Error {
 fn linuxResult(result: usize) Error!usize {
     const code = linux.errno(result);
     if (code == .SUCCESS) return result;
-    // Preserve the existing errno diagnostics at the ABI-facing call sites.
-    std.c._errno().* = @intFromEnum(code);
+    // Mixed callers retain errno diagnostics; libc-free callers use the error.
+    if (builtin.link_libc) std.c._errno().* = @intFromEnum(code);
     return errnoError(code);
 }
 
-const System = struct {
+/// One-shot native operations for cancellable callers. The convenience
+/// read/write/poll functions below retry Interrupted using this same backend.
+pub const System = struct {
     pub fn read(fd: c_int, buffer: []u8) Error!usize {
         if (builtin.os.tag == .linux) return linuxResult(linux.read(fd, buffer.ptr, buffer.len));
         const result = std.c.read(fd, buffer.ptr, buffer.len);
@@ -197,7 +199,11 @@ test "fd helpers report EOF zero write would-block timeout and hard errors" {
     try std.testing.expectError(error.WouldBlock, writeAllWith(Blocked, 1, "x"));
     try std.testing.expectEqual(@as(usize, 0), try pollWith(Zero, &.{}, 0));
     try std.testing.expectError(error.Io, pollWith(Blocked, &.{}, -1));
+    std.c._errno().* = 0;
     try std.testing.expectError(error.Io, read(-1, &bytes));
+    try std.testing.expectEqual(@intFromEnum(std.c.E.BADF), std.c._errno().*);
+    std.c._errno().* = 0;
+    try std.testing.expectError(error.Io, System.write(-1, "x"));
     try std.testing.expectEqual(@intFromEnum(std.c.E.BADF), std.c._errno().*);
     try std.testing.expectError(error.Io, writeAll(-1, "x"));
     if (builtin.os.tag == .linux) {
@@ -222,7 +228,9 @@ test "fd helpers exercise real pipe readiness nonblocking EOF and errno" {
     try std.testing.expectEqual(@as(usize, 1), try poll(&ready, 0));
     try std.testing.expect(ready[0].revents & c.POLLIN != 0);
     var bytes: [6]u8 = undefined;
+    std.c._errno().* = c.EACCES;
     try readExact(fds[0], &bytes);
+    try std.testing.expectEqual(@as(c_int, c.EACCES), std.c._errno().*);
     try std.testing.expectEqualStrings("abcdef", &bytes);
     try std.testing.expectEqual(@as(usize, 0), try poll(&ready, 0));
     try std.testing.expectEqual(@as(c_int, 0), c.fcntl(fds[0], c.F_SETFL, @as(c_int, c.O_NONBLOCK)));

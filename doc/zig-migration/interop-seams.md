@@ -366,8 +366,13 @@ use available `std.c` bindings. It does **not** assume removed
 `std.posix.read/poll` or old `std.fs` writer APIs.
 Single read/write calls retry EINTR and return a short count; exact/all helpers
 advance the slice after partial I/O and reject premature EOF/zero writes.
-EAGAIN is returned to the caller, never spun on; errno is retained for existing
-diagnostics. Poll returns readiness/timeout and preserves `revents`; like the
+EAGAIN is returned to the caller, never spun on. With `builtin.link_libc`,
+Linux syscall errors also synchronize libc errno for existing diagnostics.
+With libc disabled, the same failures return typed errors without referencing
+`__errno_location` or any other C runtime provider. `System` exposes one-shot
+native read/write/poll operations for signal-cancellable callers; the convenience
+functions retry `Interrupted` using that same actual backend.
+Poll returns readiness/timeout and preserves `revents`; like the
 original serial loops it restarts the supplied timeout on EINTR. Deadline-based
 callers must pass remaining time, and signal-cancellable shell loops intentionally
 retain their own EINTR handling.
@@ -398,15 +403,15 @@ The current substrate has these explicitly retained seams:
 | --- | --- |
 | `util/stdout.zig` | Runtime `c.fflush`, C stdout/stderr and CLI globals, `std.c._errno`, and the selected `std.Io` provider |
 | `util/log.zig` | Runtime `c.snprintf`/`c.vsnprintf`, syslog/openlog/closelog, strerror, legacy logger ABI calls, errno and the output helper |
-| `util/posix.zig` | Runtime `std.c._errno` even on the raw-Linux syscall path; `std.c.read`/`write`/`poll` on other POSIX targets |
+| `util/posix.zig` | Linux errno synchronization only with `builtin.link_libc`; no-libc Linux uses raw syscalls and typed errors. Other POSIX targets retain `std.c.read`/`write`/`poll` and require libc |
 | `util/alloc.zig` | Runtime C allocation/free ownership via `std.heap.c_allocator`; private allocator/provider dependencies follow the selected target |
 | `util/printf.zig` | The production formatter does not call libc formatting; differential tests still import `ipmi_c` and call `c.snprintf` |
-| Existing `util/cassert.zig` | Runtime `std.c.write` and `std.c.abort` despite having zero `ipmi_c` imports |
 
-`cassert`'s existing write loop silently breaks on a failed write; it is not a
-worked example of the checked substrate convention and is not migrated by #227.
-Do not reuse that failure policy or classify the helper as no-libc. Likewise,
-the logger's typed argument tuple does **not** remove its libc formatter.
+The independently merged #257 conversion removed `cassert`'s direct
+`std.c.write`/`std.c.abort` calls and silent write-failure loop. It now checks
+Zig writes/flushes and terminates through `std.process.abort`; its standalone
+no-libc unit/runtime tests remain separate from this substrate's tests.
+The logger's typed argument tuple still does **not** remove its libc formatter.
 Sharing the new formatter there is a later conversion that must first account
 for its format corpus, truncation and locale-sensitive behavior.
 
@@ -428,6 +433,23 @@ I2C ABI operations, mixed C output and delayed flush failure status.
 -Dtarget=x86_64-linux-musl` compiles the same tests without executing a foreign
 binary. Keep `ipmishell` enabled under `-Dzig-modules=all`; on a reduced host add
 `-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
+
+On Linux, `test-posix-native` (also part of `test-stdout-unit`) builds a standalone
+executable with `link_libc=false` and no C bridge. It exercises the actual
+`System` backend: successful and partial pipe reads/writes, EAGAIN, EBADF,
+premature EOF, poll timeout/NVAL/EINVAL, and signal-driven EINTR from
+read/write/poll both directly and through retrying helpers. Linked-libc errno
+parity tests are retained in `test-stdout-unit`.
+The probe uses LLVM/LLD for a reproducible strict symbol audit rather than
+accepting the Zig ELF linker's wider set of synthetic undefined markers.
+The executable is audited for an absent ELF interpreter, no `DT_NEEDED`,
+no unresolved runtime providers and no `__errno_location`/`__libc_start_main`.
+Zig's static debug support may leave a zero-valued, local-hidden `_DYNAMIC`
+linker marker; the audit permits only that exact non-relocated metadata symbol,
+not an external function, global provider or arbitrary undefined symbol.
+`test-posix-compile` (also part of `test-stdout-compile`) performs the same
+compile/link/provider audit for cross targets without executing them. This
+proves the Linux fd helper, not a 32-bit product or the remaining mixed helpers.
 
 ## The two-way bridge
 

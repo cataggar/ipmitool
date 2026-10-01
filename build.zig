@@ -1210,6 +1210,44 @@ pub fn build(b: *std.Build) void {
     }
     test_step.dependOn(stdout_step);
 
+    if (target.result.os.tag == .linux) {
+        const posix_mod = b.createModule(.{
+            .root_source_file = b.path("src/zig/util/posix.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = false,
+        });
+        const posix_probe_mod = b.createModule(.{
+            .root_source_file = b.path("tests/posix/probe.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = false,
+        });
+        posix_probe_mod.addImport("fd_io", posix_mod);
+        const posix_probe = b.addExecutable(.{
+            .name = "posix-native-probe",
+            .root_module = posix_probe_mod,
+            .linkage = .static,
+            // Keep the strict provider audit independent of synthetic Zig ELF symbols.
+            .use_llvm = true,
+            .use_lld = true,
+        });
+        const posix_runtime = b.addSystemCommand(&.{ "python3", "-B" });
+        posix_runtime.addFileArg(b.path("tests/posix/runtime.py"));
+        posix_runtime.addArg("--run");
+        posix_runtime.addArtifactArg(posix_probe);
+        const posix_step = b.step("test-posix-native", "Run actual Linux descriptor/signal operations with no libc and audit ELF providers");
+        posix_step.dependOn(&posix_runtime.step);
+        stdout_step.dependOn(posix_step);
+        const posix_audit = b.addSystemCommand(&.{ "python3", "-B" });
+        posix_audit.addFileArg(b.path("tests/posix/runtime.py"));
+        posix_audit.addArg("--audit");
+        posix_audit.addArtifactArg(posix_probe);
+        const posix_compile = b.step("test-posix-compile", "Compile and audit the actual Linux descriptor probe without executing it");
+        posix_compile.dependOn(&posix_audit.step);
+        stdout_compile.dependOn(posix_compile);
+    }
+
     const raw_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.raw.test.raw stdout"},
