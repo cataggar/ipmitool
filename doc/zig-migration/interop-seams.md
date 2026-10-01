@@ -86,6 +86,18 @@ budget to the PR base; editing a limit upward or adding an entry can bless
 an increase. Reviewers must compare inventory changes with the base branch
 and require explicit justification for any new seam or budget increase.
 
+The shared-substrate integration (#227) has a reviewed characterization
+exception: `posix.zig` adds 12 test-only bridge references, `printf.zig` adds
+one test-only `snprintf` oracle, and `stdout.zig` adds 26 test-only references
+for mixed C/Zig ordering and failure checks. Its four additional production
+references read the existing CSV/verbosity globals and preflush legacy C
+stderr; they preserve shared state and mixed-provider output ordering until
+those adapters retire. Raw/serial integrations remove 13 production references.
+Thus production qualified references fall by nine, while the inventory,
+which deliberately counts tests too, rises from 7,356 to 7,386 across 76
+entries. These exact deltas are not a blanket increase or a runtime-libc
+measurement; no characterization reference is hidden or exempted.
+
 ## Module map
 
 The Zig tree mirrors the C tree. Header ports and translation-unit ports are
