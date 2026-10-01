@@ -1871,6 +1871,38 @@ pub fn build(b: *std.Build) void {
     }
     test_step.dependOn(assert_text_step);
 
+    const cassert_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/util/cassert.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const cassert_step = b.step("test-cassert", "Test assertion diagnostics without libc");
+    cassert_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = cassert_mod })).step);
+    test_step.dependOn(cassert_step);
+    if (target.result.os.tag == .linux) {
+        const Mode = enum { pass, fail, long, unreachable_branch };
+        const runtime = b.addSystemCommand(&.{ "python3", "tests/cassert/runtime.py" });
+        inline for (.{ Mode.pass, Mode.fail, Mode.long, Mode.unreachable_branch }) |mode| {
+            const options = b.addOptions();
+            options.addOption(Mode, "mode", mode);
+            const probe_mod = b.createModule(.{
+                .root_source_file = b.path("tests/cassert/probe.zig"),
+                .target = target,
+                .optimize = optimize,
+            });
+            probe_mod.addImport("cassert", cassert_mod);
+            probe_mod.addImport("test_options", options.createModule());
+            const probe = b.addExecutable(.{
+                .name = "cassert-" ++ @tagName(mode),
+                .root_module = probe_mod,
+            });
+            runtime.addArtifactArg(probe);
+        }
+        const runtime_step = b.step("test-cassert-runtime", "Check libc-free assertion signals and stderr");
+        runtime_step.dependOn(&runtime.step);
+        test_step.dependOn(runtime_step);
+    }
+
     const fd_set_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{ "util.fd_set.test.", "intf.open.test." },
