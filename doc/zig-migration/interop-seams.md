@@ -280,9 +280,15 @@ hard error, never a fallback to current product tables. For a shallow clone,
 obtain the exact pins from a remote retaining their published history:
 
 ```sh
+git fetch --no-tags origin oracle/strings-baseline-v1
 git fetch --no-tags origin 207aa0ddeec2a7192a2edd9559c1bf4bd19a6f21
 git fetch --no-tags origin 7ada568dc63d2791b9f820a10e76b9bca3c56952
 ```
+
+The permanent `oracle/strings-baseline-v1` reference retains the generation
+commit and its product-baseline ancestry even after the implementation PR is
+rebased or squash-merged. Preserve this archive reference during fleet branch
+cleanup; it is not an unmerged implementation branch.
 
 If the server disallows direct commit-SHA fetches, fetch the published branch
 containing those commits (including the dumper-generation history), or use
