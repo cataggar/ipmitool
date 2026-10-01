@@ -38,6 +38,7 @@ const abi = @import("../abi.zig");
 const log = @import("log.zig");
 const stdout_io = @import("stdout.zig");
 const float_parse = @import("float_parse.zig");
+const float_oracle = @import("float_oracle.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 
@@ -1785,23 +1786,18 @@ test "str2ulong and str2double" {
 }
 
 fn expectFloatMatchesLibc(input: [*:0]const u8) !void {
-    var end: [*c]u8 = null;
-    std.c._errno().* = 0;
-    const expected = c.strtod(input, &end);
-    const expected_errno = std.c._errno().*;
-    const expected_end = @intFromPtr(end) - @intFromPtr(input);
-    const expected_status: c_int = if (end[0] != 0) -2 else if (expected_errno != 0) -3 else 0;
+    const expected = float_oracle.parse(input);
 
     var actual: f64 = 42;
     std.c._errno().* = c.EDOM;
     const actual_status = str2double(input, &actual);
     const actual_errno = std.c._errno().*;
     errdefer std.debug.print("float input: {s}\n", .{std.mem.span(input)});
-    try std.testing.expectEqual(expected_status, actual_status);
-    try std.testing.expectEqual(@as(u64, @bitCast(expected)), @as(u64, @bitCast(actual)));
-    try std.testing.expectEqual(expected_errno, actual_errno);
+    try std.testing.expectEqual(expected.status, actual_status);
+    try std.testing.expectEqual(@as(u64, @bitCast(expected.value)), @as(u64, @bitCast(actual)));
+    try std.testing.expectEqual(expected.err, actual_errno);
     const parsed = float_parse.parse(std.mem.span(input), if (builtin.abi.isMusl()) .musl else .glibc);
-    try std.testing.expectEqual(expected_end, parsed.end);
+    try std.testing.expectEqual(expected.end, parsed.end);
 }
 
 test "float parser C grammar, special values and error precedence match libc" {

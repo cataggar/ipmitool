@@ -1198,6 +1198,20 @@ subnormal. These are deliberately preserved, using bounded exact-decimal
 comparisons and the target's long-double precision, rather than treating all
 subnormals as `ERANGE` or normalizing every zero's sign.
 
+Musl's actual target `long double` is selected explicitly: IEEE binary64
+(53-bit significand, including 32-bit ARM), x87 extended80 (64 bits), or IEEE
+binary128 (113 bits). Other representations fail with an explicit unsupported
+representation diagnostic rather than being decoded as binary128.
+Binary64 cannot represent the halfway-to-zero binade itself; its compatibility
+path therefore does not decode a rounded-to-zero float to infer that binade.
+The pure `float_musl53.zig` kernel preserves musl's fixed 128-limb base-1e9
+buffer, rescaling and signed bias operations for negative decimal underflow.
+That smaller buffer can change far-underflow zero signs after significand
+truncation. Its hexadecimal kernel also preserves musl's binary64 accumulation
+and final scaling (occasionally a one-ULP difference from ideal nearest
+conversion). Neither kernel calls libc or allocates; the musl-derived kernel
+retains its MIT notice.
+
 **Locale constraint:** both the unchanged C frontend (`lib/ipmi_main.c`) and
 the Zig frontend (`cli/main.zig`) call `setlocale(LC_ALL, "")`. Production
 therefore does *not* unconditionally run in the C locale. This parser's grammar
@@ -1222,6 +1236,30 @@ Decimal digit arithmetic intentionally uses `u32` intermediates: Zig 0.16's
 x86_64 Debug backend cannot encode the equivalent `u8` division by ten.
 Both Debug and LLVM ReleaseFast cross-compilation are supported. Tests also run against
 musl on a native aarch64 CPU with `-Dtarget=aarch64-linux-musl`.
+`test-helper-floats-pure` tests target selection and injectable f64/f80/f128
+profiles without libc or C headers; `test-helper-floats-pure-compile` builds
+those tests for a foreign target. `test-helper-floats-standalone` uses the
+same **single** test-only oracle in `util/float_oracle.zig`, with only standard
+C headers rather than the full ipmitool bridge. It checks C/Zig long-double
+metadata, zero signs, range boundaries, significand truncation, grammar seams
+and a 4,000-token decimal/hex corpus. To characterize binary64 long double
+against actual ARM musl, run:
+
+```sh
+zig build test-helper-floats-standalone-compile test-helper-floats-pure-compile \
+  -Dtarget=arm-linux-musleabihf -Dipmishell=false -Dopenssl=false \
+  -Dinternal-md5=true -Dintf-lanplus=false
+qemu-arm-static zig-out/bin/helper-floats-standalone
+```
+
+The compile step installs only that standalone test artifact and does not
+execute a foreign binary automatically. These ARM tests were run under QEMU
+against the target musl bundled with Zig 0.16, including 52-fraction-bit
+cancellation, the precision-dependent hex early-underflow cutoff and
+long-double buffer limits. This characterizes the parser, **not** the complete
+32-bit ipmitool product or its unrelated full-root ABI checks. The supported
+rounding mode remains round-to-nearest/ties-to-even; other modes, floating
+exception flags and non-glibc/non-musl dialects are not independently verified.
 On this header-limited host, add
 `-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
 These focused steps do not claim to fix the reduced full-root `test-unit`
