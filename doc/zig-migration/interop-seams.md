@@ -251,11 +251,13 @@ the pinned `include` Git tree is
 `27308375ae27168e3afce432d977c02984c5c66d`.
 
 The independent **dumper-generation pin** is
-`3734b6e935c72e031d66346fb9bc95b81277dcfe`, whose historical
+`7ada568dc63d2791b9f820a10e76b9bca3c56952`, whose historical
 `tools/dump_strings_baseline.c` has Git blob
 `903561f7a808dc42cce6d25c244ab02228b184ad` and SHA256
 `a27bf2cf84b8a173020575244d82e7e033413427c879ac078e17fc9e80bd6505`.
 The current tree deliberately contains no copy of that C dumper.
+Retain this generation commit under a published branch/tag even if the leaf is
+later rebased or squash-merged, so the frozen pin remains fetchable.
 `strings-c.SHA256SUMS` records the fixture digests:
 
 | SHA256 feature | Frozen fixture SHA256 |
@@ -279,7 +281,7 @@ obtain the exact pins from a remote retaining their published history:
 
 ```sh
 git fetch --no-tags origin 207aa0ddeec2a7192a2edd9559c1bf4bd19a6f21
-git fetch --no-tags origin 3734b6e935c72e031d66346fb9bc95b81277dcfe
+git fetch --no-tags origin 7ada568dc63d2791b9f820a10e76b9bca3c56952
 ```
 
 If the server disallows direct commit-SHA fetches, fetch the published branch
