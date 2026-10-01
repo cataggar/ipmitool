@@ -26,7 +26,8 @@ behavior, framing and close handling. `zig build test-dummy-posix-cli
 -Dzig-modules=dummy` differentially runs every CLI fixture against
 same-feature C and Zig dummy binaries, including real 108-byte socket paths,
 wire bytes, diagnostics and statuses. The LAN transport fixtures exercise
-the independent UDP transports and still require OpenSSL-backed LAN+.
+the independent UDP transports. The explicitly selected C recorder requires
+OpenSSL-backed LAN+; the default all-selected Zig checker uses Zig crypto.
 
 ## Why this exists
 
@@ -126,11 +127,13 @@ NUL in BMC SOL data stays on the binary `fwrite` path.
 
 ### One code path for record and check
 
-`zig build gen-transport-fixtures` and `zig build test-transport` run the same
+`zig build gen-transport-fixtures -Dc-oracle=true` and `zig build test-transport` run the same
 executable with the same model BMC; the only difference is whether the
 transcript is written or compared.  There is no separate replay implementation
 that could drift away from the recorder, and no way for a fixture to encode a
-behaviour the checker does not also enforce.
+behaviour the checker does not also enforce. Recording requires an explicit
+C selection (`-Dc-oracle=true` or `-Dzig-modules=none`) and both LAN and LAN+
+enabled; default/all-selected and mixed recorders are rejected before writing.
 
 This is the transport-layer form of crypto lesson 2 (*"tests that
 re-implement a wrapper cover nothing inside it"*): the thing under test is the
@@ -615,7 +618,7 @@ for a default-configuration `zig build test` / golden-suite run.
 zig build test-unit                  # Zig in-module and ABI tests only
 zig build test-transport             # compare against checked-in fixtures
 zig build test                       # includes the above
-zig build gen-transport-fixtures     # re-record (writes into the source tree)
+zig build gen-transport-fixtures -Dc-oracle=true # re-record the C baseline
 ```
 
 Extra arguments are forwarded:

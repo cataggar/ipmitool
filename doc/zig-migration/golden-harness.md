@@ -38,14 +38,15 @@ log is what catches it.
 ## Quick start
 
 ```sh
-# The usual way: build and run the suite against what was just built, plus a
-# second run against a binary with every registered Zig module swapped in.
+# The usual way: build and run the suite against the all-selected Zig default.
 zig build test
+# Explicit C oracle plus a second all-selected Zig run.
+zig build test -Dc-oracle=true
 
 # Only the golden suite. Extra arguments are forwarded to the harness.
 zig build test-golden
 zig build test-golden -- --filter fru_
-zig build test-golden -- --update
+zig build test-golden -Dc-oracle=true -- --update
 zig build test-cli                    # diff the C and Zig frontends directly
 zig build test-cli-cutover -Dzig-modules=ipmishell  # compare shared CLI via the Zig shell
 zig build test-shell-log -Dipmishell=true -Dzig-modules=ipmishell  # compare C/Zig logger via the Zig shell
@@ -271,7 +272,7 @@ Cases marked `zig_deviation: true` have both an original C-oracle `.snap` and
 an explicit `.zig.snap` selected with `--zig-deviations`. This is reserved for
 documented safety fixes (for example, rejecting short OEM replies that C
 decodes using stale or out-of-bounds response bytes), not ordinary mismatches.
-The default C run always checks the original oracle snapshot; the Zig-swapped
+The explicit C run always checks the original oracle snapshot; the Zig-swapped
 build checks the corresponding Zig snapshot. An unmarked case must remain
 byte-identical on both runs.
 
@@ -840,9 +841,9 @@ so every pull request is gated on the suite.
 
 ### Two binaries per run
 
-`test-golden` runs the suite **twice**:
+For explicit C/mixed selections, `test-golden` runs the suite **twice**:
 
-1. against the binary the current options produce, which by default is all C,
+1. against the binary the current options produce,
    and
 2. against `ipmitool-zig`, a binary with *every* module registered in
    `zig_modules` served by Zig.
@@ -851,12 +852,17 @@ The second run is what makes this a migration safety net rather than a
 regression test: it proves that the ported Zig modules produce byte-identical
 stdout, stderr, exit status and IPMI request bytes. Because the two binaries
 share their C objects through the compilation cache, the second one costs a
-static archive and two links - about 3 s here, against roughly 10 s for the
-build itself.
+static archive and two links.
 
-When `-Dzig-modules` already selects everything, the two binaries would be
-identical and the second run is skipped, so `zig build test -Dzig-modules=oem`
-runs the suite once, against the swapped binary.
+The default (or explicit `-Dzig-modules=all`) already selects everything,
+so the duplicate second run is skipped. `zig build test -Dzig-modules=oem`
+still runs both the mixed and all-selected binaries.
+CI also runs `zig build test -Dc-oracle=true` to retain the C comparison.
+
+With `--update`, only an explicit C selection is accepted and only the C
+binary records the original snapshots; the all-selected comparison does not
+overwrite them. Standalone `tests/run.sh` remains available for intentional
+updates of separate Zig-only/deviation fixtures with an explicit binary.
 
 Adding a module to `zig_modules` automatically extends the swapped build; there
 is nothing to update in the test wiring.
@@ -867,7 +873,7 @@ Everything after `--` is forwarded to the harness:
 
 ```sh
 zig build test-golden -- --filter sel_
-zig build test-golden -- --update
+zig build test-golden -Dc-oracle=true -- --update
 zig build test -- -v
 ```
 

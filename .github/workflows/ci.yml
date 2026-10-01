@@ -47,10 +47,11 @@ env:
   # build and test jobs can persist them explicitly.
   ZIG_GLOBAL_CACHE_DIR: ${{ github.workspace }}/.zig-cache
   ZIG_LOCAL_CACHE_DIR: ${{ github.workspace }}/.zig-cache
-  # System packages required by the default `zig build` configuration:
-  #   libssl-dev      -> libcrypto, for -Dopenssl (RMCP+ crypto, SHA256/MD5)
-  #   libreadline-dev -> libreadline, for -Dipmishell (the `shell`/`exec` cmds)
-  #   pkg-config      -> how build.zig locates readline
+  # System packages required by explicit C builds and differential fixtures
+  # (the default all-selected Zig tools need neither OpenSSL nor readline):
+  #   libssl-dev      -> libcrypto for C RMCP+ crypto, SHA256/MD5
+  #   libreadline-dev -> libreadline for the C `shell`/`exec` commands
+  #   pkg-config      -> how C builds locate readline
   #   binutils        -> readelf checks the cross-built musl binaries are static
   BUILD_APT_PACKAGES: 'libssl-dev libreadline-dev pkg-config binutils'
 
@@ -159,6 +160,10 @@ jobs:
           zig-out/bin/ipmitool -h
           echo "--- ipmievd -h ---"
           zig-out/sbin/ipmievd -h
+          zig build test-no-log-varargs
+          help="$(zig-out/bin/ipmitool -h 2>&1)"
+          grep -Fq 'IPMI v2.0 RMCP+ LAN Interface' <<<"$help"
+          grep -Fq 'Launch interactive IPMI shell' <<<"$help"
           # Installed data files, as produced by `zig build`.
           test -f zig-out/share/man/man1/ipmitool.1
           test -f zig-out/share/man/man8/ipmievd.8
@@ -172,18 +177,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Build all registered Zig replacements
+      - name: Build explicit Zig-cc C oracle
         run: |
           set -euo pipefail
-          zig build -Dzig-modules=all --summary all
-          zig build test-no-log-varargs -Dzig-modules=all
-          test -x zig-out/bin/ipmitool
-          test -x zig-out/sbin/ipmievd
-          zig-out/bin/ipmitool -V
-          zig-out/sbin/ipmievd -V
-          help="$(zig-out/bin/ipmitool -h 2>&1)"
-          grep -Fq 'IPMI v2.0 RMCP+ LAN Interface' <<<"$help"
-          grep -Fq 'Launch interactive IPMI shell' <<<"$help"
+          zig build -Dc-oracle=true --prefix zig-out/c-oracle --summary all
+          zig-out/c-oracle/bin/ipmitool -V
+          zig-out/c-oracle/sbin/ipmievd -V
 
       - name: Cross-build static all-selected binaries
         run: |
@@ -193,13 +192,13 @@ jobs:
             ubuntu-24.04-arm) target=x86_64-linux-musl; machine=X86-64 ;;
             *) echo "::error::unexpected runner"; exit 1 ;;
           esac
-          # Keep native C-default artifacts intact. External OpenSSL/readline
-          # are disabled until their replacements can be cross-linked.
+          # Keep native all-selected artifacts intact. This variant exercises
+          # explicitly disabled shell, OpenSSL and LAN+ features.
           prefix="zig-out/cross-$target"
-          zig build -Dzig-modules=all -Dtarget="$target" -Doptimize=ReleaseSafe \
+          zig build -Dtarget="$target" -Doptimize=ReleaseSafe \
             -Dipmishell=false -Dopenssl=false -Dinternal-md5=true \
             -Dintf-lanplus=false --prefix "$prefix" --summary all
-          zig build test-no-log-varargs -Dzig-modules=all -Dtarget="$target" \
+          zig build test-no-log-varargs -Dtarget="$target" \
             -Doptimize=ReleaseSafe -Dipmishell=false -Dopenssl=false \
             -Dinternal-md5=true -Dintf-lanplus=false
           for binary in "$prefix/bin/ipmitool" "$prefix/sbin/ipmievd"; do
@@ -221,9 +220,9 @@ jobs:
             *) echo "::error::unexpected runner"; exit 1 ;;
           esac
           prefix="zig-out/cross-full-$target"
-          zig build -Dzig-modules=all -Dtarget="$target" -Doptimize=ReleaseSafe \
+          zig build -Dtarget="$target" -Doptimize=ReleaseSafe \
             --prefix "$prefix" --summary all
-          zig build test-no-log-varargs -Dzig-modules=all -Dtarget="$target" \
+          zig build test-no-log-varargs -Dtarget="$target" \
             -Doptimize=ReleaseSafe
           for binary in "$prefix/bin/ipmitool" "$prefix/sbin/ipmievd"; do
             test -x "$binary"
@@ -280,8 +279,8 @@ jobs:
       - name: zig build test
         run: zig build test --summary all
 
-      - name: Test fully selected Zig tools
-        run: zig build test -Dzig-modules=all --summary all
+      - name: Test explicit C oracle and all-selected comparison
+        run: zig build test -Dc-oracle=true --summary all
 
       - name: Test and build opt-in Zig USB transport
         run: |
@@ -322,6 +321,26 @@ jobs:
         env:
           ORACLE_DIR: ${{ runner.temp }}/ipmitool-oracle
         run: scripts/build-oracle.sh
+
+      - name: Install Zig ${{ env.ZIG_VERSION }} for selectable C cross-check
+        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          ghr-version: v0.8.1
+          tools: >-
+            cataggar/zig@v${{ env.ZIG_VERSION }}
+            RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
+
+      - name: Cross-check explicit Zig-cc C build against archived autotools C
+        env:
+          ORACLE_DIR: ${{ runner.temp }}/ipmitool-oracle
+        run: |
+          set -euo pipefail
+          test "$(zig version)" = "${ZIG_VERSION}"
+          zig build -Dc-oracle=true --prefix zig-out/c-oracle --summary all
+          diff <(tail -n +2 "$ORACLE_DIR/ipmitool-h.txt") \
+               <(zig-out/c-oracle/bin/ipmitool -h 2>&1 | tail -n +2)
 
       - name: Smoke-check the oracle binaries
         env:

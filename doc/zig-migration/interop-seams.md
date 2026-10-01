@@ -300,7 +300,9 @@ for this seam before substituting the PICMG translation unit.
 ## The swap flag
 
 ```
-zig build                        # all C, byte-identical to the oracle
+zig build                        # every registered Zig replacement selected
+zig build -Dc-oracle=true         # explicit all-C oracle, compiled by zig cc
+zig build -Dzig-modules=none       # equivalent explicit C selection
 zig build -Dzig-modules=oem      # lib/ipmi_oem.c replaced by src/zig/cmd/oem.zig
 zig build -Dzig-modules=vita     # lib/ipmi_vita.c replaced by src/zig/cmd/vita.zig
 zig build -Dzig-modules=oem,raw  # several at once
@@ -316,9 +318,24 @@ zig build -Dzig-modules=all      # every registered Zig replacement in both inst
 zig build --help                 # lists the available module names
 ```
 
-`all` is a selection alias, not a pure-Zig switch: the logging varargs shim,
-translated C headers and libc still remain. The default C build continues to
-serve as the golden oracle until the Phase 7 cutover.
+`all` is the default selection alias, not a no-libc or translate-c-free switch.
+The installable all-selected tools compile no project C translation units,
+including the logging varargs shim, but still use translated C headers and
+libc. Mixed selections still need C objects and, when `log` is selected, its
+varargs shim. Test-only C ABI and differential fixtures remain C explicitly.
+Use `-Dc-oracle=true` or `-Dzig-modules=none` for the Zig-cc C oracle.
+`-Dc-oracle=true` rejects any non-`none` selector; `none` must stand alone,
+and an empty selector is rejected. A partial list selects only its named
+modules, never the unlisted default replacements.
+
+The archived baseline from `scripts/build-oracle.sh` is different: it uses
+gcc/autotools and is inherently C. Zig selectors must not be passed to
+`./configure`. `gen-crypto-vectors` still compiles its original C sources
+directly; C golden/transport recorders require an explicit C selector:
+`zig build test-golden -Dc-oracle=true -- --update` and
+`zig build gen-transport-fixtures -Dc-oracle=true`.
+`test-build-selection` checks omitted/all, none/oracle, mixed and conflicting
+selectors, and prevents C recording steps from inheriting the Zig default.
 
 The selected IANA registry keeps its C ABI pointer, but its value array and
 registry names share a Zig arena reclaimed by `ipmi_oem_info_free`. Registry
@@ -1151,7 +1168,7 @@ but writes the decimal PID and newline with a checked Zig streaming writer
 instead of `fdopen`/`fprintf`/`fclose`. A write, flush or close failure removes
 the new file and reports the existing PID creation error; the daemon process
 fixture checks exact bytes, permissions and cleanup after both stop signals.
-The default C daemon remains the oracle.
+The explicitly selected C daemon remains the oracle.
 
 The ISOL, LAN, LAN+ and OpenIPMI ports share a Zig-only `fd_set` helper.
 `util/fd_set.zig` declares its own 1024-bit `FdSet` without importing
@@ -1223,7 +1240,7 @@ import the logger into `cli/tool.zig` without sharing its state first.
 The archive-selected `raw`, `channel`, `user` and `event` command ports also
 use `util/log.zig`'s typed logger. When `log` is selected they share its state
 and preserve libc printf formatting with their original argument widths;
-otherwise the wrapper calls C `lprintf`. The default C-oracle fixtures
+otherwise the wrapper calls C `lprintf`. The original C-oracle fixtures
 `raw_log_ccode_hex` and `chan_log_priv_bad_numeric` pin hexadecimal completion
 codes and `%hhu` privilege bounds without changing existing snapshots.
 
@@ -1235,7 +1252,7 @@ bytes, embedded NULs and a too-small destination. The `chan_` CLI goldens
 preserve cipher requests, output and exit statuses for C and selected Zig.
 
 `lanplus-strings` exports the exact RAKP status and privilege lookup arrays
-used by both C and Zig LAN+ transports. The C tables remain the default oracle;
+used by both C and Zig LAN+ transports. The C tables remain the test oracle;
 `zig build test-lanplus-strings` checks every value, string and terminator
 against both implementations, including the `struct valstr` ABI.
 
@@ -1292,8 +1309,8 @@ Mechanics, all in `build.zig`:
 
 1. `zig_modules` maps each name to the `.c` it replaces and to its Zig
    implementation.
-2. `parseZigModules` splits the option and exits with the list of valid names
-   when it sees an unknown one.
+2. `parseZigModules` defaults an omitted option to all-selected, splits explicit
+   lists, and rejects unknown names and conflicting C selectors.
 3. `addSources` skips any `.c` a selected module replaces, so there is never a
    duplicate symbol; the swap is a substitution, not an override. When all
    modules are selected, a generated Zig-only archive member keeps the core
@@ -1303,8 +1320,9 @@ Mechanics, all in `build.zig`:
    For `cli`, `src/zig/cli/tool.zig` is also the `ipmitool` executable root;
    the Zig archive exports `ipmi_main`, `ipmi_cmd_run`, and `ipmi_cmd_print` for
    the still-C `ipmievd` and `ipmishell` callers.
-5. With no selection the Zig library is not built or linked at all, so the
-   default build is bit-for-bit the pre-existing all-C build.
+5. With explicit `none` (or `-Dc-oracle=true`) the Zig library is not built or
+   linked at all, preserving the all-C build. Fixture-only selections do not
+   inherit the production default.
 
 Selecting `-Dzig-modules=fru` now replaces `lib/ipmi_fru.c` in its entirety:
 print/list with SDR discovery and PICMG records, read/write, internaluse,
@@ -1346,7 +1364,7 @@ ABI for `get_fru_area_str()`, `ipmi_timestamp_numeric()`, `val2str()`,
 logging and its remaining stdio output. It does not import the FRU or PICMG
 command implementations; their independent Zig migrations can therefore
 replace their C translation units without changing this module. The original
-C analyzer stays available in the default build as the oracle until the final
+C analyzer stays available in the explicit C build as the oracle until the final
 C removal.
 
 Run `zig build test-ekanalyzer-header-stdout` for header output parity and
@@ -1386,7 +1404,7 @@ last valid filter and policy IDs, including exit statuses and request bytes.
 The PEF, firewall and DCMI command ports now use the archive's typed logger
 for their diagnostics; with the C logger selected, calls still use its
 variadic ABI. `pef_log_status_hex` and `fw_log_unsupported_hex` pin the
-original hexadecimal diagnostics against the default C oracle.
+original hexadecimal diagnostics against the original C oracle.
 The firewall `info` command's selected-pair and all-pairs command-mask
 matrices now use checked Zig stdout. Its inverted support mask and normal
 configurable/enabled masks retain C's lower-case hex, trailing space after
@@ -1593,7 +1611,7 @@ its entire observable behaviour is reachable from `ipmitool -o list`.
       struct fields keep their C names.
 * [ ] `zig build` (default) still matches the oracle for `-h` and `-V`.
 * [ ] `zig build -Dzig-modules=<name>` links and produces identical output to
-      the default build for every code path the module touches.
+      the explicit C oracle for every code path the module touches.
 * [ ] `zig build test` passes with and without the flag.
 * [ ] `zig fmt --check` passes over the added files.
 * [ ] The golden suite covers at least one command that exercises the module.
@@ -1601,8 +1619,8 @@ its entire observable behaviour is reachable from `ipmitool -o list`.
 ## Verifying a port
 
 ```bash
-# default build: still all C, still matches the oracle
-zig build -p zig-out/c
+# explicit Zig-cc C build: still matches the archived autotools oracle
+zig build -Dc-oracle=true -p zig-out/c
 diff <(tail -n +2 <oracle>/ipmitool-h.txt) <(./zig-out/c/bin/ipmitool -h 2>&1 | tail -n +2)
 
 # with the module swapped in
@@ -1614,19 +1632,21 @@ diff <(./zig-out/c/bin/ipmitool <args> 2>&1) <(./zig-out/zig/bin/ipmitool <args>
 # the same check for the whole CLI surface, including the IPMI request bytes
 ./tests/run.sh --binary ./zig-out/c/bin/ipmitool --candidate ./zig-out/zig/bin/ipmitool
 
-# ABI assertions, smoke tests and the golden suite, both ways
+# ABI assertions, smoke tests and the golden suite, default/C/mixed
 zig build test
+zig build test -Dc-oracle=true
 zig build test -Dzig-modules=<name>
 
 zig fmt --check build.zig src/zig/
 ```
 
 `zig build test` runs the golden CLI suite (issue #4,
-[golden-harness.md](golden-harness.md)) twice: once against the default all-C
-binary and once against a binary with every registered module swapped to Zig.
-That is the differential check that used to be spelled out here as an inline
-`-o list` assertion. When porting a module, add a golden case that exercises it
-if the existing cases do not already reach it.
+[golden-harness.md](golden-harness.md)) against the selected binary. For an
+explicit C or partial selection it also checks an all-selected Zig binary;
+the default already is all-selected, so that duplicate run is skipped.
+CI runs both the default and explicit C configurations to retain the comparison.
+Snapshot regeneration runs only the explicitly selected C binary. When porting
+a module, add a golden case that exercises it if existing cases do not reach it.
 
 The golden suite speaks only to the `dummy` interface, so it cannot see
 checksums, session state or packet assembly (issue #26). `zig build test` also

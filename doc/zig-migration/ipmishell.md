@@ -1,17 +1,18 @@
-# Optional Zig shell frontend
+# Zig shell frontend
 
 `zig build -Dzig-modules=ipmishell` replaces **all four** entry points from
 `src/ipmishell.c`: `shell`, `exec`, `set`, and `echo`. With `-Dipmishell=true`
 (the default), the shell remains in the C front end's command table. The
-replacement has no readline dependency; ordinary builds without this module
-continue to compile the C oracle through Phase 7. `-Dipmishell=false` hides
+replacement has no readline dependency and is selected by default. Explicit
+C/mixed builds without this module continue to compile the C oracle through
+Phase 7. `-Dipmishell=false` hides
 only `shell` as before, not `exec`, `set`, or `echo`.
 
 The interactive editor and shared word parser live in
 `src/zig/frontend/ipmishell.zig`. The non-interactive `exec`, `set`, and
 `echo` entry points live in `src/zig/frontend/shell_commands.zig`; all four are
-exported together only when `ipmishell` is selected. The default build still
-uses `src/ipmishell.c` for all three commands.
+exported together when `ipmishell` is selected, including the default build.
+Explicit C/mixed builds without that selection use `src/ipmishell.c`.
 
 Successful `echo` and output-producing `set` commands use a Zig 0.16
 streaming stdout writer, with the same trailing space for each echoed word,

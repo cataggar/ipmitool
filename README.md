@@ -20,7 +20,7 @@ here; everything else is a bug.
 | Deviation | Since | Rationale |
 | --- | --- | --- |
 | The `imb`, `lipmi`, `bmc`, `free` and `dbus` interface plugins have been **removed**. `ipmitool -h` no longer lists `imb`, and `--enable-intf-{imb,lipmi,bmc,free,dbus}` / `-Dintf-{imb,lipmi,bmc,free,dbus}` no longer exist. | issue #10 | None of the five can be built or tested on any platform this fork supports, so a Zig port of them would be unverifiable dead code. See [doc/zig-migration/dropped-transports.md](doc/zig-migration/dropped-transports.md). |
-| When Zig `helper` is selected, a width-two MAC field containing only `0x` or `0X` is always rejected, even though glibc 2.39 `sscanf` accepts it as zero. The default C parser is unchanged. | Zig helper cutover | Use a portable rule rather than depend on glibc 2.39's version-specific acceptance: glibc 2.43 and musl reject the incomplete prefix. See [interop seams](doc/zig-migration/interop-seams.md). |
+| When Zig `helper` is selected (including by default), a width-two MAC field containing only `0x` or `0X` is always rejected, even though glibc 2.39 `sscanf` accepts it as zero. The explicit C oracle parser is unchanged. | Zig helper cutover | Use a portable rule rather than depend on glibc 2.39's version-specific acceptance: glibc 2.43 and musl reject the incomplete prefix. See [interop seams](doc/zig-migration/interop-seams.md). |
 
 ## Overview
 
@@ -81,13 +81,15 @@ you are welcome to submit a PR with relevant configuration changes
 
 ## Building
 
-`zig build` is the primary build system. It compiles the existing C sources
-with `zig cc` and needs nothing but [Zig](https://ziglang.org/) 0.16.0 and
-OpenSSL's `libcrypto`:
+`zig build` is the primary build system. With [Zig](https://ziglang.org/) 0.16.0
+it selects every registered Zig implementation by default. These all-selected
+tools still use libc and translated C headers; this is not a no-libc or
+translate-c-free build. Explicit C and mixed builds compile the remaining
+project C sources with `zig cc`.
 
 ```
 zig build              # binaries land in zig-out/bin and zig-out/sbin
-zig build test         # smoke tests (see below)
+zig build test         # unit, smoke, golden and transport tests
 zig build run -- -V    # run the freshly built ipmitool
 zig build run-ipmievd -- -h
 zig build --prefix /usr/local   # install layout matches `make install`
@@ -105,8 +107,8 @@ defaults:
 | `-Dintf-serial` | on | serial basic/terminal mode |
 | `-Dintf-dummy` | on | test interface used by the golden test harness |
 | `-Dintf-usb` | off | AMI USB |
-| `-Dzig-modules=usb` | off | Replace `usb.c` with the Zig AMI USB transport; combine with `-Dintf-usb=true` |
-| `-Dzig-modules=all` | off | Select every registered Zig replacement; the default remains C |
+| `-Dzig-modules` | `all` | `none` selects C; a list such as `sdr,sel` selects only those Zig replacements |
+| `-Dc-oracle` | off | `true` selects the Zig-cc C oracle; accepts only an omitted selector or explicit `none` |
 | `-Dopenssl` | on | link `libcrypto` only when C crypto still needs it; `false` disables C lanplus unless Zig crypto is selected |
 | `-Dinternal-md5` | off | use the bundled MD5 instead of `libcrypto` |
 | `-Dipmishell` | on | expose `ipmitool shell` (and keep `exec`/`set`/`echo`) |
@@ -119,18 +121,24 @@ defaults:
 | `-Ddefault-intf` | `open`, else `lan` | interface used when `-I` is omitted |
 | `-Dversion` | from `git describe` | version string baked into the binaries |
 
-`zig build test` currently runs smoke tests only: both binaries must print
+`zig build test` includes smoke tests: both binaries must print
 their version, exit successfully for `-h`, and list exactly the interfaces
-that were enabled. The golden transcript suite is built on top of this.
+that were enabled. It also runs unit/ABI, golden transcript, transport and
+build-selection regression tests. C-backed ABI fixtures and differential
+comparisons remain explicit test-only dependencies.
 
-`zig build -Dzig-modules=all` builds the installable binaries with every
-registered Zig replacement selected. This is not yet a pure-Zig release: the
+Plain `zig build` (equivalently, `zig build -Dzig-modules=all`) builds the
+installable binaries with every registered Zig replacement selected.
+This is not yet a pure-Zig release: the
 fully selected tools compile no project C translation units, including the
 logging varargs shim; mixed C/Zig builds still need the shim. The
 `test-no-log-varargs` step checks both production archives for C objects and
 the logger ABI, and the build rejects unported C sources in fully selected
 tools. Zig still imports translated C headers and the binaries link libc.
-The default build remains the C regression oracle.
+Use `zig build -Dc-oracle=true` (equivalently, `-Dzig-modules=none`) for the
+C regression oracle, or `zig build -Dzig-modules=sdr,sel` for a mixed build.
+`none` cannot be combined with other names, and `-Dc-oracle=true` rejects any
+Zig selection rather than silently overriding it. Empty lists are rejected.
 
 Both binaries also cross-build as static `ReleaseSafe` musl executables with
 the default shell, LAN+ and crypto features enabled when every Zig module is
@@ -139,16 +147,30 @@ crypto needs no OpenSSL library; the binaries still link musl libc. CI checks
 both this configuration and a reduced-feature variant on x86_64 and aarch64.
 
 `-Dipmishell` is on by default so that the command table matches the autotools
-baseline. Select `-Dzig-modules=ipmishell` for the native Zig line editor with
-history and editing keys; that build does not need readline headers or the
-readline library. Until the C shell is removed, builds without this selection
+baseline. The default native Zig line editor has history and editing keys
+and does not need readline headers or the readline library. Until the C shell
+is removed, explicit C/mixed builds without the `ipmishell` selection
 still find readline via `pkg-config` or a header search, and need its development
 package (or `-Dreadline-libs=readline,tinfo`). See
 `doc/zig-migration/ipmishell.md` for editor behavior and parity tests.
 
-The autotools build (`./bootstrap && ./configure && make`) is still present and
-still works. It is kept as a cross-check while the code base is incrementally
-rewritten in Zig and will be removed once the migration is complete.
+The autotools build (`./bootstrap && ./configure && make`) remains an independent
+C cross-check. `scripts/build-oracle.sh` archives that baseline using gcc and
+autotools, not `zig build`: Zig selectors are not configure flags.
+
+For hosts without OpenSSL development headers, use
+`-Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`. Keep the shell
+enabled for default/all-selected builds and `-Dzig-modules=cli,ipmishell`;
+only C-shell builds need readline development headers or `-Dipmishell=false`.
+To regenerate C snapshots or transport fixtures, select C explicitly:
+
+```sh
+zig build test-golden -Dc-oracle=true -- --update
+zig build gen-transport-fixtures -Dc-oracle=true
+```
+
+The recorder rejects Zig/mixed selections so the new default cannot silently
+replace the C baseline. Transport recording requires LAN and LAN+ enabled.
 
 The opt-in AMI USB transport uses Linux `/proc/scsi/sg/device_strs`, `/dev/sg*`
 and `SG_IO`, not libusb. Neither C nor Zig USB builds require libusb; a

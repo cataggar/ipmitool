@@ -118,7 +118,7 @@ libc-free, and the retained C fallback still requires the shim.
 
 The `nm_discover_ccode_hex` and `vita_properties_log_hex` golden cases pin C
 stderr for named `%x` error codes and `%#x` discovery addresses, respectively.
-`zig build test-golden` runs the same fixtures with the default C implementation
+`zig build test-golden -Dc-oracle=true` runs the same fixtures with the explicit C implementation
 and the all-selected Zig implementation; neither test needs a separate oracle.
 
 `interop-seams.md` says the Zig tree contains "exactly two C files"

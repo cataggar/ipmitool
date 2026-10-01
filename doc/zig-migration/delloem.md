@@ -23,7 +23,7 @@ padding that were previously indeterminate, so its recorded request log is
 stable across processes and platforms.
 The `delloem_` filter runs 123 Dell command cases plus three registry/MC cases
 from the broader suite, 126 cases per binary. The
-`delloem_lan_invalid_bond_numeric` snapshot comes from the default C oracle:
+`delloem_lan_invalid_bond_numeric` snapshot comes from the original C oracle:
 the malformed iDRAC NIC response prints both promoted `%d` arguments as
 `(6) (255)`. It checks stderr and request bytes without a new normalizer.
 
