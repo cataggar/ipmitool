@@ -66,7 +66,6 @@
 4 src/zig/intf/serial_terminal.zig
 82 src/zig/intf/usb.zig
 0 src/zig/root.zig
-21 src/zig/util/fd_set.zig
 121 src/zig/util/helper.zig
 37 src/zig/util/log.zig
 2 src/zig/util/stdout.zig
