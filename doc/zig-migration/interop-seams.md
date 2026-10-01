@@ -198,6 +198,11 @@ The validation module and `header_types_interop_test.zig` each explicitly
 import `ipmi_c`: these are isolated interop infrastructure pending #249/#250,
 not native runtime dependencies. The bridge budget must count both when
 rebasing alongside #226 (three old header imports become these two imports).
+The reviewed relocation removes 45 references from the three native headers
+and records 48 compile-time ABI/value references plus eight test-only C calls
+in the two validation files. The extra 11 characterization references preserve
+and strengthen ABI coverage; they add no runtime libc calls and are not exempt
+from the syntax ratchet.
 
 The generated `util/strings_tables.zig` is data-only: it imports the pure-Zig
 `util/table_types.zig` layouts and `build_options.have_crypto_sha256`, not

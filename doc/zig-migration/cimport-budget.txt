@@ -43,8 +43,6 @@
 126 src/zig/cmd/tsol.zig
 139 src/zig/cmd/user.zig
 113 src/zig/cmd/vita.zig
-30 src/zig/core/ipmi.zig
-1 src/zig/core/oem.zig
 4 src/zig/crypto/auth.zig
 44 src/zig/crypto/lanplus_crypt.zig
 15 src/zig/crypto/lanplus_crypt_impl.zig
@@ -53,8 +51,9 @@
 6 src/zig/frontend/logging.zig
 66 src/zig/frontend/shell_commands.zig
 4 src/zig/fwum_progress_cli.zig
+8 src/zig/header_types_interop_test.zig
+48 src/zig/header_types_validation.zig
 74 src/zig/intf/dummy.zig
-14 src/zig/intf/intf.zig
 207 src/zig/intf/lan.zig
 321 src/zig/intf/lanplus.zig
 31 src/zig/intf/lanplus_dump.zig
