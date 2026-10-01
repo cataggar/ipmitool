@@ -71,5 +71,4 @@
 1 src/zig/util/printf.zig
 32 src/zig/util/stdout.zig
 27 src/zig/util/strings_registry.zig
-103 src/zig/util/strings_tables_validation.zig
 40 src/zig/util/time.zig

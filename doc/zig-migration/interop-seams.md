@@ -54,6 +54,10 @@ rejected rather than silently resolved. Use distinct namespace alias names.
 Computed import paths and malformed Zig source fail closed. This does not
 perform arbitrary comptime evaluation or discover C usage through unrelated
 wrappers outside `src/zig`; it is not a whole-program dependency analyzer.
+Computed `@field` names on scanned relative modules/containers are accepted
+only when their reachable scanned module graph has no bridge import. This
+permits native frozen-table validation without losing namespace provenance;
+the same expression fails closed if it could select a bridge reexport.
 
 Imports are tracked separately from reference counts. An importing file
 with no qualified references has a **zero** entry and is not clean yet.
