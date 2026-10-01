@@ -13,6 +13,12 @@ Build it with:
 scripts/build-oracle.sh
 ```
 
+This script always builds C with gcc/autotools; it does not use `zig build`.
+The separate selectable Zig-cc C build is `zig build -Dc-oracle=true`, or
+equivalently `zig build -Dzig-modules=none`. Plain `zig build` now selects all
+registered Zig implementations, still using libc and translated C headers.
+Neither Zig selector is an autotools configure flag.
+
 ## What the script does
 
 `scripts/build-oracle.sh`

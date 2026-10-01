@@ -1,7 +1,8 @@
 //! Zig build definition for ipmitool.
 //!
-//! This replaces autotools as the primary build system while still compiling
-//! the existing C sources with `zig cc`.  It is a translation of `configure.ac`
+//! This replaces autotools as the primary build system, selecting all Zig
+//! replacements by default and retaining explicit C/mixed builds with `zig cc`.
+//! It is a translation of `configure.ac`
 //! plus the `Makefile.am` files; those remain in the tree as a cross-check
 //! until the C sources are gone.
 //!
@@ -628,11 +629,26 @@ pub fn build(b: *std.Build) void {
         "zig-modules",
         b.fmt(
             "Comma separated modules to build from Zig instead of C; " ++
-                "available: all, {s} [default=none]",
+                "available: all, none, {s} [default=all]",
             .{comptime zigModuleNames()},
         ),
     );
-    const zig_selection = parseZigModules(b, zig_modules_opt);
+    const c_oracle = b.option(
+        bool,
+        "c-oracle",
+        "Build the C oracle with zig cc; conflicts with Zig module selections [default=false]",
+    ) orelse false;
+    const selection = parseZigModules(zig_modules_opt, c_oracle) catch |err| {
+        std.debug.print(
+            \\error: invalid build selection: {s}.
+            \\  -Dzig-modules defaults to all; valid entries: all, none, {s}
+            \\  'none' must stand alone; an empty list is not a selection.
+            \\  -Dc-oracle=true accepts only an omitted selector or -Dzig-modules=none.
+            \\
+        , .{ @errorName(err), comptime zigModuleNames() });
+        std.process.exit(1);
+    };
+    const zig_selection = &selection;
 
     const iana_dir = b.option(
         []const u8,
@@ -885,6 +901,16 @@ pub fn build(b: *std.Build) void {
     }
     const base_libs = system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
     const swapped_base_libs = swapped_system_libs.toOwnedSlice(b.allocator) catch @panic("OOM");
+    // The isolated CLI fixture retains a C shell even when production uses
+    // the readline-free Zig editor. Missing headers must affect that fixture
+    // only, not an ordinary all-selected build.
+    const c_shell_libs: []const []const u8 = if (!ipmishell) &.{} else if (readline_libs.len != 0)
+        readline_libs
+    else if (readline_libs_opt) |list|
+        nonEmpty(splitList(b, list)) orelse &.{"readline"}
+    else
+        detectReadline(b) orelse &.{"readline"};
+    const oracle_base_libs = std.mem.concat(b.allocator, []const u8, &.{ swapped_base_libs, c_shell_libs }) catch @panic("OOM");
 
     // `-lcrypto` is added last and only if something still calls into it, so a
     // build with the crypto ports selected links no OpenSSL at all.
@@ -1022,7 +1048,19 @@ pub fn build(b: *std.Build) void {
     //
     // Smoke tests, the Zig/C ABI parity assertions, and the golden CLI suite.
 
-    const test_step = b.step("test", "Run the build smoke tests");
+    const test_step = b.step("test", "Run unit, smoke, golden and transport tests");
+    const selector_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build.zig"),
+            .target = b.graph.host,
+            .optimize = .Debug,
+        }),
+    });
+    const selector_step = b.step("test-build-selection", "Check default, C, mixed and fixture selectors");
+    selector_step.dependOn(&b.addRunArtifact(selector_tests).step);
+    const selector_cli_tests = b.addSystemCommand(&.{ "python3", "-B", "tests/build_selection.py", "--zig", b.graph.zig_exe });
+    selector_step.dependOn(&selector_cli_tests.step);
+    test_step.dependOn(selector_step);
 
     if (allSelected(zig_selection) and is_linux) {
         const no_varargs_step = b.step("test-no-log-varargs", "Check the all-selected archives have no project C objects or C variadic logger");
@@ -2368,9 +2406,9 @@ pub fn build(b: *std.Build) void {
     const c_user_test = b.addExecutable(.{ .name = "user-password-c", .root_module = c_user_mod });
     user_step.dependOn(&b.addRunArtifact(c_user_test).step);
 
-    const user_only = parseZigModules(b, "user");
+    const user_only = parseZigModules("user", false) catch unreachable;
     const user_options = b.addOptions();
-    user_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, user_only));
+    user_options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, &user_only));
     user_options.addOption(bool, "have_crypto_sha256", openssl);
     const zig_user_mod = b.createModule(.{
         .root_source_file = b.path(zig_root ++ "/exports.zig"),
@@ -2482,7 +2520,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     c_strings_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize, null, openssl);
+    addEvdImports(b, c_strings_mod, bridge_mod, target, optimize, &none_selected, openssl);
     configure(b, c_strings_mod, config_h, default_intf);
     c_strings_mod.addCSourceFile(.{
         .file = b.path("src/plugins/lanplus/lanplus_strings.c"),
@@ -2513,7 +2551,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     zig_strings_mod.addImport("ipmi_c", bridge_mod);
-    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize, null, openssl);
+    addEvdImports(b, zig_strings_mod, bridge_mod, target, optimize, &none_selected, openssl);
     zig_strings_mod.linkLibrary(zig_strings_lib);
     lanplus_strings_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = zig_strings_mod })).step);
     test_step.dependOn(lanplus_strings_step);
@@ -2752,15 +2790,21 @@ pub fn build(b: *std.Build) void {
     }
 
     const golden_step = b.step("test-golden", "Run the golden CLI test suite");
-    golden_step.dependOn(&addGolden(
-        b,
-        golden_exe,
-        ipmitool,
-        null,
-        replacedByZig("lib/ipmi_gendev.c", zig_selection),
-        moduleSelected("delloem", zig_selection),
-        moduleSelected("ipmishell", zig_selection),
-    ).step);
+    const update_snapshots = updatingSnapshots(b.args);
+    const can_update_snapshots = !update_snapshots or cFixtureSelection(zig_selection);
+    if (can_update_snapshots) {
+        golden_step.dependOn(&addGolden(
+            b,
+            golden_exe,
+            ipmitool,
+            null,
+            replacedByZig("lib/ipmi_gendev.c", zig_selection),
+            moduleSelected("delloem", zig_selection),
+            moduleSelected("ipmishell", zig_selection),
+        ).step);
+    } else {
+        golden_step.dependOn(&b.addFail("C golden snapshots require -Dc-oracle=true or -Dzig-modules=none with --update").step);
+    }
     const fru_oem_step = b.step("test-fru-oem", "Run fixed Zig-only OEM edit cases");
     if (zig_selection[fruIndex()]) {
         fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, ipmitool).step);
@@ -2773,7 +2817,7 @@ pub fn build(b: *std.Build) void {
     // above through the compilation cache, so only the archive and the two
     // links are redone.  When `-Dzig-modules` already selects everything the
     // second binary is the same as the first and is skipped.
-    if (!allSelected(zig_selection)) {
+    if (!allSelected(zig_selection) and !update_snapshots) {
         const swapped = addSwappedTool(b, .{
             .target = target,
             .optimize = optimize,
@@ -2790,7 +2834,7 @@ pub fn build(b: *std.Build) void {
         if (!zig_selection[fruIndex()])
             fru_oem_step.dependOn(&addFruOemGolden(b, golden_exe, swapped).step);
     }
-    golden_step.dependOn(fru_oem_step);
+    if (can_update_snapshots) golden_step.dependOn(fru_oem_step);
 
     test_step.dependOn(golden_step);
 
@@ -2859,7 +2903,7 @@ pub fn build(b: *std.Build) void {
     // golden comparison also catches argv permutation and dummy wire traffic;
     // the runtime checks PTY prompts, SIGINT and failed devices/transports.
     if (is_linux) {
-        const no_zig: [zig_modules.len]bool = @splat(false);
+        const no_zig = none_selected;
         const cli_only = blk: {
             var selected = no_zig;
             selected[moduleIndex("cli")] = true;
@@ -2875,7 +2919,7 @@ pub fn build(b: *std.Build) void {
             .plugins_enabled = &enabled,
             .bridge_mod = bridge_mod,
             .have_crypto_sha256 = openssl,
-            .system_libs = withLibcrypto(b, base_libs, openssl, internal_md5, &no_zig),
+            .system_libs = withLibcrypto(b, oracle_base_libs, openssl, internal_md5, &no_zig),
         };
         const oracle = addSelectedTool(b, cli_options, &no_zig, "ipmitool-cli-c");
         const candidate = addSelectedTool(b, cli_options, &cli_only, "ipmitool-cli-zig");
@@ -3003,6 +3047,14 @@ pub fn build(b: *std.Build) void {
     });
 
     const transport_step = b.step("test-transport", "Run the transport fixture suite");
+    const gen_transport_step = b.step("gen-transport-fixtures", "Re-record tests/transport/fixtures from the C transports");
+    if (!cFixtureSelection(zig_selection)) {
+        gen_transport_step.dependOn(&b.addFail("C transport fixtures require -Dc-oracle=true or -Dzig-modules=none").step);
+    } else if (!enabled[pluginIndex("lan")] or !enabled[pluginIndex("lanplus")]) {
+        gen_transport_step.dependOn(&b.addFail("C transport fixtures require both -Dintf-lan=true and -Dintf-lanplus=true").step);
+    } else {
+        gen_transport_step.dependOn(&addTransport(b, transport_exe, ipmitool, true).step);
+    }
     const transport_unit = b.addTest(.{ .root_module = transport_exe.root_module });
     transport_step.dependOn(&b.addRunArtifact(transport_unit).step);
 
@@ -3026,11 +3078,6 @@ pub fn build(b: *std.Build) void {
             });
             transport_step.dependOn(&addTransport(b, transport_exe, swapped, false).step);
         }
-        const gen = addTransport(b, transport_exe, ipmitool, true);
-        b.step(
-            "gen-transport-fixtures",
-            "Re-record tests/transport/fixtures from the C transports",
-        ).dependOn(&gen.step);
     }
 
     test_step.dependOn(transport_step);
@@ -3370,6 +3417,7 @@ fn addSelectedTool(
 
 fn addSerialVariant(b: *std.Build, options: SwappedOptions, selection: []const bool, name: []const u8) *std.Build.Step.Compile {
     const core_mod = b.createModule(.{
+        .root_source_file = emptyCoreRoot(b, selection),
         .target = options.target,
         .optimize = options.optimize,
         .link_libc = true,
@@ -3497,12 +3545,10 @@ fn emptyCoreRoot(b: *std.Build, selection: []const bool) ?std.Build.LazyPath {
     return b.addWriteFiles().add("empty-core.zig", "pub export var ipmitool_zig_empty_core: u8 = 0;\n");
 }
 
-/// True when `path` is a C translation unit a selected Zig module replaces.
-/// Keeping the `.c` out of the compile is what makes the swap a link-time
-/// substitution instead of a duplicate-symbol error.
 /// A selection with every registered module enabled, i.e. what the golden
-/// suite's second binary and `zig build test` use.
+/// suite's second binary and the default production build use.
 const all_selected: [zig_modules.len]bool = @splat(true);
+const none_selected: [zig_modules.len]bool = @splat(false);
 
 /// Append `crypto` to `base` when a C translation unit still needs it.
 ///
@@ -3534,6 +3580,7 @@ fn withLibcrypto(
     return libs.toOwnedSlice(b.allocator) catch @panic("OOM");
 }
 
+/// True when a selected Zig module replaces this C translation unit.
 fn replacedByZig(path: []const u8, zig_selection: []const bool) bool {
     for (zig_modules, 0..) |module, i| {
         if (!zig_selection[i]) continue;
@@ -3593,16 +3640,24 @@ fn zigModuleNames() []const u8 {
     }
 }
 
-/// Parses `-Dzig-modules=a,b` or `-Dzig-modules=all`, rejecting unknown names.
-fn parseZigModules(b: *std.Build, value: ?[]const u8) []const bool {
-    const selection = b.allocator.alloc(bool, zig_modules.len) catch @panic("OOM");
-    @memset(selection, false);
-    const list = value orelse return selection;
+const SelectionError = error{ UnknownModule, EmptySelection, ConflictingNone, ConflictingCOracle };
+
+/// Parses an explicit selector independently of production and fixture defaults.
+fn parseZigModules(value: ?[]const u8, c_oracle: bool) SelectionError![zig_modules.len]bool {
+    const list = value orelse return if (c_oracle) none_selected else all_selected;
+    var selection = none_selected;
+    var count: usize = 0;
+    var saw_none = false;
 
     var it = std.mem.tokenizeAny(u8, list, ", \t");
     outer: while (it.next()) |name| {
+        count += 1;
+        if (std.mem.eql(u8, name, "none")) {
+            saw_none = true;
+            continue :outer;
+        }
         if (std.mem.eql(u8, name, "all")) {
-            @memset(selection, true);
+            selection = all_selected;
             continue :outer;
         }
         for (zig_modules, 0..) |module, i| {
@@ -3611,19 +3666,78 @@ fn parseZigModules(b: *std.Build, value: ?[]const u8) []const bool {
                 continue :outer;
             }
         }
-        std.debug.print(
-            \\error: unknown -Dzig-modules entry '{s}'.
-            \\
-            \\  Valid module names are: all, {s}
-            \\
-            \\  Each name selects the Zig implementation of one C translation unit;
-            \\  see doc/zig-migration/interop-seams.md for the list and for how to
-            \\  add a new one.
-            \\
-        , .{ name, comptime zigModuleNames() });
-        std.process.exit(1);
+        return error.UnknownModule;
     }
+    if (count == 0) return error.EmptySelection;
+    if (saw_none and count != 1) return error.ConflictingNone;
+    if (c_oracle and anySelected(&selection)) return error.ConflictingCOracle;
     return selection;
+}
+
+fn cFixtureSelection(selection: []const bool) bool {
+    return !anySelected(selection);
+}
+
+fn updatingSnapshots(args: ?[]const []const u8) bool {
+    for (args orelse return false) |arg| {
+        if (std.mem.eql(u8, arg, "--update")) return true;
+    }
+    return false;
+}
+
+test "default and explicit all select every registered Zig module" {
+    const implicit = try parseZigModules(null, false);
+    const explicit = try parseZigModules("all", false);
+    try std.testing.expectEqualSlices(bool, &all_selected, &implicit);
+    try std.testing.expectEqualSlices(bool, &implicit, &explicit);
+    for (zig_modules) |module| {
+        try std.testing.expect(replacedByZig(module.replaces, &implicit));
+        for (module.also_replaces) |source| try std.testing.expect(replacedByZig(source, &implicit));
+    }
+}
+
+test "none and C oracle preserve explicit C selection" {
+    const none = try parseZigModules("none", false);
+    const oracle = try parseZigModules(null, true);
+    const both = try parseZigModules("none", true);
+    try std.testing.expectEqualSlices(bool, &none_selected, &none);
+    try std.testing.expectEqualSlices(bool, &none, &oracle);
+    try std.testing.expectEqualSlices(bool, &none, &both);
+    for (zig_modules) |module| try std.testing.expect(!replacedByZig(module.replaces, &none));
+}
+
+test "partial selections do not inherit the all-selected default" {
+    const mixed = try parseZigModules("sdr, sel,sdr", false);
+    for (zig_modules, mixed) |module, selected| {
+        try std.testing.expectEqual(std.mem.eql(u8, module.name, "sdr") or std.mem.eql(u8, module.name, "sel"), selected);
+    }
+    const fixture = try parseZigModules("user", false);
+    try std.testing.expect(fixture[moduleIndex("user")]);
+    try std.testing.expect(!fixture[moduleIndex("cli")]);
+}
+
+test "conflicting and invalid selectors are rejected" {
+    try std.testing.expectError(error.ConflictingCOracle, parseZigModules("all", true));
+    try std.testing.expectError(error.ConflictingCOracle, parseZigModules("sdr,sel", true));
+    try std.testing.expectError(error.ConflictingNone, parseZigModules("none,all", false));
+    try std.testing.expectError(error.ConflictingNone, parseZigModules("sdr,none", false));
+    try std.testing.expectError(error.ConflictingNone, parseZigModules("none,none", false));
+    try std.testing.expectError(error.EmptySelection, parseZigModules(", \t", false));
+    try std.testing.expectError(error.UnknownModule, parseZigModules("not-a-module", false));
+}
+
+test "C fixture recording never inherits the Zig default or a mixed selection" {
+    const implicit = try parseZigModules(null, false);
+    const mixed = try parseZigModules("cli,ipmishell", false);
+    const c_oracle = try parseZigModules(null, true);
+    const none = try parseZigModules("none", false);
+    try std.testing.expect(!cFixtureSelection(&implicit));
+    try std.testing.expect(!cFixtureSelection(&mixed));
+    try std.testing.expect(cFixtureSelection(&c_oracle));
+    try std.testing.expect(cFixtureSelection(&none));
+    try std.testing.expect(!updatingSnapshots(null));
+    try std.testing.expect(!updatingSnapshots(&.{"--filter"}));
+    try std.testing.expect(updatingSnapshots(&.{ "--filter", "sdr_", "--update" }));
 }
 
 fn anySelected(zig_selection: []const bool) bool {
@@ -3686,11 +3800,11 @@ fn addEvdImports(
     bridge_mod: *std.Build.Module,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
-    selection: ?[]const bool,
+    selection: []const bool,
     have_crypto_sha256: bool,
 ) void {
     const options = b.addOptions();
-    options.addOption([]const []const u8, "zig_modules", if (selection) |selected| selectedZigModules(b, selected) else &.{});
+    options.addOption([]const []const u8, "zig_modules", selectedZigModules(b, selection));
     options.addOption(bool, "have_crypto_sha256", have_crypto_sha256);
     const options_mod = options.createModule();
     mod.addImport("build_options", options_mod);

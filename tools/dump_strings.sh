@@ -50,7 +50,7 @@ EOF
 # configuration this tree has ever produced.
 echo "== building the all-C variant"
 # shellcheck disable=SC2086  # deliberate word splitting of the flag list
-zig build $flags --cache-dir "$out/cache-c" -p "$out/c" >/dev/null
+zig build $flags -Dc-oracle=true --cache-dir "$out/cache-c" -p "$out/c" >/dev/null
 
 echo "== building the -Dzig-modules=strings variant"
 # shellcheck disable=SC2086

@@ -37,6 +37,11 @@
 
 set -euo pipefail
 
+# This archived baseline is always C because bootstrap/configure/make build
+# the original sources with gcc. The separate selectable Zig-cc C build is
+# `zig build -Dc-oracle=true` (or -Dzig-modules=none); neither Zig option
+# belongs in ORACLE_CONFIGURE_FLAGS or ORACLE_EXTRA_CONFIGURE_FLAGS.
+
 PROG="$(basename "$0")"
 
 log()  { printf '[oracle] %s\n' "$*" >&2; }
