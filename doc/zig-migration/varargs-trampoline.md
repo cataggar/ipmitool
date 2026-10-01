@@ -203,7 +203,7 @@ assertion still runs on every PR.
 Output parity is the acceptance criterion for the whole migration, so the ports
 call `printf`/`fprintf`/`snprintf` through the bridge rather than
 `std.fmt`. Some locale-sensitive parsing remains in libc:
-`strtod`/`sscanf`/`strftime` honour `LC_NUMERIC`/`LC_TIME` and set `errno` in
+`sscanf`/`strftime` honour `LC_NUMERIC`/`LC_TIME` and set `errno` in
 ways Zig's standard parsers do not. The selected helper's `str2long` and
 `str2ulong` instead use a base-zero Zig scanner that preserves the C
 return-code, end-position and `errno` behavior for ASCII digits and active-
@@ -211,3 +211,12 @@ locale whitespace; other `strtol`/`strtoul` callers remain on the bridge.
 Non-ASCII locale-specific digits are outside this scanner's scope. Zig error
 sets are used *inside* a module; the exported functions keep the original C
 return codes.
+
+The selected helper's `str2double` now uses a bounded allocation-free Zig
+C-locale scanner/converter, including hexadecimal floats and special values;
+`strtod` remains only in its differential test oracle. The frontends still
+activate the environment's locale, so this changes non-C numeric grammar;
+use `LC_ALL=C` for C/Zig numeric parity. See
+[the helper binary64 contract](interop-seams.md#helper-binary64-parsing-228-leaf)
+for locale/rounding constraints, glibc/musl range and signed-zero conventions,
+and focused test commands. Other `strtol`/`strtoul` bridge callers are unchanged.

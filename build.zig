@@ -1916,6 +1916,18 @@ pub fn build(b: *std.Build) void {
     helper_integer_step.dependOn(&b.addRunArtifact(helper_integer_unit).step);
     test_step.dependOn(helper_integer_step);
 
+    const helper_float_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.helper.test.float parser"},
+    });
+    const helper_float_step = b.step("test-helper-floats", "Compare Zig binary64 parsing, rounding, values and errno with libc");
+    const helper_float_run = b.addRunArtifact(helper_float_unit);
+    helper_float_run.setEnvironmentVariable("LC_ALL", "C");
+    helper_float_step.dependOn(&helper_float_run.step);
+    test_step.dependOn(helper_float_step);
+    b.step("test-helper-floats-compile", "Cross-compile focused binary64 parser tests without running them")
+        .dependOn(&helper_float_unit.step);
+
     const valstr_c_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
