@@ -183,8 +183,8 @@ fn emitStderrLine(message: []const u8, reason: ?[]const u8) void {
 }
 
 /// Callers compiled alongside the C logger keep its state and ABI.  When the
-/// Zig logger is selected, formatting stays in Zig; libc formats the message
-/// and handles daemon syslog, but stderr is written through Zig I/O.
+/// Zig logger is selected, the call uses a typed Zig tuple but libc still
+/// formats the message and handles daemon syslog. Stderr uses checked Zig I/O.
 pub fn print(level: c_int, format: [*:0]const u8, args: anytype) void {
     if (comptime selectedInProduct()) {
         if (!enabled(level)) return;

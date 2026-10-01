@@ -379,6 +379,46 @@ helpers still import the C bridge or use libc ownership/synchronization; these
 consumers are **not** declared pure/no-libc. The #226 seam budget is reconciled
 at merge/rebase, not replaced by a premature zero-seam claim.
 
+### Runtime seam inventory and no-libc evidence
+
+An `ipmi_c` import count is an import ratchet, **not proof of no-libc**.
+Inventory runtime dependencies through `c.*`, direct or aliased `std.c.*`,
+`extern fn`/`extern var` declarations and their uses, and `@extern` bindings.
+Record each external symbol's provider: a Zig-owned exported ABI symbol is
+different from a libc dependency, but neither should disappear from the
+inventory merely because its spelling does not start with `c.`.
+Include C-backed allocators and transitive helper imports; inspect the selected
+`std.Io`/OS provider for the target and link configuration as well.
+Types/constants such as `std.c.pollfd` and `std.c.E` are not themselves runtime
+libc calls; keep that distinction separate from the conservative source ratchet.
+
+The current substrate has these explicitly retained seams:
+
+| Surface | Runtime or test-only dependencies |
+| --- | --- |
+| `util/stdout.zig` | Runtime `c.fflush`, C stdout/stderr and CLI globals, `std.c._errno`, and the selected `std.Io` provider |
+| `util/log.zig` | Runtime `c.snprintf`/`c.vsnprintf`, syslog/openlog/closelog, strerror, legacy logger ABI calls, errno and the output helper |
+| `util/posix.zig` | Runtime `std.c._errno` even on the raw-Linux syscall path; `std.c.read`/`write`/`poll` on other POSIX targets |
+| `util/alloc.zig` | Runtime C allocation/free ownership via `std.heap.c_allocator`; private allocator/provider dependencies follow the selected target |
+| `util/printf.zig` | The production formatter does not call libc formatting; differential tests still import `ipmi_c` and call `c.snprintf` |
+| Existing `util/cassert.zig` | Runtime `std.c.write` and `std.c.abort` despite having zero `ipmi_c` imports |
+
+`cassert`'s existing write loop silently breaks on a failed write; it is not a
+worked example of the checked substrate convention and is not migrated by #227.
+Do not reuse that failure policy or classify the helper as no-libc. Likewise,
+the logger's typed argument tuple does **not** remove its libc formatter.
+Sharing the new formatter there is a later conversion that must first account
+for its format corpus, truncation and locale-sensitive behavior.
+
+A no-libc claim requires an actual standalone compile/link with libc disabled,
+plus an audit of active external runtime providers and transitive dependencies;
+an import scan, a compile-only object or successful libc-linked product build
+does not establish it. State the exact target and tested surface. Standalone
+32-bit `fd_set` coverage proves that leaf, not the whole root or product.
+This substrate's product validation is native aarch64 Linux and
+x86_64-linux-musl only; the pre-existing 32-bit Session/timeval ABI failures
+remain outside this issue and are not evidence of 32-bit product support.
+
 Validation: `zig build test-stdout-unit` runs inventory/libc parity, compile-error
 fixtures, buffered stdout/stderr ordering and delayed failure, allocator and fd
 retry/partial-I/O tests. `test-raw-output` compares the actual C/Zig raw and
@@ -404,8 +444,10 @@ c.lprintf(log.Level.notice, "\nOEM Support:");
 return c.ipmi_sel_oem_init(filename);
 ```
 
-Every call into remaining C goes through this module — Zig modules do **not**
-declare `extern fn` for C symbols. That rule matters: when the module owning a
+Every call into remaining **ipmitool C code** goes through this module — Zig
+modules do **not** declare `extern fn` for those symbols. System libc calls
+through `std.c` are separately inventoried runtime seams, not evidence that the
+bridge has disappeared. That rule matters: when the module owning an ipmitool
 symbol is itself ported, an `extern fn` declaration would collide with the new
 `@export`, whereas a `c.` call site keeps working until the callee's header is
 retired.
