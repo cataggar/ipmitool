@@ -54,6 +54,15 @@ def project_source(source, root):
     return "".join(lines)
 
 
+def fixed_width_sources(source):
+    """Include both promoted and narrow PRI spellings used by Linux headers."""
+    for definitions in (
+        {"PRIu8": '"u"', "PRId16": '"d"'},
+        {"PRIu8": '"hhu"', "PRId16": '"hd"'},
+    ):
+        yield TOKEN.sub(lambda token: definitions.get(token.group(), token.group()), source)
+
+
 def formats(source):
     tokens = [m.group() for m in TOKEN.finditer(source)
               if not m.group().startswith(("/*", "//"))]
@@ -96,7 +105,11 @@ def inventory(zig, config):
         ).stdout
         # Also scan unconfigured branches. Macro-dependent arguments are covered
         # by the preprocessed source; their unresolved raw halves are not formats.
-        for source in (project_source(processed, pathlib.Path.cwd()), path.read_text()):
+        raw = path.read_text()
+        for source in (
+            project_source(processed, pathlib.Path.cwd()), raw,
+            *fixed_width_sources(raw),
+        ):
             # Include literal-bearing tables and formats passed through helpers.
             # This conservative superset also catches scanf/strftime overlaps.
             for token in TOKEN.finditer(source):

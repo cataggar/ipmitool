@@ -47,5 +47,19 @@ class ProjectSourceTests(unittest.TestCase):
         self.assertEqual(printf_inventory.project_source(source, pathlib.Path("/project")), "")
 
 
+class FixedWidthTests(unittest.TestCase):
+    def test_inventory_includes_promoted_and_narrow_integer_macro_forms(self):
+        source = 'printf("%3" PRIu8 " %" PRId16, byte, word);'
+        self.assertEqual(
+            [[literals for _, literals in printf_inventory.formats(profile)]
+             for profile in printf_inventory.fixed_width_sources(source)],
+            [[["%3u %d"]], [["%3hhu %hd"]]],
+        )
+
+    def test_integer_macro_profiles_do_not_rewrite_literal_text_or_comments(self):
+        source = '/* PRIu8 */ printf("PRIu8 %u", value); // PRId16\n'
+        self.assertEqual(list(printf_inventory.fixed_width_sources(source)), [source, source])
+
+
 if __name__ == "__main__":
     unittest.main()

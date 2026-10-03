@@ -64,6 +64,7 @@ pub const supported = [_][]const u8{
     "%3hd",
     "%3hhu",
     "%3ld",
+    "%3u",
     "%4ld",
     "%4x",
     "%6zu",

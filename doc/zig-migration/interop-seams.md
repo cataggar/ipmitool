@@ -334,10 +334,14 @@ Preprocessor line markers retain only project source and `include/ipmitool`
 header text; host-library declarations and diagnostic strings must not change
 the format corpus when CI updates its system headers. Regression fixtures pin
 that boundary, and a mismatch prints the measured inventory diff.
+Raw project tokens also expand both Linux `PRIu8` (`u`/`hhu`) and `PRId16`
+(`d`/`hd`) spellings: the system and bundled headers differ even on the same
+LP64 target. This union preserves both forms' libc parity coverage rather than
+dropping formats or making the gate depend on the build host's header dialect.
 It also conservatively scans raw/unconfigured literals and format-bearing
 tables (including scanf/strftime overlaps); it is an inventory, **never a
 textual source rewrite**. `util/printf_inventory.zig` pins the resulting
-literal-form set. The current Linux LP64 inventory has 87 supported forms and
+literal-form set. The current Linux LP64 inventory has 88 supported forms and
 six unsupported float forms: `%-10.3f`, `%.*f`, `%.1f`, `%.2f`, `%.3f`, `%0.1f`.
 All supported forms have differential libc tests; the unsupported forms have
 explicit rejection tests. Dynamic expressions are also listed: their callers
