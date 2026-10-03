@@ -1166,8 +1166,10 @@ remain a documented difference.
 
 ### Helper binary64 parsing (#228 leaf)
 
-The selected helper's `str2double` uses `util/float_parse.zig`, not libc
-`strtod`. Its explicit C-locale scanner accepts the six ASCII whitespace
+`util/float_parse.zig` is a native binary64 prerequisite. The production
+helper's `str2double` retains its original `strtod` boundary until native
+locale and floating-point-environment support preserves that ABI's behavior.
+The parser's explicit C-locale scanner accepts the six ASCII whitespace
 characters, signs, decimal and hexadecimal significands, complete optional
 `e`/`p` exponents, case-insensitive `inf`/`infinity`, and `nan` with a complete
 alphanumeric/underscore payload. Incomplete exponents and payloads leave the
@@ -1216,13 +1218,17 @@ retains its MIT notice.
 the Zig frontend (`cli/main.zig`) call `setlocale(LC_ALL, "")`. Production
 therefore does *not* unconditionally run in the C locale. This parser's grammar
 is explicitly C-locale: non-dot `LC_NUMERIC` radix strings, non-ASCII numeric
-alphabets and additional locale-specific whitespace are not preserved.
-For original-C/selected-Zig numeric-input parity, use `LC_ALL=C` (as the golden
-harness already does). No global locale setup or unrelated helper path is
-changed by this leaf. It assumes the default round-to-nearest/ties-to-even
+alphabets and additional locale-specific whitespace are not yet supported
+by the native prerequisite. The migration preserves installed system locales;
+requiring users to set `LC_ALL=C` is not an approved production cutover.
+The unchanged production adapter therefore continues using libc for all
+inputs, while native-parser characterization explicitly uses `LC_ALL=C`.
+No global locale setup or unrelated helper path is changed by this leaf.
+The native prerequisite assumes the default round-to-nearest/ties-to-even
 floating-point environment; alternate `fesetround` modes and libc floating
 exception flags are not reproduced. The repository does not change that
-rounding mode. Non-glibc/non-musl libc dialects are not independently verified.
+rounding mode. Non-glibc/non-musl native dialects are not independently verified.
+This leaf does not retire the production `strtod` seam or close #228.
 
 `zig build test-helper-floats` runs the focused differential tests against one
 retained test-only `c.strtod` oracle, checking end offsets, binary64 bits

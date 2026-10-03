@@ -16,9 +16,9 @@
 //!   lowercase hexadecimal characters.
 //! * **Integer parsing uses a bounded Zig scanner:** `str2long()` and
 //!   `str2ulong()` retain base-zero prefixes, C-locale whitespace, overflow
-//!   and `errno`/trailing-input precedence. `str2double()` uses an allocation-free
-//!   C-locale Zig scanner/converter; see `doc/zig-migration/interop-seams.md`
-//!   for locale and floating-point environment constraints.
+//!   and `errno`/trailing-input precedence. `str2double()` retains libc until
+//!   native parsing preserves the process locale and floating-point environment;
+//!   the allocation-free C-locale parser is a separately tested prerequisite.
 //!   The bounded `str2mac()` scanner preserves `sscanf()`'s two-column
 //!   `%x` conversions without calling libc.
 //! * **Static buffers keep their C lifetimes.**  `buf2str()`, `mac2str()` and
@@ -480,12 +480,10 @@ pub fn str2double(str: ?[*:0]const u8, double_ptr: ?*f64) callconv(.c) c_int {
 
     out.* = 0;
     std.c._errno().* = 0;
-    const parsed = float_parse.parse(std.mem.span(source), if (builtin.abi.isMusl()) .musl else .glibc);
-    out.* = parsed.value;
-    if (parsed.range) std.c._errno().* = c.ERANGE;
-    if (builtin.abi.isMusl() and parsed.no_conversion) std.c._errno().* = c.EINVAL;
+    var end_ptr: [*c]u8 = null;
+    out.* = c.strtod(source, &end_ptr);
 
-    if (source[parsed.end] != 0) return -2;
+    if (end_ptr[0] != 0) return -2;
     if (std.c._errno().* != 0) return -3;
     return 0;
 }
