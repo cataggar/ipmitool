@@ -16,6 +16,7 @@ const selection = @import("build_options").zig_modules;
 comptime {
     // ABI checks for every selected module run in this single comptime root.
     @setEvalBranchQuota(1_000_000);
+    _ = @import("header_types_validation.zig");
     if (selected("tsol")) {
         @import("cmd/tsol.zig").exportSymbols();
     }

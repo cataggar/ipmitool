@@ -1,15 +1,13 @@
 //! Port of `include/ipmitool/ipmi.h`: the request/response types every command
 //! module and every transport passes around.
 //!
-//! The types are `extern struct` mirrors of the C declarations, checked field
-//! by field by the `comptime` block at the bottom of the file, so a Zig module
-//! and a C module can hand the same pointer back and forth.
+//! These native `extern struct` declarations need neither translated headers
+//! nor libc. Mixed C/Zig roots retain field-by-field ABI checks in
+//! `header_types_validation.zig`.
 
 const std = @import("std");
 const builtin = @import("builtin");
 
-const c = @import("ipmi_c");
-const abi = @import("../abi.zig");
 const intf_mod = @import("../intf/intf.zig");
 
 /// `IPMI_BUF_SIZE`.
@@ -57,7 +55,7 @@ pub const PayloadType = enum(u8) {
 /// `typedef enum IPMI_OEM`: IANA private enterprise numbers ipmitool knows by
 /// name.  Non-exhaustive because `ipmi_intf.manufacturer_id` holds whatever the
 /// BMC reports.
-pub const Oem = enum(c.IPMI_OEM) {
+pub const Oem = enum(c_uint) {
     unknown = 0,
     debug = 0xfffffe,
     reserved = 0x0fffff,
@@ -279,61 +277,6 @@ pub const RequestEntry = extern struct {
     bridging_level: c_int,
     next: ?*RequestEntry,
 };
-
-// ---------------------------------------------------------------------------
-// ABI parity
-// ---------------------------------------------------------------------------
-
-comptime {
-    abi.assertLayout(Response, c.struct_ipmi_rs);
-    abi.assertLayout(Response.Msg, @FieldType(c.struct_ipmi_rs, "msg"));
-    abi.assertLayout(Response.Session, @FieldType(c.struct_ipmi_rs, "session"));
-    abi.assertLayout(Response.Payload, @FieldType(c.struct_ipmi_rs, "payload"));
-
-    abi.assertLayout(V2Payload, c.struct_ipmi_v2_payload);
-    abi.assertLayout(V2Payload.Payload, @FieldType(c.struct_ipmi_v2_payload, "payload"));
-
-    // `struct ipmi_rq` and `struct ipmi_rq_entry` reach Zig as `opaque {}`
-    // because of the `netfn:6` / `lun:2` bitfield, so their layout comes from
-    // `abi_layout.h` instead.
-    abi.assertOpaqueLayout(Request, .{
-        .size = c.ABI_SIZEOF_ipmi_rq,
-        .alignment = c.ABI_ALIGNOF_ipmi_rq,
-        .fields = &.{
-            .{ .name = "msg", .offset = c.ABI_OFFSETOF_ipmi_rq__msg },
-            .{ .name = "msg.cmd", .offset = c.ABI_OFFSETOF_ipmi_rq__msg__cmd },
-            .{ .name = "msg.target_cmd", .offset = c.ABI_OFFSETOF_ipmi_rq__msg__target_cmd },
-            .{ .name = "msg.data_len", .offset = c.ABI_OFFSETOF_ipmi_rq__msg__data_len },
-            .{ .name = "msg.data", .offset = c.ABI_OFFSETOF_ipmi_rq__msg__data },
-        },
-    });
-    abi.assertOpaqueLayout(RequestEntry, .{
-        .size = c.ABI_SIZEOF_ipmi_rq_entry,
-        .alignment = c.ABI_ALIGNOF_ipmi_rq_entry,
-        .fields = &.{
-            .{ .name = "req", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__req },
-            .{ .name = "intf", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__intf },
-            .{ .name = "rq_seq", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__rq_seq },
-            .{ .name = "msg_data", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__msg_data },
-            .{ .name = "msg_len", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__msg_len },
-            .{ .name = "bridging_level", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__bridging_level },
-            .{ .name = "next", .offset = c.ABI_OFFSETOF_ipmi_rq_entry__next },
-        },
-    });
-}
-
-test "constants match the C headers" {
-    try std.testing.expectEqual(@as(c_int, c.IPMI_BUF_SIZE), buf_size);
-    try std.testing.expectEqual(@as(c_int, c.IPMI_MAX_MD_SIZE), max_md_size);
-    try std.testing.expectEqual(@as(c_int, c.IPMI_NETFN_APP), NetFn.app);
-    try std.testing.expectEqual(@as(c_int, c.IPMI_NETFN_STORAGE), NetFn.storage);
-    try std.testing.expectEqual(@as(c_int, c.IPMI_BMC_SLAVE_ADDR), bmc_slave_addr);
-    try std.testing.expectEqual(
-        @as(c_int, c.IPMI_PAYLOAD_TYPE_RAKP_4),
-        @intFromEnum(PayloadType.rakp_4),
-    );
-    try std.testing.expectEqual(c.IPMI_OEM_KONTRON, @intFromEnum(Oem.kontron));
-}
 
 test "netfn/lun bitfield packs into one byte" {
     try std.testing.expectEqual(@as(usize, 1), @sizeOf(NetFnLun));

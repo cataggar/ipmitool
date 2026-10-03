@@ -5,11 +5,12 @@
 //! function-pointer struct exactly like the C original, so a Zig transport uses
 //! `@fieldParentPtr` to recover its own state from the `*Intf` it is handed —
 //! the same shape the sibling `azure-sdk-for-zig` runtime interfaces use.
+//! Native consumers need no C bridge or libc; mixed roots check the ABI in
+//! `header_types_validation.zig`.
 
 const std = @import("std");
+const builtin = @import("builtin");
 
-const c = @import("ipmi_c");
-const abi = @import("../abi.zig");
 const ipmi = @import("../core/ipmi.zig");
 const oem_mod = @import("../core/oem.zig");
 
@@ -23,7 +24,7 @@ pub const sik_buffer_size = ipmi.max_md_size;
 pub const kg_buffer_size = 21;
 
 /// `enum LANPLUS_SESSION_STATE`.
-pub const LanplusSessionState = enum(c.enum_LANPLUS_SESSION_STATE) {
+pub const LanplusSessionState = enum(c_uint) {
     presession = 0,
     open_session_sent,
     open_session_received,
@@ -37,7 +38,7 @@ pub const LanplusSessionState = enum(c.enum_LANPLUS_SESSION_STATE) {
 
 /// `enum cipher_suite_ids`.  Non-exhaustive: suites 15-17 only exist when
 /// `HAVE_CRYPTO_SHA256` is defined, and the field also carries `0xff`.
-pub const CipherSuiteId = enum(c.enum_cipher_suite_ids) {
+pub const CipherSuiteId = enum(c_uint) {
     suite_0 = 0,
     suite_1 = 1,
     suite_2 = 2,
@@ -83,6 +84,14 @@ pub const SessionParams = extern struct {
     kg: [kg_buffer_size]u8,
     lookupbit: u8,
 };
+
+/// Socket ABI storage, not a `std.Io.net.IpAddress` (which is a tagged value).
+/// Linux libc aligns sockaddr_storage to unsigned long, unlike Zig 0.16's
+/// std.posix storage, which unconditionally aligns it to 8 even on 32-bit ARM.
+pub const SockAddrStorage = if (builtin.os.tag == .linux) extern struct {
+    family: u16 align(@alignOf(c_ulong)),
+    padding: [126]u8 = undefined,
+} else std.posix.sockaddr.storage;
 
 /// `struct ipmi_session`: live session state owned by a transport.
 pub const Session = extern struct {
@@ -137,7 +146,7 @@ pub const Session = extern struct {
     authstatus: u8,
     authextra: u8,
     timeout: u32,
-    addr: std.posix.sockaddr.storage,
+    addr: SockAddrStorage,
     addrlen: std.posix.socklen_t,
     v2_data: V2Data,
     sol_data: SolData,
@@ -201,34 +210,3 @@ pub const Intf = extern struct {
     set_max_request_data_size: ?*const fn (intf: *Intf, size: u16) callconv(.c) void,
     set_max_response_data_size: ?*const fn (intf: *Intf, size: u16) callconv(.c) void,
 };
-
-// ---------------------------------------------------------------------------
-// ABI parity
-// ---------------------------------------------------------------------------
-
-comptime {
-    abi.assertLayout(Intf, c.struct_ipmi_intf);
-    abi.assertLayout(SessionParams, c.struct_ipmi_session_params);
-    abi.assertLayout(Session, c.struct_ipmi_session);
-    abi.assertLayout(Session.V2Data, @FieldType(c.struct_ipmi_session, "v2_data"));
-    abi.assertLayout(Session.SolData, @FieldType(c.struct_ipmi_session, "sol_data"));
-    abi.assertLayout(Cmd, c.struct_ipmi_cmd);
-    abi.assertLayout(IntfSupport, c.struct_ipmi_intf_support);
-    abi.assertLayout(CipherSuiteInfo, c.struct_cipher_suite_info);
-}
-
-test "session state enums agree with the C headers" {
-    try std.testing.expectEqual(
-        c.LANPLUS_STATE_ACTIVE,
-        @intFromEnum(LanplusSessionState.active),
-    );
-    try std.testing.expectEqual(
-        c.IPMI_LANPLUS_CIPHER_SUITE_RESERVED,
-        @intFromEnum(CipherSuiteId.reserved),
-    );
-    try std.testing.expectEqual(
-        @as(c_int, c.IPMI_AUTHCODE_BUFFER_SIZE),
-        authcode_buffer_size,
-    );
-    try std.testing.expectEqual(@as(c_int, c.IPMI_KG_BUFFER_SIZE), kg_buffer_size);
-}

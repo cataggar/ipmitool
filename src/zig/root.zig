@@ -1,7 +1,7 @@
 //! Namespace for the Zig side of the migration.
 //!
-//! Importing this file pulls in every header port and therefore every
-//! `comptime` ABI assertion, which is what `zig build test` compiles.  It
+//! Importing this file pulls in every header port and its separate interop
+//! validation, which is what `zig build test` compiles. It
 //! imports command ports only for tests; their C symbols are exported when
 //! selected through `exports.zig`.
 //!
@@ -17,6 +17,10 @@
 //! See doc/zig-migration/interop-seams.md.
 
 const std = @import("std");
+
+comptime {
+    _ = @import("header_types_validation.zig");
+}
 
 /// Comptime ABI parity helpers used by every header port.
 pub const abi = @import("abi.zig");

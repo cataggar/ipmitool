@@ -150,11 +150,59 @@ Supporting files at the root of `src/zig/`:
 | `ipmi_c.h`      | umbrella header listing which C headers the bridge exposes |
 | `abi_layout.h`  | `sizeof`/`alignof`/`offsetof` for C types `translate-c` cannot represent, or represents wrongly |
 | `abi.zig`       | comptime layout and signature assertions |
+| `header_types_validation.zig` | isolated C ABI checks for the native request, OEM and transport-header types |
 | `root.zig`      | namespace of every header port; the root of `zig build test` |
 | `exports.zig`   | link-time root of `libipmitool_zig.a`; one guarded `@import` per port |
 
 `ipmi_c.h` and `abi_layout.h` are build-time scaffolding, never linked into
 the product, and are deleted with the last C translation unit.
+
+### Native header types (#229 leaf)
+
+`core/ipmi.zig`, `core/oem.zig` and `intf/intf.zig` import no translated C
+headers and require no libc. Their enums use native `c_uint` storage (a Zig
+language type, not a libc dependency). `header_types_validation.zig` preserves
+all of their original size, alignment, field-offset and C-value checks, and
+also checks enum storage identity. Both `exports.zig` and `root.zig` import
+that validation explicitly, so mixed-selection production and unit roots
+cannot silently lose their ABI guards.
+
+`zig test src/zig/header_types_test.zig` runs standalone wire/bitfield/layout
+tests with no C module, C sources or libc. The equivalent build steps are
+`test-header-types-native` and `test-header-types-native-compile`; the latter
+only compiles for the requested target. They are **not** a no-libc product
+claim: registry, dummy, networking and other consumers still use the bridge.
+On hosts without readline/OpenSSL development files, build graph configuration
+needs `-Dipmishell=false -Dopenssl=false -Dinternal-md5=true
+-Dintf-lanplus=false`, even for these focused steps.
+
+`test-header-types-interop` runs the retained header checks plus C fixtures for
+all 256 netfn/lun encodings, Session size/alignment, UDP loopback
+`getsockname` (IPv4 and IPv6) and the TSOL-style IPv4 cast. IPv6 alone is
+omitted if the host kernel reports `EAFNOSUPPORT`. The compile-only companion
+`test-header-types-interop-compile` checks the target C ABI without executing
+foreign binaries, including `-Dtarget=x86_64-linux-musl` and
+`-Dtarget=arm-linux-musleabihf`. These isolated roots do not import the unrelated
+OpenIPMI model or crypto-vector tests.
+
+Linux `Session.addr` owns a 128-byte `SockAddrStorage` with unsigned-long
+alignment, matching glibc/musl rather than Zig 0.16's unconditional 8-byte
+`std.posix.sockaddr.storage` alignment. Its family and address bytes remain
+compatible with existing `getsockname` and IPv4/IPv6 casts. On 64-bit Linux the
+Session layout is unchanged (416 bytes); on 32-bit ARM it now matches C
+(400 bytes instead of the previous erroneous 408). This is only a header ABI
+correction, not a claim that the full 32-bit transport build works; the
+OpenIPMI `tv_sec`/`c_long` model mismatch remains outside this leaf.
+
+The validation module and `header_types_interop_test.zig` each explicitly
+import `ipmi_c`: these are isolated interop infrastructure pending #249/#250,
+not native runtime dependencies. The bridge budget must count both when
+rebasing alongside #226 (three old header imports become these two imports).
+The reviewed relocation removes 45 references from the three native headers
+and records 48 compile-time ABI/value references plus eight test-only C calls
+in the two validation files. The extra 11 characterization references preserve
+and strengthen ABI coverage; they add no runtime libc calls and are not exempt
+from the syntax ratchet.
 
 The generated `util/strings_tables.zig` is data-only: it imports the pure-Zig
 `util/table_types.zig` layouts and `build_options.have_crypto_sha256`, not
