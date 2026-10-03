@@ -1229,6 +1229,10 @@ floating-point environment; alternate `fesetround` modes and libc floating
 exception flags are not reproduced. The repository does not change that
 rounding mode. Non-glibc/non-musl native dialects are not independently verified.
 This leaf does not retire the production `strtod` seam or close #228.
+Its exact bridge-budget addition is five test-only references: one shared
+`float_oracle.zig` `strtod` observation and four `EDOM` sentinel observations
+in helper tests (121 to 125). The unchanged production adapter adds no runtime
+libc call, and no other file's limit is increased or test reference exempted.
 
 `zig build test-helper-floats` runs the focused differential tests against one
 retained test-only `c.strtod` oracle, checking end offsets, binary64 bits

@@ -65,7 +65,8 @@
 1 src/zig/intf/serial_terminal.zig
 82 src/zig/intf/usb.zig
 0 src/zig/root.zig
-121 src/zig/util/helper.zig
+1 src/zig/util/float_oracle.zig
+125 src/zig/util/helper.zig
 37 src/zig/util/log.zig
 12 src/zig/util/posix.zig
 1 src/zig/util/printf.zig
