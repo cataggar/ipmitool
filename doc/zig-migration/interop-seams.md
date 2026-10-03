@@ -106,6 +106,11 @@ The header-free [Gregorian calendar prerequisite](time-calendar.md) supports
 signed epochs and explicitly C-locale formatting without libc. Owned numeric
 relative timestamp accessors use it; general locale-sensitive and absolute
 time paths still need timezone/locale adapters before #228 can close.
+The budget's `util/time.zig` entry rises from 40 to 55 solely for explicit
+characterization: three original timestamp accessors, six `setlocale`/`LC_TIME`
+references, two C time types, one `gmtime_r` and three `strftime` observations.
+Production qualified references do not increase; generic legacy time paths
+remain visible, and no other limit or test exemption changes.
 
 ## Module map
 
