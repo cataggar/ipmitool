@@ -35,6 +35,7 @@ const c = @import("ipmi_c");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("intf.zig").Intf;
 const log = @import("../util/log.zig");
+const fd_io = @import("../util/posix.zig");
 
 pub const Mode = enum { basic, terminal };
 pub const Context = struct {
@@ -161,28 +162,25 @@ pub fn flush(fd: c_int) void {
 }
 
 pub fn wait(fd: c_int, timeout: u32, events: c_short) Error!void {
-    var pfd: c.struct_pollfd = .{ .fd = fd, .events = events, .revents = 0 };
+    var pfd = [_]fd_io.PollFd{.{ .fd = fd, .events = events, .revents = 0 }};
     const millis: c_int = @intCast(@min(@as(u64, timeout) * 1000, @as(u64, std.math.maxInt(c_int))));
-    while (true) {
-        const n = c.poll(&pfd, 1, millis);
-        if (n < 0 and std.c._errno().* == c.EINTR) continue;
-        if (n < 0 or (pfd.revents & (c.POLLERR | c.POLLNVAL | c.POLLHUP)) != 0) return error.Io;
-        if (n == 0) return error.Timeout;
-        return;
-    }
+    const n = fd_io.poll(&pfd, millis) catch return error.Io;
+    if ((pfd[0].revents & (c.POLLERR | c.POLLNVAL | c.POLLHUP)) != 0) return error.Io;
+    if (n == 0) return error.Timeout;
 }
 
 pub fn writeAll(intf: *Intf, data: []const u8) Error!void {
     var at: usize = 0;
     while (at < data.len) {
-        const n = c.write(intf.fd, data[at..].ptr, data.len - at);
-        if (n > 0) {
-            at += @intCast(n);
-        } else if (n < 0 and std.c._errno().* == c.EINTR) {
-            continue;
-        } else if (n < 0 and std.c._errno().* == c.EAGAIN) {
-            try wait(intf.fd, intf.ssn_params.timeout, c.POLLOUT);
-        } else return error.Io;
+        const n = fd_io.write(intf.fd, data[at..]) catch |err| switch (err) {
+            error.WouldBlock => {
+                try wait(intf.fd, intf.ssn_params.timeout, c.POLLOUT);
+                continue;
+            },
+            else => return error.Io,
+        };
+        if (n == 0) return error.Io;
+        at += n;
     }
 }
 

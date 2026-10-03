@@ -27,6 +27,8 @@
 const std = @import("std");
 const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
+const output = @import("stdout.zig");
+const allocation = @import("alloc.zig");
 
 /// `LOG_NAME_DEFAULT`.
 pub const name_default = "ipmitool";
@@ -79,7 +81,7 @@ const LogPriv = struct {
 var logpriv: ?LogPriv = null;
 
 /// The private program name is freed by the matching exported `log_halt`.
-const default_allocator = std.heap.page_allocator;
+const default_allocator = allocation.private;
 
 /// `static char logmsg[LOG_MSG_LENGTH]` inside `lprintf()`.
 var printf_msg: [msg_length]u8 = undefined;
@@ -170,14 +172,19 @@ fn writeStderrLine(writer: *std.Io.Writer, message: []const u8, reason: ?[]const
 }
 
 fn emitStderrLine(message: []const u8, reason: ?[]const u8) void {
-    var stderr = std.Io.File.stderr().writerStreaming(std.Options.debug_io, &.{});
-    writeStderrLine(&stderr.interface, message, reason) catch
-        std.debug.panic("ipmitool: stderr write failed: {t}", .{stderr.err orelse error.WriteFailed});
+    var buffer: [2048]u8 = undefined;
+    var stderr = output.Buffered.init(.stderr, &buffer);
+    const operation = stderr.begin() catch |err|
+        std.debug.panic("ipmitool: libc stderr flush failed: {t}", .{err});
+    writeStderrLine(operation.writer, message, reason) catch
+        std.debug.panic("ipmitool: stderr write failed: {t}", .{stderr.file.err orelse error.WriteFailed});
+    operation.finish() catch
+        std.debug.panic("ipmitool: stderr flush failed: {t}", .{stderr.file.err orelse error.WriteFailed});
 }
 
 /// Callers compiled alongside the C logger keep its state and ABI.  When the
-/// Zig logger is selected, formatting stays in Zig; libc formats the message
-/// and handles daemon syslog, but stderr is written through Zig I/O.
+/// Zig logger is selected, the call uses a typed Zig tuple but libc still
+/// formats the message and handles daemon syslog. Stderr uses checked Zig I/O.
 pub fn print(level: c_int, format: [*:0]const u8, args: anytype) void {
     if (comptime selectedInProduct()) {
         if (!enabled(level)) return;

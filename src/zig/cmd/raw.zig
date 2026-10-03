@@ -275,12 +275,12 @@ fn writeI2cResponse(
 ) std.Io.Writer.Error!c_int {
     if (wsize > 0) {
         if (verbose or rsize == 0)
-            try stdout_io.write(writer, "Wrote {d} bytes to I2C device {X:0>2}h\n", .{ wsize, i2caddr });
+            try stdout_io.printf(writer, "Wrote %d bytes to I2C device %02Xh\n", .{ wsize, i2caddr });
     }
 
     if (rsize > 0) {
         if (verbose or wsize == 0)
-            try stdout_io.write(writer, "Read {d} bytes from I2C device {X:0>2}h\n", .{ rsp.data_len, i2caddr });
+            try stdout_io.printf(writer, "Read %d bytes from I2C device %02Xh\n", .{ rsp.data_len, i2caddr });
 
         // The C command prints the Read line before rejecting a short reply.
         if (rsp.data_len < @as(c_int, rsize)) return -1;
@@ -288,7 +288,7 @@ fn writeI2cResponse(
         var i: c_int = 0;
         while (i < rsp.data_len) : (i += 1) {
             if (@rem(i, 16) == 0 and i != 0) try writer.writeByte('\n');
-            try stdout_io.write(writer, " {x:0>2}", .{rsp.data[@intCast(i)]});
+            try stdout_io.printf(writer, " %2.2x", .{rsp.data[@intCast(i)]});
         }
         try writer.writeByte('\n');
 
@@ -319,10 +319,10 @@ fn emitI2cResponse(
     if (wsize == 0 and rsize == 0) return 0;
     if (wsize > 0 and rsize > 0 and !verbose and rsp.data_len < @as(c_int, rsize)) return -1;
 
-    preflush() catch return error.CStdoutFlushFailed;
-    const status = writeI2cResponse(writer, rsp, wsize, rsize, i2caddr, verbose) catch
+    const operation = stdout_io.Operation.begin(writer, preflush) catch return error.CStdoutFlushFailed;
+    const status = writeI2cResponse(operation.writer, rsp, wsize, rsize, i2caddr, verbose) catch
         return error.StdoutWriteFailed;
-    writer.flush() catch return error.StdoutFlushFailed;
+    operation.finish() catch return error.StdoutFlushFailed;
     return status;
 }
 
@@ -406,12 +406,13 @@ fn rawi2cMain(intf: *Intf, argc: c_int, argv: [*][*:0]u8) callconv(.c) c_int {
         return -1;
     };
 
-    var stdout = std.Io.File.stdout().writerStreaming(std.Options.debug_io, &.{});
-    return emitI2cResponse(&stdout.interface, rsp, wsize, rsize, i2caddr, c.verbose != 0, stdout_io.trySyncC) catch |err| {
+    var buffer: [4096]u8 = undefined;
+    var stdout = stdout_io.Buffered.init(.stdout, &buffer);
+    return emitI2cResponse(stdout.writer(), rsp, wsize, rsize, i2caddr, stdout_io.Mode.current().verbose != 0, stdout_io.trySyncC) catch |err| {
         switch (err) {
             error.CStdoutFlushFailed => log.print(log.Level.err, "I2C stdout C preflush failed (errno %d)", .{std.c._errno().*}),
-            error.StdoutWriteFailed => log.print(log.Level.err, "I2C stdout Zig write failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
-            error.StdoutFlushFailed => log.print(log.Level.err, "I2C stdout Zig final flush failed: %s", .{@errorName(stdout.err orelse error.WriteFailed).ptr}),
+            error.StdoutWriteFailed => log.print(log.Level.err, "I2C stdout Zig write failed: %s", .{@errorName(stdout.file.err orelse error.WriteFailed).ptr}),
+            error.StdoutFlushFailed => log.print(log.Level.err, "I2C stdout Zig final flush failed: %s", .{@errorName(stdout.file.err orelse error.WriteFailed).ptr}),
         }
         return -1;
     };

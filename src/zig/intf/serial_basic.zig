@@ -30,6 +30,7 @@
 
 //! IPMI Serial Basic Mode: binary IPMB frames with A0/A5 delimiters and AA escaping.
 const std = @import("std");
+const fd_io = @import("../util/posix.zig");
 const c = @import("ipmi_c");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("intf.zig").Intf;
@@ -141,8 +142,10 @@ fn waitResponse(intf: *Intf, parser: *Parser, context: Context) serial.Error![]c
     while (true) {
         try serial.wait(intf.fd, intf.ssn_params.timeout, c.POLLIN);
         var byte: u8 = undefined;
-        const n = c.read(intf.fd, &byte, 1);
-        if (n < 0 and (std.c._errno().* == c.EINTR or std.c._errno().* == c.EAGAIN)) continue;
+        const n = fd_io.read(intf.fd, std.mem.asBytes(&byte)) catch |err| switch (err) {
+            error.WouldBlock => continue,
+            else => return error.Io,
+        };
         if (n != 1) return error.Io;
         if (parser.feed(byte)) |packet| {
             if (packet.len < 8) {

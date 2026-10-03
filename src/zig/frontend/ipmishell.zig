@@ -6,8 +6,9 @@ const abi = @import("../abi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 const log = @import("../util/log.zig");
 const frontend_log = @import("logging.zig");
+const allocation = @import("../util/alloc.zig");
 
-const allocator = std.heap.c_allocator;
+const allocator = allocation.c_owned;
 pub const max_args = 64;
 const prompt = "ipmitool> ";
 const handled_signals = [_]c_int{ c.SIGINT, c.SIGTERM, c.SIGHUP, c.SIGQUIT };
@@ -294,11 +295,11 @@ pub fn parse(arena: std.mem.Allocator, text: []const u8, comments: bool) !std.Ar
 }
 
 fn dispatch(intf: *Intf, text: []const u8, comments: bool) c_int {
-    var arena_state = std.heap.ArenaAllocator.init(allocator);
-    defer arena_state.deinit();
-    const args = parse(arena_state.allocator(), text, comments) catch |err| {
+    var scratch = allocation.CommandScratch.init(allocator);
+    defer scratch.deinit();
+    const args = parse(scratch.allocator(), text, comments) catch |err| {
         frontend_log.print(log.Level.err, "Invalid command line: %s", .{@errorName(err).ptr});
-        return -1;
+        return allocation.command_failure;
     };
     if (args.items.len == 0) return 0;
     var argv: [max_args + 1][*c]u8 = @splat(null);
@@ -356,4 +357,17 @@ test "quoted shell words, comments and malformed input" {
     try std.testing.expectEqualStrings("x~ y", std.mem.span(args.items[2]));
     try std.testing.expectEqualStrings("", std.mem.span(args.items[3]));
     try std.testing.expectError(error.UnterminatedQuote, parse(arena.allocator(), "echo 'unfinished", false));
+}
+
+test "shell command scratch frees partial parses at every allocation failure" {
+    const Check = struct {
+        fn run(backing: std.mem.Allocator) !void {
+            var scratch = allocation.CommandScratch.init(backing);
+            defer scratch.deinit();
+            const args = try parse(scratch.allocator(), "echo 'a b' two", false);
+            try std.testing.expectEqual(@as(usize, 3), args.items.len);
+            try std.testing.expectEqualStrings("a b", std.mem.span(args.items[1]));
+        }
+    };
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, Check.run, .{});
 }

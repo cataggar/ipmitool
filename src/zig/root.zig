@@ -64,12 +64,15 @@ pub const crypto = struct {
 
 /// Ports of the shared utilities.
 pub const util = struct {
+    pub const alloc = @import("util/alloc.zig");
     pub const bswap = @import("util/bswap.zig");
     pub const fd_set = @import("util/fd_set.zig");
     pub const helper = @import("util/helper.zig");
     pub const log = @import("util/log.zig");
     pub const strings = @import("util/strings.zig");
     pub const stdout = @import("util/stdout.zig");
+    pub const printf = @import("util/printf.zig");
+    pub const posix = @import("util/posix.zig");
     pub const time = @import("util/time.zig");
 };
 

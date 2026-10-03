@@ -1165,16 +1165,97 @@ pub fn build(b: *std.Build) void {
 
     const stdout_unit = b.addTest(.{
         .root_module = abi_mod,
-        .filters = &.{"util.stdout.test."},
+        .filters = &.{ "util.stdout.test.", "util.printf.test.", "util.posix.test.", "util.alloc.test." },
     });
-    b.step("test-stdout-unit", "Run Zig stdout formatting and write-failure tests")
-        .dependOn(&b.addRunArtifact(stdout_unit).step);
+    const stdout_step = b.step("test-stdout-unit", "Run buffered output, printf/libc parity, allocator and fd retry tests");
+    stdout_step.dependOn(&b.addRunArtifact(stdout_unit).step);
+    const printf_inventory = b.addSystemCommand(&.{ "python3", "-B" });
+    printf_inventory.addFileArg(b.path("tests/printf_inventory.py"));
+    printf_inventory.addArg("--zig");
+    printf_inventory.addArg(b.graph.zig_exe);
+    printf_inventory.addArg("--config");
+    printf_inventory.addFileArg(config_h.getOutputFile());
+    printf_inventory.addArg("--check");
+    printf_inventory.addFileArg(b.path("src/zig/util/printf_inventory.zig"));
+    stdout_step.dependOn(&printf_inventory.step);
+    const printf_inventory_tests = b.addSystemCommand(&.{ "python3", "-B" });
+    printf_inventory_tests.addFileArg(b.path("tests/test_printf_inventory.py"));
+    stdout_step.dependOn(&printf_inventory_tests.step);
+    const stdout_compile = b.step("test-stdout-compile", "Cross-compile output, printf, allocator and fd retry tests without executing");
+    stdout_compile.dependOn(&stdout_unit.step);
+    for ([_]struct { format: []const u8, message: []const u8 }{
+        .{ .format = "%.2f", .message = "unsupported printf format '%.2f': UnsupportedConversion" },
+        .{ .format = "%*s", .message = "printf '*' requires a promoted C int" },
+        .{ .format = "%d", .message = "printf length modifier does not match the promoted C integer width; cast explicitly" },
+        .{ .format = "%d", .message = "missing printf value argument" },
+    }, 0..) |case, index| {
+        const case_options = b.addOptions();
+        case_options.addOption(usize, "scenario", index);
+        case_options.addOption([]const u8, "format", case.format);
+        const reject_mod = b.createModule(.{
+            .root_source_file = b.path("tests/printf_reject.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        reject_mod.addImport("case", case_options.createModule());
+        reject_mod.addImport("printf", b.createModule(.{
+            .root_source_file = b.path("src/zig/util/printf.zig"),
+            .target = target,
+            .optimize = optimize,
+        }));
+        const reject = b.addExecutable(.{
+            .name = b.fmt("printf-reject-{d}", .{index}),
+            .root_module = reject_mod,
+        });
+        reject.expect_errors = .{ .contains = case.message };
+        stdout_step.dependOn(&reject.step);
+        stdout_compile.dependOn(&reject.step);
+    }
+    test_step.dependOn(stdout_step);
+
+    if (target.result.os.tag == .linux) {
+        const posix_mod = b.createModule(.{
+            .root_source_file = b.path("src/zig/util/posix.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = false,
+        });
+        const posix_probe_mod = b.createModule(.{
+            .root_source_file = b.path("tests/posix/probe.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = false,
+        });
+        posix_probe_mod.addImport("fd_io", posix_mod);
+        const posix_probe = b.addExecutable(.{
+            .name = "posix-native-probe",
+            .root_module = posix_probe_mod,
+            .linkage = .static,
+            // Keep the strict provider audit independent of synthetic Zig ELF symbols.
+            .use_llvm = true,
+            .use_lld = true,
+        });
+        const posix_runtime = b.addSystemCommand(&.{ "python3", "-B" });
+        posix_runtime.addFileArg(b.path("tests/posix/runtime.py"));
+        posix_runtime.addArg("--run");
+        posix_runtime.addArtifactArg(posix_probe);
+        const posix_step = b.step("test-posix-native", "Run actual Linux descriptor/signal operations with no libc and audit ELF providers");
+        posix_step.dependOn(&posix_runtime.step);
+        stdout_step.dependOn(posix_step);
+        const posix_audit = b.addSystemCommand(&.{ "python3", "-B" });
+        posix_audit.addFileArg(b.path("tests/posix/runtime.py"));
+        posix_audit.addArg("--audit");
+        posix_audit.addArtifactArg(posix_probe);
+        const posix_compile = b.step("test-posix-compile", "Compile and audit the actual Linux descriptor probe without executing it");
+        posix_compile.dependOn(&posix_audit.step);
+        stdout_compile.dependOn(posix_compile);
+    }
 
     const raw_stdout_unit = b.addTest(.{
         .root_module = abi_mod,
         .filters = &.{"cmd.raw.test.raw stdout"},
     });
-    const raw_stdout_step = b.step("test-raw-output", "Compare C/Zig raw response bytes and test writer failures");
+    const raw_stdout_step = b.step("test-raw-output", "Compare C/Zig raw and I2C operations, output ordering and failure status");
     raw_stdout_step.dependOn(&b.addRunArtifact(raw_stdout_unit).step);
 
     const raw_c_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });

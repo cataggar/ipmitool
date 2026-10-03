@@ -30,6 +30,7 @@
 
 //! IPMI Serial Terminal Mode: bracketed hexadecimal records over an 8N1 tty.
 const std = @import("std");
+const fd_io = @import("../util/posix.zig");
 const c = @import("ipmi_c");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("intf.zig").Intf;
@@ -99,8 +100,10 @@ fn readPacket(intf: *Intf, out: []u8) serial.Error![]const u8 {
     while (true) {
         try serial.wait(intf.fd, intf.ssn_params.timeout, c.POLLIN);
         var b: u8 = undefined;
-        const n = c.read(intf.fd, &b, 1);
-        if (n < 0 and (std.c._errno().* == c.EINTR or std.c._errno().* == c.EAGAIN)) continue;
+        const n = fd_io.read(intf.fd, std.mem.asBytes(&b)) catch |err| switch (err) {
+            error.WouldBlock => continue,
+            else => return error.Io,
+        };
         if (n != 1) return error.Io;
         if (b == '\n' or b == '\r') {
             if (len == 0 or line[len - 1] != ']') {
