@@ -1178,6 +1178,9 @@ pub fn build(b: *std.Build) void {
     printf_inventory.addArg("--check");
     printf_inventory.addFileArg(b.path("src/zig/util/printf_inventory.zig"));
     stdout_step.dependOn(&printf_inventory.step);
+    const printf_inventory_tests = b.addSystemCommand(&.{ "python3", "-B" });
+    printf_inventory_tests.addFileArg(b.path("tests/test_printf_inventory.py"));
+    stdout_step.dependOn(&printf_inventory_tests.step);
     const stdout_compile = b.step("test-stdout-compile", "Cross-compile output, printf, allocator and fd retry tests without executing");
     stdout_compile.dependOn(&stdout_unit.step);
     for ([_]struct { format: []const u8, message: []const u8 }{

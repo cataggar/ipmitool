@@ -330,6 +330,10 @@ for libc rounding, locale or special-value spelling.
 
 `tests/printf_inventory.py` preprocesses every `lib/ipmi_*.c` with the generated
 configuration, so PRI macros and conditional format expressions are included.
+Preprocessor line markers retain only project source and `include/ipmitool`
+header text; host-library declarations and diagnostic strings must not change
+the format corpus when CI updates its system headers. Regression fixtures pin
+that boundary, and a mismatch prints the measured inventory diff.
 It also conservatively scans raw/unconfigured literals and format-bearing
 tables (including scanf/strftime overlaps); it is an inventory, **never a
 textual source rewrite**. `util/printf_inventory.zig` pins the resulting

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Inventory printf arguments after C macro expansion; never rewrite source."""
 import argparse
+import ast
 import collections
+import difflib
 import pathlib
 import re
 import subprocess
@@ -27,6 +29,29 @@ SUPPORTED = re.compile(
     r"(?:hh|ll|[hljzt])?[diouxX]|-?(?:\*|[0-9]+)?"
     r"(?:\.(?:\*|[0-9]*))?s|-?(?:\*|[0-9]+)?c)"
 )
+LINE_MARKER = re.compile(r'^#\s+\d+\s+("(?:\\.|[^"\\])*")(?:\s+\d+)*\s*$')
+
+
+def project_source(source, root):
+    """Keep macro-expanded project text, not host-library header declarations."""
+    selected, lines = False, []
+    root = root.resolve()
+    for line in source.splitlines(keepends=True):
+        marker = LINE_MARKER.fullmatch(line.rstrip("\n"))
+        if marker:
+            filename = ast.literal_eval(marker.group(1))
+            path = pathlib.Path(filename)
+            if not path.is_absolute():
+                path = root / path
+            try:
+                relative = path.resolve().relative_to(root)
+            except ValueError:
+                selected = False
+            else:
+                selected = relative.parts[:1] == ("lib",) or relative.parts[:2] == ("include", "ipmitool")
+        elif selected:
+            lines.append(line)
+    return "".join(lines)
 
 
 def formats(source):
@@ -65,13 +90,13 @@ def inventory(zig, config):
     counts, dynamic = collections.Counter(), set()
     for path in sorted(pathlib.Path("lib").glob("ipmi_*.c")):
         processed = subprocess.run(
-            [zig, "cc", "-E", "-P", "-std=gnu11", "-DHAVE_CONFIG_H",
+            [zig, "cc", "-E", "-std=gnu11", "-DHAVE_CONFIG_H",
              "-Iinclude", "-I" + str(config.parent), str(path)],
             check=True, capture_output=True, text=True,
         ).stdout
         # Also scan unconfigured branches. Macro-dependent arguments are covered
         # by the preprocessed source; their unresolved raw halves are not formats.
-        for source in (processed, path.read_text()):
+        for source in (project_source(processed, pathlib.Path.cwd()), path.read_text()):
             # Include literal-bearing tables and formats passed through helpers.
             # This conservative superset also catches scanf/strftime overlaps.
             for token in TOKEN.finditer(source):
@@ -114,7 +139,12 @@ def main():
     counts, dynamic = inventory(args.zig, args.config)
     result = render(counts, dynamic)
     if args.check:
-        if args.output.read_text() != result:
+        expected = args.output.read_text()
+        if expected != result:
+            print("".join(difflib.unified_diff(
+                expected.splitlines(keepends=True), result.splitlines(keepends=True),
+                fromfile=str(args.output), tofile="measured project inventory",
+            )), end="")
             raise SystemExit("printf inventory changed; regenerate and extend parity tests/scope")
     else:
         args.output.write_text(result)
