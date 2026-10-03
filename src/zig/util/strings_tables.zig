@@ -22,8 +22,8 @@ pub const have_crypto_sha256 = @import("build_options").have_crypto_sha256;
 
 // -- values the tables are written in terms of -------------------------------
 //
-// Copied from the C headers by the generator and re-checked against the
-// `ipmi_c` bridge in `strings_tables_validation.zig`.
+// Copied from the C headers by the generator and re-checked against an
+// independent frozen C baseline in `strings_tables_validation.zig`.
 
 /// `IPMI_1_5_AUTH_TYPE_BIT_MD2`.
 pub const ipmi_1_5_auth_type_bit_md2 = 0x02;

@@ -184,6 +184,22 @@ fn memberNamespace(gpa: Allocator, files: []const File, namespace: Namespace, na
     }
 }
 
+fn reachesBridge(files: []const File, namespace: Namespace, visited: []bool) bool {
+    const index = switch (namespace) {
+        .bridge => return true,
+        .module => |index| index,
+        .container => |container| container.file,
+        .none, .standard => return false,
+    };
+    if (visited[index]) return false;
+    visited[index] = true;
+    if (files[index].imports != 0) return true;
+    for (files[index].namespaces) |dependency| {
+        if (reachesBridge(files, dependency, visited)) return true;
+    }
+    return false;
+}
+
 fn isRefAllDecls(gpa: Allocator, file: *const File, node: Ast.Node.Index) !bool {
     const tree = &file.tree;
     if (tree.nodeTag(node) != .field_access) return false;
@@ -408,7 +424,7 @@ fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
                                 value = file.namespaces[@intFromEnum(params[1])];
                             if (params.len == 2 and std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(node)), "@field")) {
                                 const lhs = file.namespaces[@intFromEnum(params[0])];
-                                if (lhs == .module or lhs == .container) {
+                                if ((lhs == .module or lhs == .container) and tree.nodeTag(params[1]) == .string_literal) {
                                     const name = try string(gpa, tree, params[1]);
                                     value = try memberNamespace(gpa, files, lhs, name);
                                 }
@@ -445,6 +461,19 @@ fn measure(gpa: Allocator, sources: []const Source) ![]Measurement {
     }
     const results = try gpa.alloc(Measurement, files.len);
     for (files, 0..) |*file, i| {
+        const visited = try gpa.alloc(bool, files.len);
+        for (0..file.tree.nodes.len) |n| {
+            const node: Ast.Node.Index = @enumFromInt(n);
+            var buffer: [2]Ast.Node.Index = undefined;
+            const params = file.tree.builtinCallParams(&buffer, node) orelse continue;
+            if (params.len != 2 or
+                !std.mem.eql(u8, file.tree.tokenSlice(file.tree.nodeMainToken(node)), "@field") or
+                file.tree.nodeTag(params[1]) == .string_literal) continue;
+            const lhs = file.namespaces[@intFromEnum(params[0])];
+            if (lhs != .module and lhs != .container) continue;
+            @memset(visited, false);
+            if (reachesBridge(files, lhs, visited)) return namespaceWrapperError(file, node);
+        }
         try checkNamespaceUses(gpa, file);
         var refs: usize = 0;
         const tree = &file.tree;
@@ -901,4 +930,51 @@ test "namespace-returning functions in another scanned file fail closed" {
             .text = "pub fn bridge() type { return @import(\"ipmi_c\"); }",
         },
     }));
+}
+
+test "computed fields in bridge-free relative modules remain valid" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const measured = try measure(arena.allocator(), &.{
+        .{
+            .path = "src/zig/consumer.zig",
+            .text =
+            \\const tables = @import("tables.zig");
+            \\pub fn value(comptime name: []const u8) u32 { return @field(tables, name); }
+            ,
+        },
+        .{
+            .path = "src/zig/tables.zig",
+            .text = "const types = @import(\"types.zig\"); pub const code: u32 = 1;",
+        },
+        .{
+            .path = "src/zig/types.zig",
+            .text = "const tables = @import(\"tables.zig\"); pub const Value = u32;",
+        },
+    });
+    for (measured) |file| try std.testing.expect(file.clean());
+}
+
+test "computed relative module fields cannot conceal reachable bridges" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    for ([_][]const u8{
+        "pub const api = @import(\"ipmi_c\");",
+        "pub const nested = @import(\"nested.zig\");",
+        "pub const wrapper = struct { pub const api = @import(\"ipmi_c\"); };",
+    }) |provider| {
+        try std.testing.expectError(error.UnsupportedNamespaceWrapper, measure(arena.allocator(), &.{
+            .{
+                .path = "src/zig/consumer.zig",
+                .text =
+                \\const provider = @import("provider.zig");
+                \\const name = "api";
+                \\const api = @field(provider, name);
+                \\pub fn f() void { _ = api.printf("x"); }
+                ,
+            },
+            .{ .path = "src/zig/provider.zig", .text = provider },
+            .{ .path = "src/zig/nested.zig", .text = "pub const api = @import(\"ipmi_c\");" },
+        }));
+    }
 }
