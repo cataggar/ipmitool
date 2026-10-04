@@ -2302,32 +2302,8 @@ const WatchdogDecimal = struct {
 };
 
 fn parseWatchdogDecimal(text: [*:0]const u8) WatchdogDecimal {
-    var end: usize = 0;
-    while (c.isspace(@as(c_int, text[end])) != 0) : (end += 1) {}
-    const negative = text[end] == '-';
-    if (negative or text[end] == '+') end += 1;
-
-    const digits = end;
-    const limit: c_ulong = @as(c_ulong, @intCast(std.math.maxInt(c_long))) + @intFromBool(negative);
-    var magnitude: c_ulong = 0;
-    while (text[end] >= '0' and text[end] <= '9') : (end += 1) {
-        const digit: c_ulong = text[end] - '0';
-        if (magnitude > (limit - digit) / 10) {
-            magnitude = limit;
-        } else {
-            magnitude = magnitude * 10 + digit;
-        }
-    }
-    if (end == digits) return .{ .value = 0, .end = 0 };
-    return .{
-        .value = if (negative and magnitude == limit)
-            std.math.minInt(c_long)
-        else if (negative)
-            -@as(c_long, @intCast(magnitude))
-        else
-            @intCast(magnitude),
-        .end = end,
-    };
+    const parsed = helper.scanInteger(c_long, 10, text);
+    return .{ .value = parsed.value, .end = parsed.end };
 }
 
 fn watchdogOptionValue(arg: [*:0]u8) [*c]u8 {

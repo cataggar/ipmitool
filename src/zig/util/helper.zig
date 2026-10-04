@@ -15,8 +15,8 @@
 //!   unlike locale-sensitive formatting, `%2.2x` of a byte is always two
 //!   lowercase hexadecimal characters.
 //! * **Integer parsing uses a bounded Zig scanner:** `str2long()` and
-//!   `str2ulong()` retain base-zero prefixes, C-locale whitespace, overflow
-//!   and `errno`/trailing-input precedence. `str2double()` retains libc until
+//!   `str2ulong()` retain the selected libc's integer dialect, classification,
+//!   overflow and `errno`/trailing-input precedence. `str2double()` retains libc until
 //!   native parsing preserves the process locale and floating-point environment;
 //!   the allocation-free C-locale parser is a separately tested prerequisite.
 //!   The bounded `str2mac()` scanner preserves `sscanf()`'s two-column
@@ -41,6 +41,19 @@ const float_parse = @import("float_parse.zig");
 const float_oracle = @import("float_oracle.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
+pub const integers = @import("integer_scan.zig");
+pub const integer_dialect = integers.dialectForTarget(builtin.target);
+
+pub fn integerSpace(byte: u8) bool {
+    return if (integer_dialect == .zig_0_16)
+        std.ascii.isWhitespace(byte)
+    else
+        c.isspace(@as(c_int, byte)) != 0;
+}
+
+pub fn scanInteger(comptime T: type, comptime radix: u6, source: [*:0]const u8) integers.Result(T) {
+    return integers.scan(T, radix, std.mem.span(source), integer_dialect, integerSpace);
+}
 
 /// `IPMI_UID_MIN`: UID 0 is reserved by the specification.
 pub const uid_min: u8 = c.IPMI_UID_MIN;
@@ -494,18 +507,9 @@ pub fn str2long(str: ?[*:0]const u8, lng_ptr: ?*i64) callconv(.c) c_int {
     const out = lng_ptr orelse return -1;
 
     std.c._errno().* = 0;
-    const parsed = scanBase0(source, true);
-    const max: i64 = std.math.maxInt(c_long);
-    out.* = if (parsed.overflow)
-        if (parsed.negative) std.math.minInt(c_long) else max
-    else if (parsed.negative)
-        if (parsed.magnitude == @as(u64, @intCast(max)) + 1)
-            std.math.minInt(c_long)
-        else
-            -@as(i64, @intCast(parsed.magnitude))
-    else
-        @intCast(parsed.magnitude);
-    if (parsed.overflow) std.c._errno().* = c.ERANGE;
+    const parsed = scanInteger(c_long, 0, source);
+    out.* = parsed.value;
+    if (parsed.fault == .range) std.c._errno().* = @intFromEnum(std.c.E.RANGE);
 
     if (source[parsed.end] != 0) return -2;
     if (std.c._errno().* != 0) return -3;
@@ -518,77 +522,13 @@ pub fn str2ulong(str: ?[*:0]const u8, ulng_ptr: ?*u64) callconv(.c) c_int {
     const out = ulng_ptr orelse return -1;
 
     std.c._errno().* = 0;
-    const parsed = scanBase0(source, false);
-    const magnitude: c_ulong = @intCast(parsed.magnitude);
-    out.* = if (parsed.overflow)
-        std.math.maxInt(c_ulong)
-    else if (parsed.negative)
-        0 -% magnitude
-    else
-        magnitude;
-    if (parsed.overflow) std.c._errno().* = c.ERANGE;
+    const parsed = scanInteger(c_ulong, 0, source);
+    out.* = parsed.value;
+    if (parsed.fault == .range) std.c._errno().* = @intFromEnum(std.c.E.RANGE);
 
     if (source[parsed.end] != 0) return -2;
     if (std.c._errno().* != 0) return -3;
     return 0;
-}
-
-const ScannedInteger = struct {
-    magnitude: u64,
-    end: usize,
-    negative: bool,
-    overflow: bool,
-};
-
-fn digitValue(byte: u8) ?u8 {
-    if (byte >= '0' and byte <= '9') return byte - '0';
-    if (byte >= 'a' and byte <= 'f') return byte - 'a' + 10;
-    if (byte >= 'A' and byte <= 'F') return byte - 'A' + 10;
-    return null;
-}
-
-fn scanBase0(source: [*:0]const u8, comptime signed: bool) ScannedInteger {
-    var pos: usize = 0;
-    while (source[pos] != 0 and c.isspace(@as(c_int, source[pos])) != 0) : (pos += 1) {}
-    const negative = source[pos] == '-';
-    if (negative or source[pos] == '+') pos += 1;
-
-    var base: u8 = 10;
-    if (source[pos] == '0') {
-        base = 8;
-        if ((source[pos + 1] == 'x' or source[pos + 1] == 'X') and
-            if (digitValue(source[pos + 2])) |d| d < 16 else false)
-        {
-            base = 16;
-            pos += 2;
-        }
-    }
-
-    const limit: u64 = if (signed)
-        @as(u64, @intCast(std.math.maxInt(c_long))) + @intFromBool(negative)
-    else
-        std.math.maxInt(c_ulong);
-    var magnitude: u64 = 0;
-    var overflow = false;
-    var has_digit = false;
-    while (digitValue(source[pos])) |digit| : (pos += 1) {
-        if (digit >= base) break;
-        has_digit = true;
-        if (!overflow) {
-            if (magnitude > (limit - digit) / base) {
-                overflow = true;
-                magnitude = limit;
-            } else {
-                magnitude = magnitude * base + digit;
-            }
-        }
-    }
-    return .{
-        .magnitude = magnitude,
-        .end = if (has_digit) pos else 0,
-        .negative = negative,
-        .overflow = overflow,
-    };
 }
 
 /// Shared body of `str2int()`, `str2short()` and `str2char()`.
@@ -1765,7 +1705,9 @@ test "str2long accepts what strtol accepts" {
     try std.testing.expectEqual(@as(i64, 0), value);
 
     try std.testing.expectEqual(@as(c_int, -2), str2long("42x", &value));
-    try std.testing.expectEqual(@as(c_int, -3), str2long("99999999999999999999", &value));
+    const overflow = std.fmt.comptimePrint("{d}", .{@as(i128, std.math.maxInt(c_long)) + 1});
+    try std.testing.expectEqual(@as(c_int, -3), str2long(overflow, &value));
+    try expectIntegerMatchesLibc("99999999999999999999");
     try std.testing.expectEqual(@as(c_int, -1), str2long(null, &value));
     try std.testing.expectEqual(@as(c_int, -1), str2long("1", null));
 }
