@@ -1186,6 +1186,14 @@ hexadecimal converter instead rounds a bounded binary significand directly,
 so discarded *zero* digits cannot incorrectly break a halfway tie. Fixed
 integer division checks exact subnormals; exact-decimal comparisons distinguish
 values just below the minimum normal even when they round up to that normal.
+GNU target tininess follows glibc's `sysdeps/*/tininess.h`: x86 and its other
+after-rounding targets differ from the generic before-rounding ARM profile.
+After-rounding here means rounding to normal precision **before** reducing
+precision for subnormals, not simply inspecting the final binary64 exponent.
+Both decimal and hexadecimal paths compare the exact normal-precision boundary
+`2^-1022 - 2^-1076`; midpoint ties round to the normal value. Injected pure
+before/after profiles and an independent target-libc boundary test cover values
+below, at and above that boundary, including both signs.
 The output is stored on syntax/range errors, null arguments preserve both
 storage and `errno`, and trailing bytes take precedence over a range return
 code without clearing the range `errno`.

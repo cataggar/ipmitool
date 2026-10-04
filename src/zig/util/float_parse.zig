@@ -2,9 +2,11 @@
 //! Only the explicitly scanned decimal grammar reaches std.fmt.parseFloat.
 
 const std = @import("std");
+const builtin = @import("builtin");
 const musl53 = @import("float_musl53.zig");
 
 pub const Dialect = enum { glibc, musl };
+pub const GlibcTininess = enum { before_rounding, after_rounding };
 pub const Result = struct {
     value: f64,
     end: usize,
@@ -44,7 +46,27 @@ pub fn parse(source: []const u8, comptime dialect: Dialect) Result {
     return parseWithLongDouble(source, dialect, if (dialect == .musl) muslLongDouble() else f64);
 }
 
+pub fn parseWithGlibcTininess(source: []const u8, comptime tininess: GlibcTininess) Result {
+    return parseWithProfile(source, .glibc, f64, tininess);
+}
+
+fn glibcTininess() GlibcTininess {
+    const architecture = @tagName(builtin.cpu.arch);
+    inline for (.{
+        "alpha", "arc",    "csky",   "hppa",     "loongarch32", "loongarch64",
+        "mips",  "mipsel", "mips64", "mips64el", "riscv32",     "riscv64",
+        "sh4",   "sh4eb",  "x86",    "x86_64",
+    }) |after_rounding| {
+        if (comptime std.mem.eql(u8, architecture, after_rounding)) return .after_rounding;
+    }
+    return .before_rounding;
+}
+
 fn parseWithLongDouble(source: []const u8, comptime dialect: Dialect, comptime Extended: type) Result {
+    return parseWithProfile(source, dialect, Extended, if (dialect == .glibc) glibcTininess() else .before_rounding);
+}
+
+fn parseWithProfile(source: []const u8, comptime dialect: Dialect, comptime Extended: type, comptime tininess: GlibcTininess) Result {
     var pos: usize = 0;
     while (pos < source.len and std.ascii.isWhitespace(source[pos])) : (pos += 1) {}
     const negative = pos < source.len and source[pos] == '-';
@@ -117,9 +139,9 @@ fn parseWithLongDouble(source: []const u8, comptime dialect: Dialect, comptime E
     }
 
     var result = if (base == 16)
-        hexadecimal(source[start..mantissa_end], integral_digits, exponent, negative, dialect, Extended)
+        hexadecimal(source[start..mantissa_end], integral_digits, exponent, negative, dialect, Extended, tininess)
     else
-        decimal(source[start..mantissa_end], integral_digits, exponent, negative, dialect, Extended);
+        decimal(source[start..mantissa_end], integral_digits, exponent, negative, dialect, Extended, tininess);
     if (!result.positive_zero) result.value = signed(result.value, negative);
     result.end = pos;
     return result;
@@ -149,7 +171,7 @@ fn nanPayload(payload: []const u8) u64 {
     return value & 0x000f_ffff_ffff_ffff;
 }
 
-fn hexadecimal(token: []const u8, integral_digits: usize, exponent: i128, negative: bool, comptime dialect: Dialect, comptime Extended: type) Result {
+fn hexadecimal(token: []const u8, integral_digits: usize, exponent: i128, negative: bool, comptime dialect: Dialect, comptime Extended: type, comptime tininess: GlibcTininess) Result {
     var leading_zeros: usize = 0;
     var kept: usize = 0;
     var mantissa: u64 = 0;
@@ -206,8 +228,10 @@ fn hexadecimal(token: []const u8, integral_digits: usize, exponent: i128, negati
     // halfway-to-zero binade only exact powers of two cancel its rounding bias.
     const cancelled = rounded == 0 and !early_underflow and
         (highest >= -1075 or (std.math.isPowerOfTwo(mantissa) and !tail));
+    const tiny = highest < -1022 and (tininess == .before_rounding or
+        highest < -1023 or belowNormalPrecisionBoundary(mantissa));
     const underflow = if (dialect == .glibc)
-        highest < -1022 and inexact
+        tiny and inexact
     else
         early_underflow or cancelled;
     if (highest < -1022) return .{
@@ -223,6 +247,16 @@ fn hexadecimal(token: []const u8, integral_digits: usize, exponent: i128, negati
     if (highest > 1023) return .{ .value = std.math.inf(f64), .end = 0, .range = overflow };
     const bits = (@as(u64, @intCast(highest + 1023)) << 52) | (rounded & 0x000f_ffff_ffff_ffff);
     return .{ .value = @bitCast(bits), .end = 0 };
+}
+
+fn belowNormalPrecisionBoundary(mantissa: u64) bool {
+    // After-rounding tininess uses normal precision before subnormal rounding.
+    const boundary: u128 = (@as(u128, 1) << 54) - 1;
+    const shift: i32 = @as(i32, 63 - @clz(mantissa)) - 53;
+    return if (shift >= 0)
+        @as(u128, mantissa) < boundary << @as(u7, @intCast(shift))
+    else
+        @as(u128, mantissa) << @as(u7, @intCast(-shift)) < boundary;
 }
 
 const Decimal = struct {
@@ -417,7 +451,7 @@ fn powerOfTwoDecimal(power: usize) Decimal {
     return result;
 }
 
-fn decimal(token: []const u8, integral_digits: usize, exponent: i128, negative: bool, comptime dialect: Dialect, comptime Extended: type) Result {
+fn decimal(token: []const u8, integral_digits: usize, exponent: i128, negative: bool, comptime dialect: Dialect, comptime Extended: type, comptime tininess: GlibcTininess) Result {
     const normalized = Decimal.scan(token, integral_digits, exponent);
     if (normalized.len == 0) return .{ .value = 0, .end = 0 };
 
@@ -455,10 +489,43 @@ fn decimal(token: []const u8, integral_digits: usize, exponent: i128, negative: 
             !(dialect == .musl and std.math.isPowerOfTwo(bits) and
                 normalized.belowPowerOfTwo(@as(usize, 1074) - @ctz(bits)))
     else if (dialect == .glibc and bits == 0x0010_0000_0000_0000)
-        normalized.belowPowerOfTwo(1022)
+        if (tininess == .before_rounding)
+            normalized.belowPowerOfTwo(1022)
+        else boundary: {
+            @setEvalBranchQuota(4_000_000);
+            const minimum = comptime ExactDecimal.fromBinary((@as(u128, 1) << 54) - 1, 1076);
+            break :boundary normalized.compareExact(&minimum) == .lt;
+        }
     else
         false;
     return .{ .value = value, .end = 0, .range = range };
+}
+
+test "glibc tininess distinguishes normal-precision and subnormal rounding" {
+    for ([_][]const u8{
+        "0x0.fffffffffffffbp-1022",
+        "0x0.fffffffffffffcp-1022",
+        "0x0.fffffffffffffdp-1022",
+    }, [_]bool{ true, false, false }) |input, after_range| {
+        inline for (.{ GlibcTininess.before_rounding, GlibcTininess.after_rounding }) |tininess| {
+            const actual = parseWithGlibcTininess(input, tininess);
+            try std.testing.expectEqual(@as(u64, 0x0010_0000_0000_0000), @as(u64, @bitCast(actual.value)));
+            try std.testing.expectEqual(input.len, actual.end);
+            try std.testing.expectEqual(if (tininess == .before_rounding) true else after_range, actual.range);
+        }
+    }
+    var exact = ExactDecimal.fromBinary((@as(u128, 1) << 54) - 1, 1076);
+    const last = exact.digits[exact.len - 1];
+    var buffer: [3450]u8 = undefined;
+    for ([_]u8{ last - 1, last, last + 1 }, [_]bool{ true, false, false }) |digit_byte, after_range| {
+        exact.digits[exact.len - 1] = digit_byte;
+        const input = try std.fmt.bufPrint(&buffer, "{s}e-1076", .{exact.digits[0..exact.len]});
+        inline for (.{ GlibcTininess.before_rounding, GlibcTininess.after_rounding }) |tininess| {
+            const actual = parseWithGlibcTininess(input, tininess);
+            try std.testing.expectEqual(@as(u64, 0x0010_0000_0000_0000), @as(u64, @bitCast(actual.value)));
+            try std.testing.expectEqual(if (tininess == .before_rounding) true else after_range, actual.range);
+        }
+    }
 }
 
 test "target musl long double selects its actual representation" {

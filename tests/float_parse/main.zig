@@ -21,10 +21,10 @@ test "standalone target C and Zig agree on long-double representation" {
 
 test "standalone parser grammar and range match target libc" {
     const cases = [_][*:0]const u8{
-        "",                         " ",          "-",                       "-0",                       "0x",                      "1e-",                     "1_2",        "inf",        "-nan(123)",
-        "1e9999",                   "-1e-9999",   "0x1p1024",                "0x1p1102",                 "0x1p1106",                "0x1.fffffffffffff8p1023", "-0x1p-1075", "-0x1p-1076", "-0x1.00000000000000000000000000001p-1076",
-        "-0x1.8p-1100",             "-0x1p-1152", "-0x1p-1153",              "-0x1p-1174",               "-0x1p-1175",              "-0x1p-1272",              "-0x1p-1273", "-0x1p-2000", "0x1.8p-1074",
-        "0x0.fffffffffffff8p-1022", "0x1p-1074",  "2.4703282292062328e-324", "-2.4703282292062327e-324", "2.2250738585072013e-308",
+        "",                         " ",          "-",                       "-0",                       "0x",                      "1e-",                     "1_2",                      "inf",                      "-nan(123)",
+        "1e9999",                   "-1e-9999",   "0x1p1024",                "0x1p1102",                 "0x1p1106",                "0x1.fffffffffffff8p1023", "-0x1p-1075",               "-0x1p-1076",               "-0x1.00000000000000000000000000001p-1076",
+        "-0x1.8p-1100",             "-0x1p-1152", "-0x1p-1153",              "-0x1p-1174",               "-0x1p-1175",              "-0x1p-1272",              "-0x1p-1273",               "-0x1p-2000",               "0x1.8p-1074",
+        "0x0.fffffffffffff8p-1022", "0x1p-1074",  "2.4703282292062328e-324", "-2.4703282292062327e-324", "2.2250738585072013e-308", "2.2250738585072012e-308", "0x0.fffffffffffffbp-1022", "0x0.fffffffffffffcp-1022", "0x0.fffffffffffffdp-1022",
     };
     for (cases) |input| try expectMatchesLibc(input);
     for (0..256) |byte| {
@@ -34,6 +34,39 @@ test "standalone parser grammar and range match target libc" {
         try expectMatchesLibc(&exponent);
         var hex = [_:0]u8{ '0', 'x', @intCast(byte), '1' };
         try expectMatchesLibc(&hex);
+    }
+}
+
+test "standalone exact normal-precision tininess boundary matches libc" {
+    var mantissa: u64 = (@as(u64, 1) << 54) - 1;
+    var digits: [800]u8 = undefined;
+    var len: usize = 0;
+    while (mantissa != 0) : (mantissa /= 10) {
+        digits[len] = @intCast(mantissa % 10);
+        len += 1;
+    }
+    for (0..1076) |_| {
+        var carry: u32 = 0;
+        for (digits[0..len]) |*d| {
+            const product = @as(u32, d.*) * 5 + carry;
+            d.* = @intCast(product % 10);
+            carry = product / 10;
+        }
+        if (carry != 0) {
+            digits[len] = @intCast(carry);
+            len += 1;
+        }
+    }
+    std.mem.reverse(u8, digits[0..len]);
+    for (digits[0..len]) |*d| d.* += '0';
+    const last = digits[len - 1];
+    var buffer: [850]u8 = undefined;
+    for ([_]u8{ last - 1, last, last + 1 }) |digit_byte| {
+        digits[len - 1] = digit_byte;
+        for ([_][]const u8{ "", "-" }) |sign| {
+            const input = try std.fmt.bufPrintZ(&buffer, "{s}{s}e-1076", .{ sign, digits[0..len] });
+            try expectMatchesLibc(input);
+        }
     }
 }
 
