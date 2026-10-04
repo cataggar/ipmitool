@@ -39,8 +39,9 @@ Abbreviations are opaque byte strings, including historical names; they are
 not locale-dependent and are not inferred from the offset.
 
 `Zone.fromTZif(allocator, bytes)` and `Zone.fromPosix(allocator, spec)` copy their
-inputs. `Zone.loadFile(allocator, io, dir, path)` uses Zig 0.16 `std.Io`, reads at
-most 1 MiB, owns the read buffer, and propagates open/read/limit/parse/OOM errors.
+inputs. `Zone.loadFile(allocator, io, dir, path)` uses Zig 0.16 `std.Io`, accepts files
+through exactly 1 MiB and probes at most one additional byte for EOF, owns the
+read buffer, and propagates open/read/limit/parse/OOM errors.
 `deinit` frees all owned bytes/arrays; do not shallow-copy/deinitialize the same
 Zone twice. `timezone.Posix.parse(bytes, default_rules)` is a separate
 allocation-free parser whose abbreviation slices borrow its input.

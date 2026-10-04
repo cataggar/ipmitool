@@ -4,6 +4,8 @@ const std = @import("std");
 pub const Posix = @import("timezone_posix.zig");
 pub const Offset = Posix.Offset;
 pub const max_file_bytes = 1 << 20;
+// Zig 0.16 readers reject equality with the limit; probe one byte for EOF.
+pub const file_read_limit: std.Io.Limit = .limited(max_file_bytes + 1);
 pub const ParseError = Posix.ParseError || error{
     Truncated,
     InvalidMagic,
@@ -48,7 +50,11 @@ pub const Zone = struct {
 
     /// Bounded std.Io loading; open/read/limit/parse errors propagate unchanged.
     pub fn loadFile(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, path: []const u8) !Zone {
-        const data = try dir.readFileAlloc(io, path, allocator, .limited(max_file_bytes));
+        const data = try dir.readFileAlloc(io, path, allocator, file_read_limit);
+        if (data.len > max_file_bytes) {
+            allocator.free(data);
+            return error.StreamTooLong;
+        }
         return decodeOwned(allocator, data);
     }
 

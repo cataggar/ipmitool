@@ -297,6 +297,20 @@ test "std.Io file loading owns bytes and propagates missing file errors" {
     try testing.expectError(error.FileNotFound, tz.Zone.loadFile(allocator, testing.io, tmp.dir, "missing"));
 }
 
+test "std.Io file loading uses an inclusive one-MiB limit" {
+    var tmp = testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const bytes = try allocator.alloc(u8, tz.max_file_bytes + 1);
+    defer allocator.free(bytes);
+    @memset(bytes, 'X');
+    for ([_]usize{ tz.max_file_bytes - 1, tz.max_file_bytes }) |length| {
+        try tmp.dir.writeFile(testing.io, .{ .sub_path = "boundary", .data = bytes[0..length] });
+        try testing.expectError(error.InvalidMagic, tz.Zone.loadFile(allocator, testing.io, tmp.dir, "boundary"));
+    }
+    try tmp.dir.writeFile(testing.io, .{ .sub_path = "boundary", .data = bytes });
+    try testing.expectError(error.StreamTooLong, tz.Zone.loadFile(allocator, testing.io, tmp.dir, "boundary"));
+}
+
 test "v2/v3 skipped compatibility block, empty-table libc behavior and invalid footers" {
     var builder = Builder{};
     defer builder.deinit();
