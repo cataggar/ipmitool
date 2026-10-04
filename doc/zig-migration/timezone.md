@@ -10,8 +10,11 @@ calendar primitive/formatter comes from the reviewed parent recorded below.
 
 The original timezone implementation is
 `92911eea8aeb2ab4b3c3a32c342be70b3dd31c7d`, preserved locally as
-`issue-228-timezone-pre-calendar-92911eea`. This child is stacked on reviewed
-calendar commit `0367664943a7660caa36dada6abbe84466901053`.
+`issue-228-timezone-pre-calendar-92911eea`. The original child-only replay
+boundary was `990e0e889269a70b6c988a1c259c094ed298bd7e`. The two timezone
+commits are now replayed over the integrated calendar prerequisite (#264),
+`34b6bbb5ded3c5f27903429b387221a002eacbe2`, retaining the merged floating
+prerequisites and their installed-locale/fenv boundaries.
 Only this child adds `Civil.epochDay() !i128` to the shared calendar and reuses
 it for weekday/epoch conversion and timezone rules. The calendar and strings
 worktrees are not modified by this stack.
