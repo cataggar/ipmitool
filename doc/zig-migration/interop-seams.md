@@ -1162,7 +1162,126 @@ the original `errno`, saturation, no-conversion, trailing-input, and
 negative-unsigned rules. `zig build test-helper-integers` compares values,
 return codes, and `errno` with libc across all first-byte inputs and
 overflow/prefix boundaries. Non-ASCII locale-specific numeric alphabets
-remain a documented difference; `str2double` still uses libc.
+remain a documented difference.
+
+### Helper binary64 parsing (#228 leaf)
+
+`util/float_parse.zig` is a native binary64 prerequisite. The production
+helper's `str2double` retains its original `strtod` boundary until native
+locale and floating-point-environment support preserves that ABI's behavior.
+The parser's explicit C-locale scanner accepts the six ASCII whitespace
+characters, signs, decimal and hexadecimal significands, complete optional
+`e`/`p` exponents, case-insensitive `inf`/`infinity`, and `nan` with a complete
+alphanumeric/underscore payload. Incomplete exponents and payloads leave the
+same trailing bytes as libc; numeric underscores and Zig-only syntax never
+reach `std.fmt.parseFloat`. A no-conversion result leaves the end offset at
+zero, including after whitespace/signs. Empty input retains libc's unusual
+helper outcome (success on glibc, `EINVAL`/`-3` on musl).
+
+Conversion uses fixed stack storage, without allocation or a libc fallback.
+Decimal normalization retains 768 significant digits and a nonzero sticky
+tail before calling `std.fmt.parseFloat`; this is enough to distinguish
+binary64 rounding boundaries even with thousands of trailing digits. The
+hexadecimal converter instead rounds a bounded binary significand directly,
+so discarded *zero* digits cannot incorrectly break a halfway tie. Fixed
+integer division checks exact subnormals; exact-decimal comparisons distinguish
+values just below the minimum normal even when they round up to that normal.
+GNU target tininess follows glibc's `sysdeps/*/tininess.h`: x86 and its other
+after-rounding targets differ from the generic before-rounding ARM profile.
+After-rounding here means rounding to normal precision **before** reducing
+precision for subnormals, not simply inspecting the final binary64 exponent.
+Both decimal and hexadecimal paths compare the exact normal-precision boundary
+`2^-1022 - 2^-1076`; midpoint ties round to the normal value. Injected pure
+before/after profiles and an independent target-libc boundary test cover values
+below, at and above that boundary, including both signs.
+The output is stored on syntax/range errors, null arguments preserve both
+storage and `errno`, and trailing bytes take precedence over a range return
+code without clearing the range `errno`.
+
+The glibc and musl dialects retain their different NaN payload/sign,
+no-conversion, tininess and range conventions. In particular, musl can leave
+`errno` clear on an overflowing hex conversion narrowed from `long double`,
+and on inexact decimal subnormals rounded up across a binary binade. Its
+long-double bias cancellation can yield **positive** zero for a negative
+halfway input, including a distant positive tail just above the half-minimum
+subnormal. These are deliberately preserved, using bounded exact-decimal
+comparisons and the target's long-double precision, rather than treating all
+subnormals as `ERANGE` or normalizing every zero's sign.
+
+Musl's actual target `long double` is selected explicitly: IEEE binary64
+(53-bit significand, including 32-bit ARM), x87 extended80 (64 bits), or IEEE
+binary128 (113 bits). Other representations fail with an explicit unsupported
+representation diagnostic rather than being decoded as binary128.
+Binary64 cannot represent the halfway-to-zero binade itself; its compatibility
+path therefore does not decode a rounded-to-zero float to infer that binade.
+The pure `float_musl53.zig` kernel preserves musl's fixed 128-limb base-1e9
+buffer, rescaling and signed bias operations for negative decimal underflow.
+That smaller buffer can change far-underflow zero signs after significand
+truncation. Its hexadecimal kernel also preserves musl's binary64 accumulation
+and final scaling (occasionally a one-ULP difference from ideal nearest
+conversion). Neither kernel calls libc or allocates; the musl-derived kernel
+retains its MIT notice.
+
+**Locale constraint:** both the unchanged C frontend (`lib/ipmi_main.c`) and
+the Zig frontend (`cli/main.zig`) call `setlocale(LC_ALL, "")`. Production
+therefore does *not* unconditionally run in the C locale. This parser's grammar
+is explicitly C-locale: non-dot `LC_NUMERIC` radix strings, non-ASCII numeric
+alphabets and additional locale-specific whitespace are not yet supported
+by the native prerequisite. The migration preserves installed system locales;
+requiring users to set `LC_ALL=C` is not an approved production cutover.
+The unchanged production adapter therefore continues using libc for all
+inputs, while native-parser characterization explicitly uses `LC_ALL=C`.
+No global locale setup or unrelated helper path is changed by this leaf.
+The native prerequisite assumes the default round-to-nearest/ties-to-even
+floating-point environment; alternate `fesetround` modes and libc floating
+exception flags are not reproduced. The repository does not change that
+rounding mode. Non-glibc/non-musl native dialects are not independently verified.
+This leaf does not retire the production `strtod` seam or close #228.
+Its exact bridge-budget addition is five test-only references: one shared
+`float_oracle.zig` `strtod` observation and four `EDOM` sentinel observations
+in helper tests (121 to 125). The unchanged production adapter adds no runtime
+libc call, and no other file's limit is increased or test reference exempted.
+
+`zig build test-helper-floats` runs the focused differential tests against one
+retained test-only `c.strtod` oracle, checking end offsets, binary64 bits
+(including NaNs/zero), status and `errno`. Coverage includes every byte at
+grammar seams, malformed/incomplete tokens, halfway ties, exact and inexact
+subnormals, minimum-normal and overflow thresholds, long sticky tails, huge
+exponents and a deterministic 4,000-token decimal/hex corpus.
+`test-helper-floats-compile -Dtarget=x86_64-linux-musl`
+cross-compiles that same coverage without executing a foreign binary.
+Decimal digit arithmetic intentionally uses `u32` intermediates: Zig 0.16's
+x86_64 Debug backend cannot encode the equivalent `u8` division by ten.
+Both Debug and LLVM ReleaseFast cross-compilation are supported. Tests also run against
+musl on a native aarch64 CPU with `-Dtarget=aarch64-linux-musl`.
+`test-helper-floats-pure` tests target selection and injectable f64/f80/f128
+profiles without libc or C headers; `test-helper-floats-pure-compile` builds
+those tests for a foreign target. `test-helper-floats-standalone` uses the
+same **single** test-only oracle in `util/float_oracle.zig`, with only standard
+C headers rather than the full ipmitool bridge. It checks C/Zig long-double
+metadata, zero signs, range boundaries, significand truncation, grammar seams
+and a 4,000-token decimal/hex corpus. To characterize binary64 long double
+against actual ARM musl, run:
+
+```sh
+zig build test-helper-floats-standalone-compile test-helper-floats-pure-compile \
+  -Dtarget=arm-linux-musleabihf -Dipmishell=false -Dopenssl=false \
+  -Dinternal-md5=true -Dintf-lanplus=false
+qemu-arm-static zig-out/bin/helper-floats-standalone
+```
+
+The compile step installs only that standalone test artifact and does not
+execute a foreign binary automatically. These ARM tests were run under QEMU
+against the target musl bundled with Zig 0.16, including 52-fraction-bit
+cancellation, the precision-dependent hex early-underflow cutoff and
+long-double buffer limits. This characterizes the parser, **not** the complete
+32-bit ipmitool product or its unrelated full-root ABI checks. The supported
+rounding mode remains round-to-nearest/ties-to-even; other modes, floating
+exception flags and non-glibc/non-musl dialects are not independently verified.
+On this header-limited host, add
+`-Dipmishell=false -Dopenssl=false -Dinternal-md5=true -Dintf-lanplus=false`.
+These focused steps do not claim to fix the reduced full-root `test-unit`
+LAN+ declaration/crypto-feature-vector blockers, nor complete issue #228.
 
 The selected `picmg properties` success result now streams its four lines
 through checked Zig stdout: a libc stdout pre-flush preserves prior buffered

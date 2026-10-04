@@ -16,7 +16,9 @@
 //!   lowercase hexadecimal characters.
 //! * **Integer parsing uses a bounded Zig scanner:** `str2long()` and
 //!   `str2ulong()` retain base-zero prefixes, C-locale whitespace, overflow
-//!   and `errno`/trailing-input precedence. `str2double()` remains in libc.
+//!   and `errno`/trailing-input precedence. `str2double()` retains libc until
+//!   native parsing preserves the process locale and floating-point environment;
+//!   the allocation-free C-locale parser is a separately tested prerequisite.
 //!   The bounded `str2mac()` scanner preserves `sscanf()`'s two-column
 //!   `%x` conversions without calling libc.
 //! * **Static buffers keep their C lifetimes.**  `buf2str()`, `mac2str()` and
@@ -35,6 +37,8 @@ const c = @import("ipmi_c");
 const abi = @import("../abi.zig");
 const log = @import("log.zig");
 const stdout_io = @import("stdout.zig");
+const float_parse = @import("float_parse.zig");
+const float_oracle = @import("float_oracle.zig");
 const ipmi = @import("../core/ipmi.zig");
 const Intf = @import("../intf/intf.zig").Intf;
 
@@ -1777,6 +1781,241 @@ test "str2ulong and str2double" {
     try std.testing.expectEqual(@as(f64, 1.5), dvalue);
     try std.testing.expectEqual(@as(c_int, -2), str2double("1.5v", &dvalue));
     try std.testing.expectEqual(@as(c_int, -1), str2double(null, &dvalue));
+}
+
+fn expectFloatMatchesLibc(input: [*:0]const u8) !void {
+    const expected = float_oracle.parse(input);
+
+    var actual: f64 = 42;
+    std.c._errno().* = c.EDOM;
+    const actual_status = str2double(input, &actual);
+    const actual_errno = std.c._errno().*;
+    errdefer std.debug.print("float input: {s}\n", .{std.mem.span(input)});
+    try std.testing.expectEqual(expected.status, actual_status);
+    try std.testing.expectEqual(@as(u64, @bitCast(expected.value)), @as(u64, @bitCast(actual)));
+    try std.testing.expectEqual(expected.err, actual_errno);
+    const parsed = float_parse.parse(std.mem.span(input), if (builtin.abi.isMusl()) .musl else .glibc);
+    try std.testing.expectEqual(expected.end, parsed.end);
+}
+
+test "float parser C grammar, special values and error precedence match libc" {
+    const cases = [_][*:0]const u8{
+        "",                                               " ",                                            "\t\n\r\x0b\x0c",                                "+",             "-",
+        ".",                                              "+.",                                           " .e1",                                          "0",             "-0",
+        "-0.0",                                           "-0e9999999",                                   "  +1.5",                                        "\t-1.5",        "1.",
+        ".125",                                           "00008",                                        "1e3",                                           "1E+3",          "1e-3",
+        "1e",                                             "1e+",                                          "1e-",                                           "1e+x",          "1 e3",
+        "1.5 ",                                           "1.5v",                                         "1_2",                                           "1e1_2",         "1,5",
+        "0b101",                                          "0x",                                           "-0x.p1",                                        "0x1",           "0X.8",
+        "0x1.",                                           "-0x1.8p+1",                                    "0x1p",                                          "0x1p-",         "0x1p+q",
+        "0x1.2.3",                                        "0x1_2p0",                                      "0x1p1_2",                                       "-0x0p99999",    "0x0p-99999",
+        "inf",                                            "+INF",                                         "-Infinity",                                     "infinityx",     "infi",
+        "infinit",                                        "nan",                                          "-NaN",                                          "+NAN()",        "nan(123)",
+        "-nan(077)",                                      "nan(08)",                                      "nan(0xabcdef)",                                 "nan(123x)",     "nan(foo_bar)",
+        "nan(",                                           "nan(a",                                        "nan(a b)",                                      "nan(a-b)",      "nan(a)tail",
+        "nan(18446744073709551615)",                      "nan(18446744073709551616)",                    "nan(0xffffffffffffffff)",                       "1e99999",       "-1e99999",
+        "1e-99999",                                       "-1e-99999",                                    "1e99999junk",                                   "-1e-99999junk", "0e9999999999999999999999999999999999999999",
+        "-0e-999999999999999999999999999999999999999999", "1e999999999999999999999999999999999999999999", "1e-999999999999999999999999999999999999999999",
+    };
+    for (cases) |input| try expectFloatMatchesLibc(input);
+    for (0..256) |byte| {
+        var first = [_:0]u8{ @intCast(byte), '1', '.', '2' };
+        try expectFloatMatchesLibc(&first);
+        var after_sign = [_:0]u8{ '-', @intCast(byte), '1' };
+        try expectFloatMatchesLibc(&after_sign);
+        var after_decimal = [_:0]u8{ '1', '.', @intCast(byte), '2' };
+        try expectFloatMatchesLibc(&after_decimal);
+        var after_prefix = [_:0]u8{ '0', 'x', @intCast(byte), '1' };
+        try expectFloatMatchesLibc(&after_prefix);
+        var after_exponent = [_:0]u8{ '1', 'e', @intCast(byte), '2' };
+        try expectFloatMatchesLibc(&after_exponent);
+        var payload = [_:0]u8{ 'n', 'a', 'n', '(', @intCast(byte), ')' };
+        try expectFloatMatchesLibc(&payload);
+    }
+
+    var value: f64 = -42;
+    std.c._errno().* = c.EDOM;
+    try std.testing.expectEqual(@as(c_int, -1), str2double(null, &value));
+    try std.testing.expectEqual(@as(f64, -42), value);
+    try std.testing.expectEqual(@as(c_int, c.EDOM), std.c._errno().*);
+    try std.testing.expectEqual(@as(c_int, -1), str2double("1", null));
+    try std.testing.expectEqual(@as(c_int, c.EDOM), std.c._errno().*);
+}
+
+test "float parser rounding and range thresholds match libc" {
+    const cases = [_][*:0]const u8{
+        "9007199254740993",                                         "9007199254740995",
+        "1.00000000000000011102230246251565404236316680908203124",  "1.00000000000000011102230246251565404236316680908203125",
+        "1.00000000000000011102230246251565404236316680908203126",  "1.00000000000000033306690738754696212708950042724609375",
+        "0.999999999999999944488848768742172978818416595458984375", "0.500000000000000166533453693773481063544750213623046875",
+        "1.7976931348623157e308",                                   "1.7976931348623158e308",
+        "1.7976931348623159e308",                                   "2.2250738585072011e-308",
+        "2.2250738585072012e-308",                                  "2.2250738585072013e-308",
+        "2.2250738585072014e-308",                                  "2.2250738585072015e-308",
+        "2.4703282292062327e-324",                                  "2.4703282292062328e-324",
+        "4.9406564584124654e-324",                                  "-2.4703282292062327e-324",
+        "-4.9406564584124654e-324",                                 "0x1.fffffffffffffp1023",
+        "0x1.fffffffffffff7p1023",                                  "0x1.fffffffffffff8p1023",
+        "0x1.fffffffffffff800000000000000000p1023",                 "0x1.fffffffffffff800000000000000001p1023",
+        "-0x1.fffffffffffff8p1023",                                 "0x1p1024",
+        "0x1p-1074",                                                "-0x1p-1074",
+        "0x1p-1075",                                                "-0x1p-1075",
+        "0x1.00000000000000001p-1075",                              "0x1.8p-1074",
+        "0x1.7ffffffffffffffp-1074",                                "0x1p-1076",
+        "0x1p-999999",                                              "0x0.fffffffffffffp-1022",
+        "0x0.fffffffffffff0p-1022",                                 "0x0.fffffffffffff7p-1022",
+        "0x0.fffffffffffff8p-1022",                                 "0x0.fffffffffffffep-1022",
+        "0x1p-1022",                                                "0x1.00000000000008p-1022",
+        "0x1.0000000000000800000000000000p0",                       "0x1.0000000000000800000000000001p0",
+        "0x1.0000000000001800000000000000p0",                       "0xffffffffffffffff000000000000000p-120",
+        "0xffffffffffffffff000000000000001p-120",                   "0x0.000000000000000000000000000000000000001p0",
+        "0x1p-1075tail",                                            "0x1p1024tail",
+    };
+    for (cases) |input| {
+        try expectFloatMatchesLibc(input);
+        if (input[0] != '-') {
+            var buffer: [256]u8 = undefined;
+            try expectFloatMatchesLibc(try std.fmt.bufPrintZ(&buffer, "-{s}", .{std.mem.span(input)}));
+        }
+    }
+
+    // Exact terminating expansions, and changes beyond f128's precision.
+    for ([_]usize{ 1022, 1073, 1074, 1075 }) |power| {
+        var digits = [_]u8{0} ** 800;
+        var len: usize = 1;
+        digits[0] = 1;
+        for (0..power) |_| {
+            var carry: u32 = 0;
+            for (digits[0..len]) |*d| {
+                const product = @as(u32, d.*) * 5 + carry;
+                d.* = @intCast(product % 10);
+                carry = product / 10;
+            }
+            if (carry != 0) {
+                digits[len] = @intCast(carry);
+                len += 1;
+            }
+        }
+        std.mem.reverse(u8, digits[0..len]);
+        for (digits[0..len]) |*d| d.* += '0';
+        var buffer: [1600]u8 = undefined;
+        for ([_]u8{ '4', '5', '6' }) |last| {
+            digits[len - 1] = last;
+            const input = try std.fmt.bufPrintZ(&buffer, "{s}e-{d}", .{ digits[0..len], power });
+            try expectFloatMatchesLibc(input);
+            const negative = try std.fmt.bufPrintZ(&buffer, "-{s}e-{d}", .{ digits[0..len], power });
+            try expectFloatMatchesLibc(negative);
+        }
+    }
+
+    var long: [8192:0]u8 = @splat('0');
+    const midpoint = "1.00000000000000011102230246251565404236316680908203125";
+    @memcpy(long[0..midpoint.len], midpoint);
+    try expectFloatMatchesLibc(&long);
+    var negative_long: [8194]u8 = undefined;
+    try expectFloatMatchesLibc(try std.fmt.bufPrintZ(&negative_long, "-{s}", .{long[0..long.len]}));
+    long[long.len - 1] = '1';
+    try expectFloatMatchesLibc(&long);
+    try expectFloatMatchesLibc(try std.fmt.bufPrintZ(&negative_long, "-{s}", .{long[0..long.len]}));
+    @memset(long[0..long.len], '0');
+    long[0] = '1';
+    const suffix = "e-8180";
+    @memcpy(long[long.len - suffix.len .. long.len], suffix);
+    try expectFloatMatchesLibc(&long);
+}
+
+test "float parser extended-precision underflow boundaries match libc" {
+    var digits = [_]u8{0} ** 3400;
+    var buffer: [3450]u8 = undefined;
+    for ([_]usize{ 1075, 1076, 1100, 1200, 2000, 4000, 4400 }) |power| {
+        digits[0] = 1;
+        var len: usize = 1;
+        for (0..power) |_| {
+            var carry: u32 = 0;
+            for (digits[0..len]) |*d| {
+                const product = @as(u32, d.*) * 5 + carry;
+                d.* = @intCast(product % 10);
+                carry = product / 10;
+            }
+            if (carry != 0) {
+                digits[len] = @intCast(carry);
+                len += 1;
+            }
+        }
+        std.mem.reverse(u8, digits[0..len]);
+        for (digits[0..len]) |*d| d.* += '0';
+        for ([_]u8{ '4', '5', '6' }) |last| {
+            digits[len - 1] = last;
+            const input = try std.fmt.bufPrintZ(&buffer, "-{s}e-{d}", .{ digits[0..len], power });
+            try expectFloatMatchesLibc(input);
+        }
+    }
+    const fractional_bits = std.math.floatFractionalBits(c_longdouble);
+    for ([_]usize{ fractional_bits - 1, fractional_bits, fractional_bits + 1 }) |distance| {
+        var mantissa = (@as(u128, 1) << @as(u7, @intCast(distance))) + 1;
+        var len: usize = 0;
+        while (mantissa != 0) : (mantissa /= 10) {
+            digits[len] = @intCast(mantissa % 10);
+            len += 1;
+        }
+        const power = 1075 + distance;
+        for (0..power) |_| {
+            var carry: u32 = 0;
+            for (digits[0..len]) |*d| {
+                const product = @as(u32, d.*) * 5 + carry;
+                d.* = @intCast(product % 10);
+                carry = product / 10;
+            }
+            if (carry != 0) {
+                digits[len] = @intCast(carry);
+                len += 1;
+            }
+        }
+        std.mem.reverse(u8, digits[0..len]);
+        for (digits[0..len]) |*d| d.* += '0';
+        const input = try std.fmt.bufPrintZ(&buffer, "-{s}e-{d}", .{ digits[0..len], power });
+        try expectFloatMatchesLibc(input);
+    }
+    const cases = [_][*:0]const u8{
+        "-0x1p-1076", "-0x1.00000000000000000000000000001p-1076", "-0x1.8p-1100",
+        "-0x1p-2000", "0x1p1102",                                 "0x1p1106",
+        "0xfp1102",
+    };
+    for (cases) |input| try expectFloatMatchesLibc(input);
+}
+
+test "float parser deterministic decimal and hex differential corpus" {
+    var prng = std.Random.DefaultPrng.init(0x228_f64);
+    const random = prng.random();
+    var buffer: [192:0]u8 = undefined;
+    for (0..4000) |iteration| {
+        const hex = iteration & 1 != 0;
+        const alphabet = if (hex) "0123456789abcdef" else "0123456789";
+        var pos: usize = 0;
+        if (random.boolean()) {
+            buffer[pos] = '-';
+            pos += 1;
+        }
+        if (hex) {
+            @memcpy(buffer[pos..][0..2], "0x");
+            pos += 2;
+        }
+        const count = random.intRangeAtMost(usize, 1, 120);
+        const dot = random.intRangeAtMost(usize, 0, count);
+        for (0..count) |i| {
+            if (i == dot) {
+                buffer[pos] = '.';
+                pos += 1;
+            }
+            buffer[pos] = alphabet[random.intRangeLessThan(usize, 0, alphabet.len)];
+            pos += 1;
+        }
+        const exponent = random.intRangeAtMost(i32, if (hex) -1200 else -400, if (hex) 1100 else 350);
+        const suffix = try std.fmt.bufPrintZ(buffer[pos..], "{c}{d}{s}", .{
+            @as(u8, if (hex) 'p' else 'e'), exponent, if (iteration % 7 == 0) "x" else "",
+        });
+        try expectFloatMatchesLibc(buffer[0 .. pos + suffix.len :0]);
+    }
 }
 
 fn expectIntegerMatchesLibc(input: [*:0]const u8) !void {

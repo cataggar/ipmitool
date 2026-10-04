@@ -1916,6 +1916,62 @@ pub fn build(b: *std.Build) void {
     helper_integer_step.dependOn(&b.addRunArtifact(helper_integer_unit).step);
     test_step.dependOn(helper_integer_step);
 
+    const helper_float_unit = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.helper.test.float parser"},
+    });
+    const helper_float_step = b.step("test-helper-floats", "Compare Zig binary64 parsing, rounding, values and errno with libc");
+    const helper_float_run = b.addRunArtifact(helper_float_unit);
+    helper_float_run.setEnvironmentVariable("LC_ALL", "C");
+    helper_float_step.dependOn(&helper_float_run.step);
+    test_step.dependOn(helper_float_step);
+    b.step("test-helper-floats-compile", "Cross-compile focused binary64 parser tests without running them")
+        .dependOn(&helper_float_unit.step);
+
+    const float_parser_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/util/float_parse.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const float_pure_unit = b.addTest(.{ .root_module = float_parser_mod });
+    const float_pure_step = b.step("test-helper-floats-pure", "Test target and injectable long-double precisions without libc or C headers");
+    float_pure_step.dependOn(&b.addRunArtifact(float_pure_unit).step);
+    test_step.dependOn(float_pure_step);
+    b.step("test-helper-floats-pure-compile", "Cross-compile pure float parser precision tests without libc")
+        .dependOn(&float_pure_unit.step);
+    const float_bridge = b.addTranslateC(.{
+        .root_source_file = b.path("tests/float_parse/oracle.h"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    const float_bridge_mod = float_bridge.createModule();
+    const float_oracle_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/util/float_oracle.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    float_oracle_mod.addImport("ipmi_c", float_bridge_mod);
+    const float_standalone_mod = b.createModule(.{
+        .root_source_file = b.path("tests/float_parse/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    float_standalone_mod.addImport("float_parse", float_parser_mod);
+    float_standalone_mod.addImport("float_oracle", float_oracle_mod);
+    float_standalone_mod.addImport("ipmi_c", float_bridge_mod);
+    const float_standalone = b.addTest(.{
+        .name = "helper-floats-standalone",
+        .root_module = float_standalone_mod,
+    });
+    const float_standalone_step = b.step("test-helper-floats-standalone", "Compare float parsing with libc without ipmitool headers or full-root ABI checks");
+    float_standalone_step.dependOn(&b.addRunArtifact(float_standalone).step);
+    test_step.dependOn(float_standalone_step);
+    b.step("test-helper-floats-standalone-compile", "Install standalone float tests for a foreign libc target without running them")
+        .dependOn(&b.addInstallArtifact(float_standalone, .{}).step);
+
     const valstr_c_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
