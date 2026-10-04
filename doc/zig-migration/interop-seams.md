@@ -102,6 +102,16 @@ which deliberately counts tests too, rises from 7,356 to 7,386 across 76
 entries. These exact deltas are not a blanket increase or a runtime-libc
 measurement; no characterization reference is hidden or exempted.
 
+The header-free [Gregorian calendar prerequisite](time-calendar.md) supports
+signed epochs and explicitly C-locale formatting without libc. Owned numeric
+relative timestamp accessors use it; general locale-sensitive and absolute
+time paths still need timezone/locale adapters before #228 can close.
+The budget's `util/time.zig` entry rises from 40 to 55 solely for explicit
+characterization: three original timestamp accessors, six `setlocale`/`LC_TIME`
+references, two C time types, one `gmtime_r` and three `strftime` observations.
+Production qualified references do not increase; generic legacy time paths
+remain visible, and no other limit or test exemption changes.
+
 ## Module map
 
 The Zig tree mirrors the C tree. Header ports and translation-unit ports are

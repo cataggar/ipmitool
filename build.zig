@@ -2208,10 +2208,31 @@ pub fn build(b: *std.Build) void {
 
     const time_unit = b.addTest(.{
         .root_module = abi_mod,
-        .filters = &.{ "the unspecified timestamp ignores the format", "Unknown timestamp matches snprintf" },
+        .filters = &.{"util.time.test."},
     });
-    b.step("test-time-unit", "Run timestamp Unknown-format parity tests")
+    b.step("test-time-unit", "Run timestamp, locale, relative and calendar parity tests")
         .dependOn(&b.addRunArtifact(time_unit).step);
+
+    const calendar_mod = b.createModule(.{
+        .root_source_file = b.path(zig_root ++ "/util/time_calendar.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = false,
+    });
+    const calendar_test = b.addTest(.{ .root_module = calendar_mod });
+    const calendar_step = b.step("test-time-calendar", "Test Gregorian conversion and C-locale formatting without C or libc");
+    calendar_step.dependOn(&b.addRunArtifact(calendar_test).step);
+    b.step("test-time-calendar-compile", "Cross-compile the no-libc Gregorian calendar tests")
+        .dependOn(&calendar_test.step);
+    test_step.dependOn(calendar_step);
+
+    const calendar_parity = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.time.test.calendar"},
+    });
+    const calendar_parity_step = b.step("test-time-calendar-parity", "Compare Gregorian formatting and relative accessors with the existing libc/C baseline");
+    calendar_parity_step.dependOn(&b.addRunArtifact(calendar_parity).step);
+    test_step.dependOn(calendar_parity_step);
 
     const shell_unit = b.addTest(.{
         .root_module = abi_mod,
