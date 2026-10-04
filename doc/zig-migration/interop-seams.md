@@ -114,6 +114,15 @@ remain visible, and no other limit or test exemption changes.
 
 ## Module map
 
+The bounded [integer compatibility correction](integer-compatibility.md) uses
+explicit standard/GNU and Zig 0.16 bundled-libc profiles with caller-supplied
+ctype classification. Independent original-C fixtures and actual ARM-musl
+execution establish the differing no-conversion/overflow end positions;
+neither the strict oracle nor process locale is normalized away. The current
+MC wrapper shares this scanner. Exact bridge limits fall by two in `helper.zig`
+and one in `mc.zig`, with no new importing/reference entry or blanket refresh.
+Production `str2double` remains libc-backed pending locale/FP adapters.
+
 The Zig tree mirrors the C tree. Header ports and translation-unit ports are
 kept apart, exactly as `include/ipmitool/*.h` and `lib/*.c` are.
 

@@ -1972,6 +1972,87 @@ pub fn build(b: *std.Build) void {
     b.step("test-helper-floats-standalone-compile", "Install standalone float tests for a foreign libc target without running them")
         .dependOn(&b.addInstallArtifact(float_standalone, .{}).step);
 
+    const integer_helper_regressions = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"util.helper.test."},
+        .use_llvm = true,
+        .use_lld = true,
+    });
+    b.step("test-integer-helper-regressions", "Run existing helper integer, MAC, value-table, float and file regressions")
+        .dependOn(&b.addRunArtifact(integer_helper_regressions).step);
+    const integer_mc = b.addTest(.{
+        .root_module = abi_mod,
+        .filters = &.{"cmd.mc.test."},
+        .use_llvm = true,
+        .use_lld = true,
+    });
+    b.step("test-integer-mc", "Retain all existing MC C oracles while using the shared integer scanner")
+        .dependOn(&b.addRunArtifact(integer_mc).step);
+
+    const integer_core = b.createModule(.{
+        .root_source_file = b.path("src/zig/util/integer_scan.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const integer_native_mod = b.createModule(.{
+        .root_source_file = b.path("tests/integer/native.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    integer_native_mod.addImport("integer_scan", integer_core);
+    const integer_native = b.addTest(.{ .root_module = integer_native_mod, .use_llvm = true, .use_lld = true });
+    const integer_native_step = b.step("test-integer-native", "Run no-C/no-libc GNU and bundled-libc integer profiles against frozen C oracles");
+    integer_native_step.dependOn(&b.addRunArtifact(integer_native).step);
+    b.step("test-integer-native-compile", "Cross-compile no-libc 32/64-bit integer profiles").dependOn(&integer_native.step);
+    test_step.dependOn(integer_native_step);
+
+    const integer_interop_mod = b.createModule(.{
+        .root_source_file = b.path("src/zig/integer_interop_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    configure(b, integer_interop_mod, config_h, default_intf);
+    integer_interop_mod.addImport("ipmi_c", bridge_mod);
+    integer_interop_mod.addImport("build_options", abi_options.createModule());
+    integer_interop_mod.addCSourceFiles(.{
+        .files = &.{ "tests/integer/oracle.c", "lib/helper.c", "lib/log.c" },
+        .flags = &base_cflags,
+    });
+    const integer_interop = b.addTest(.{
+        .root_module = integer_interop_mod,
+        .filters = &.{"integer compatibility"},
+        .use_llvm = true,
+        .use_lld = true,
+    });
+    const integer_interop_step = b.step("test-integer-interop", "Compare original C helper/libc grammar, end, range, errno and installed ctype");
+    integer_interop_step.dependOn(&b.addRunArtifact(integer_interop).step);
+    b.step("test-integer-interop-compile", "Cross-compile the original C helper/native integer ABI oracle").dependOn(&integer_interop.step);
+    test_step.dependOn(integer_interop_step);
+
+    const integer_oracle_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    configure(b, integer_oracle_mod, config_h, default_intf);
+    integer_oracle_mod.addCMacro("INTEGER_ORACLE_MAIN", "1");
+    integer_oracle_mod.addCSourceFiles(.{
+        .files = &.{ "tests/integer/oracle.c", "lib/helper.c", "lib/log.c" },
+        .flags = &base_cflags,
+    });
+    const integer_oracle = b.addExecutable(.{ .name = "integer-c-oracle", .root_module = integer_oracle_mod });
+    b.step("test-integer-oracle-compile", "Compile the independent original C integer fixture").dependOn(&integer_oracle.step);
+    if (target.result.os.tag == .linux and
+        (target.result.abi.isMusl() or (target.result.abi.isGnu() and target.result.ptrBitWidth() == 64)))
+    {
+        const integer_oracle_step = b.step("test-integer-oracle", "Compare unmodified original C observations against frozen integer profiles");
+        const fixture = if (target.result.abi.isMusl())
+            if (target.result.ptrBitWidth() == 32) @embedFile("tests/integer/musl32.tsv") else @embedFile("tests/integer/musl64.tsv")
+        else
+            @embedFile("tests/integer/gnu64.tsv");
+        const run = b.addRunArtifact(integer_oracle);
+        run.expectStdOutEqual(fixture);
+        run.expectStdErrEqual("");
+        integer_oracle_step.dependOn(&run.step);
+        test_step.dependOn(integer_oracle_step);
+    }
     const valstr_c_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,

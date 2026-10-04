@@ -27,7 +27,7 @@
 63 src/zig/cmd/kontronoem.zig
 123 src/zig/cmd/lanp.zig
 113 src/zig/cmd/lanp6.zig
-285 src/zig/cmd/mc.zig
+284 src/zig/cmd/mc.zig
 77 src/zig/cmd/nm.zig
 7 src/zig/cmd/oem.zig
 120 src/zig/cmd/pef.zig
@@ -66,7 +66,7 @@
 82 src/zig/intf/usb.zig
 0 src/zig/root.zig
 1 src/zig/util/float_oracle.zig
-125 src/zig/util/helper.zig
+123 src/zig/util/helper.zig
 37 src/zig/util/log.zig
 12 src/zig/util/posix.zig
 1 src/zig/util/printf.zig
