@@ -35,9 +35,16 @@ pub const Civil = struct {
         return days;
     }
 
+    /// Checked day containing this civil time, relative to 1970-01-01.
+    /// The clock fields are validated but do not affect the day. i128 keeps
+    /// January/rule boundaries representable beyond either i64 epoch endpoint.
+    pub fn epochDay(self: Civil) DateError!i128 {
+        return daysBeforeYear(self.year) + try self.dayOfYear() - epoch_day;
+    }
+
     /// Sunday=0, like tm_wday.
     pub fn weekday(self: Civil) DateError!u3 {
-        const days = daysBeforeYear(self.year) + try self.dayOfYear() - epoch_day;
+        const days = try self.epochDay();
         return @intCast(@mod(days + 4, 7));
     }
 
@@ -95,7 +102,7 @@ pub fn fromEpoch(seconds: i64) Civil {
 /// Strict, non-normalizing inverse. POSIX days have 86400 seconds; leap
 /// seconds and DST gap/fold interpretation belong to a separate adapter.
 pub fn toEpoch(date: Civil) EpochError!i64 {
-    const days = daysBeforeYear(date.year) + try date.dayOfYear() - epoch_day;
+    const days = try date.epochDay();
     const seconds = days * seconds_per_day + @as(i128, date.hour) * 3600 +
         @as(i128, date.minute) * 60 + date.second;
     if (seconds < std.math.minInt(i64) or seconds > std.math.maxInt(i64))
@@ -263,6 +270,53 @@ test "calendar round trips every signed 64-bit boundary and sampled epoch" {
         state = state *% 6364136223846793005 +% 1;
         const epoch: i64 = @bitCast(state);
         try std.testing.expectEqual(epoch, try toEpoch(fromEpoch(epoch)));
+    }
+}
+
+test "calendar checked epoch days share weekday and inverse semantics" {
+    try std.testing.expectEqual(@as(i128, 0), try (Civil{ .year = 1970, .month = 1, .day = 1 }).epochDay());
+    try std.testing.expectEqual(@as(i128, -1), try (Civil{
+        .year = 1969,
+        .month = 12,
+        .day = 31,
+        .hour = 23,
+        .minute = 59,
+        .second = 59,
+    }).epochDay());
+    for ([_]i64{ std.math.minInt(i64), -86401, -1, 0, 951782400, 4107542400, std.math.maxInt(i64) }) |epoch| {
+        const date = fromEpoch(epoch);
+        const day = try date.epochDay();
+        try std.testing.expectEqual(@as(i128, @divFloor(epoch, seconds_per_day)), day);
+        try std.testing.expectEqual(@as(u3, @intCast(@mod(day + 4, 7))), try date.weekday());
+        try std.testing.expectEqual(epoch, try toEpoch(date));
+    }
+    for ([_]Civil{
+        .{ .year = 1900, .month = 2, .day = 29 },
+        .{ .year = 2000, .month = 0, .day = 1 },
+        .{ .year = 2000, .month = 1, .day = 1, .hour = 24 },
+    }) |date| {
+        try std.testing.expectError(error.InvalidDate, date.epochDay());
+        try std.testing.expectError(error.InvalidDate, date.weekday());
+        try std.testing.expectError(error.InvalidDate, toEpoch(date));
+    }
+}
+
+test "calendar epoch days represent wide January boundaries and every i64 civil year" {
+    const lower = Civil{ .year = fromEpoch(std.math.minInt(i64)).year, .month = 1, .day = 1 };
+    const upper = Civil{ .year = fromEpoch(std.math.maxInt(i64)).year + 1, .month = 1, .day = 1 };
+    try std.testing.expect((try lower.epochDay()) * seconds_per_day < std.math.minInt(i64));
+    try std.testing.expect((try upper.epochDay()) * seconds_per_day > std.math.maxInt(i64));
+    try std.testing.expectError(error.EpochOutOfRange, toEpoch(lower));
+    try std.testing.expectError(error.EpochOutOfRange, toEpoch(upper));
+    for ([_]i64{ std.math.minInt(i64), std.math.maxInt(i64) }) |year| {
+        const january = Civil{ .year = year, .month = 1, .day = 1 };
+        const december = Civil{ .year = year, .month = 12, .day = 31 };
+        try std.testing.expectEqual(
+            @as(i128, if (isLeapYear(year)) 365 else 364),
+            try december.epochDay() - try january.epochDay(),
+        );
+        _ = try january.weekday();
+        _ = try december.weekday();
     }
 }
 

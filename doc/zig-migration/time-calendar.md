@@ -14,6 +14,7 @@ or implement leap seconds.
 | `fromEpoch(i64) Civil` | Every signed 64-bit POSIX epoch converts, including negative seconds and astronomical years zero/before zero |
 | `toEpoch(Civil) !i64` | Strict inverse; `InvalidDate` or `EpochOutOfRange`, never normalization or saturation |
 | `Civil.dayOfYear() !u16` | Zero-based, like `tm_yday` |
+| `Civil.epochDay() !i128` | Checked day relative to 1970-01-01; validates the full civil time but ignores its clock when counting days |
 | `Civil.weekday() !u3` | Sunday=0, like `tm_wday` |
 | `Civil.tmYear() !i32` | Checked `year - 1900`; `YearOutOfRange` outside libc's signed 32-bit `tm_year` |
 | `write(*std.Io.Writer, format, Civil, FormatOptions) !void` | Streams without NUL or implicit flush; propagates `WriteFailed` and validation errors |
@@ -24,6 +25,10 @@ Gregorian eras (146097 days). The day count before astronomical year `y` is
 `365*y + floor((y+3)/4) - floor((y+99)/100) + floor((y+399)/400)`.
 1970-01-01 is day 719528 relative to year zero. Inverse arithmetic uses `i128`
 before checking the `i64` range. Days always have 86400 seconds.
+`toEpoch` and `Civil.weekday` share `Civil.epochDay`. Timezone rule calculations
+use this wide day helper, not `toEpoch`, because January/rule boundaries can
+lie outside the signed epoch range even when the queried instant fits `i64`.
+The day helper also accepts every valid civil date with an `i64` year.
 
 `FormatOptions` contains `zone: Zone{abbreviation: []const u8,
 offset_seconds: i32 = 0}` and `flavor: enum{gnu, musl}`. The default is the
