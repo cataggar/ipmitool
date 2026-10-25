@@ -64,11 +64,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.0.0
 
       - name: Install Zig ${{ env.ZIG_VERSION }} via ghr
-        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        uses: cataggar/ghr/actions/install@a3be8c61b9d5c2bd6d38e6d067c69d70434a6db9 # v0.9.1
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          ghr-version: v0.8.1
+          ghr-version: v0.9.1
           tools: >-
             cataggar/zig@v${{ env.ZIG_VERSION }}
             RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
@@ -120,11 +120,11 @@ jobs:
           sudo apt-get install -y --no-install-recommends ${BUILD_APT_PACKAGES}
 
       - name: Install Zig ${{ env.ZIG_VERSION }} via ghr
-        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        uses: cataggar/ghr/actions/install@a3be8c61b9d5c2bd6d38e6d067c69d70434a6db9 # v0.9.1
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          ghr-version: v0.8.1
+          ghr-version: v0.9.1
           tools: >-
             cataggar/zig@v${{ env.ZIG_VERSION }}
             RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
@@ -258,11 +258,11 @@ jobs:
           sudo apt-get install -y --no-install-recommends ${BUILD_APT_PACKAGES}
 
       - name: Install Zig ${{ env.ZIG_VERSION }} via ghr
-        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        uses: cataggar/ghr/actions/install@a3be8c61b9d5c2bd6d38e6d067c69d70434a6db9 # v0.9.1
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          ghr-version: v0.8.1
+          ghr-version: v0.9.1
           tools: >-
             cataggar/zig@v${{ env.ZIG_VERSION }}
             RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
@@ -326,11 +326,11 @@ jobs:
         run: scripts/build-oracle.sh
 
       - name: Install Zig ${{ env.ZIG_VERSION }} for selectable C cross-check
-        uses: cataggar/ghr/actions/install@c4be68b52d67d7acd2a7fe6c1e5f126e1754176e # v0.8.1
+        uses: cataggar/ghr/actions/install@a3be8c61b9d5c2bd6d38e6d067c69d70434a6db9 # v0.9.1
         env:
           GH_TOKEN: ${{ github.token }}
         with:
-          ghr-version: v0.8.1
+          ghr-version: v0.9.1
           tools: >-
             cataggar/zig@v${{ env.ZIG_VERSION }}
             RWSGOq2NVecA2UPNdBUZykf1CCb147pkmdtYxgb3Ti+JO/wCYvhbAb/U
